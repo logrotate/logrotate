@@ -58,7 +58,7 @@ int rotateLog(logInfo * log, logState ** statesPtr, int * numStatesPtr) {
     int doRotate = 0;
     int i;
     int oldstderr = 0, newerr;
-    logState * state;
+    logState * state = NULL;
 
     message(MESS_DEBUG, "rotating: %s ", log->fn);
     switch (log->criterium) {
