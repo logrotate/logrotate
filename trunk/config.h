@@ -9,6 +9,12 @@
     #define STATEFILE "/var/run/logrotate.status"
 #endif
 
+#ifdef SunOS
+    #define DEFAULT_MAIL_COMMAND "/usr/bin/mailx -s"
+    #define COMPRESS_COMMAND "/usr/local/bin/gzip"
+    #define UNCOMPRESS_COMMAND "/usr/local/bin/gunzip"
+    #define STATEFILE "/var/log/logrotate.status"
+#endif
 
 /*
  * Default settings for Linux - leave these last.

@@ -1,4 +1,4 @@
-.TH LOGROTATE 8 "Wed Nov 28 2001" "Red Hat Linux" "System Administrator's Manual"
+.TH LOGROTATE 8 "Wed Nov 5 2002" "Red Hat Linux" "System Administrator's Manual"
 .UC 4
 .SH NAME
 logrotate \- rotates, compresses, and mails system logs
@@ -311,18 +311,34 @@ option may be overriden by the \fBnoolddir\fR option.
 
 .TP
 \fBpostrotate\fR/\fBendscript\fR
-The lines between \fIpostrotate\fR and \fIendscript\fR (both of which
+The lines between \fBpostrotate\fR and \fBendscript\fR (both of which
 must appear on lines by themselves) are executed after the log file is
 rotated. These directives may only appear inside of a log file definition.
 See \fBprerotate\fR as well.
 
 .TP
-\fBprerotate\fR/\fBendscript\fR\
+\fBprerotate\fR/\fBendscript\fR
 The lines between \fBprerotate\fR and \fBendscript\fR (both of which
 must appear on lines by themselves) are executed before the log file is
 rotated and only if the log will actually be rotated. These directives
 may only appear inside of a log file definition.  See \fBpostrotate\fR
 as well.
+
+.TP
+\fBfirstaction\fR/\fBendscript\fR
+The lines between \fBfirstaction\fR and \fBendscript\fR (both of which
+must appear on lines by themselves) are executed once before all log
+files that match the wildcarded pattern are rotated, before prerotate script
+is run and only if at least one log will actually be rotated. These directives
+may only appear inside of a log file definition. See \fBlastaction\fR as well.
+
+.TP
+\fBlastaction\fR/\fBendscript\fR
+The lines between \fBlastaction\fR and \fBendscript\fR (both of which
+must appear on lines by themselves) are executed once after all log
+files that match the wildcarded pattern are rotated, after postrotate script
+is run and only if at least one log is rotated. These directives may only
+appear inside of a log file definition. See \fBlastaction\fR as well.
 
 .TP
 \fBrotate \fIcount\fR

@@ -23,6 +23,12 @@
 #define GLOB_ABORTED GLOB_ABEND
 #endif
 
+#define REALLOC_STEP    10
+
+#if defined(SunOS) && !defined(isblank)
+#define isblank(c) 	( (c) == ' ' || (c) == '\t' ) ? 1 : 0
+#endif
+
 static char * defTabooExts[] = { ".rpmsave", ".rpmorig", "~", ",v",
 				 ".rpmnew", ".swp" };
 static int defTabooCount = sizeof(defTabooExts) / sizeof(char *);
@@ -126,26 +132,21 @@ static char * readAddress(const char * configFile, int lineNum, char * key,
 	return NULL;
 }
 
-/** This function will be called as the 'select' method in the scandir(3)
-    function-call. */
-static int
-checkFilelist(struct dirent const *ent)
-{
-    size_t	i;
-    assert(ent!=0);
+static int checkFile(const char * fname) {
+    int i;
 
-    /* Check if ent->d_name is '.' or '..'; if so, return false */
-    if (ent->d_name[0] == '.' &&
-	(!ent->d_name[1] || (ent->d_name[1] == '.' && !ent->d_name[2])))
-        return 0;
+    /* Check if fname is '.' or '..'; if so, return false */
+    if (fname[0] == '.' &&
+	(!fname[1] || (fname[1] == '.' && !fname[2])))
+	return 0;
 
-    /* Check if ent->d_name is ending in a taboo-extension; if so, return
+    /* Check if fname is ending in a taboo-extension; if so, return
        false */
     for (i = 0; i < tabooCount; i++) {
-        if (!strcmp(ent->d_name + strlen(ent->d_name) -
-		    strlen(tabooExts[i]), tabooExts[i])) {
-	    message(MESS_DEBUG, "Ignoring %s, because of %s "
-		    "ending\n", ent->d_name, tabooExts[i]);
+	if (!strcmp(fname + strlen(fname) - strlen(tabooExts[i]),
+	    tabooExts[i])) {
+	    message(MESS_ERROR, "Ignoring %s, because of %s "
+		    "ending\n", fname, tabooExts[i]);
 
 	    return 0;
 	}
@@ -153,6 +154,20 @@ checkFilelist(struct dirent const *ent)
 
       /* All checks have been passed; return true */
     return 1;
+}
+
+/* Used by qsort to sort filelist */
+static int compar(const void *p, const void *q) {
+	return  strcoll(*((char **)p), *((char **)q));
+}
+
+/* Free memory blocks pointed to by pointers in namelist and namelist itself */
+static void free_namelist (char **namelist, int files_count)
+{
+    int i;
+    for (i=0; i<files_count; ++i)
+	free(namelist[i]);
+    free(namelist);
 }
 
 int readConfigPath(const char * path, logInfo * defConfig, 
@@ -172,9 +187,11 @@ int readConfigPath(const char * path, logInfo * defConfig,
     }
 
     if (S_ISDIR(sb.st_mode)) {
-        struct dirent	**namelist;
+	char		**namelist, **p;
+	struct dirent	*dp;
 	int		files_count,i;
-      
+	DIR		*dirp;
+
 	here = open(".", O_RDONLY);
 	if (here < 0) {
 	    message(MESS_ERROR, "cannot open current directory: %s\n", 
@@ -182,35 +199,69 @@ int readConfigPath(const char * path, logInfo * defConfig,
 	    return 1;
 	}
 
-	files_count = scandir(path, &namelist, checkFilelist, alphasort);
-	if (files_count==-1) {
-  	    message(MESS_ERROR, "scandir(): %s", strerror(errno));
+	if ( (dirp = opendir(path)) == NULL) {
+	    message(MESS_ERROR, "cannot open directory %s: %s\n", path,
+		    strerror(errno));
 	    return 1;
 	}
-	
+	files_count = 0;
+	namelist = NULL;
+	while ((dp = readdir(dirp)) != NULL) {
+	    if (checkFile(dp->d_name)) {
+		/* Realloc memory for namelist array if necessary */
+		if (files_count % REALLOC_STEP == 0) {
+		    p = (char **) realloc(namelist, (files_count + REALLOC_STEP) * sizeof(char *));
+		    if (p) {
+			namelist = p;
+			memset(namelist + files_count, '\0', REALLOC_STEP * sizeof(char *));
+		    } else {
+			free_namelist(namelist, files_count);
+			message(MESS_ERROR, "cannot realloc: %s\n", strerror(errno));
+			return 1;
+		    }
+		}
+		/* Alloc memory for file name */
+		if ( (namelist[files_count] = (char *) malloc( strlen(dp->d_name) + 1)) ) {
+		    strcpy(namelist[files_count], dp->d_name);
+		    files_count++;
+		} else {
+		    free_namelist(namelist, files_count);
+		    message(MESS_ERROR, "cannot realloc: %s\n", strerror(errno));
+		    return 1;
+		}
+	    }
+	}
+	closedir( dirp );
+
+	if (files_count > 0) {
+	    qsort(namelist, files_count, sizeof(char *), compar);
+	} else {
+	    return 0;
+	}
+
 	if (chdir(path)) {
 	    message(MESS_ERROR, "error in chdir(\"%s\"): %s\n", path,
 		    strerror(errno));
 	    close(here);
-	    free(namelist);
+	    free_namelist(namelist, files_count);
 	    return 1;
 	}
 
 	for (i=0; i<files_count; ++i) {
-	  assert(namelist[i]!=0);
+	  assert(namelist[i] != NULL);
 	  
-	  if (readConfigFile(namelist[i]->d_name, defConfig, logsPtr, 
+	  if (readConfigFile(namelist[i], defConfig, logsPtr, 
 			     numLogsPtr)) {
 	    fchdir(here);
 	    close(here);
-	    free(namelist);
+	    free_namelist(namelist, files_count);
 	    return 1;
 	  }
 	};
 
 	fchdir(here);
 	close(here);
-	free(namelist);
+	free_namelist(namelist, files_count);
     } else {
 	return readConfigFile(path, defConfig, logsPtr, numLogsPtr);
     }
@@ -220,7 +271,7 @@ int readConfigPath(const char * path, logInfo * defConfig,
 
 static int globerr(const char * pathname, int theerr) {
     message(MESS_ERROR, "error accessing %s: %s\n", pathname, 
-            strerror(theerr));
+	    strerror(theerr));
 
     /* We want the glob operation to continue, so return 0 */
     return 1;
@@ -375,14 +426,14 @@ static int readConfigFile(const char * configFile, logInfo * defConfig,
 
 		*endtag = oldchar, start = endtag;
 	    } else if (!strcmp(start, "copy")) {
-                newlog->flags |= LOG_FLAG_COPY;
+		newlog->flags |= LOG_FLAG_COPY;
 
-                *endtag = oldchar, start = endtag;
-            } else if (!strcmp(start, "nocopy")) {
-                newlog->flags &= ~LOG_FLAG_COPY;
+		*endtag = oldchar, start = endtag;
+	    } else if (!strcmp(start, "nocopy")) {
+		newlog->flags &= ~LOG_FLAG_COPY;
 
-                *endtag = oldchar, start = endtag;
-            } else if (!strcmp(start, "ifempty")) {
+		*endtag = oldchar, start = endtag;
+	    } else if (!strcmp(start, "ifempty")) {
 		newlog->flags |= LOG_FLAG_IFEMPTY;
 
 		*endtag = oldchar, start = endtag;
@@ -535,7 +586,7 @@ static int readConfigFile(const char * configFile, logInfo * defConfig,
 		    *endtag = oldchar, start = endtag;
 		}
 	    } else if (!strcmp(start, "start")) {
-                *endtag = oldchar, start = endtag;
+		*endtag = oldchar, start = endtag;
 
 		if (!isolateValue(configFile, lineNum, "start count", &start,
 				  &endtag)) {
@@ -555,7 +606,7 @@ static int readConfigFile(const char * configFile, logInfo * defConfig,
 	    } else if (!strcmp(start, "mail")) {
 		*endtag = oldchar, start = endtag;
 		if (!(newlog->logAddress = readAddress(configFile, lineNum, 
-						        "mail", &start))) {
+							"mail", &start))) {
 		    return 1;
 		}
 	    } else if (!strcmp(start, "nomail")) {
@@ -578,11 +629,25 @@ static int readConfigFile(const char * configFile, logInfo * defConfig,
 		scriptDest = &newlog->pre;
 
 		while (*start != '\n') start++;
+	    } else if (!strcmp(start, "firstaction")) {
+		*endtag = oldchar, start = endtag;
+
+		scriptStart = start;
+		scriptDest = &newlog->first;
+
+		while (*start != '\n') start++;
 	    } else if (!strcmp(start, "postrotate")) {
 		*endtag = oldchar, start = endtag;
 
 		scriptStart = start;
 		scriptDest = &newlog->post;
+
+		while (*start != '\n') start++;
+	    } else if (!strcmp(start, "lastaction")) {
+		*endtag = oldchar, start = endtag;
+
+		scriptStart = start;
+		scriptDest = &newlog->last;
 
 		while (*start != '\n') start++;
 	    } else if (!strcmp(start, "tabooext")) {

@@ -3,7 +3,7 @@ CVSROOT = $(shell cat CVS/Root)
 CVSTAG = r$(subst .,-,$(VERSION))
 OS_NAME = $(shell uname -s)
 LFS = $(shell echo `getconf LFS_CFLAGS 2>/dev/null`)
-CFLAGS = -Wall -D_GNU_SOURCE -DVERSION=\"$(VERSION)\" $(RPM_OPT_FLAGS) $(LFS)
+CFLAGS = -Wall -D_GNU_SOURCE -D$(OS_NAME) -DVERSION=\"$(VERSION)\" $(RPM_OPT_FLAGS) $(LFS)
 PROG = logrotate
 MAN = logrotate.8
 LOADLIBES = -lpopt
@@ -27,6 +27,18 @@ ifeq ($(OS_NAME),HP-UX)
     endif
 endif
 
+# Solaris using gcc
+ifeq ($(OS_NAME),SunOS)
+    ifeq ($(RPM_OPT_FLAGS),)
+        RPM_OPT_FLAGS = -O2
+    endif
+    CC = gcc
+    INSTALL = install
+    ifeq ($(BASEDIR),)
+	BASEDIR = /usr/local
+    endif
+endif
+
 # Red Hat Linux
 ifeq ($(OS_NAME),Linux)
     INSTALL = install
@@ -34,8 +46,8 @@ ifeq ($(OS_NAME),Linux)
 endif
 
 ifneq ($(POPT_DIR),)
-    CFLAGS += -I$(POPT_DIR)/include
-    LOADLIBES += -L$(POPT_DIR)/lib
+    CFLAGS += -I$(POPT_DIR)
+    LOADLIBES += -L$(POPT_DIR)
 endif
 
 ifneq ($(STATEFILE),)
