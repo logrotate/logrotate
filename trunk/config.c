@@ -4,6 +4,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <getopt.h>
+#include <glob.h>
 #include <grp.h>
 #include <pwd.h>
 #include <stdio.h>
@@ -22,6 +23,7 @@ static int tabooCount = sizeof(tabooExts) / sizeof(char *);
 
 static int readConfigFile(char * configFile, logInfo * defConfig, 
 			  logInfo ** logsPtr, int * numLogsPtr);
+static int globerr(const char * pathname, int theerr);
 
 static int isolateValue(char * fileName, int lineNum, char * key, 
 			char ** startPtr, char ** endPtr) {
@@ -199,6 +201,14 @@ int readConfigPath(char * path, logInfo * defConfig,
     return 0;
 }
 
+static int globerr(const char * pathname, int theerr) {
+    message(MESS_ERROR, "error accessing %s: %s\n", pathname, 
+            strerror(theerr));
+
+    /* We want the glob operation to continue, so return 0 */
+    return 1;
+}
+
 static int readConfigFile(char * configFile, logInfo * defConfig, 
 			  logInfo ** logsPtr, int * numLogsPtr) {
     int fd;
@@ -207,7 +217,7 @@ static int readConfigFile(char * configFile, logInfo * defConfig,
     int length;
     int lineNum = 1;
     int multiplier;
-    int i;
+    int i, j, k;
     char * scriptStart = NULL;
     char ** scriptDest = NULL;
     logInfo * newlog = defConfig;
@@ -219,8 +229,9 @@ static int readConfigFile(char * configFile, logInfo * defConfig,
     char createOwner[200], createGroup[200];
     mode_t createMode;
     struct stat sb, sb2;
+    glob_t globResult;
 
-    /* FIXME: createOWnder and createGroup probably shouldn't be fixed
+    /* FIXME: createOwner and createGroup probably shouldn't be fixed
        length arrays -- of course, if we aren't run setuid in doesn't
        matter much */
 
@@ -565,15 +576,37 @@ static int readConfigFile(char * configFile, logInfo * defConfig,
 	    oldchar = *endtag;
 	    *endtag = '\0';
 
-	    for (i = 0; i < *numLogsPtr - 1; i++) {
-		if (!strcmp((*logsPtr)[i].fn, start)) {
-		    message(MESS_ERROR, "%s:%d duplicate log entry for %s\n",
-			    configFile, lineNum, start);
-		    return 1;
+	    rc = glob(start, 0, globerr, &globResult);
+	    if (rc == GLOB_ABEND) return 1;
+
+	    newlog->files = malloc(sizeof(*newlog->files) * 
+				   globResult.gl_pathc);
+	    newlog->numFiles = 0;
+
+	    for (i = 0; i < globResult.gl_pathc; i++) {
+		/* if we glob directories we can get false matches */
+		if (access(globResult.gl_pathv[i], X_OK)) continue;
+
+		for (j = 0; j < *numLogsPtr - 1; j++) {
+		    for (k = 0; k < (*logsPtr)[j].numFiles; k++) {
+			if (!strcmp((*logsPtr)[j].files[k], 
+				    globResult.gl_pathv[i])) {
+			    message(MESS_ERROR, 
+				    "%s:%d duplicate log entry for %s\n",
+				    configFile, lineNum, 
+				    globResult.gl_pathv[i]);
+			    return 1;
+			}
+		    }
 		}
+
+		newlog->files[newlog->numFiles] = 
+			globResult.gl_pathv[i];
+		newlog->numFiles++;
 	    }
 
-	    newlog->fn = strdup(start);
+	    newlog->globMem = globResult;
+	    newlog->pattern = strdup(start);
 
 	    message(MESS_DEBUG, "reading config info for %s\n", start);
 
@@ -611,22 +644,24 @@ static int readConfigFile(char * configFile, logInfo * defConfig,
 		    return 1;
 		}
 
-		dirName = ourDirName(newlog->fn);
-		if (stat(dirName, &sb2)) {
-		    message(MESS_ERROR, "%s:%d error verifying log file "
-				"path %s: %s\n", configFile, lineNum, 
-				dirName, strerror(errno));
+		for (i = 0; i < newlog->numFiles; i++) {
+		    dirName = ourDirName(newlog->files[i]);
+		    if (stat(dirName, &sb2)) {
+			message(MESS_ERROR, "%s:%d error verifying log file "
+				    "path %s: %s\n", configFile, lineNum, 
+				    dirName, strerror(errno));
+			free(dirName);
+			return 1;
+		    }
+
 		    free(dirName);
-		    return 1;
-		}
 
-		free(dirName);
-
-		if (sb.st_dev != sb2.st_dev) {
-		    message(MESS_ERROR, "%s:%d olddir %s and log file %s "
-				"are on different devices\n", configFile,
-				lineNum, newlog->oldDir, newlog->fn);
-		    return 1;
+		    if (sb.st_dev != sb2.st_dev) {
+			message(MESS_ERROR, "%s:%d olddir %s and log file %s "
+				    "are on different devices\n", configFile,
+				    lineNum, newlog->oldDir, newlog->files[i]);
+			return 1;
+		    }
 		}
 	    }
 

@@ -72,11 +72,13 @@ compress
     endscript
 }
 
-/var/log/xferlog {
+/var/log/news/* {
     monthly
     rotate 2
-    errors ftpadmin@my.org
-    # most ftp daemons don't handle HUP
+    errors newsadmin@my.org
+    postrotate
+	kill -HUP `cat /var/run/inn.pid`
+    endscript
     nocompress
 }
 .fi
@@ -98,12 +100,14 @@ It is rotated whenever is grows over 100k is size, and the old logs
 files are mailed (uncompressed) to www@my.org after going through 5
 rotations, rather then being removed. Likewise, any errors that occur
 while processing the log file are also mailed to www@my.org (overriding
-the global \fIerrors\fR directive).
+the global \fIerrors\fR directive). 
 
-The last section definest the parameters for \fI/var/log/xferlog\fR.
-It is rotated on a monthly basis, and the errors are mailed to
-ftpadmin@my.org.  The rotated log files are not compressed, because
-wu-ftpd doesn't handle HUP properly.
+The last section definest the parameters for all of the files in
+\fI/var/log/news\fR. Each file is rotated on a monthly basis, and 
+the errors are mailed to newsadmin@my.org. This is considered a single
+rotation directive and if errors occur for more then one file they are 
+mailed in a single message. In this case, the log files
+are not compressed.
 
 Here is more information on the directives which may be included in
 a \fBlogrotate\fR configuration file:

@@ -59,12 +59,53 @@ static logState * findState(char * fn, logState ** statesPtr,
     return (states + i);
 }
 
-int rotateLog(logInfo * log, logState ** statesPtr, int * numStatesPtr) {
+static int runScript(char * logfn, char * script) {
+    int fd;
+    char filespec[20];
+    char cmd[50];
+    int rc;
+
+    if (debug) {
+	message(MESS_DEBUG, "running script with arg %s: \"%s\"\n", 
+		logfn, script);
+	return 0;
+    }
+
+    strcpy(filespec, "logrotXXXXXX");
+
+    fd = mkstemp(filespec);
+    if (write(fd, "#!/bin/sh\n\n", 11) != 11) {
+	close(fd);
+	unlink(filespec);
+	return -1;
+    }
+    if (write(fd, script, strlen(script)) != strlen(script)) {
+	close(fd);
+	unlink(filespec);
+	return -1;
+    }
+
+    if (fchmod(fd, 0700)) {
+	close(fd);
+	unlink(filespec);
+	return -1;
+    }
+
+    close(fd);
+
+    sprintf(cmd, "%s %s", filespec, logfn);
+    rc = system(cmd);
+
+    unlink(filespec);
+
+    return rc;
+}
+
+int rotateSingleLog(logInfo * log, int logNum, logState ** statesPtr, 
+		    int * numStatesPtr, FILE * errorFile) {
     struct stat sb;
     time_t nowSecs = time(NULL);
     struct tm now = *localtime(&nowSecs);
-    FILE * errorFile;
-    char * errorFileName = NULL;
     char * oldName, * newName = NULL;
     char * disposeName;
     char * finalName;
@@ -74,7 +115,6 @@ int rotateLog(logInfo * log, logState ** statesPtr, int * numStatesPtr) {
     int doRotate = 0;
     int i;
     int fd;
-    int oldstderr = 0, newerr;
     logState * state = NULL;
     uid_t createUid;
     gid_t createGid;
@@ -82,82 +122,18 @@ int rotateLog(logInfo * log, logState ** statesPtr, int * numStatesPtr) {
     char * baseName;
     char * dirName;
 
-    message(MESS_DEBUG, "rotating: %s ", log->fn);
-    switch (log->criterium) {
-      case ROT_DAYS:
-	message(MESS_DEBUG, "after %d days ", log->threshhold);
-	break;
-      case ROT_WEEKLY:
-	message(MESS_DEBUG, "weekly ");
-	break;
-      case ROT_MONTHLY:
-	message(MESS_DEBUG, "monthly ");
-	break;
-      case ROT_SIZE:
-	message(MESS_DEBUG, "bytes ");
-	break;
-    }
-
-    if (log->rotateCount) 
-	message(MESS_DEBUG, "(%d rotations)\n", log->rotateCount);
-    else
-	message(MESS_DEBUG, "(no old logs will be kept)\n");
+    message(MESS_DEBUG, "rotating file %s\n", log->files[logNum]);
 
     if (log->flags & LOG_FLAG_COMPRESS) ext = COMPRESS_EXT;
-
-    if (log->oldDir) 
-	message(MESS_DEBUG, "olddir is %s ", log->oldDir);
-
-    if (log->flags & LOG_FLAG_IFEMPTY) 
-	message(MESS_DEBUG, "empty log files are rotated ");
-    else
-	message(MESS_DEBUG, "empty log files are not rotated ");
-
-    if (log->errAddress) {
-	message(MESS_DEBUG, "errors will be mailed to %s ", log->errAddress);
-	errorFileName = strdup(tmpnam(NULL));
-
-	newerr = open(errorFileName, O_WRONLY | O_CREAT | O_EXCL, 0600);
-
-	if (newerr < 0) {
-	    message(MESS_ERROR, "error creating temporary file %s\n",
-			errorFileName);
-	    return 1;
-	}
-	
-	if (!debug) {
-	    oldstderr = dup(2);
-	    dup2(newerr, 2);
-	    close(newerr);
-
-	    errorFile = fdopen(2, "w");
-
-	    setlinebuf(errorFile);
-
-	    fprintf(errorFile, "errors occured while rotating %s\n\n",
-		    log->fn);
-	} else {
-	    errorFile = stderr;
-	}
-    } else {
-	message(MESS_DEBUG, "errors displayed on stderr ");
-	errorFile = stderr;
-    }
-
-    if (log->logAddress) {
-	message(MESS_DEBUG, "old logs mailed to %s\n", log->logAddress);
-    } else {
-	message(MESS_DEBUG, "old logs are removed\n");
-    }
     
-    if (stat(log->fn, &sb)) {
-	fprintf(errorFile, "stat of %s failed: %s\n", log->fn,
+    if (stat(log->files[logNum], &sb)) {
+	fprintf(errorFile, "stat of %s failed: %s\n", log->files[logNum],
 		strerror(errno));
 	hasErrors = 1;
     }
 
     if (!hasErrors) {
-	state = findState(log->fn, statesPtr, numStatesPtr);
+	state = findState(log->files[logNum], statesPtr, numStatesPtr);
 
 	if (log->criterium == ROT_SIZE) {
 	    doRotate = (sb.st_size >= log->threshhold);
@@ -206,23 +182,24 @@ int rotateLog(logInfo * log, logState ** statesPtr, int * numStatesPtr) {
 	state->lastRotated = now;
 
 	if (!log->rotateCount) {
-	    disposeName = log->fn;
+	    disposeName = log->files[logNum];
 	    finalName = NULL;
 	} else {
 	    if (log->oldDir)
 		dirName = strdup(log->oldDir);
 	    else
-		dirName = ourDirName(log->fn);
-	    baseName = ourBaseName(log->fn);
+		dirName = ourDirName(log->files[logNum]);
+	    baseName = ourBaseName(log->files[logNum]);
 
 	    oldName = alloca(strlen(dirName) + strlen(baseName) + 
-				strlen(log->fn) + 10);
+				strlen(log->files[logNum]) + 10);
 	    newName = alloca(strlen(dirName) + strlen(baseName) + 
-				strlen(log->fn) + 10);
+				strlen(log->files[logNum]) + 10);
 	    disposeName = alloca(strlen(dirName) + strlen(baseName) + 
-				strlen(log->fn) + 10);
+				strlen(log->files[logNum]) + 10);
 
-	    sprintf(oldName, "%s.%d%s", log->fn, log->rotateCount + 1, ext);
+	    sprintf(oldName, "%s.%d%s", log->files[logNum], 
+		    log->rotateCount + 1, ext);
 
 	    strcpy(disposeName, oldName);
 
@@ -269,7 +246,7 @@ int rotateLog(logInfo * log, logState ** statesPtr, int * numStatesPtr) {
 
 	    if (log->flags & LOG_FLAG_COMPRESS)
 		sprintf(command, "%s < %s | /bin/mail -s '%s' %s", 
-			    UNCOMPRESS_PIPE, disposeName, log->fn,
+			    UNCOMPRESS_PIPE, disposeName, log->files[logNum],
 			    log->logAddress);
 	    else
 		sprintf(command, "/bin/mail -s '%s' %s < %s", disposeName, 
@@ -278,7 +255,7 @@ int rotateLog(logInfo * log, logState ** statesPtr, int * numStatesPtr) {
 	    message(MESS_DEBUG, "executing: \"%s\"\n", command);
 
 	    if (!debug && system(command)) {
-		sprintf(newName, "%s.%d", log->fn, getpid());
+		sprintf(newName, "%s.%d", log->files[logNum], getpid());
 		fprintf(errorFile, "Failed to mail %s to %s!\n",
 			disposeName, log->logAddress);
 
@@ -299,18 +276,19 @@ int rotateLog(logInfo * log, logState ** statesPtr, int * numStatesPtr) {
 	if (!hasErrors && finalName) {
 	    if (log->pre) {
 		message(MESS_DEBUG, "running prerotate script\n");
-		if (!debug && system(log->pre)) {
+		if (runScript(log->files[logNum], log->pre)) {
 		    fprintf(errorFile, "error running prerotate script -- 
 				leaving old log in place\n");
 		    hasErrors = 1;
 		}
 	    }
 
-	    message(MESS_DEBUG, "renaming %s to %s\n", log->fn, finalName);
+	    message(MESS_DEBUG, "renaming %s to %s\n", log->files[logNum], 
+		    finalName);
 
-	    if (!debug && !hasErrors && rename(log->fn, finalName)) {
+	    if (!debug && !hasErrors && rename(log->files[logNum], finalName)) {
 		fprintf(errorFile, "failed to rename %s to %s: %s\n",
-			log->fn, finalName, strerror(errno));
+			log->files[logNum], finalName, strerror(errno));
 	    }
 
 	    if (!hasErrors && log->flags & LOG_FLAG_CREATE) {
@@ -333,15 +311,16 @@ int rotateLog(logInfo * log, logState ** statesPtr, int * numStatesPtr) {
 			"gid = %d\n", createMode, createUid, createGid);
 
 		if (!debug) {
-		    fd = open(log->fn, O_CREAT | O_RDWR, createMode);
+		    fd = open(log->files[logNum], O_CREAT | O_RDWR, createMode);
 		    if (fd < 0) {
 			message(MESS_ERROR, "error creating %s: %s\n", 
-				log->fn, strerror(errno));
+				log->files[logNum], strerror(errno));
 			hasErrors = 1;
 		    } else {
 			if (fchown(fd, createUid, createGid)) {
 			    message(MESS_ERROR, "error setting owner of "
-				    "%s: %s\n", log->fn, strerror(errno));
+				    "%s: %s\n", log->files[logNum], 
+				     strerror(errno));
 			    hasErrors = 1;
 			}
 
@@ -352,7 +331,7 @@ int rotateLog(logInfo * log, logState ** statesPtr, int * numStatesPtr) {
 
 	    if (!hasErrors && log->post) {
 		message(MESS_DEBUG, "running postrotate script\n");
-		if (!debug && system(log->post)) {
+		if (runScript(log->files[logNum], log->post)) {
 		    fprintf(errorFile, "error running postrotate script\n");
 		    hasErrors = 1;
 		}
@@ -376,6 +355,86 @@ int rotateLog(logInfo * log, logState ** statesPtr, int * numStatesPtr) {
     } else if (!doRotate) {
 	message(MESS_DEBUG, "log does not need rotating\n");
     }
+
+    return hasErrors;
+}
+
+int rotateLogSet(logInfo * log, logState ** statesPtr, int * numStatesPtr) {
+    FILE * errorFile;
+    char * errorFileName = NULL;
+    int oldstderr = 0, newerr;
+    int i;
+    int hasErrors = 0;
+
+    message(MESS_DEBUG, "rotating pattern: %s ", log->pattern);
+    switch (log->criterium) {
+      case ROT_DAYS:
+	message(MESS_DEBUG, "after %d days ", log->threshhold);
+	break;
+      case ROT_WEEKLY:
+	message(MESS_DEBUG, "weekly ");
+	break;
+      case ROT_MONTHLY:
+	message(MESS_DEBUG, "monthly ");
+	break;
+      case ROT_SIZE:
+	message(MESS_DEBUG, "bytes ");
+	break;
+    }
+
+    if (log->rotateCount) 
+	message(MESS_DEBUG, "(%d rotations)\n", log->rotateCount);
+    else
+	message(MESS_DEBUG, "(no old logs will be kept)\n");
+
+    if (log->oldDir) 
+	message(MESS_DEBUG, "olddir is %s ", log->oldDir);
+
+    if (log->flags & LOG_FLAG_IFEMPTY) 
+	message(MESS_DEBUG, "empty log files are rotated ");
+    else
+	message(MESS_DEBUG, "empty log files are not rotated ");
+
+    if (log->logAddress) {
+	message(MESS_DEBUG, "old logs mailed to %s\n", log->logAddress);
+    } else {
+	message(MESS_DEBUG, "old logs are removed\n");
+    }
+
+    if (log->errAddress) {
+	message(MESS_DEBUG, "errors will be mailed to %s ", log->errAddress);
+	errorFileName = strdup(tmpnam(NULL));
+
+	newerr = open(errorFileName, O_WRONLY | O_CREAT | O_EXCL, 0600);
+
+	if (newerr < 0) {
+	    message(MESS_ERROR, "error creating temporary file %s\n",
+			errorFileName);
+	    return 1;
+	}
+	
+	if (!debug) {
+	    oldstderr = dup(2);
+	    dup2(newerr, 2);
+	    close(newerr);
+
+	    errorFile = fdopen(2, "w");
+
+	    setlinebuf(errorFile);
+
+	    fprintf(errorFile, "errors occured while rotating %s\n\n",
+		    log->pattern);
+	} else {
+	    errorFile = stderr;
+	}
+    } else {
+	message(MESS_DEBUG, "errors displayed on stderr ");
+	errorFile = stderr;
+    }
+
+    for (i = 0; i < log->numFiles; i++)
+	hasErrors |= rotateSingleLog(log, i, statesPtr, numStatesPtr, 
+					errorFile);
 
     if (log->errAddress && !debug) {
 	fclose(errorFile);
@@ -545,9 +604,8 @@ void usage(void) {
 }
 
 int main(int argc, char ** argv) {
-    logInfo defConfig = { NULL, NULL, ROT_SIZE, 1024 * 1024, 0, 0, NULL, 
-			  NULL, NULL, 
-			  LOG_FLAG_IFEMPTY,
+    logInfo defConfig = { NULL, NULL, 0, NULL, ROT_SIZE, 1024 * 1024, 0, 0, 
+			  NULL, NULL, NULL, LOG_FLAG_IFEMPTY,
 			  NO_MODE, NO_UID, NO_GID };
     int numLogs = 0, numStates = 0;
     logInfo * logs = NULL;
@@ -605,7 +663,7 @@ int main(int argc, char ** argv) {
     message(MESS_DEBUG, "Handling %d logs\n", numLogs);
 
     for (i = 0; i < numLogs; i++) {
-	rc |= rotateLog(logs + i, &states, &numStates);
+	rc |= rotateLogSet(logs + i, &states, &numStates);
     }
 
     if (!debug && writeState(stateFile, states, numStates)) {
