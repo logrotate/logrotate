@@ -2,6 +2,7 @@
 	- fixed a bug parsing lines where { immediately follows the filename
 	- allow log file patterns to be placed in double quotes, which	
 	  allows spaces in names
+	- complain about missing log files (John Van Essen)
 	
 2.7 -> 2.8:
 	- changes for glibc 2.1 (Cristian Gafton)
