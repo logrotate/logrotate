@@ -28,7 +28,7 @@ typedef struct {
     unsigned int threshhold;
     int rotateCount;
     int logStart;
-    char * pre, * post;
+    char * pre, * post, * first, * last;
     char * logAddress;
     char * extension;
     char * compress_prog;

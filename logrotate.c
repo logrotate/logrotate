@@ -67,6 +67,7 @@ static int runScript(char * logfn, char * script) {
     int fd;
     char *filespec, *cmd;
     int rc;
+    char buf[256];
 
     if (debug) {
 	message(MESS_DEBUG, "running script with arg %s: \"%s\"\n", 
@@ -74,9 +75,8 @@ static int runScript(char * logfn, char * script) {
 	return 0;
     }
 
-    if (asprintf(&filespec,
-	"%s/logrotate.XXXXXX", getenv("TMPDIR") ?: "/tmp") < 0)
-	filespec = NULL;
+    filespec = buf;
+    snprintf(buf, sizeof(buf), "%s/logrotate.XXXXXX", getenv("TMPDIR") ?: "/tmp");
     fd = -1;
     if (!filespec || (fd = mkstemp(filespec)) < 0 || fchmod(fd, 0700)) {
 	message(MESS_DEBUG, "error creating %s: %s\n", filespec,
@@ -85,8 +85,6 @@ static int runScript(char * logfn, char * script) {
 	    close(fd);
 	    unlink(filespec);
 	}
-	if (filespec)
-	    free(filespec);
 	return -1;
     }
 
@@ -95,7 +93,6 @@ static int runScript(char * logfn, char * script) {
 	message(MESS_DEBUG, "error writing %s\n", filespec);
 	close(fd);
 	unlink(filespec);
-	free(filespec);
 	return -1;
     }
 
@@ -106,7 +103,6 @@ static int runScript(char * logfn, char * script) {
     rc = system(cmd);
 
     unlink(filespec);
-    free(filespec);
 
     return rc;
 }
@@ -458,7 +454,7 @@ int rotateSingleLog(logInfo * log, int logNum, logState ** statesPtr,
                 createMode = log->createMode;
 	    
             message(MESS_DEBUG, "creating new log mode = 0%o uid = %d "
-                    "gid = %d\n", createMode, createUid, createGid);
+                    "gid = %d\n", (unsigned int)createMode, (int)createUid, (int)createGid);
 	    
             if (!debug) {
                 fd = open(log->files[logNum], O_CREAT | O_RDWR, createMode);
@@ -549,7 +545,7 @@ int rotateSingleLog(logInfo * log, int logNum, logState ** statesPtr,
                 message(MESS_DEBUG, "executing: \"%s\"\n", command);
 		
                 if (!debug && system(command)) {
-                    sprintf(newName, "%s.%d", log->files[logNum], getpid());
+                    sprintf(newName, "%s.%d", log->files[logNum], (unsigned int)getpid());
                     fprintf(errorFile, "Failed to mail %s to %s!\n",
                             mailFilename, log->logAddress);
 		    
@@ -627,6 +623,20 @@ int rotateLogSet(logInfo * log, logState ** statesPtr, int * numStatesPtr,
             numRotated++;
     }
     
+    if (log->first) {
+        if (!numRotated) {
+            message(MESS_DEBUG, "not running first action script, "
+                    "since no logs will be rotated\n");
+        } else {
+            message(MESS_DEBUG, "running first action script\n");
+            if (runScript(log->pattern, log->first)) {
+                fprintf(stderr, "error running first action script "
+                        "for %s\n", log->pattern);
+                hasErrors = 1;
+            }
+	}
+    }
+
     if (log->pre && (log->flags & LOG_FLAG_SHAREDSCRIPTS)) {
         if (!numRotated) {
             message(MESS_DEBUG, "not running shared prerotate script, "
@@ -653,6 +663,20 @@ int rotateLogSet(logInfo * log, logState ** statesPtr, int * numStatesPtr,
             message(MESS_DEBUG, "running shared postrotate script\n");
             if (runScript(log->pattern, log->post)) {
                 fprintf(stderr, "error running shared postrotate script "
+                        "for %s\n", log->pattern);
+                hasErrors = 1;
+            }
+	}
+    }
+    
+    if (log->last) {
+        if (!numRotated) {
+            message(MESS_DEBUG, "not running last action script, "
+                    "since no logs will be rotated\n");
+        } else {
+            message(MESS_DEBUG, "running last action script\n");
+            if (runScript(log->pattern, log->last)) {
+                fprintf(stderr, "error running last action script "
                         "for %s\n", log->pattern);
                 hasErrors = 1;
             }
@@ -831,6 +855,7 @@ int main(int argc, const char ** argv) {
 			  /* threshHold */ 1024 * 1024, 0,
 			  /* log start */ -1,
 			  /* pre, post */ NULL, NULL,
+			  /* first, last */ NULL, NULL,
 			  /* logAddress */ NULL, 
 			  /* extension */ NULL, 
 			  /* compression */ COMPRESS_COMMAND,
@@ -885,7 +910,7 @@ int main(int argc, const char ** argv) {
 	return 2;
     }
 
-    files = poptGetArgs(optCon);
+    files = poptGetArgs((poptContext) optCon);
     if (!files) {
 	fprintf(stderr, "logrotate " VERSION 
 		" - Copyright (C) 1995-2001 Red Hat, Inc.\n");
