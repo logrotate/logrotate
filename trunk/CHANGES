@@ -1,3 +1,6 @@
+3.5.4 -> 3.6:
+        - See .spec file for changes
+
 3.5.3 -> 3.5.4:
 	- %defattr(-,root,root) in specfile
 
