@@ -10,8 +10,9 @@
 #define LOG_FLAG_DELAYCOMPRESS	(1 << 3)
 #define LOG_FLAG_COPYTRUNCATE	(1 << 4)
 #define LOG_FLAG_MISSINGOK	(1 << 5)
+#define LOG_FLAG_MAILFIRST	(1 << 6)
 
-#define MAIL_COMMAND "/bin/mail -s"
+#define DEFAULT_MAIL_COMMAND "/bin/mail -s"
 #define COMPRESS_COMMAND "gzip -9"
 #define COMPRESS_EXT ".gz"
 #define UNCOMPRESS_PIPE "gunzip"
