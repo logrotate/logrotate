@@ -115,6 +115,7 @@ a \fBlogrotate\fR configuration file:
 .TP
 \fBcompress\fR
 Old versions of log files are compressed with \fBgzip\fR. See also
+\fBnocompress\fR. 
 
 .TP
 \fBcreate \fImode\fR \fIowner\fR \fIgroup\fR
@@ -131,6 +132,13 @@ file for the omitted attributes. This option can be disabled using the
 .TP
 \fBdaily\fR
 Log files are rotated every day.
+
+.TP
+\fBdelaycompress\fR
+Postpone compression of the previous log file to the next rotation cycle.
+This has only effect when used in combination with \fBcompress\fR.
+It can be used when some program can not be told to close its logfile
+and thus might continue writing to the previous log file for some time.
 
 .TP
 \fBerrors \fIaddress\fR

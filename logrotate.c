@@ -212,7 +212,32 @@ int rotateSingleLog(logInfo * log, int logNum, logState ** statesPtr,
 	    disposeName = alloca(strlen(dirName) + strlen(baseName) + 
 				strlen(log->files[logNum]) + 10);
 
-	    sprintf(oldName, "%s.%d%s", log->files[logNum], 
+	    /* First compress the previous log when necessary */
+	    if (log->flags & LOG_FLAG_COMPRESS &&
+			log->flags & LOG_FLAG_DELAYCOMPRESS) {
+		struct stat sbprev;
+
+		sprintf(oldName, "%s/%s.1", dirName, baseName);
+		if (stat(oldName, &sbprev)) {
+		    message(MESS_DEBUG, "previous log %s does not exist\n",
+					oldName);
+		} else {
+		    char * command;
+
+		    command = alloca(strlen(oldName) +
+					strlen(COMPRESS_COMMAND) + 20);
+		    sprintf(command, "%s %s", COMPRESS_COMMAND, oldName);
+		    message(MESS_DEBUG, "compressing previous log with: %s\n",
+					command);
+		    if (!debug && system(command)) {
+			fprintf(errorFile,
+			    "failed to compress previous log %s\n", oldName);
+			hasErrors = 1;
+		    }
+		}
+	    }
+
+	    sprintf(oldName, "%s/%s.%d%s", dirName, baseName,
 		    log->rotateCount + 1, ext);
 
 	    strcpy(disposeName, oldName);
@@ -351,7 +376,8 @@ int rotateSingleLog(logInfo * log, int logNum, logState ** statesPtr,
 		}
 	    }
 
-	    if (!hasErrors && log->flags & LOG_FLAG_COMPRESS) {
+	    if (!hasErrors && log->flags & LOG_FLAG_COMPRESS &&
+			!(log->flags & LOG_FLAG_DELAYCOMPRESS)) {
 		char * command;
 
 		command = alloca(strlen(finalName) + strlen(COMPRESS_COMMAND)
@@ -416,7 +442,7 @@ int rotateLogSet(logInfo * log, logState ** statesPtr, int * numStatesPtr) {
     }
 
     if (log->errAddress) {
-	message(MESS_DEBUG, "errors will be mailed to %s ", log->errAddress);
+	message(MESS_DEBUG, "errors will be mailed to %s\n", log->errAddress);
 	errorFileName = strdup(tmpnam(NULL));
 
 	newerr = open(errorFileName, O_WRONLY | O_CREAT | O_EXCL, 0600);

@@ -331,6 +331,10 @@ static int readConfigFile(char * configFile, logInfo * defConfig,
 		newlog->flags &= ~LOG_FLAG_COMPRESS;
 
 		*endtag = oldchar, start = endtag;
+	    } else if (!strcmp(start, "delaycompress")) {
+		newlog->flags |= LOG_FLAG_DELAYCOMPRESS;
+
+		*endtag = oldchar, start = endtag;
 	    } else if (!strcmp(start, "ifempty")) {
 		newlog->flags |= LOG_FLAG_IFEMPTY;
 
