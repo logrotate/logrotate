@@ -404,7 +404,7 @@ static int readConfigFile(char * configFile, logInfo * defConfig,
 		if (rc > 1) {
 		    pw = getpwnam(createOwner);
 		    if (!pw) {
-			message(MESS_ERROR, "%s:%d unkown user '%s'\n", 
+			message(MESS_ERROR, "%s:%d unknown user '%s'\n", 
 				configFile, lineNum, createOwner);
 			return 1;
 		    } 
@@ -414,7 +414,7 @@ static int readConfigFile(char * configFile, logInfo * defConfig,
 		if (rc > 2) {
 		    group = getgrnam(createGroup);
 		    if (!group) {
-			message(MESS_ERROR, "%s:%d unkown group '%s'\n", 
+			message(MESS_ERROR, "%s:%d unknown group '%s'\n", 
 				configFile, lineNum, createGroup);
 			return 1;
 		    } 
