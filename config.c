@@ -353,6 +353,14 @@ static int readConfigFile(char * configFile, logInfo * defConfig,
 		newlog->flags &= ~LOG_FLAG_DELAYCOMPRESS;
 
 		*endtag = oldchar, start = endtag;
+	    } else if (!strcmp(start, "sharedscripts")) {
+		newlog->flags |= LOG_FLAG_SHAREDSCRIPTS;
+
+		*endtag = oldchar, start = endtag;
+	    } else if (!strcmp(start, "nosharedscripts")) {
+		newlog->flags &= ~LOG_FLAG_SHAREDSCRIPTS;
+
+		*endtag = oldchar, start = endtag;
 	    } else if (!strcmp(start, "copytruncate")) {
 		newlog->flags |= LOG_FLAG_COPYTRUNCATE;
 
