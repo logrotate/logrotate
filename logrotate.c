@@ -569,17 +569,31 @@ int rotateSingleLog(logInfo * log, int logNum, logState ** statesPtr,
         if (!hasErrors && log->logAddress) {
             char * command;
             char * mailFilename;
+	    int mailfile_is_compressed;
 	    
             if (log->flags & LOG_FLAG_MAILFIRST)
                 mailFilename = firstRotated;
             else
                 mailFilename = disposeName;
-	    
+
+	    mailfile_is_compressed = (log->flags & LOG_FLAG_COMPRESS)
+	      && ((log->flags & (LOG_FLAG_DELAYCOMPRESS|LOG_FLAG_MAILFIRST))
+		  != (LOG_FLAG_DELAYCOMPRESS|LOG_FLAG_MAILFIRST));
+
+	    if (!mailfile_is_compressed
+		&& !strcmp(compext,
+			   mailFilename+strlen(mailFilename)-strlen(compext)))
+	      {
+		char *ctmp;
+		ctmp = alloca(strlen(mailFilename));
+		strcpy(ctmp, mailFilename);
+		ctmp[strlen(ctmp)-strlen(compext)] = '\0';
+		mailFilename = ctmp;
+	      }
+
             if (mailFilename) {
 		char * escapedMailFilename = escapeSingleQuotes(mailFilename);
-                if ((log->flags & LOG_FLAG_COMPRESS) &&
-		    !(log->flags & LOG_FLAG_DELAYCOMPRESS) &&
-		    (log->flags & LOG_FLAG_MAILFIRST)) {
+                if (mailfile_is_compressed) {
                     char * escapedFN = escapeSingleQuotes(log->files[logNum]);
                     command = alloca(strlen(log->uncompress_prog) +
 				     strlen(escapedMailFilename) +

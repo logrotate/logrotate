@@ -58,6 +58,9 @@ rm -rf $RPM_BUILD_ROOT
 %attr(0644, root, root) %verify(not size md5 mtime) %config(noreplace) /var/lib/logrotate.status
 
 %changelog
+* Thu Jul 24 2003 Elliot Lee <sopwith@redhat.com> 3.6.10-1
+- Fix #100546
+
 * Wed Jul 18 2003 Dan Walsh <dwalsh@redhat.com> 3.6.9-2
 - Port to SELinux 2.5
 
