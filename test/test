@@ -102,7 +102,7 @@ checkoutput() {
 	fi
 
 	if [ -n "$compressed" -a "$compressed" != 0 ]; then
-		contents=`zcat $file`
+		contents=`gunzip -c $file`
 	else
 		contents=`cat $file`
 	fi

@@ -273,7 +273,7 @@ static int globerr(const char * pathname, int theerr) {
     message(MESS_ERROR, "error accessing %s: %s\n", pathname, 
 	    strerror(theerr));
 
-    /* We want the glob operation to continue, so return 0 */
+    /* We want the glob operation to abort on error, so return 1 */
     return 1;
 }
 
@@ -845,6 +845,9 @@ static int readConfigFile(const char * configFile, logInfo * defConfig,
 	    for (argNum = 0; argNum < argc; argNum++) {
 		rc = glob(argv[argNum], GLOB_NOCHECK, globerr, &globResult);
 		if (rc == GLOB_ABORTED) {
+		    if(newlog->flags & LOG_FLAG_MISSINGOK)
+		        continue;
+
 		    message(MESS_ERROR, "%s:%d glob failed for %s\n",
 			    configFile, lineNum, argv[argNum]);
 		    return 1;
