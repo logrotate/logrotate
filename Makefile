@@ -63,7 +63,7 @@ depend:
 	$(CPP) $(CFLAGS) -M $(SOURCES) > .depend
 
 .PHONY : test
-test:
+test: $(TARGET)
 	(cd test; ./test)
 
 install:
