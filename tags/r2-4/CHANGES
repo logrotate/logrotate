@@ -1,0 +1,44 @@
+2.3 -> 2.4:
+	- glob log names in config file
+	- added ,v to taboo list
+	- fixed bug w/ create parsing
+	- use an int rather then a mode_t when parsing create entries as
+	  sscanf requires it
+
+2.2 -> 2.3:
+	- fill in all of last rotated structure (this probable isn't
+	  really necessary but it's a bit cleaner and will avoid future
+	  problems);
+	- fixed .spec file
+
+2.1 -> 2.2:
+	- If a file is rotated and we have no state information for it,
+	  right out the current time.
+	- Weekly rotation happens when the current weekday is less then
+	  the weekday of the last rotation or more then a week has
+	  elapsed between the last rotation and now
+	- Monthly rotation happens when the current month is different
+	  from the last month or the current year is different from the
+	  last year
+	- (these were contributed and suggested by Ronald Wahl)
+	- added olddir/noolddir options
+	- added ifempty/notifempty options
+	- ignore nonnormal files when reading config files from a directory
+	- (these were suggested and originally implemented by 
+	  Henning Schmiedehausen)
+	- updated the man page to reflect these changes
+	- made "make install" accept PREFIX argument
+	- added .spec file to tarball
+
+2.0.2 -> 2.1:
+	- Don't output state information for logs that have never been
+	  rotated (better then 1900-1-0)
+	- Accept 1900-1-0 as time 0
+	
+2.0.1 -> 2.0.2:
+	- I have no idea :-(
+
+2.0 -> 2.0.1:
+	- ignore files in included directories which end with ~, .rpmorig, or
+	  .rpmsave
+	  
