@@ -36,6 +36,7 @@ install -m 755 examples/logrotate.cron $RPM_BUILD_ROOT/etc/cron.daily/logrotate
 rm -rf $RPM_BUILD_ROOT
 
 %files
+%doc CHANGES
 %attr(0755, root, root) /usr/sbin/logrotate
 %attr(0644, root, root) %{_mandir}/man8/logrotate.8*
 %attr(0755, root, root) /etc/cron.daily/logrotate
