@@ -35,6 +35,10 @@ clean:
 depend:
 	$(CPP) $(CFLAGS) -M $(SOURCES) > .depend
 
+.PHONY : test
+test:
+	(cd test; ./test)
+
 install:
 	[ -d $(PREFIX)/$(BINDIR) ] || mkdir -p $(PREFIX)/$(BINDIR)
 	[ -d $(PREFIX)/$(MANDIR) ] || mkdir -p $(PREFIX)/$(MANDIR)
