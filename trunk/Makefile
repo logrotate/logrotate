@@ -107,7 +107,7 @@ co:
 	(cd examples; co RCS/*,v)
 
 cvstag:
-	cvs tag -F $(CVSTAG) .
+	cvs tag -cF $(CVSTAG) .
 
 archive: cvstag
 	@rm -rf /tmp/logrotate-$(VERSION) /tmp/logrotate
