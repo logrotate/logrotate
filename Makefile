@@ -21,6 +21,8 @@ else
 TARGET=depend $(PROG)
 endif
 
+RCSVERSION = $(subst .,-,$(VERSION))
+
 all: $(TARGET)
 
 $(PROG): $(OBJS)
@@ -35,7 +37,10 @@ install:
 	install -s -m 755 -o 0 -g 0 $(PROG) $(BINDIR)
 	install -m 644 -o 0 -g 0 $(MAN) $(MANDIR)/man`echo $(MAN) | sed "s/.*\.//"`/$(MAN)
 
-archive:
+rcstag:
+	rcs -q -N$(RCSVERSION): RCS/*,v
+
+archive: rcstag
 	@rm -rf /tmp/$(PROG)-$(VERSION)
 	@mkdir /tmp/$(PROG)-$(VERSION)
 	@rm -rf /tmp/$(PROG)-$(VERSION)
@@ -51,9 +56,7 @@ archive:
 	@cp /tmp/$(PROG)-$(VERSION).tar.gz .
 	@rm -f /tmp/$(PROG)-$(VERSION).tar.gz
 	@echo " "
-	@echo "The final archive is ./$(PROG)-$(VERSION).tar.gz. You should run"
-	@echo "-n$(VERSION): RCS/*,v on all of the directories btw."
-
+	@echo "The final archive is ./$(PROG)-$(VERSION).tar.gz."
 
 ifeq (.depend,$(wildcard .depend))
 include .depend
