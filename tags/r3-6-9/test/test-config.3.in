@@ -1,0 +1,14 @@
+create
+
+&DIR&/test*.log {
+    monthly
+    rotate 1
+    mail user@myhost.org
+    maillast
+
+    postrotate
+	touch scriptout
+	echo $(cat scriptout) foo > foo
+	mv foo scriptout
+    endscript
+}
