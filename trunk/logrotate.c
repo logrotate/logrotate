@@ -382,7 +382,8 @@ int rotateSingleLog(logInfo * log, int logNum, logState ** statesPtr,
         sprintf(oldName, "%s/%s.%d%s%s", dirName, baseName, i,
                 fileext, compext);
 	
-        message(MESS_DEBUG, "renaming %s to %s\n", oldName, newName);
+        message(MESS_DEBUG, "renaming %s to %s (rotatecount %d, logstart %d, i %d), \n", oldName, newName,
+		rotateCount, logStart, i);
 	
         if (!debug && rename(oldName, newName)) {
             if (errno == ENOENT) {
@@ -429,6 +430,13 @@ int rotateSingleLog(logInfo * log, int logNum, logState ** statesPtr,
 		rename(log->files[logNum], finalName)) {
                 fprintf(errorFile, "failed to rename %s to %s: %s\n",
 			log->files[logNum], finalName, strerror(errno));
+	    }
+
+	    if (!log->rotateCount) {
+	      disposeName = alloca(strlen(dirName) + strlen(baseName) + 
+				   strlen(log->files[logNum]) + 10);
+	      sprintf(disposeName, "%s%s", finalName, (log->compress_ext && (log->flags & LOG_FLAG_COMPRESS))?log->compress_ext:"");
+	      message(MESS_DEBUG, "disposeName will be %s\n", disposeName);
 	    }
         }
 	
@@ -495,17 +503,8 @@ int rotateSingleLog(logInfo * log, int logNum, logState ** statesPtr,
                 hasErrors = 1;
 	    }
         }
-	
-        if (!hasErrors && !log->rotateCount) {
-            message(MESS_DEBUG, "removing rotated log (rotateCount == 0)");
-            if (unlink(finalName)) {
-                fprintf(errorFile, "Failed to remove old log %s: %s\n",
-			finalName, strerror(errno));
-                hasErrors = 1;
-	    }
-        }
-	
-        if (!hasErrors && log->rotateCount && 
+
+        if (!hasErrors && 
 	    (log->flags & LOG_FLAG_COMPRESS) &&
 	    !(log->flags & LOG_FLAG_DELAYCOMPRESS)) {
             char * command;
