@@ -42,7 +42,7 @@ typedef struct {
     glob_t globMem;		/* at least we could theoretically free this */
 } logInfo;
 
-int readConfigPath(char * path, logInfo * defConfig, 
+int readConfigPath(const char * path, logInfo * defConfig, 
 			  logInfo ** logsPtr, int * numLogsPtr);
 
 extern int debug;
