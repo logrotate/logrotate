@@ -684,8 +684,8 @@ static int readConfigFile(const char * configFile, logInfo * defConfig,
 	    memcpy(newlog, defConfig, sizeof(*newlog));
 
 	    endtag = start;
-	    while (*endtag != '\n' && *endtag != '\0') endtag++;
-	    if (*endtag != '\n') {
+	    while (*endtag != '{' && *endtag != '\0') endtag++;
+	    if (*endtag != '{') {
 		message(MESS_ERROR, "%s:%d missing end of line\n",
 			configFile, lineNum);
 	    }
@@ -695,7 +695,7 @@ static int readConfigFile(const char * configFile, logInfo * defConfig,
 		message(MESS_ERROR, "%s:%d error parsing filename\n",
 			configFile, lineNum);
 		return 1;
-	    } else if (argc < 2 || strcmp(argv[argc - 1], "{")) {
+	    } else if (argc < 1) {
 		message(MESS_ERROR, "%s:%d { expected after log file name(s)\n",
 			configFile, lineNum);
 		return 1;
@@ -704,7 +704,7 @@ static int readConfigFile(const char * configFile, logInfo * defConfig,
 	    /* XXX this leaks the result of the glob <shrug> */
 	    newlog->files = NULL;
 	    newlog->numFiles = 0;
-	    for (argNum = 0; argNum < (argc - 1); argNum++) {
+	    for (argNum = 0; argNum < argc; argNum++) {
 		rc = glob(argv[argNum], GLOB_NOCHECK, globerr, &globResult);
 		if (rc == GLOB_ABORTED) {
 		    message(MESS_ERROR, "%s:%d glob failed for %s\n",
