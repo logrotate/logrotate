@@ -1,7 +1,7 @@
 Summary: Rotates, compresses, removes and mails system log files.
 Name: logrotate
-Version: 3.4
-Release: 2
+Version: 3.5
+Release: 1
 Copyright: GPL
 Group: System Environment/Base
 Source: ftp://ftp.redhat.com/pub/redhat/code/logrotate/logrotate-%{PACKAGE_VERSION}.tar.gz
@@ -43,6 +43,9 @@ rm -rf $RPM_BUILD_ROOT
 %attr(0755, root, root) %dir /etc/logrotate.d
 
 %changelog
+* Sun Jul 23 2000 Erik Troan <ewt@redhat.com>
+- see CHANGES
+
 * Tue Jul 11 2000 Erik Troan <ewt@redhat.com>
 - support spaces in filenames
 - added sharedscripts
