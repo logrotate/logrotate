@@ -1,0 +1,5 @@
+1999-01-12  Cristian Gafton  <gafton@redhat.com>
+
+	* log.c: initialize errorFile and messageFile if not already set
+	
+
