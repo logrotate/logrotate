@@ -9,6 +9,11 @@
 int logLevel = MESS_DEBUG;
 static FILE * errorFile = stderr;
 static FILE * messageFile = stderr;
+int flags = 0;
+
+void logSetLevel(int level) {
+    logLevel = level;
+}
 
 void logSetErrorFile(FILE * f) {
     errorFile = f;
@@ -16,6 +21,14 @@ void logSetErrorFile(FILE * f) {
 
 void logSetMessageFile(FILE * f) {
     messageFile = f;
+}
+
+void logSetFlags(int flags) {
+    flags |= flags;
+}
+
+void logClearFlags(int flags) {
+    flags &= ~flags;
 }
 
 void log(int fd, char * format, ...) {
@@ -60,12 +73,13 @@ void message(int level, char * format, ...) {
 	    break;
 
 	  default:
-	    fprintf(where, "%ld: ", (long) time(NULL));
+	    if (flags & LOG_TIMES) 
+		fprintf(where, "%ld: ", (long) time(NULL));
 	    fprintf(errorFile, "error: ");
 	    break;
 	}
 
-	if (showTime) {
+	if (showTime && (flags & LOG_TIMES)) {
 	    fprintf(where, "%ld:", (long) time(NULL));
 	}
 
