@@ -44,7 +44,7 @@ rm -rf $RPM_BUILD_ROOT
 %attr(0755, root, root) %dir /etc/logrotate.d
 
 %changelog
-* Wed Jan 03 2000 Preston Brown <pbrown@redhat.com>
+* Wed Jan 03 2001 Preston Brown <pbrown@redhat.com>
 - see CHANGES
 
 * Tue Aug 15 2000 Erik Troan <ewt@redhat.com>
