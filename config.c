@@ -489,6 +489,11 @@ static int readConfigFile(char * configFile, logInfo * defConfig,
 						        "mail", &start))) {
 		    return 1;
 		}
+	    } else if (!strcmp(start, "nomail")) {
+		/* hmmm, we could lose memory here, but not much */
+		newlog->logAddress = NULL;
+
+		*endtag = oldchar, start = endtag;
 	    } else if (!strcmp(start, "prerotate")) {
 		*endtag = oldchar, start = endtag;
 
