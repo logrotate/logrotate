@@ -1,4 +1,5 @@
 VERSION = 2.4
+CVSTAG = r$(subst .,-,$(VERSION))
 CFLAGS = -Wall -D_GNU_SOURCE -DVERSION=\"$(VERSION)\" $(RPM_OPT_FLAGS)
 PROG = logrotate
 BINDIR = /usr/sbin
@@ -45,11 +46,10 @@ co:
 	co RCS/*,v
 	(cd examples; co RCS/*,v)
 
-rcstag:
-	rcs -q -N$(RCSVERSION): RCS/*,v
-	(cd examples; rcs -q -N$(RCSVERSION): RCS/*,v)
+cvstag:
+	cvs tag -F $(CVSTAG) .
 
-archive: rcstag
+archive: cvstag
 	@rm -rf /tmp/$(PROG)-$(VERSION)
 	@mkdir /tmp/$(PROG)-$(VERSION)
 	@rm -rf /tmp/$(PROG)-$(VERSION)
