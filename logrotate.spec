@@ -46,7 +46,6 @@ rm -rf $RPM_BUILD_ROOT
 %attr(0755, root, root) /etc/cron.daily/logrotate
 %attr(0644, root, root) %config(noreplace) /etc/logrotate.conf
 %attr(0755, root, root) %dir /etc/logrotate.d
-%attr(0755, root, root) %dir /var/lib/logrotate
 %attr(0644, root, root) %verify(not size md5 mtime) %config(noreplace) /var/lib/logrotate.status
 
 %changelog
