@@ -4,7 +4,7 @@ Version: 2.6
 Release: 1
 Copyright: GPL
 Group: Utilities/System
-Source: ftp://ftp.redhat.com/pub/redhat/code/logrotate/logrotate-%{package_version}.tar.gz
+Source: ftp://ftp.redhat.com/pub/redhat/code/logrotate/logrotate-%{PACKAGE_VERSION}.tar.gz
 BuildRoot: /var/tmp/logrotate.root
 
 %description
