@@ -14,7 +14,7 @@ cleanup() {
 genconfig() {
     input=test-config.$1.in
     output=test-config.$1
-    sed "s,&DIR&,$PWD," < $input > $output
+    sed "s,&DIR&,$PWD,g" < $input > $output
 }
 
 createlog() {
@@ -195,4 +195,18 @@ scriptout foo
 EOF
 
 cleanup 5
+
+preptest test.log 5 1
+preptest anothertest.log 5 1
+$RLR test-config.5 --force 
+
+checkoutput test*.log* <<EOF
+test.log
+test.log.1 zero
+anothertest.log
+anothertest.log.1 zero
+scriptout foo
+EOF
+
+cleanup 6
 
