@@ -47,9 +47,9 @@ rm -rf $RPM_BUILD_ROOT
 %changelog
 * Thu Jun 21 2001 Preston Brown <pbrown@redhat.com> 3.5.6-1
 - enable LFS support (debian bug #100810)
+- quote filenames for running compress commands or pre/postrotate cmds (#21348)
 - deprecate "errors" directive (see bug #16544 for explanation)
 - update man page
-- force rotation interval of at least one day (#3961).
 - configurable compression command by Colm Buckley <colm@tuatha.org>
 
 * Fri Jun  1 2001 Preston Brown <pbrown@redhat.com> 3.5.5-1
