@@ -23,12 +23,12 @@ void logSetMessageFile(FILE * f) {
     messageFile = f;
 }
 
-void logSetFlags(int flags) {
-    flags |= flags;
+void logSetFlags(int newFlags) {
+    flags |= newFlags;
 }
 
-void logClearFlags(int flags) {
-    flags &= ~flags;
+void logClearFlags(int newFlags) {
+    flags &= ~newFlags;
 }
 
 void log(int fd, char * format, ...) {
@@ -84,6 +84,7 @@ void message(int level, char * format, ...) {
 	}
 
 	vfprintf(where, format, args);
+	fflush(where);
 
 	va_end(args);
 
