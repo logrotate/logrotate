@@ -47,6 +47,10 @@ static logState * findState(char * fn, logState ** statesPtr,
 	states[i].lastRotated.tm_mday = now.tm_mday;
 	states[i].lastRotated.tm_year = now.tm_year;
 
+	/* fill in the rest of the st->lastRotated fields */
+	lr_time = mktime(&st->lastRotated);
+	st->lastRotated = *localtime(&lr_time);
+
 	*statesPtr = states;
 	*numStatesPtr = numStates;
     }
@@ -433,6 +437,7 @@ static int readState(char * stateFilename, logState ** statesPtr,
     int i;
     int line = 0;
     logState * st;
+    time_t lr_time;
 
     f = fopen(stateFilename, "r");
 
@@ -517,6 +522,10 @@ static int readState(char * stateFilename, logState ** statesPtr,
 	st->lastRotated.tm_mon = month;
 	st->lastRotated.tm_mday = day;
 	st->lastRotated.tm_year = year;
+
+	/* fill in the rest of the st->lastRotated fields */
+	lr_time = mktime(&st->lastRotated);
+	st->lastRotated = *localtime(&lr_time);
     }
 
     fclose(f);
