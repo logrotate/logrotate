@@ -1,7 +1,7 @@
 Summary: Rotates, compresses, and mails system logs
 Name: logrotate
 Version: 2.3
-Release: 1
+Release: 2
 Copyright: GPL
 Group: Utilities/System
 Source: ftp.redhat.com:/pub/redhat/code/logrotate/logrotate-2.3.tar.gz
@@ -33,6 +33,6 @@ rm -rf $RPM_BUILD_ROOT
 %files
 %attr(0755, root, root) /usr/sbin/logrotate
 %attr(0644, root, root) /usr/man/man8/logrotate.8
-%attr(0644, root, root) /etc/cron.daily/logrotate
-%attr(0755, root, root) %config /etc/logrotate.conf
+%attr(0755, root, root) /etc/cron.daily/logrotate
+%attr(0644, root, root) %config /etc/logrotate.conf
 %attr(0755, root, root) %dir /etc/logrotate.d
