@@ -131,6 +131,14 @@ continues. The \fBinclude\fR directive may not appear inside of a log
 file definition.
 
 .TP
+\fBmonthly\fR
+Log files are rotated on the first day of every month.
+
+\fBnocompress\fR
+Old versions of log files are not compressed with \fBgzip\fR. See also
+\fBcompress\fR. 
+
+.TP
 \fBpostrotate\fR/\fBendscript\fR
 The lines between \fIpostrotate\fR and \fIendscript\fR (both of which
 must appear on lines by themselves) are executed after the log file is
@@ -151,12 +159,11 @@ address specified in a \fBmail\fR directive. If \fIcount\fR is 0, old versions
 are removed rather then rotated.
 
 .TP
-\fBmonthly\fR
-Log files are rotated on the first day of every month.
-
-\fBnocompress\fR
-Old versions of log files are not compressed with \fBgzip\fR. See also
-\fBcompress\fR. 
+\fBsize \fIsize\fR
+Log files are rotated when they grow bigger then \fIsize\fR bytes. If
+\fIsize\fR is followed by \fIM\fR, the size if assumed to be in megabytes.
+If the \fIk\fR is used, the size is in kilobytes. So \fBsize 100\fR,
+\fIsize 100k\fR, and \fIsize 100M\fR are all valid.
 
 .TP
 \fBweekly\fR
