@@ -1,6 +1,9 @@
 #!/bin/bash
 
 LOGROTATE=../logrotate
+M="-m ./mailer"
+S=-"s state"
+RLR="$LOGROTATE $M $S"
 
 cleanup() {
     rm -f test*.log* state test-config.[1-9] scriptout mail-out
@@ -108,7 +111,7 @@ cleanup
 
 # Without a log file, no rotations should occur
 preptest test.log 1 2
-$LOGROTATE -s state -m mailer test-config.1 
+$RLR test-config.1 
 
 checkoutput test.log* <<EOF
 test.log zero
@@ -122,7 +125,7 @@ logrotate state -- version 1
 EOF
 
 # Now force the rotation
-$LOGROTATE -s state -m mailer test-config.1
+$RLR test-config.1
 checkoutput test.log* <<EOF
 test.log
 test.log.1 zero
@@ -130,7 +133,7 @@ test.log.2 first
 EOF
 
 # rerun it to make sure nothing happens
-$LOGROTATE -s state -m mailer test-config.1 
+$RLR test-config.1 
 
 checkoutput test.log* <<EOF
 test.log
@@ -141,7 +144,7 @@ EOF
 cleanup 1
 
 preptest test.log 2 3
-$LOGROTATE -s state -m mailer test-config.2 --force
+$RLR test-config.2 --force
 
 checkoutput test.log* <<EOF
 test.log.1 zero
@@ -155,7 +158,7 @@ fi
 cleanup 2
 
 preptest test.log 3 1
-$LOGROTATE -s state -m mailer test-config.3 --force
+$RLR test-config.3 --force
 
 checkoutput test.log* <<EOF
 test.log
@@ -167,7 +170,7 @@ cleanup 3
 
 preptest test.log 3 1
 preptest test2.log 3 1
-$LOGROTATE -s state -m mailer test-config.3 --force
+$RLR test-config.3 --force
 
 checkoutput test*.log* <<EOF
 test.log
@@ -181,7 +184,7 @@ cleanup 4
 
 preptest test.log 4 1
 preptest test2.log 4 1
-$LOGROTATE -s state -m mailer test-config.4 --force 
+$RLR test-config.4 --force 
 
 checkoutput test*.log* <<EOF
 test.log
