@@ -366,6 +366,7 @@ int rotateSingleLog(logInfo * log, int logNum, logState ** statesPtr,
     
     sprintf(oldName, "%s/%s.%d%s%s", dirName, baseName,
             logStart + rotateCount, fileext, compext);
+    strcpy(newName, oldName);
     
     strcpy(disposeName, oldName);
     
@@ -374,7 +375,7 @@ int rotateSingleLog(logInfo * log, int logNum, logState ** statesPtr,
     sprintf(firstRotated, "%s/%s.%d%s%s", dirName, baseName,
             logStart, fileext, compext);
     
-    for (i = rotateCount + logStart; i && !hasErrors; i--) {
+    for (i = rotateCount + logStart; (i >= 0) && !hasErrors; i--) {
         tmp = newName;
         newName = oldName;
         oldName = tmp;
