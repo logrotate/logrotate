@@ -1,4 +1,4 @@
-.TH LOGROTATE 8 "Thu Aug 02 2001"
+.TH LOGROTATE 8 "Wed Nov 28 2001" "Red Hat Linux" "System Administor's Manual"
 .UC 4
 .SH NAME
 logrotate \- rotates, compresses, and mails system logs
@@ -41,6 +41,14 @@ Tells \fBlogrotate\fR to force the rotation, even if it doesn't think
 this is necessary.  Sometimes this is useful after adding new entries to
 \fBlogrotate\fR, or if old log files have been removed by hand, as the
 new files will be created, and logging will continue correctly.
+
+.TP
+\fB-m, -\-mail <command>\fR
+Tells \fBlogrotate\fR which command to use when mailing logs. This
+command should accept two arguments: 1) the subject of the message, and
+2) the recipient. The command must then read a message on standard input
+and mail it to the recipient. The default mail command is \fB/bin/mail
+-s\fR.
 
 .TP
 \fB-s, -\-state <statefile>\fR
@@ -290,11 +298,12 @@ rotated. These directives may only appear inside of a log file definition.
 See \fBprerotate\fR as well.
 
 .TP
-\fBprerotate\fR/\fBendscript\fR
+\fBprerotate\fR/\fBendscript\fR\
 The lines between \fBprerotate\fR and \fBendscript\fR (both of which
 must appear on lines by themselves) are executed before the log file is
-rotated. These directives may only appear inside of a log file definition.
-See \fBpostrotate\fR as well.
+rotated and only if the log will actually be rotated. These directives
+may only appear inside of a log file definition.  See \fBpostrotate\fR
+as well.
 
 .TP
 \fBrotate \fIcount\fR
@@ -316,10 +325,9 @@ log which is rotated, meaning that a single script may be run multiple
 times for log file entries which match multiple files (such as the 
 /var/log/news/* example). If \fBsharedscript\fR is specified, the scripts
 are only run once, no matter how many logs match the wildcarded pattern.
-A side effect of this option is that the scripts are always executed, even
-if no logs are rotated (if it is not specified, the scripts are run only
-if logs are actually rotated) (this overrides the \fbnosharedscripts\fR
-option).
+However, if none of the logs in the pattern require rotating, the scripts
+will not be run at all. This option overrides the \fbnosharedscripts\fR
+option.
 
 .TP
 \fBtabooext\fR [+] \fIlist\fR
