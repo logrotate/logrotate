@@ -121,7 +121,7 @@ static int runScript(char * logfn, char * script) {
     return rc;
 }
 
-static int compressLogFile(char * name, logInfo * log) {
+static int compressLogFile(char * name, logInfo * log, struct stat *sb) {
     char * compressedName;
     const char ** fullCommand;
     int inFile;
@@ -145,9 +145,30 @@ static int compressLogFile(char * name, logInfo * log) {
 	return 1;
     }
     
-    if ((outFile = open(compressedName, O_RDWR | O_CREAT | O_TRUNC, 0666)) < 0) {
+    if ((outFile = open(compressedName, O_RDWR | O_CREAT | O_TRUNC, sb->st_mode)) < 0) {
 	message(MESS_ERROR, "unable to open %s for compressed output\n", 
 		compressedName);
+	close(inFile);
+	return 1;
+    }
+    if (fchmod(outFile, (S_IRUSR | S_IWUSR) & sb->st_mode)) {
+	message(MESS_ERROR, "error setting mode of %s: %s\n",
+		compressedName, strerror(errno));
+	close(outFile);
+	close(inFile);
+	return 1;
+    }
+    if (fchown(outFile, sb->st_uid, sb->st_gid)) {
+	message(MESS_ERROR, "error setting owner of %s: %s\n",
+		compressedName, strerror(errno));
+	close(outFile);
+	close(inFile);
+	return 1;
+    }
+    if (fchmod(outFile, sb->st_mode)) {
+	message(MESS_ERROR, "error setting mode of %s: %s\n",
+		compressedName, strerror(errno));
+	close(outFile);
 	close(inFile);
 	return 1;
     }
@@ -517,7 +538,7 @@ int rotateSingleLog(logInfo * log, int logNum, logState * state) {
             message(MESS_DEBUG, "previous log %s does not exist\n",
 		    oldName);
         } else {
-	    hasErrors = compressLogFile(oldName, log);
+	    hasErrors = compressLogFile(oldName, log, &sbprev);
 	}
     }
     
@@ -690,7 +711,7 @@ int rotateSingleLog(logInfo * log, int logNum, logState * state) {
         if (!hasErrors && 
 	    (log->flags & LOG_FLAG_COMPRESS) &&
 	    !(log->flags & LOG_FLAG_DELAYCOMPRESS)) {
-	    hasErrors = compressLogFile(finalName, log);
+	    hasErrors = compressLogFile(finalName, log, &state->sb);
 	}
 	
         if (!hasErrors && log->logAddress) {

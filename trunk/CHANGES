@@ -1,3 +1,9 @@
+3.7 -> 3.7.1:
+	- Fix sending mails and running scripts after the 
+	  system() -> execve() changes
+	- Preserve file attributes when compressing files (original patch
+	  by Daniel Himler)
+
 3.6.8 -> 3.7:
 	- always use compressext for the extension for compressed
 	  files; before compresscmd and compressext had to agree
