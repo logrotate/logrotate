@@ -14,6 +14,7 @@
 #define LOG_FLAG_MISSINGOK	(1 << 5)
 #define LOG_FLAG_MAILFIRST	(1 << 6)
 #define LOG_FLAG_SHAREDSCRIPTS	(1 << 7)
+#define LOG_FLAG_COPY		(1 << 8)
 
 #define NO_FORCE_ROTATE 0
 #define FORCE_ROTATE    1

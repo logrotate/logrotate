@@ -369,7 +369,15 @@ static int readConfigFile(const char * configFile, logInfo * defConfig,
 		newlog->flags &= ~LOG_FLAG_COPYTRUNCATE;
 
 		*endtag = oldchar, start = endtag;
-	    } else if (!strcmp(start, "ifempty")) {
+	    } else if (!strcmp(start, "copy")) {
+                newlog->flags |= LOG_FLAG_COPY;
+
+                *endtag = oldchar, start = endtag;
+            } else if (!strcmp(start, "nocopy")) {
+                newlog->flags &= ~LOG_FLAG_COPY;
+
+                *endtag = oldchar, start = endtag;
+            } else if (!strcmp(start, "ifempty")) {
 		newlog->flags |= LOG_FLAG_IFEMPTY;
 
 		*endtag = oldchar, start = endtag;
