@@ -1,5 +1,7 @@
 2.3 -> 2.4:
 	- glob log names in config file
+	- added ,v to taboo list
+	- fixed bug w/ create parsing
 
 2.2 -> 2.3:
 	- fill in all of last rotated structure (this probable isn't
