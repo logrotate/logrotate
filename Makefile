@@ -1,12 +1,38 @@
 VERSION = $(shell awk '/Version:/ { print $$2 }' logrotate.spec)
 CVSTAG = r$(subst .,-,$(VERSION))
-LFS = $(shell echo `getconf LFS_CFLAGS`)
+OS_NAME = $(shell uname -s)
+LFS = $(shell echo `getconf LFS_CFLAGS 2>/dev/null`)
 CFLAGS = -Wall -D_GNU_SOURCE -DVERSION=\"$(VERSION)\" $(RPM_OPT_FLAGS) $(LFS)
 PROG = logrotate
-BINDIR = /usr/sbin
-MANDIR = /usr/man
 MAN = logrotate.8
 LOADLIBES = -lpopt
+
+# HP-UX using GCC
+ifeq ($(OS_NAME),HP_UX)
+    ifeq ($(RPM_OPT_FLAGS),)
+        RPM_OPT_FLAGS = -O2
+    endif
+    CC = gcc
+    INSTALL = install
+endif
+
+# Red Hat Linux
+ifeq ($(OS_NAME),Linux)
+    INSTALL = install
+    BASEDIR = /usr
+endif
+
+ifneq ($(POPT_DIR),)
+    CFLAGS += -I$(POPT_DIR)/include
+    LOADLIBES += -L$(POPT_DIR)/lib
+endif
+
+ifneq ($(STATEFILE),)
+    CFLAGS += -DSTATEFILE=\"$(STATEFILE)\"
+endif
+
+BINDIR = $(BASEDIR)/sbin
+MANDIR = $(BASEDIR)/man
 
 #--------------------------------------------------------------------------
 
@@ -31,7 +57,7 @@ all: $(TARGET)
 $(PROG): $(OBJS)
 
 clean:
-	rm -f $(OBJS) $(PROG) core*
+	rm -f $(OBJS) $(PROG) core* .depend
 
 depend:
 	$(CPP) $(CFLAGS) -M $(SOURCES) > .depend
@@ -45,8 +71,8 @@ install:
 	[ -d $(PREFIX)/$(MANDIR) ] || mkdir -p $(PREFIX)/$(MANDIR)
 	[ -d $(PREFIX)/$(MANDIR)/man8 ] || mkdir -p $(PREFIX)/$(MANDIR)/man8
 
-	install -s -m 755 $(PROG) $(PREFIX)/$(BINDIR)
-	install -m 644 $(MAN) $(PREFIX)/$(MANDIR)/man`echo $(MAN) | sed "s/.*\.//"`/$(MAN)
+	$(INSTALL) -s -m 755 $(PROG) $(PREFIX)/$(BINDIR)
+	$(INSTALL) -m 644 $(MAN) $(PREFIX)/$(MANDIR)/man`echo $(MAN) | sed "s/.*\.//"`/$(MAN)
 
 co:
 	co RCS/*,v

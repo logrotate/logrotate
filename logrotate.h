@@ -4,6 +4,8 @@
 #include <sys/types.h>
 #include <glob.h>
 
+#include "config.h"
+
 #define LOG_FLAG_COMPRESS	(1 << 0)
 #define LOG_FLAG_CREATE		(1 << 1)
 #define LOG_FLAG_IFEMPTY	(1 << 2)
@@ -13,16 +15,8 @@
 #define LOG_FLAG_MAILFIRST	(1 << 6)
 #define LOG_FLAG_SHAREDSCRIPTS	(1 << 7)
 
-#define DEFAULT_MAIL_COMMAND "/bin/mail -s"
-#define COMPRESS_COMMAND "/bin/gzip"
-#define COMPRESS_OPTIONS "-9"
-#define COMPRESS_EXT ".gz"
-#define UNCOMPRESS_COMMAND "/bin/gunzip"
-
 #define NO_FORCE_ROTATE 0
 #define FORCE_ROTATE    1
-
-#define STATEFILE "/var/lib/logrotate.status"
 
 typedef struct {
     char * pattern;
