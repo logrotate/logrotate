@@ -1,3 +1,20 @@
+2.1 -> 2.2:
+	- If a file is rotated and we have no state information for it,
+	  right out the current time.
+	- Weekly rotation happens when the current weekday is less then
+	  the weekday of the last rotation or more then a week has
+	  elapsed between the last rotation and now
+	- Monthly rotation happens when the current month is different
+	  from the last month or the current year is different from the
+	  last year
+	- (these were contributed and suggested by Ronald Wahl)
+	- added olddir/noolddir options
+	- added ifempty/notifempty options
+	- ignore nonnormal files when reading config files from a directory
+	- (these were suggested and originally implemented by 
+	  Henning Schmiedehausen)
+	- updated the man page to reflect these changes
+
 2.0.2 -> 2.1:
 	- Don't output state information for logs that have never been
 	  rotated (better then 1900-1-0)
