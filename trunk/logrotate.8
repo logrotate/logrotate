@@ -1,4 +1,4 @@
-.TH LOGROTATE 8 "Mon Nov 18 1996"
+.TH LOGROTATE 8 "Thu Feb 27 1997"
 .UC 4
 .SH NAME
 logrotate \- rotates, compresses, and mails system logs
@@ -134,18 +134,24 @@ Any errors that occur during log file processing are mailed to the
 given address.
 
 .TP
+\fBifempty\fR
+Rotate the log file even if it is empty, overiding the \fBnotifempty\fR
+option (this is the default).
+
+.TP
 \fBinclude \fIfile_or_directory\fR
 Reads the file given as an argument as if it was included inline where
 the \fBinclude\fR directive appears. If a directory is given, most of the
 files in that directory are read before processing of the including file
-continues. The only files which are ignored are files whose names end
+continues. The only files which are ignored are files which are not regular
+files (such as directories and named pipes) and files whose names end
 with .rpmorig, .rpmsave, or ~.  The \fBinclude\fR directive may not appear 
-inside of a log
-file definition. 
+inside of a log file definition. 
 
 .TP
 \fBmonthly\fR
-Log files are rotated on the first day of every month.
+Log files are rotated the first time \fBlogrotate\fR is run in a month 
+(this is normally on the first day of the month).
 
 .TP
 \fBnocompress\fR
@@ -155,6 +161,22 @@ Old versions of log files are not compressed with \fBgzip\fR. See also
 .TP
 \fBnocreate\fR
 New log files are not created (this overrides the \fBcreate\fR option).
+
+.TP
+\fBnoolddir\fR
+Logs are rotated in the same directory the log normally resides in (this 
+overrides the \fBolddir\fR option).
+
+.TP
+\fBnotifempty\fR
+Do not rotate the log if it is empty (this overrides the \fBifempty\fR option).
+
+.TP
+\fBolddir \fIdirectory\fR
+Logs are moved into \fIdirectory\fR for rotation. The \fIdirectory\fR must
+be on the same physical device as the log file being rotated. When this
+option is used all old versions of the log end up in \fIdirectory\fR.  This
+option may be overriden by the \fBnoolddir\fR option.
 
 .TP
 \fBpostrotate\fR/\fBendscript\fR
@@ -185,8 +207,11 @@ If the \fIk\fR is used, the size is in kilobytes. So \fBsize 100\fR,
 
 .TP
 \fBweekly\fR
-Log files are rotated on the first day of the week.
-
+Log files are rotated if the current weekday is less then the weekday
+of the last rotation or if more then a week has passed since the last
+rotation. This is normally the same as rotating logs on the first day
+of the week, but it works better if \fIlogrotate\fR is not run every
+night.
 
 .SH FILES
 .PD 0
