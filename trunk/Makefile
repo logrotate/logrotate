@@ -1,6 +1,9 @@
 VERSION = 0.1
 CFLAGS = -Wall -D_GNU_SOURCE -DVERSION=\"$(VERSION)\" $(RPM_OPT_FLAGS)
 PROG = logrotate
+BINDIR = /usr/sbin
+MANDIR = /usr/man
+MAN = logrotate.8
 
 #--------------------------------------------------------------------------
 
@@ -27,6 +30,10 @@ clean:
 
 depend:
 	$(CPP) $(CFLAGS) -M $(SOURCES) > .depend
+
+install:
+	install -s -m 755 -o 0 -g 0 $(PROG) $(BINDIR)
+	install -m 644 -o 0 -g 0 $(MAN) $(MANDIR)/man`echo $(MAN) | sed "s/.*\.//"`/$(MAN)
 
 archive:
 	@rm -rf /tmp/$(PROG)-$(VERSION)
