@@ -28,7 +28,7 @@ typedef struct {
 int debug = 0;
 char * mailCommand = DEFAULT_MAIL_COMMAND;
 
-static logState * findState(char * fn, logState ** statesPtr, 
+static logState * findState(const char * fn, logState ** statesPtr, 
 			    int * numStatesPtr) {
     int i;
     logState * states = *statesPtr;
@@ -668,6 +668,7 @@ int rotateLogSet(logInfo * log, logState ** statesPtr, int * numStatesPtr,
 static int writeState(char * stateFilename, logState * states, 
 		      int numStates) {
     FILE * f;
+    char * chptr;
     int i;
 
     f = fopen(stateFilename, "w");
@@ -677,10 +678,23 @@ static int writeState(char * stateFilename, logState * states,
 	return 1;
     }
 
-    fprintf(f, "logrotate state -- version 1\n");
+    fprintf(f, "logrotate state -- version 2\n");
 
     for (i = 0; i < numStates; i++) {
-	fprintf(f, "%s %d-%d-%d\n", states[i].fn, 
+	fputc('"', f);
+	for (chptr = states[i].fn; *chptr; chptr++) {
+	    switch (*chptr) {
+	      case '\\':
+	      case '\'':
+	      case '"':
+	          fputc('\\', f);
+	    }
+
+	    fputc(*chptr, f);
+	}
+
+	fputc('"', f);
+	fprintf(f, " %d-%d-%d\n", 
 		states[i].lastRotated.tm_year + 1900,
 		states[i].lastRotated.tm_mon + 1,
 		states[i].lastRotated.tm_mday);
@@ -695,7 +709,8 @@ static int readState(char * stateFilename, logState ** statesPtr,
 		     int * numStatesPtr) {
     FILE * f;
     char buf[1024];
-    char buf2[1024];
+    const char ** argv;
+    int argc;
     int year, month, day;
     int i;
     int line = 0;
@@ -713,7 +728,7 @@ static int readState(char * stateFilename, logState ** statesPtr,
 			stateFilename, strerror(errno));
 	    return 1;
 	}
-	fprintf(f, "logrotate state -- version 1\n");
+	fprintf(f, "logrotate state -- version 2\n");
 	fclose(f);
 	return 0;
     } else if (!f) {
@@ -728,7 +743,8 @@ static int readState(char * stateFilename, logState ** statesPtr,
 	return 1;
     }
 
-    if (strcmp(buf, "logrotate state -- version 1\n")) {
+    if (strcmp(buf, "logrotate state -- version 1\n") &&
+           strcmp(buf, "logrotate state -- version 2\n")) {
 	fclose(f);
 	message(MESS_ERROR, "bad top line in state file %s\n", stateFilename);
 	return 1;
@@ -746,9 +762,12 @@ static int readState(char * stateFilename, logState ** statesPtr,
 	    return 1;
 	}
 
+	buf[i - 1] = '\0';
+
 	if (i == 1) continue;
 
-	if (sscanf(buf, "%s %d-%d-%d\n", buf2, &year, &month, &day) != 4) {
+	if (poptParseArgvString(buf, &argc, &argv) || (argc != 2) ||
+		(sscanf(argv[1], "%d-%d-%d", &year, &month, &day) != 3)) {
 	    message(MESS_ERROR, "bad line %d in state file %s\n", 
 		    line, stateFilename);
 	    fclose(f);
@@ -758,14 +777,14 @@ static int readState(char * stateFilename, logState ** statesPtr,
 	/* Hack to hide earlier bug */
 	if ((year != 1900) && (year < 1996 || year > 2100)) {
 	    message(MESS_ERROR, "bad year %d for file %s in state file %s\n",
-			year, buf2, stateFilename);
+			year, argv[0], stateFilename);
 	    fclose(f);
 	    return 1;
 	}
 
 	if (month < 1 || month > 12) {
 	    message(MESS_ERROR, "bad month %d for file %s in state file %s\n",
-			month, buf2, stateFilename);
+			month, argv[0], stateFilename);
 	    fclose(f);
 	    return 1;
 	}
@@ -773,14 +792,14 @@ static int readState(char * stateFilename, logState ** statesPtr,
 	/* 0 to hide earlier bug */
 	if (day < 0 || day > 31) {
 	    message(MESS_ERROR, "bad day %d for file %s in state file %s\n",
-			day, buf2, stateFilename);
+			day, argv[0], stateFilename);
 	    fclose(f);
 	    return 1;
 	}
 
 	year -= 1900, month -= 1;
 
-	st = findState(buf2, statesPtr, numStatesPtr);
+	st = findState(argv[0], statesPtr, numStatesPtr);
 
 	st->lastRotated.tm_mon = month;
 	st->lastRotated.tm_mday = day;
@@ -789,6 +808,8 @@ static int readState(char * stateFilename, logState ** statesPtr,
 	/* fill in the rest of the st->lastRotated fields */
 	lr_time = mktime(&st->lastRotated);
 	st->lastRotated = *localtime(&lr_time);
+
+	free(argv);
     }
 
     fclose(f);
