@@ -47,6 +47,7 @@ co:
 
 rcstag:
 	rcs -q -N$(RCSVERSION): RCS/*,v
+	(cd examples; rcs -q -N$(RCSVERSION): RCS/*,v)
 
 archive: rcstag
 	@rm -rf /tmp/$(PROG)-$(VERSION)
