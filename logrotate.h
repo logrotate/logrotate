@@ -27,6 +27,7 @@ typedef struct {
     enum { ROT_DAYS, ROT_WEEKLY, ROT_MONTHLY, ROT_SIZE, ROT_FORCE } criterium;
     unsigned int threshhold;
     int rotateCount;
+    int logStart;
     char * pre, * post;
     char * logAddress;
     char * extension;

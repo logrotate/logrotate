@@ -1,8 +1,9 @@
 create
 
-&DIR&/test*.log {
+&DIR&/test.log &DIR&/anothertest.log {
     monthly
     rotate 1
+    start 0
     mail user@myhost.org
     maillast
     sharedscripts

@@ -6,7 +6,7 @@ S=-"s state"
 RLR="$LOGROTATE $M $S"
 
 cleanup() {
-    rm -f test*.log* state test-config.[1-9] scriptout mail-out
+    rm -f test*.log* anothertest*.log* state test-config.[1-9] scriptout mail-out
 
     [ -n "$1" ] && echo "Running test $1"
 }
@@ -210,3 +210,30 @@ EOF
 
 cleanup 6
 
+preptest test.log 6 1
+preptest anothertest.log 6 1
+$RLR test-config.6 --force
+
+checkoutput test*.log* <<EOF
+test.log
+test.log.0 zero
+anothertest.log
+anothertest.log.0 zero
+scriptout foo
+EOF
+
+cleanup 7
+
+preptest test.log 7 1
+preptest anothertest.log 7 1
+$RLR test-config.7 --force
+
+checkoutput test*.log* <<EOF
+test.log
+test.log.6 zero
+anothertest.log
+anothertest.log.6 zero
+scriptout foo
+EOF
+
+cleanup 8
