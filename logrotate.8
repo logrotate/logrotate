@@ -93,10 +93,10 @@ compress
 .fi
 
 .pp
-The first few lines set global options; any errors that occur during log
-file processing are mailed to sysadmin@my.org and logs are compressed after
-they are rotated.  Note that comments may appear anywhere in the config
-file as long as the first non-whitespace character on the line is a #.
+The first few lines set global options; in the example, logs are
+compressed after they are rotated.  Note that comments may appear
+anywhere in the config file as long as the first non-whitespace
+character on the line is a #.
 
 The next section of the config files defined how to handle the log file
 \fI/var/log/messages\fR. The log will go through five weekly rotations before
@@ -118,8 +118,7 @@ characters supported.
 The last section definest the parameters for all of the files in
 \fI/var/log/news\fR. Each file is rotated on a monthly basis.  This is
 considered a single rotation directive and if errors occur for more then
-one file they are mailed in a single message. In this case, the log
-files are not compressed.
+one file, the log files are not compressed.
 
 Here is more information on the directives which may be included in
 a \fBlogrotate\fR configuration file:

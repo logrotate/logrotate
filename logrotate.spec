@@ -1,6 +1,6 @@
 Summary: Rotates, compresses, removes and mails system log files.
 Name: logrotate
-Version: 3.5.6
+Version: 3.5.7
 Release: 1
 Copyright: GPL
 Group: System Environment/Base
@@ -45,6 +45,9 @@ rm -rf $RPM_BUILD_ROOT
 %attr(0755, root, root) %dir /etc/logrotate.d
 
 %changelog
+* Mon Jul  2 2001 Preston Brown <pbrown@redhat.com>
+- more minor manpage updates (#45625)
+
 * Thu Jun 21 2001 Preston Brown <pbrown@redhat.com> 3.5.6-1
 - enable LFS support (debian bug #100810)
 - quote filenames for running compress commands or pre/postrotate cmds (#21348)
