@@ -701,7 +701,7 @@ static int readState(char * stateFilename, logState ** statesPtr,
 
 	if (sscanf(buf, "%s %d-%d-%d\n", buf2, &year, &month, &day) != 4) {
 	    message(MESS_ERROR, "bad line %d in state file %s\n", 
-		    stateFilename);
+		    line, stateFilename);
 	    fclose(f);
 	    return 1;
 	}
