@@ -69,7 +69,7 @@ compress
     endscript
 }
 
-/var/log/httpd/access.log {
+"/var/log/httpd/access.log" {
     rotate 5
     mail www@my.org
     errors www@my.org
@@ -107,7 +107,9 @@ It is rotated whenever is grows over 100k is size, and the old logs
 files are mailed (uncompressed) to www@my.org after going through 5
 rotations, rather then being removed. Likewise, any errors that occur
 while processing the log file are also mailed to www@my.org (overriding
-the global \fIerrors\fR directive). 
+the global \fIerrors\fR directive).  Note that the double quotes around
+the filename at the beginning of this section allows logrotate to rotate
+logs with spaces in the name.
 
 The last section definest the parameters for all of the files in
 \fI/var/log/news\fR. Each file is rotated on a monthly basis, and 

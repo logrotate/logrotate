@@ -52,7 +52,7 @@ static int isolateValue(char * fileName, int lineNum, char * key,
     *startPtr = chptr;
 
     while (*chptr != '\n') chptr++;
-	
+
     while (isblank(*chptr)) chptr--;
 
     if (*chptr == '\n')
@@ -246,7 +246,7 @@ static int readConfigFile(char * configFile, logInfo * defConfig,
     glob_t globResult;
 
     /* FIXME: createOwner and createGroup probably shouldn't be fixed
-       length arrays -- of course, if we aren't run setuid in doesn't
+       length arrays -- of course, if we aren't run setuid it doesn't
        matter much */
 
     fd = open(configFile, O_RDONLY);
@@ -288,7 +288,7 @@ static int readConfigFile(char * configFile, logInfo * defConfig,
 
     close(fd);
 
-    /* knowing the buffer ends with a newline makes things a (bit) cleaner */
+    /* knowing the buffer ends with a newline makes things (a bit) cleaner */
     buf[length + 1] = '\0';
     buf[length] = '\n';
 
@@ -647,7 +647,7 @@ static int readConfigFile(char * configFile, logInfo * defConfig,
 
 	    lineNum++;
 	    start++;
-	} else if (*start == '/') {
+	} else if (*start == '/' || *start == '"') {
 	    if (newlog != defConfig) {
 		message(MESS_ERROR, "%s:%d unexpected log filename\n", 
 			configFile, lineNum);
@@ -658,9 +658,19 @@ static int readConfigFile(char * configFile, logInfo * defConfig,
 	    *logsPtr = realloc(*logsPtr, sizeof(**logsPtr) * *numLogsPtr);
 	    newlog = *logsPtr + *numLogsPtr - 1;
 	    memcpy(newlog, defConfig, sizeof(*newlog));
-	    
-	    endtag = start;
-	    while (!isspace(*endtag)) endtag++;
+
+	    if (*start == '"') {
+		start++;
+		endtag = strchr(start, '"');
+		if (!endtag || (strchr(start, '\n') < endtag)) {
+		    message(MESS_ERROR, "%s:%d end \" expected",
+			    configFile, lineNum);
+		}
+	    } else {
+		endtag = start;
+		while (!isspace(*endtag) && *endtag != '{') endtag++;
+	    }
+
 	    oldchar = *endtag;
 	    *endtag = '\0';
 
@@ -699,7 +709,9 @@ static int readConfigFile(char * configFile, logInfo * defConfig,
 
 	    message(MESS_DEBUG, "reading config info for %s\n", start);
 
-	    *endtag = oldchar, start = endtag;
+	    *endtag = oldchar;
+	    if (*endtag == '"') endtag++;
+	    start = endtag;
 
 	    while (*start && isspace(*start) && *start != '{') {
 		if (*start == '\n') lineNum++;
@@ -765,7 +777,8 @@ static int readConfigFile(char * configFile, logInfo * defConfig,
 	    }
 	} else {
 	    message(MESS_ERROR, "%s:%d lines must begin with a keyword "
-			"or a /\n", configFile, lineNum);
+			"or a filename (possibly in double quotes)\n", 
+			configFile, lineNum);
 
 	    while (*start != '\n') start++;
 	    lineNum++;
