@@ -13,6 +13,7 @@
 #include <sys/stat.h>
 #include <time.h>
 #include <unistd.h>
+#include <assert.h>
 
 #include "basenames.h"
 #include "log.h"
@@ -125,13 +126,39 @@ static char * readAddress(const char * configFile, int lineNum, char * key,
 	return NULL;
 }
 
+/** This function will be called as the 'select' method in the scandir(3)
+    function-call. */
+static int
+checkFilelist(struct dirent const *ent)
+{
+    size_t	i;
+    assert(ent!=0);
+
+    /* Check if ent->d_name is '.' or '..'; if so, return false */
+    if (ent->d_name[0] == '.' &&
+	(!ent->d_name[1] || (ent->d_name[1] == '.' && !ent->d_name[2])))
+        return 0;
+
+    /* Check if ent->d_name is ending in a taboo-extension; if so, return
+       false */
+    for (i = 0; i < tabooCount; i++) {
+        if (!strcmp(ent->d_name + strlen(ent->d_name) -
+		    strlen(tabooExts[i]), tabooExts[i])) {
+	    message(MESS_DEBUG, "Ignoring %s, because of %s "
+		    "ending\n", ent->d_name, tabooExts[i]);
+
+	    return 0;
+	}
+    }
+
+      /* All checks have been passed; return true */
+    return 1;
+}
+
 int readConfigPath(const char * path, logInfo * defConfig, 
 			  logInfo ** logsPtr, int * numLogsPtr) {
     struct stat sb;
-    DIR * dir;
-    struct dirent * ent;
     int here;
-    int i;
 
     if (!tabooExts) {
 	tabooExts = malloc(sizeof(*tabooExts) * defTabooCount);
@@ -145,67 +172,45 @@ int readConfigPath(const char * path, logInfo * defConfig,
     }
 
     if (S_ISDIR(sb.st_mode)) {
-	dir = opendir(path);
-	if (!dir) {
-	    message(MESS_ERROR, "failed to open directory %s: %s\n", path,
-			strerror(errno));
-	    return 1;
-	}
-
+        struct dirent	**namelist;
+	int		files_count,i;
+      
 	here = open(".", O_RDONLY);
 	if (here < 0) {
 	    message(MESS_ERROR, "cannot open current directory: %s\n", 
 		    strerror(errno));
-	    closedir(dir);
 	    return 1;
 	}
 
+	files_count = scandir(path, &namelist, checkFilelist, alphasort);
+	if (files_count==-1) {
+  	    message(MESS_ERROR, "scandir(): %s", strerror(errno));
+	    return 1;
+	}
+	
 	if (chdir(path)) {
 	    message(MESS_ERROR, "error in chdir(\"%s\"): %s\n", path,
 		    strerror(errno));
 	    close(here);
-	    closedir(dir);
+	    free(namelist);
 	    return 1;
 	}
 
-	do {
-	    errno = 0;
-	    ent = readdir(dir);
-	    if (errno) {
-		message(MESS_ERROR, "readdir() from %s failed: %s\n", path,
-			strerror(errno));
-		fchdir(here);
-		close(here);
-		closedir(dir);
-		return 1;
-	    } else if (ent && ent->d_name[0] == '.' && (!ent->d_name[1] || 
-		(ent->d_name[1] == '.' && !ent->d_name[2]))) {
-		/* noop */
-	    } else if (ent) {
-		for (i = 0; i < tabooCount; i++) {
-		    if (!strcmp(ent->d_name + strlen(ent->d_name) -
-				strlen(tabooExts[i]), tabooExts[i])) {
-			message(MESS_DEBUG, "Ignoring %s, because of %s "
-				"ending\n", ent->d_name, tabooExts[i]);
-			break;
-		    }
-		}
-
-		if (i == tabooCount) {
-		    if (readConfigFile(ent->d_name, defConfig, logsPtr, 
-				       numLogsPtr)) {
-			fchdir(here);
-			close(here);
-			return 1;
-		    }
-		}
-	    }
-	} while (ent);
-
-	closedir(dir);
+	for (i=0; i<files_count; ++i) {
+	  assert(namelist[i]!=0);
+	  
+	  if (readConfigFile(namelist[i]->d_name, defConfig, logsPtr, 
+			     numLogsPtr)) {
+	    fchdir(here);
+	    close(here);
+	    free(namelist);
+	    return 1;
+	  }
+	};
 
 	fchdir(here);
 	close(here);
+	free(namelist);
     } else {
 	return readConfigFile(path, defConfig, logsPtr, numLogsPtr);
     }
