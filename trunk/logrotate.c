@@ -663,6 +663,9 @@ int main(int argc, char ** argv) {
 	usage();
     }
 
+    /* reset the umask so new files get created properly */
+    umask(0);
+
     while (optind < argc) {
 	if (readConfigPath(argv[optind], &defConfig, &logs, &numLogs)) {
 	    exit(1);
