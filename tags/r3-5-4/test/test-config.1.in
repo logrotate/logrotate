@@ -1,0 +1,10 @@
+errors root@myhost.org
+create
+
+&DIR&/test.log {
+    daily
+    # note the white space after this line
+    rotate 2 
+    mail user@myhost.org
+    maillast
+}
