@@ -1,9 +1,9 @@
-.TH LOGROTATE 8 "Thu Feb 27 1997"
+.TH LOGROTATE 8 "Tue Jun 23 1998"
 .UC 4
 .SH NAME
 logrotate \- rotates, compresses, and mails system logs
 .SH SYNOPSIS
-\fBlogrotate\fR [-dv] [-s|--state \fIfile\fR] \fIconfig_file\fR+
+\fBlogrotate\fR [-dv] [-f|--force] [-s|--state \fIfile\fR] \fIconfig_file\fR+
 .SH DESCRIPTION
 \fBlogrotate\fR is designed to ease administration of systems that generate
 large numbers of log files.  It allows automatic rotation, compression, 
@@ -13,7 +13,7 @@ weekly, monthly, or when it grows too large.
 Normally, \fBlogrotate\fR is run as a daily cron job.  It will not modify
 a log multiple times in one day unless the criterium for that log is
 based on the log's size and \fBlogrotate\fR is being run multiple times
-each day. 
+each day, or unless the \fB-f\fR or \fB-force\fR option is used. 
 
 Any number of config files may be given on the command line. Later config
 files may override the options given in earlier files, so the order
@@ -29,6 +29,13 @@ a config file.
 \fB-d\fR
 Turns on debug mode and implies \fB-v\fR.  In debug mode, no changes will
 be made to the logs or to the \fBlogrotate\fR state file.
+
+.TP
+\fB-f, -\-force\fR
+Tells \fBlogrotate\fR to force the rotation, even if it doesn't think
+this is necessary.  Sometimes this is useful after adding new entries to
+\fBlogrotate\fR, or if old log files have been removed by hand, as the
+new files will be created, and logging will continue correctly.
 
 .TP
 \fB-s, -\-state <statefile>\fR
