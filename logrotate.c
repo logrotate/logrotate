@@ -65,8 +65,7 @@ static logState * findState(const char * fn, logState ** statesPtr,
 
 static int runScript(char * logfn, char * script) {
     int fd;
-    char filespec[32];
-    char * cmd;
+    char *filespec, *cmd;
     int rc;
 
     if (debug) {
@@ -75,22 +74,28 @@ static int runScript(char * logfn, char * script) {
 	return 0;
     }
 
-    strcpy(filespec, "/tmp/logrotate.XXXXXX");
-    if ((fd = mkstemp(filespec)) < 0 || fchmod(fd, 0700)) {
+    if (asprintf(&filespec,
+	"%s/logrotate.XXXXXX", getenv("TMPDIR") ?: "/tmp") < 0)
+	filespec = NULL;
+    fd = -1;
+    if (!filespec || (fd = mkstemp(filespec)) < 0 || fchmod(fd, 0700)) {
 	message(MESS_DEBUG, "error creating %s: %s\n", filespec,
 		strerror(errno));
-	if (fd >= 0) close(fd);
+	if (fd >= 0) {
+	    close(fd);
+	    unlink(filespec);
+	}
+	if (filespec)
+	    free(filespec);
 	return -1;
     }
 
-    if (write(fd, "#!/bin/sh\n\n", 11) != 11) {
+    if (write(fd, "#!/bin/sh\n\n", 11) != 11 ||
+	write(fd, script, strlen(script)) != strlen(script)) {
+	message(MESS_DEBUG, "error writing %s\n", filespec);
 	close(fd);
 	unlink(filespec);
-	return -1;
-    }
-    if (write(fd, script, strlen(script)) != strlen(script)) {
-	close(fd);
-	unlink(filespec);
+	free(filespec);
 	return -1;
     }
 
@@ -101,6 +106,7 @@ static int runScript(char * logfn, char * script) {
     rc = system(cmd);
 
     unlink(filespec);
+    free(filespec);
 
     return rc;
 }
@@ -125,7 +131,7 @@ static int copyTruncate(char * currLog, char * saveLog, struct stat * sb, int fl
 	    close(fdcurr);
 	    return 1;
 	}
-	if (fchmod(fdsave, sb->st_mode)) {
+	if (fchmod(fdsave, (S_IRUSR | S_IWUSR) & sb->st_mode)) {
 	    message(MESS_ERROR, "error setting mode of %s: %s\n",
 		saveLog, strerror(errno));
 	    close(fdcurr);
@@ -134,6 +140,13 @@ static int copyTruncate(char * currLog, char * saveLog, struct stat * sb, int fl
 	}
 	if (fchown(fdsave, sb->st_uid, sb->st_gid)) {
 	    message(MESS_ERROR, "error setting owner of %s: %s\n",
+		saveLog, strerror(errno));
+	    close(fdcurr);
+	    close(fdsave);
+	    return 1;
+	}
+	if (fchmod(fdsave, sb->st_mode)) {
+	    message(MESS_ERROR, "error setting mode of %s: %s\n",
 		saveLog, strerror(errno));
 	    close(fdcurr);
 	    close(fdsave);
@@ -445,7 +458,7 @@ int rotateSingleLog(logInfo * log, int logNum, logState ** statesPtr,
                             log->files[logNum], strerror(errno));
                     hasErrors = 1;
                 } else {
-                    if (fchmod(fd, createMode)) {
+                    if (fchmod(fd, (S_IRUSR | S_IWUSR) & createMode)) {
                         message(MESS_ERROR, "error setting mode of "
                                 "%s: %s\n", log->files[logNum], 
 				strerror(errno));
@@ -457,7 +470,13 @@ int rotateSingleLog(logInfo * log, int logNum, logState ** statesPtr,
 				strerror(errno));
                         hasErrors = 1;
 		    }
-		    
+	            if (fchmod(fd, createMode)) {
+                        message(MESS_ERROR, "error setting mode of "
+                                "%s: %s\n", log->files[logNum], 
+				strerror(errno));
+                        hasErrors = 1;
+                    }
+
                     close(fd);
 		}
 	    }

@@ -19,7 +19,7 @@
 #endif
 
 #ifndef COMPRESS_OPTIONS
-    #define COMPRESS_OPTIONS "-9"
+    #define COMPRESS_OPTIONS ""
 #endif
 
 #ifndef COMPRESS_EXT
@@ -31,6 +31,6 @@
 #endif
 
 #ifndef STATEFILE
-    #define STATEFILE "/var/lib/logrotate.status"
+    #define STATEFILE "/var/lib/logrotate/status"
 #endif
 

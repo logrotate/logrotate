@@ -1,4 +1,4 @@
-.TH LOGROTATE 8 "Wed Nov 28 2001" "Red Hat Linux" "System Administor's Manual"
+.TH LOGROTATE 8 "Wed Nov 28 2001" "Red Hat Linux" "System Administrator's Manual"
 .UC 4
 .SH NAME
 logrotate \- rotates, compresses, and mails system logs
@@ -54,7 +54,7 @@ and mail it to the recipient. The default mail command is \fB/bin/mail
 \fB-s, -\-state <statefile>\fR
 Tells \fBlogrotate\fR to use an alternate state file.  This is useful
 if logrotate is being run as a different user for various sets of
-log files.  The default state file is \fB/var/lib/logrotate.status\fR.
+log files.  The default state file is \fI/var/lib/logrotate/status\fR.
 
 .TP
 \fB-\-usage\fR
@@ -94,6 +94,7 @@ compress
 /var/log/news/* {
     monthly
     rotate 2
+    olddir /var/log/news/old
     missingok
     postrotate
 	kill -HUP `cat /var/run/inn.pid`
@@ -115,7 +116,7 @@ version of the log has been compressed), the command
 \fI/sbin/killall -HUP syslogd\fR will be executed.
 
 The next section defines the parameters for both
-\fI/var/log/httpd/access.log\fRand \fI/var/log/httpd/error.log\fR.
+\fI/var/log/httpd/access.log\fR and \fI/var/log/httpd/error.log\fR.
 They are rotated whenever is grows over 100k is size, and the old logs
 files are mailed (uncompressed) to www@my.org after going through 5
 rotations, rather then being removed. The \fBsharedscripts\fR means that
@@ -129,6 +130,10 @@ The last section defines the parameters for all of the files in
 \fI/var/log/news\fR. Each file is rotated on a monthly basis.  This is
 considered a single rotation directive and if errors occur for more then
 one file, the log files are not compressed.
+
+Please use wildcards with caution.  If you specify *, \fBlogrotate\fR will
+rotate all files, including previously rotated ones.  A way around this
+is to use the \fBolddir\fR directive or a more exact wildcard (such as *.log).
 
 Here is more information on the directives which may be included in
 a \fBlogrotate\fR configuration file:
@@ -346,9 +351,9 @@ option.
 .TP
 \fBstart \fIcount\fR
 This is the number to use as the base for rotation. For example, if
-you specify 0 the logs will be created with a .0 extension as the are
-rotated from the original log file.  If you specify 9, log files will
-start with end with .9, skipping 0-8.  Files will still be rotated the
+you specify 0, the logs will be created with a .0 extension as they are
+rotated from the original log files.  If you specify 9, log files will
+be created with a .9, skipping 0-8.  Files will still be rotated the
 number of times specified with the \fBcount\fR directive.
 
 .TP
@@ -370,7 +375,7 @@ night.
 .SH FILES
 .PD 0
 .TP 27
-\fI/var/lib/logrotate.status\fR
+\fI/var/lib/logrotate/status\fR
 Default state file.
 .TP 27
 \fI/etc/logrotate.conf\fR

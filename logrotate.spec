@@ -1,6 +1,6 @@
 Summary: Rotates, compresses, removes and mails system log files.
 Name: logrotate
-Version: 3.6.2
+Version: 3.6.3
 Release: 1
 License: GPL
 Group: System Environment/Base
@@ -46,9 +46,13 @@ rm -rf $RPM_BUILD_ROOT
 %attr(0755, root, root) /etc/cron.daily/logrotate
 %attr(0644, root, root) %config(noreplace) /etc/logrotate.conf
 %attr(0755, root, root) %dir /etc/logrotate.d
-%attr(0644, root, root) %verify(not size md5 mtime) %config(noreplace) /var/lib/logrotate.status
+%attr(0755, root, root) %dir /var/lib/logrotate
+%attr(0644, root, root) %verify(not size md5 mtime) %config(noreplace) /var/lib/logrotate/status
 
 %changelog
+* Wed Mar 13 2002 Elliot Lee <sopwith@redhat.com> 3.6.3-1
+- Apply various bugfix patches from the openwall people
+
 * Tue Jan 29 2002 Elliot Lee <sopwith@redhat.com> 3.6.2-1
 - Fix bug #55809 (include logrotate.status in %files)
 - Fix bug #58328 (incorrect error detection when reading state file)
