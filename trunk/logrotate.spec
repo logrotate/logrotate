@@ -47,6 +47,7 @@ rm -rf $RPM_BUILD_ROOT
 %changelog
 * Thu Jun 21 2001 Preston Brown <pbrown@redhat.com> 3.5.6-1
 - enable LFS support (debian bug #100810)
+- configurable compression command by Colm Buckley <colm@tuatha.org>
 
 * Fri Jun  1 2001 Preston Brown <pbrown@redhat.com> 3.5.5-1
 - be less strict about whitespace near filenames.  Patch from Paul Martin <pm@debian.org>.

@@ -201,7 +201,7 @@ int rotateSingleLog(logInfo * log, int logNum, logState ** statesPtr,
 
     message(MESS_DEBUG, "rotating file %s\n", log->files[logNum]);
 
-    if (log->flags & LOG_FLAG_COMPRESS) compext = COMPRESS_EXT;
+    if (log->flags & LOG_FLAG_COMPRESS) compext = log->compress_ext;
     
     if (stat(log->files[logNum], &sb)) {
 	if ((log->flags & LOG_FLAG_MISSINGOK) && (errno == ENOENT)) {
@@ -317,8 +317,8 @@ int rotateSingleLog(logInfo * log, int logNum, logState ** statesPtr,
 		char * command;
 
 		command = alloca(strlen(oldName) +
-				    strlen(COMPRESS_COMMAND) + 20);
-		sprintf(command, "%s %s", COMPRESS_COMMAND, oldName);
+				    strlen(log->compress_prog) + 1 + strlen(log->compress_options) + 20);
+		sprintf(command, "%s %s %s", log->compress_prog, log->compress_options, oldName);
 		message(MESS_DEBUG, "compressing previous log with: %s\n",
 				    command);
 		if (!debug && system(command)) {
@@ -469,10 +469,9 @@ int rotateSingleLog(logInfo * log, int logNum, logState ** statesPtr,
 			!(log->flags & LOG_FLAG_DELAYCOMPRESS)) {
 		char * command;
 
-		command = alloca(strlen(finalName) + strlen(COMPRESS_COMMAND)
-				 + 20);
+		command = alloca(strlen(finalName) + strlen(log->compress_prog) + 1 + strlen(log->compress_options) + 20);
 
-		sprintf(command, "%s %s", COMPRESS_COMMAND, finalName);
+		sprintf(command, "%s %s %s", log->compress_prog, log->compress_options, finalName);
 		message(MESS_DEBUG, "compressing new log with: %s\n", command);
 		if (!debug && system(command)) {
 		    fprintf(errorFile, "failed to compress log %s\n", 
@@ -492,13 +491,13 @@ int rotateSingleLog(logInfo * log, int logNum, logState ** statesPtr,
 
 		if (mailFilename) {
 		    command = alloca(strlen(mailFilename) + 100 + 
-				     strlen(UNCOMPRESS_PIPE));
+				     strlen(log->uncompress_prog));
 
 		    if ((log->flags & LOG_FLAG_COMPRESS) &&
 			    !(log->flags & LOG_FLAG_DELAYCOMPRESS) &&
 			    (log->flags & LOG_FLAG_MAILFIRST))
 			sprintf(command, "%s < %s | %s '%s' %s", 
-				    UNCOMPRESS_PIPE, mailFilename, mailCommand,
+				    log->uncompress_prog, mailFilename, mailCommand,
 				    log->files[logNum],
 				    log->logAddress);
 		    else
@@ -819,6 +818,7 @@ int main(int argc, const char ** argv) {
 			  /* threshHold */ 1024 * 1024, 0,
 			  /* pre */ NULL, NULL, NULL, NULL, 
 			  /* extension */ NULL, 
+			  /* compression */ COMPRESS_COMMAND, UNCOMPRESS_COMMAND, COMPRESS_OPTIONS, COMPRESS_EXT,
 			  /* flags */ LOG_FLAG_IFEMPTY,
 			  /* createMode */ NO_MODE, NO_UID, NO_GID };
     int numLogs = 0, numStates = 0;
