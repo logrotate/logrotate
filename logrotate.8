@@ -25,7 +25,9 @@ is given on the command line, every file in that directory is used as
 a config file.
 .P
 If no command line arguments are given, \fBlogrotate\fR will print
-version and copyright information, along with a short usage summary.
+version and copyright information, along with a short usage summary.  If
+any errors occur while rotating logs, \fBlogrotate\fR will exit with
+non-zero status.
 
 .SH OPTIONS
 .TP
