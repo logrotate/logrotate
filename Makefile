@@ -1,4 +1,4 @@
-VERSION = 2.0.1
+VERSION = 2.0.2
 CFLAGS = -Wall -D_GNU_SOURCE -DVERSION=\"$(VERSION)\" $(RPM_OPT_FLAGS)
 PROG = logrotate
 BINDIR = /usr/sbin
