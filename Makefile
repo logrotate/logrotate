@@ -1,10 +1,53 @@
-CFLAGS = -Wall -g -D_GNU_SOURCE
-LDFLAGS = -g
+VERSION = 0.1
+CFLAGS = -Wall -D_GNU_SOURCE -DVERSION=\"$(VERSION)\" $(RPM_OPT_FLAGS)
+PROG = logrotate
+
+#--------------------------------------------------------------------------
+
 OBJS = logrotate.o log.o config.o
+SOURCES = $(subst .o,.c,$(OBJS) $(LIBOBJS))
 
-all: logrotate
+ifeq ($(RPM_OPT_FLAGS),)
+CFLAGS += -g
+LDFLAGS = -g
+endif
 
-logrotate: $(OBJS)
+ifeq (.depend,$(wildcard .depend))
+TARGET=$(PROG)
+else
+TARGET=depend $(PROG)
+endif
+
+all: $(TARGET)
+
+$(PROG): $(OBJS)
 
 clean:
-	rm -f $(OBJS) logrotate core
+	rm -f $(OBJS) $(PROG) core*
+
+depend:
+	$(CPP) $(CFLAGS) -M $(SOURCES) > .depend
+
+archive:
+	@rm -rf /tmp/$(PROG)-$(VERSION)
+	@mkdir /tmp/$(PROG)-$(VERSION)
+	@rm -rf /tmp/$(PROG)-$(VERSION)
+	@mkdir /tmp/$(PROG)-$(VERSION)
+	@tar cSpf - * | (cd /tmp/$(PROG)-$(VERSION); tar xSpf -)
+	@cd /tmp/$(PROG)-$(VERSION); \
+	    make clean; \
+	    find . -name "RCS" -exec rm {} \;  ; \
+	    find . -name ".depend" -exec rm {} \;  ; \
+	    rm -rf *gz test* *.tar foo* shared \;
+	@cd /tmp; tar czSpf $(PROG)-$(VERSION).tar.gz $(PROG)-$(VERSION)
+	@rm -rf /tmp/$(PROG)-$(VERSION)
+	@cp /tmp/$(PROG)-$(VERSION).tar.gz .
+	@rm -f /tmp/$(PROG)-$(VERSION).tar.gz
+	@echo " "
+	@echo "The final archive is ./$(PROG)-$(VERSION).tar.gz. You should run"
+	@echo "-n$(VERSION): RCS/*,v on all of the directories btw."
+
+
+ifeq (.depend,$(wildcard .depend))
+include .depend
+endif
