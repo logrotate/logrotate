@@ -61,7 +61,6 @@ a logfile to rotate. A simple configuration file looks like this:
 .nf
 .ta +3i
 # sample logrotate configuration file
-errors sysadmin@my.org
 compress
 
 /var/log/messages {
@@ -75,7 +74,6 @@ compress
 "/var/log/httpd/access.log" /var/log/httpd/error.log {
     rotate 5
     mail www@my.org
-    errors www@my.org
     size=100k
     sharedscripts
     postrotate
@@ -87,7 +85,6 @@ compress
     monthly
     rotate 2
     missingok
-    errors newsadmin@my.org
     postrotate
 	kill -HUP `cat /var/run/inn.pid`
     endscript
@@ -111,9 +108,7 @@ The next section defines the parameters for both
 \fI/var/log/httpd/access.log\fRand \fI/var/log/httpd/error.log\fR.
 They are rotated whenever is grows over 100k is size, and the old logs
 files are mailed (uncompressed) to www@my.org after going through 5
-rotations, rather then being removed. Likewise, any errors that occur
-while processing the log file are also mailed to www@my.org (overriding
-the global \fIerrors\fR directive).  The \fBsharedscripts\fR means that
+rotations, rather then being removed. The \fBsharedscripts\fR means that
 the \fBpostrotate\fR script will only be run once, not once for each
 log which is rotated. Note that the double quotes around the first filename
 at the beginning of this section allows logrotate to rotate logs with
@@ -121,11 +116,10 @@ spaces in the name. Normal shell quoting rules apply, with ', ", and \\
 characters supported.
 
 The last section definest the parameters for all of the files in
-\fI/var/log/news\fR. Each file is rotated on a monthly basis, and 
-the errors are mailed to newsadmin@my.org. This is considered a single
-rotation directive and if errors occur for more then one file they are 
-mailed in a single message. In this case, the log files
-are not compressed.
+\fI/var/log/news\fR. Each file is rotated on a monthly basis.  This is
+considered a single rotation directive and if errors occur for more then
+one file they are mailed in a single message. In this case, the log
+files are not compressed.
 
 Here is more information on the directives which may be included in
 a \fBlogrotate\fR configuration file:
@@ -189,11 +183,6 @@ Postpone compression of the previous log file to the next rotation cycle.
 This has only effect when used in combination with \fBcompress\fR.
 It can be used when some program can not be told to close its logfile
 and thus might continue writing to the previous log file for some time.
-
-.TP
-\fBerrors \fIaddress\fR
-Any errors that occur during log file processing are mailed to the
-given address.
 
 .TP
 \fBextension \fIext\fR

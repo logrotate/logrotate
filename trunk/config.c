@@ -523,11 +523,8 @@ static int readConfigFile(const char * configFile, logInfo * defConfig,
 		    *endtag = oldchar, start = endtag;
 		}
 	    } else if (!strcmp(start, "errors")) {
-		*endtag = oldchar, start = endtag;
-		if (!(newlog->errAddress = readAddress(configFile, lineNum, 
-						       "error", &start))) {
-		    return 1;
-		}
+		message(MESS_DEBUG, "%s: %d: the errors directive is deprecated and no longer used.\n",
+			configFile, lineNum);
 	    } else if (!strcmp(start, "mail")) {
 		*endtag = oldchar, start = endtag;
 		if (!(newlog->logAddress = readAddress(configFile, lineNum, 

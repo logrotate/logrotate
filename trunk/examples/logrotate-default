@@ -5,9 +5,6 @@ weekly
 # keep 4 weeks worth of backlogs
 rotate 4
 
-# send errors to root
-errors root
-
 # create new (empty) log files after rotating old ones
 create
 
@@ -24,4 +21,4 @@ include /etc/logrotate.d
     rotate 1
 }
 
-# system-specific logs may be configured here
+# system-specific logs may be also be configured here.
