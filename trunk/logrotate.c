@@ -48,16 +48,16 @@ int rotateLog(logInfo * log, logState ** statesPtr, int * numStatesPtr) {
     time_t nowSecs = time(NULL);
     struct tm now = *localtime(&nowSecs);
     FILE * errorFile;
-    char * errorFileName;
-    char * oldName, * newName;
+    char * errorFileName = NULL;
+    char * oldName, * newName = NULL;
     char * disposeName;
     char * finalName;
     char * tmp;
     char * ext = "";
     int hasErrors = 0;
-    int doRotate;
+    int doRotate = 0;
     int i;
-    int oldstderr, newerr;
+    int oldstderr = 0, newerr;
     logState * state;
 
     message(MESS_DEBUG, "rotating: %s ", log->fn);
@@ -447,7 +447,7 @@ int main(int argc, char ** argv) {
     logState * states = NULL;
     char * stateFile = STATEFILE;
     int i;
-    int rc;
+    int rc = 0;
     int arg, long_index;
     struct option options[] = {
 	{ "debug", 0, 0, 'd' },
