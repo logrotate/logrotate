@@ -57,8 +57,12 @@ int rotateLog(logInfo * log, logState ** statesPtr, int * numStatesPtr) {
     int hasErrors = 0;
     int doRotate = 0;
     int i;
+    int fd;
     int oldstderr = 0, newerr;
     logState * state = NULL;
+    uid_t createUid;
+    gid_t createGid;
+    mode_t createMode;
 
     message(MESS_DEBUG, "rotating: %s ", log->fn);
     switch (log->criterium) {
@@ -252,6 +256,43 @@ int rotateLog(logInfo * log, logState ** statesPtr, int * numStatesPtr) {
 			log->fn, finalName, strerror(errno));
 	    }
 
+	    if (!hasErrors && log->flags & LOG_FLAG_CREATE) {
+		if (log->createUid == -1)
+		    createUid = sb.st_uid;
+		else
+		    createUid = log->createUid;
+	    
+		if (log->createGid == -1)
+		    createGid = sb.st_gid;
+		else
+		    createGid = log->createGid;
+	    
+		if (log->createMode == -1)
+		    createMode = sb.st_mode & 0777;
+		else
+		    createMode = log->createMode;
+	    
+		message(MESS_DEBUG, "creating new log mode = 0%o uid = %d "
+			"gid = %d\n", createMode, createUid, createGid);
+
+		if (!debug) {
+		    fd = open(log->fn, O_CREAT | O_RDWR, createMode);
+		    if (fd < 0) {
+			message(MESS_ERROR, "error creating %s: %s\n", 
+				log->fn, strerror(errno));
+			hasErrors = 1;
+		    } else {
+			if (fchown(fd, createUid, createGid)) {
+			    message(MESS_ERROR, "error setting owner of "
+				    "%s: %s\n", log->fn, strerror(errno));
+			    hasErrors = 1;
+			}
+
+			close(fd);
+		    }
+		}
+	    }
+
 	    if (!hasErrors && log->post) {
 		message(MESS_DEBUG, "running postrotate script\n");
 		if (!debug && system(log->post)) {
@@ -441,7 +482,7 @@ void usage(void) {
 
 int main(int argc, char ** argv) {
     logInfo defConfig = { NULL, ROT_SIZE, 1024 * 1024, 0, 0, NULL, 
-			  NULL, NULL, 0 };
+			  NULL, NULL, 0, -1, -1, -1 };
     int numLogs = 0, numStates = 0;
     logInfo * logs = NULL;
     logState * states = NULL;

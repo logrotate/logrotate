@@ -4,6 +4,8 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <getopt.h>
+#include <grp.h>
+#include <pwd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -163,7 +165,7 @@ static int readConfigFile(char * configFile, logInfo * defConfig,
 			  logInfo ** logsPtr, int * numLogsPtr) {
     int fd;
     char * buf, * endtag;
-    char oldchar;
+    char oldchar, foo;
     int length;
     int lineNum = 1;
     int multiplier;
@@ -172,6 +174,15 @@ static int readConfigFile(char * configFile, logInfo * defConfig,
     char ** scriptDest = NULL;
     logInfo * newlog = defConfig;
     char * start, * chptr;
+    struct group * group;
+    struct passwd * pw;
+    int rc;
+    char createOwner[200], createGroup[200];
+    mode_t createMode;
+
+    /* FIXME: createOWnder and createGroup probably shouldn't be fixed
+       length arrays -- of course, if we aren't run setuid in doesn't
+       matter much */
 
     fd = open(configFile, O_RDONLY);
     if (fd < 0) {
@@ -254,6 +265,55 @@ static int readConfigFile(char * configFile, logInfo * defConfig,
 		*endtag = oldchar, start = endtag;
 	    } else if (!strcmp(start, "nocompress")) {
 		newlog->flags &= ~LOG_FLAG_COMPRESS;
+
+		*endtag = oldchar, start = endtag;
+	    } else if (!strcmp(start, "create")) {
+		*endtag = oldchar, start = endtag;
+
+		endtag = start;
+		while (*endtag != '\n') endtag++;
+		while (isspace(*endtag)) endtag--;
+		endtag++;
+		oldchar = *endtag, *endtag = '\0';
+		
+		rc = sscanf(start, "%o %s %s%c", &createMode, 
+				createOwner, createGroup, &foo);
+		if (rc == 4) {
+		    message(MESS_ERROR, "%s:%d extra arguments for "
+			    "create\n", configFile, lineNum, start[length]);
+		    return 1;
+		}
+
+		if (rc > 0)
+		    newlog->createMode = createMode;
+		
+		if (rc > 1) {
+		    pw = getpwnam(createOwner);
+		    if (!pw) {
+			message(MESS_ERROR, "%s:%d unkown user '%s'\n", 
+				configFile, lineNum, createOwner);
+			return 1;
+		    } 
+		    newlog->createUid = pw->pw_uid;
+		    endpwent();
+		} 
+		if (rc > 2) {
+		    group = getgrnam(createGroup);
+		    if (!group) {
+			message(MESS_ERROR, "%s:%d unkown group '%s'\n", 
+				configFile, lineNum, createGroup);
+			return 1;
+		    } 
+		    newlog->createGid = group->gr_gid;
+		    endgrent();
+		} 
+
+		newlog->flags |= LOG_FLAG_CREATE;
+
+		*endtag = oldchar, start = endtag;
+		while (*start != '\n') start++;
+	    } else if (!strcmp(start, "nocreate")) {
+		newlog->flags &= ~LOG_FLAG_CREATE;
 
 		*endtag = oldchar, start = endtag;
 	    } else if (!strcmp(start, "size")) {
