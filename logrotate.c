@@ -418,7 +418,7 @@ int rotateLogSet(logInfo * log, logState ** statesPtr, int * numStatesPtr) {
 	message(MESS_DEBUG, "monthly ");
 	break;
       case ROT_SIZE:
-	message(MESS_DEBUG, "bytes ");
+	message(MESS_DEBUG, "%d bytes ", log->threshhold);
 	break;
     }
 
@@ -468,7 +468,7 @@ int rotateLogSet(logInfo * log, logState ** statesPtr, int * numStatesPtr) {
 	    errorFile = stderr;
 	}
     } else {
-	message(MESS_DEBUG, "errors displayed on stderr ");
+	message(MESS_DEBUG, "errors displayed on stderr\n");
 	errorFile = stderr;
     }
 

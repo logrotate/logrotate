@@ -644,7 +644,8 @@ static int readConfigFile(char * configFile, logInfo * defConfig,
 
 	    for (i = 0; i < globResult.gl_pathc; i++) {
 		/* if we glob directories we can get false matches */
-		if (access(globResult.gl_pathv[i], X_OK)) continue;
+		if (lstat(globResult.gl_pathv[i], &sb)) continue;
+		if (S_ISDIR(sb.st_mode)) continue;
 
 		for (j = 0; j < *numLogsPtr - 1; j++) {
 		    for (k = 0; k < (*logsPtr)[j].numFiles; k++) {
