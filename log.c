@@ -31,11 +31,12 @@ void logClearFlags(int newFlags) {
     flags &= ~newFlags;
 }
 
+#if 0
 void log(int fd, char * format, ...) {
     int i = 0;
     char * buf = NULL;
     va_list args;
-    int size = -1;
+    int size;
 
     va_start(args, format);
 
@@ -43,8 +44,8 @@ void log(int fd, char * format, ...) {
 	i += 1000;
 	if (buf) free(buf);
 	buf = malloc(i);
-	size = vsnprintf(buf, size, format, args);
-    } while (i == size);
+	size = vsnprintf(buf, i, format, args);
+    } while (size >= i);
 
     write(fd, buf, size);
 
@@ -52,6 +53,7 @@ void log(int fd, char * format, ...) {
 
     va_end(args);
 }
+#endif
 
 void message(int level, char * format, ...) {
     va_list args;

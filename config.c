@@ -403,7 +403,7 @@ static int readConfigFile(const char * configFile, logInfo * defConfig,
 				createOwner, createGroup, &foo);
 		if (rc == 4) {
 		    message(MESS_ERROR, "%s:%d extra arguments for "
-			    "create\n", configFile, lineNum, start[length]);
+			    "create\n", configFile, lineNum);
 		    return 1;
 		}
 
@@ -636,8 +636,8 @@ static int readConfigFile(const char * configFile, logInfo * defConfig,
 
 		if (!S_ISDIR(sb.st_mode)) {
 		    message(MESS_ERROR, "%s:%d olddir path %s is not a "
-				"directory %s: %s\n", configFile, lineNum, 
-				newlog->oldDir, strerror(errno));
+				"directory\n", configFile, lineNum, 
+				newlog->oldDir);
 		    return 1;
 		}
 
