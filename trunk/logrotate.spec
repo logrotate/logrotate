@@ -12,11 +12,11 @@ The logrotate utility is designed to simplify the administration of
 log files on a system which generates a lot of log files.  Logrotate
 allows for the automatic rotation compression, removal and mailing of
 log files.  Logrotate can be set to handle a log file daily, weekly,
-monthly or when the log file gets to a certain size.  Normally, logrotate
-runs as a daily cron job.
+monthly or when the log file gets to a certain size.  Normally,
+logrotate runs as a daily cron job.
 
-Install the logrotate package if you need a utility to deal with the log
-files on your system.
+Install the logrotate package if you need a utility to deal with the
+log files on your system.
 
 %prep
 %setup
