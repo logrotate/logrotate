@@ -1,4 +1,4 @@
-VERSION = 2.5
+VERSION = 2.6
 CVSTAG = r$(subst .,-,$(VERSION))
 CFLAGS = -Wall -D_GNU_SOURCE -DVERSION=\"$(VERSION)\" $(RPM_OPT_FLAGS)
 PROG = logrotate
