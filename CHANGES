@@ -1,3 +1,6 @@
+3.5.3 -> 3.5.4:
+	- %defattr(-,root,root) in specfile
+
 3.5.2 -> 3.5.3:
         - patch /tmp file race condition problem, use mkstemp;	
 	  Thanks go to Solar Designer <solar@openwall.com>
