@@ -9,12 +9,22 @@ MAN = logrotate.8
 LOADLIBES = -lpopt
 
 # HP-UX using GCC
-ifeq ($(OS_NAME),HP_UX)
+ifeq ($(OS_NAME),HP-UX)
     ifeq ($(RPM_OPT_FLAGS),)
         RPM_OPT_FLAGS = -O2
     endif
     CC = gcc
-    INSTALL = install
+    INSTALL = cpset
+    ifeq ($(POPT_DIR),)
+        POPT_DIR = /usr/local
+    endif
+    ifeq ($(HPLX_DIR),)
+	HPLX_DIR = /usr/local/hplx
+    endif
+    LOADLIBES += -lhplx -L$(HPLX_DIR)/lib
+    ifeq ($(BASEDIR),)
+	BASEDIR = /usr/local
+    endif
 endif
 
 # Red Hat Linux
@@ -72,8 +82,15 @@ install:
 	[ -d $(PREFIX)/$(MANDIR) ] || mkdir -p $(PREFIX)/$(MANDIR)
 	[ -d $(PREFIX)/$(MANDIR)/man8 ] || mkdir -p $(PREFIX)/$(MANDIR)/man8
 
-	$(INSTALL) -s -m 755 $(PROG) $(PREFIX)/$(BINDIR)
-	$(INSTALL) -m 644 $(MAN) $(PREFIX)/$(MANDIR)/man`echo $(MAN) | sed "s/.*\.//"`/$(MAN)
+	if [ "$(OS_NAME)" = HP-UX ]; then \
+	$(INSTALL) $(PROG) $(PREFIX)/$(BINDIR) 0755 bin bin; \
+	$(INSTALL) $(MAN) $(PREFIX)/$(MANDIR)/man`echo $(MAN) | sed "s/.*\.//"` 0644 bin bin; \
+	fi
+
+	if [ "$(OS_NAME)" = Linux ]; then \
+	$(INSTALL) -m 755 $(PROG) $(PREFIX)/$(BINDIR); \
+	$(INSTALL) -m 644 $(MAN) $(PREFIX)/$(MANDIR)/man`echo $(MAN) | sed "s/.*\.//"`/$(MAN); \
+	fi
 
 co:
 	co RCS/*,v
