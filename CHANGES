@@ -1,3 +1,12 @@
+2.5 -> 2.6:
+	- added nodelaycompress flag (from Jos Vos)
+	- added copytruncate, nocopytruncate flag (from Jos Vos)
+	- removed umask handling; explicitly use fchmod() insteadmoved umask
+	- added --force option (Simon Mudd)
+	- moved /bin/mail to MAIL_COMMAND define (Simon Mudd)
+	- fixed segv caused by overly long filenames
+	- switched from getopt_long to popt
+
 2.4 -> 2.5:
 	- set the umask of the process to 0, letting open() create processes
 	  with the proper permissions
