@@ -1,4 +1,3 @@
-errors root@myhost.org
 create
 
 &DIR&/test*.log {

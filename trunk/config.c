@@ -534,6 +534,21 @@ static int readConfigFile(const char * configFile, logInfo * defConfig,
 		    }
 		    *endtag = oldchar, start = endtag;
 		}
+	    } else if (!strcmp(start, "start")) {
+                *endtag = oldchar, start = endtag;
+
+		if (!isolateValue(configFile, lineNum, "start count", &start,
+				  &endtag)) {
+		    oldchar = *endtag, *endtag = '\0';
+
+		    newlog->logStart = strtoul(start, &chptr, 0);
+		    if (*chptr || newlog->logStart < 0) {
+		      message(MESS_ERROR, "%s:%d bad start count '%s'\n",
+			      configFile, lineNum, start);
+		      return 1;
+		    }
+		    *endtag = oldchar, start = endtag;
+		}
 	    } else if (!strcmp(start, "errors")) {
 		message(MESS_DEBUG, "%s: %d: the errors directive is deprecated and no longer used.\n",
 			configFile, lineNum);

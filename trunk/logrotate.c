@@ -282,6 +282,7 @@ int rotateSingleLog(logInfo * log, int logNum, logState ** statesPtr,
     char * dirName;
     char * firstRotated;
     int rotateCount = log->rotateCount ? log->rotateCount : 1;
+    int logStart = (log->logStart == -1) ? 1 : log->logStart;
 
     /* Logs with rotateCounts of 0 are rotated to .1, then removed. This
        lets scripts run properly, and everything gets mailed properly. */
@@ -328,7 +329,7 @@ int rotateSingleLog(logInfo * log, int logNum, logState ** statesPtr,
         log->flags & LOG_FLAG_DELAYCOMPRESS) {
         struct stat sbprev;
 	
-        sprintf(oldName, "%s/%s.1%s", dirName, baseName, fileext);
+        sprintf(oldName, "%s/%s.%d%s", dirName, baseName, logStart, fileext);
         if (stat(oldName, &sbprev)) {
             message(MESS_DEBUG, "previous log %s does not exist\n",
 		    oldName);
@@ -351,16 +352,16 @@ int rotateSingleLog(logInfo * log, int logNum, logState ** statesPtr,
     }
     
     sprintf(oldName, "%s/%s.%d%s%s", dirName, baseName,
-            rotateCount + 1, fileext, compext);
+            logStart + rotateCount, fileext, compext);
     
     strcpy(disposeName, oldName);
     
     firstRotated = alloca(strlen(dirName) + strlen(baseName) +
                           strlen(fileext) + strlen(compext) + 30);
-    sprintf(firstRotated, "%s/%s.1%s%s", dirName, baseName,
-            fileext, compext);
+    sprintf(firstRotated, "%s/%s.%d%s%s", dirName, baseName,
+            logStart, fileext, compext);
     
-    for (i = rotateCount; i && !hasErrors; i--) {
+    for (i = rotateCount + logStart; i && !hasErrors; i--) {
         tmp = newName;
         newName = oldName;
         oldName = tmp;
@@ -384,7 +385,7 @@ int rotateSingleLog(logInfo * log, int logNum, logState ** statesPtr,
     finalName = oldName;
     
     /* note: the gzip extension is *not* used here! */
-    sprintf(finalName, "%s/%s.1%s", dirName, baseName, fileext);
+    sprintf(finalName, "%s/%s.%d%s", dirName, baseName, logStart, fileext);
     
     /* if the last rotation doesn't exist, that's okay */
     if (!debug && access(disposeName, F_OK)) {
@@ -809,6 +810,7 @@ static int readState(char * stateFilename, logState ** statesPtr,
 int main(int argc, const char ** argv) {
     logInfo defConfig = { NULL, NULL, 0, NULL, ROT_SIZE, 
 			  /* threshHold */ 1024 * 1024, 0,
+			  /* log start */ -1,
 			  /* pre, post */ NULL, NULL,
 			  /* logAddress */ NULL, 
 			  /* extension */ NULL, 
