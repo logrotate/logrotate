@@ -56,6 +56,9 @@ rm -rf $RPM_BUILD_ROOT
 %attr(0644, root, root) %verify(not size md5 mtime) %config(noreplace) /var/lib/logrotate.status
 
 %changelog
+* Fri Sep 5 2003 Dan Walsh <dwalsh@redhat.com> 3.6.10-2.sel
+- Turn on selinux
+
 * Wed Aug 06 2003 Erik Troan <ewt@redhat.com>
 - always use compressext for the extension for compressed
   files; before compresscmd and compressext had to agree
@@ -65,9 +68,6 @@ rm -rf $RPM_BUILD_ROOT
 - delaycompress and mailfirst didn't work properly
 - don't use system() for mailing (or uncompressing) logs anymore
 - use "-s" for speciying the subjected of mailed logs
-
-* Fri Sep 5 2003 Elliot Lee <sopwith@redhat.com> 3.6.10-2.sel
-- Turn on selinux
 
 * Thu Jul 24 2003 Elliot Lee <sopwith@redhat.com> 3.6.10-1
 - Fix #100546, change selinux port.
