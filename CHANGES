@@ -1,3 +1,11 @@
+2.8 -> 2.9:
+	- fixed a bug parsing lines where { immediately follows the filename
+	- allow log file patterns to be placed in double quotes, which	
+	  allows spaces in names
+	
+2.7 -> 2.8:
+	- changes for glibc 2.1 (Cristian Gafton)
+
 2.6 -> 2.7:
 	- updated man page to include --force (Simon Mudd)
 	- invoke scripts via /bin/sh rather then relying on /tmp execute

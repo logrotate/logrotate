@@ -772,10 +772,13 @@ int main(int argc, char ** argv) {
     char ** files, ** file;
     poptContext optCon;
     struct poptOption options[] = {
-	{ "force", 'f', 0 , &force, 0 },
-	{ "debug", 'd', 0, 0, 'd' },
-	{ "state", 's', POPT_ARG_STRING, &stateFile, 0 },
-	{ "verbose", 'v', 0, 0, 'v' },
+	{ "force", 'f', 0 , &force, 0, "Force file rotation" },
+	{ "debug", 'd', 0, 0, 'd', 
+		"Don't do anything, just test (implies -v)" },
+	{ "state", 's', POPT_ARG_STRING, &stateFile, 0, "Path of state file",
+		"statefile" },
+	{ "verbose", 'v', 0, 0, 'v', "Display messages during rotation" },
+	POPT_AUTOHELP
 	{ 0, 0, 0, 0, 0 } 
     };
 
@@ -783,6 +786,7 @@ int main(int argc, char ** argv) {
 
     optCon = poptGetContext("logrotate", argc, argv, options,0);
     poptReadDefaultConfig(optCon, 1);
+    poptSetOtherOptionHelp(optCon, "[OPTION...] <configfile>");
 
     while ((arg = poptGetNextOpt(optCon)) >= 0) {
         switch (arg) {
