@@ -1,4 +1,4 @@
-#include <alloca.h>
+oinclude <alloca.h>
 #include <ctype.h>
 #include <dirent.h>
 #include <errno.h>
@@ -380,7 +380,7 @@ int rotateSingleLog(logInfo * log, int logNum, logState ** statesPtr,
 	free(baseName);
 
 	if (!hasErrors) {
-	    if (log->pre) {
+	    if (log->pre && !(log->flags & LOG_FLAG_SHAREDSCRIPTS)) {
 		message(MESS_DEBUG, "running prerotate script\n");
 		if (runScript(log->files[logNum], log->pre)) {
 		    fprintf(errorFile, "error running prerotate script -- 
@@ -450,7 +450,8 @@ int rotateSingleLog(logInfo * log, int logNum, logState ** statesPtr,
 
 	    }
 
-	    if (!hasErrors && log->post) {
+	    if (!hasErrors && log->post && 
+		    !(log->flags & LOG_FLAG_SHAREDSCRIPTS)) {
 		message(MESS_DEBUG, "running postrotate script\n");
 		if (runScript(log->files[logNum], log->post)) {
 		    fprintf(errorFile, "error running postrotate script\n");
@@ -616,9 +617,27 @@ int rotateLogSet(logInfo * log, logState ** statesPtr, int * numStatesPtr,
 	errorFile = stderr;
     }
 
+    if (log->pre && (log->flags & LOG_FLAG_SHAREDSCRIPTS)) {
+	message(MESS_DEBUG, "running shared prerotate script\n");
+	if (runScript(log->pattern, log->pre)) {
+	    fprintf(errorFile, "error running shared prerotate script for %s-- 
+			leaving old logs in place\n", log->pattern);
+	    hasErrors = 1;
+	}
+    }
+
     for (i = 0; i < log->numFiles; i++)
 	hasErrors |= rotateSingleLog(log, i, statesPtr, numStatesPtr, 
 					errorFile);
+
+    if (log->post && (log->flags & LOG_FLAG_SHAREDSCRIPTS)) {
+	message(MESS_DEBUG, "running shared postrotate script\n");
+	if (runScript(log->pattern, log->post)) {
+	    fprintf(errorFile, 
+	       "error running shared postrotate script for %s\n", log->pattern);
+	    hasErrors = 1;
+	}
+    }
 
     if (log->errAddress && !debug) {
 	fclose(errorFile);

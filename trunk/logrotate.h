@@ -11,6 +11,7 @@
 #define LOG_FLAG_COPYTRUNCATE	(1 << 4)
 #define LOG_FLAG_MISSINGOK	(1 << 5)
 #define LOG_FLAG_MAILFIRST	(1 << 6)
+#define LOG_FLAG_SHAREDSCRIPTS	(1 << 7)
 
 #define DEFAULT_MAIL_COMMAND "/bin/mail -s"
 #define COMPRESS_COMMAND "gzip -9"

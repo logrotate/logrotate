@@ -247,6 +247,12 @@ Logs are rotated in the same directory the log normally resides in (this
 overrides the \fBolddir\fR option).
 
 .TP
+\fBnosharedscripts\fR
+Run \fBprerotate\fR and \fBpostrotate\fR scripts for every script which
+is rotated (this is the default, and overrides the \fBsharedscripts\fR
+option).
+
+.TP
 \fBnotifempty\fR
 Do not rotate the log if it is empty (this overrides the \fBifempty\fR option).
 
@@ -283,6 +289,18 @@ Log files are rotated when they grow bigger then \fIsize\fR bytes. If
 \fIsize\fR is followed by \fIM\fR, the size if assumed to be in megabytes.
 If the \fIk\fR is used, the size is in kilobytes. So \fBsize 100\fR,
 \fIsize 100k\fR, and \fIsize 100M\fR are all valid.
+
+.TP
+\fBsharedscripts\fR
+Normally, \fBprescript\fR and \fBpostscript\fR scripts are run for each
+log which is rotated, meaning that a single script may be run multiple
+times for log file entries which match multiple files (such as the 
+/var/log/news/* example). If \fBsharedscript\fR is specified, the scripts
+are only run once, no matter how many logs match the wildcarded pattern.
+A side effect of this option is that the scripts are always executed, even
+if no logs are rotated (if it is not specified, the scripts are run only
+if logs are actually rotated) (this overrides the \fbnosharedscripts\fR
+option).
 
 .TP
 \fBtabooext\fR [+] \fIlist\fR
