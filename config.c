@@ -18,7 +18,7 @@
 #include "log.h"
 #include "logrotate.h"
 
-static char * tabooExts[] = { ".rpmsave", ".rpmorig", "~" };
+static char * tabooExts[] = { ".rpmsave", ".rpmorig", "~", ",v" };
 static int tabooCount = sizeof(tabooExts) / sizeof(char *);
 
 static int readConfigFile(char * configFile, logInfo * defConfig, 
@@ -387,7 +387,6 @@ static int readConfigFile(char * configFile, logInfo * defConfig,
 		newlog->flags |= LOG_FLAG_CREATE;
 
 		*endtag = oldchar, start = endtag;
-		while (*start != '\n') start++;
 	    } else if (!strcmp(start, "nocreate")) {
 		newlog->flags &= ~LOG_FLAG_CREATE;
 
