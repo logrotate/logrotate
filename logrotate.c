@@ -239,6 +239,18 @@ int rotateSingleLog(logInfo * log, int logNum, logState ** statesPtr,
 	else if (log->criterium == ROT_FORCE) {
 	    /* user forced rotation of logs from command line */
 	    doRotate = 1;
+	} else if (state->lastRotated.tm_year > now.tm_year || 
+		      (state->lastRotated.tm_year == now.tm_year && 
+			  (state->lastRotated.tm_mon > now.tm_mon ||
+			      (state->lastRotated.tm_mon == now.tm_mon &&
+			       state->lastRotated.tm_mday > now.tm_mday)
+			  )
+		      )
+		  ) {
+	    message(MESS_ERROR,
+	    "file %s last rotated in the future -- rotation forced\n",
+	    log->files[logNum]);
+	    doRotate = 1;
 	} else if (state->lastRotated.tm_year != now.tm_year || 
 		   state->lastRotated.tm_mon != now.tm_mon ||
 		   state->lastRotated.tm_mday != now.tm_mday) {
