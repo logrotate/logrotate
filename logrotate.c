@@ -19,6 +19,10 @@ typedef struct {
     struct tm lastRotated;	/* only tm.mon, tm_mday, tm_year are good! */
 } logState;
 
+#define NO_MODE ((mode_t) -1)
+#define NO_UID  ((uid_t) -1)
+#define NO_GID  ((gid_t) -1)
+
 int debug = 0;
 
 static logState * findState(char * fn, logState ** statesPtr, 
@@ -257,17 +261,17 @@ int rotateLog(logInfo * log, logState ** statesPtr, int * numStatesPtr) {
 	    }
 
 	    if (!hasErrors && log->flags & LOG_FLAG_CREATE) {
-		if (log->createUid == -1)
+		if (log->createUid == NO_UID)
 		    createUid = sb.st_uid;
 		else
 		    createUid = log->createUid;
 	    
-		if (log->createGid == -1)
+		if (log->createGid == NO_GID)
 		    createGid = sb.st_gid;
 		else
 		    createGid = log->createGid;
 	    
-		if (log->createMode == -1)
+		if (log->createMode == NO_MODE)
 		    createMode = sb.st_mode & 0777;
 		else
 		    createMode = log->createMode;
@@ -482,7 +486,7 @@ void usage(void) {
 
 int main(int argc, char ** argv) {
     logInfo defConfig = { NULL, ROT_SIZE, 1024 * 1024, 0, 0, NULL, 
-			  NULL, NULL, 0, -1, -1, -1 };
+			  NULL, NULL, 0, NO_MODE, NO_UID, NO_GID };
     int numLogs = 0, numStates = 0;
     logInfo * logs = NULL;
     logState * states = NULL;
