@@ -110,7 +110,7 @@ static int runScript(char * logfn, char * script) {
     close(fd);
 
     if (!fork()) {
-	execlp(filespec, logfn, NULL);
+	execlp(filespec, filespec, logfn, NULL);
 	exit(1);
     }
 
