@@ -49,19 +49,20 @@ void message(int level, char * format, ...) {
 	va_start(args, format);
 
 	switch (level) {
-	    case MESS_DEBUG:
-		where = messageFile;
-		showTime = 1;
-		break;
+	  case MESS_DEBUG:
+	    where = messageFile;
+	    showTime = 1;
+	    break;
 
-	    case MESS_NORMAL:
-	    case MESS_VERBOSE:
-		where = messageFile;
-		break;
+	  case MESS_NORMAL:
+	  case MESS_VERBOSE:
+	    where = messageFile;
+	    break;
 
-	    default:
-		fprintf(errorFile, "error: ");
-		showTime = 1;
+	  default:
+	    fprintf(where, "%ld: ", (long) time(NULL));
+	    fprintf(errorFile, "error: ");
+	    break;
 	}
 
 	if (showTime) {
