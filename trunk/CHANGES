@@ -1,3 +1,8 @@
+2.6 -> 2.7:
+	- updated man page to include --force (Simon Mudd)
+	- invoke scripts via /bin/sh rather then relying on /tmp execute
+	  semantics (Philip Guenther)
+
 2.5 -> 2.6:
 	- added nodelaycompress flag (from Jos Vos)
 	- added copytruncate, nocopytruncate flag (from Jos Vos)

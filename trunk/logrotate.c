@@ -109,7 +109,7 @@ static int runScript(char * logfn, char * script) {
     close(fd);
 
     cmd = alloca(strlen(filespec) + strlen(logfn) + 2);
-    sprintf(cmd, "%s %s", filespec, logfn);
+    sprintf(cmd, "/bin/sh %s %s", filespec, logfn);
     rc = system(cmd);
 
     unlink(filespec);
