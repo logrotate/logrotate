@@ -20,6 +20,7 @@ genconfig() {
 createlog() {
     num=$1
     file=$2
+    compressed=$3
 
     case $num in
 	0)
@@ -40,17 +41,31 @@ createlog() {
 	5)
 	    what=fifth
 	    ;;
+	6)
+	    what=sixth
+	    ;;
+	7)
+	    what=seventh
+	    ;;
+	8)
+	    what=eight
+	    ;;
+	9)
+	    what=ninth
+	    ;;
 	*)
 	    exit 1
 	    ;;
     esac
 
     echo $what > $file
+    [ -n "$compressed" ] && gzip -9 $file
 }
 
 createlogs() {
     base=$1
     numlogs=$2
+    compressed=$3
 
     rm -f ${base}*
 
@@ -59,7 +74,7 @@ createlogs() {
 	if [ $num = 0 ]; then
 	    createlog 0 $base
 	else
-	    createlog $num ${base}.$num
+	    createlog $num ${base}.$num $compressed
 	fi
 
 	num=`expr $num + 1`
@@ -70,10 +85,11 @@ checkoutput() {
     while read line; do
 	set $line
 	file=$1
-	shift
+	compressed=$2
+	shift 2
 
 	fileother=`echo $line | awk '{print $1}'`
-	expected=`echo $line | cut -s -d\  -f2-`
+	expected=`echo $line | cut -s -d\  -f3-`
 
 	if [ $file != $fileother ]; then
 	    echo "unexpected file $file'" >&2
@@ -84,9 +100,13 @@ checkoutput() {
 	    echo "file $file does not exist"
 	fi
 
-	contents=`cat $file`
+	if [ -n "$compressed" -a "$compressed" != 0 ]; then
+		contents=`zcat $file`
+	else
+		contents=`cat $file`
+	fi
 	if [ "$contents" != "$expected" ]; then
-	    echo "file $file does not contain expected results" >&2
+	    echo "file $file does not contain expected results (compressed $compressed, args $*)" >&2
 	    echo contains: \'$contents\'
 	    echo expected: \'$expected\'
 	    return 1
@@ -98,12 +118,13 @@ preptest() {
     base=$1
     confignum=$2
     numlogs=$3
+    compressed=$4
 
     rm -f $base*
     rm -f state
 
     genconfig $confignum
-    createlogs $base $numlogs
+    createlogs $base $numlogs $compressed
 }
 
 # we don't want any stuff left from previous runs
@@ -114,8 +135,8 @@ preptest test.log 1 2
 $RLR test-config.1 
 
 checkoutput test.log* <<EOF
-test.log zero
-test.log.1 first
+test.log 0 zero
+test.log.1 0 first
 EOF
 
 # Put in place a state file that will force a rotation
@@ -127,9 +148,9 @@ EOF
 # Now force the rotation
 $RLR test-config.1
 checkoutput test.log* <<EOF
-test.log
-test.log.1 zero
-test.log.2 first
+test.log 0
+test.log.1 0 zero
+test.log.2 0 first
 EOF
 
 # rerun it to make sure nothing happens
@@ -137,8 +158,8 @@ $RLR test-config.1
 
 checkoutput test.log* <<EOF
 test.log
-test.log.1 zero
-test.log.2 first
+test.log.1 0 zero
+test.log.2 0 first
 EOF
 
 cleanup 1
@@ -147,8 +168,8 @@ preptest test.log 2 3
 $RLR test-config.2 --force
 
 checkoutput test.log* <<EOF
-test.log.1 zero
-test.log.2 first
+test.log.1 0 zero
+test.log.2 0 first
 EOF
 
 if [ -f test.log ]; then
@@ -161,9 +182,9 @@ preptest test.log 3 1
 $RLR test-config.3 --force
 
 checkoutput test.log* <<EOF
-test.log
-test.log.1 zero
-scriptout foo
+test.log 0
+test.log.1 0 zero
+scriptout 0 foo
 EOF
 
 cleanup 3
@@ -173,11 +194,11 @@ preptest test2.log 3 1
 $RLR test-config.3 --force
 
 checkoutput test*.log* <<EOF
-test.log
-test.log.1 zero
-test2.log
-test2.log.1 zero
-scriptout foo foo
+test.log 0
+test.log.1 0 zero
+test2.log 0
+test2.log.1 0 zero
+scriptout 0 foo foo
 EOF
 
 cleanup 4
@@ -187,11 +208,11 @@ preptest test2.log 4 1
 $RLR test-config.4 --force 
 
 checkoutput test*.log* <<EOF
-test.log
-test.log.1 zero
-test2.log
-test2.log.1 zero
-scriptout foo
+test.log 0
+test.log.1 0 zero
+test2.log 0
+test2.log.1 0 zero
+scriptout 0 foo
 EOF
 
 cleanup 5
@@ -201,11 +222,11 @@ preptest anothertest.log 5 1
 $RLR test-config.5 --force 
 
 checkoutput test*.log* <<EOF
-test.log
-test.log.1 zero
-anothertest.log
-anothertest.log.1 zero
-scriptout foo
+test.log 0
+test.log.1 0 zero
+anothertest.log 0
+anothertest.log.1 0 zero
+scriptout 0 foo
 EOF
 
 cleanup 6
@@ -215,11 +236,11 @@ preptest anothertest.log 6 1
 $RLR test-config.6 --force
 
 checkoutput test*.log* <<EOF
-test.log
-test.log.0 zero
-anothertest.log
-anothertest.log.0 zero
-scriptout foo
+test.log 0
+test.log.0 0 zero
+anothertest.log 0
+anothertest.log.0 0 zero
+scriptout 0 foo
 EOF
 
 cleanup 7
@@ -229,11 +250,23 @@ preptest anothertest.log 7 1
 $RLR test-config.7 --force
 
 checkoutput test*.log* <<EOF
-test.log
-test.log.6 zero
-anothertest.log
-anothertest.log.6 zero
-scriptout foo
+test.log 0
+test.log.6 0 zero
+anothertest.log 0
+anothertest.log.6 0 zero
+scriptout 0 foo
 EOF
 
 cleanup 8
+
+preptest test.log 8 1 1
+$RLR test-config.8 --force
+
+checkoutput test*.log* <<EOF
+test.log 0
+test.log.1.gz 1 zero
+scriptout 0 foo
+EOF
+
+#cleanup 9
+
