@@ -1,4 +1,4 @@
-oinclude <alloca.h>
+#include <alloca.h>
 #include <ctype.h>
 #include <dirent.h>
 #include <errno.h>
@@ -797,7 +797,7 @@ static int readState(char * stateFilename, logState ** statesPtr,
 
 }
 
-int main(int argc, char ** argv) {
+int main(int argc, const char ** argv) {
     logInfo defConfig = { NULL, NULL, 0, NULL, ROT_SIZE, 
 			  /* threshHold */ 1024 * 1024, 0,
 			  /* pre */ NULL, NULL, NULL, NULL, 
@@ -812,7 +812,7 @@ int main(int argc, char ** argv) {
     int i;
     int rc = 0;
     int arg;
-    char ** files, ** file;
+    const char ** files, ** file;
     poptContext optCon;
     struct poptOption options[] = {
 	{ "debug", 'd', 0, 0, 'd', 

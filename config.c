@@ -6,6 +6,7 @@
 #include <getopt.h>
 #include <glob.h>
 #include <grp.h>
+#include <popt.h>
 #include <pwd.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -29,11 +30,11 @@ static int defTabooCount = sizeof(defTabooExts) / sizeof(char *);
 static char ** tabooExts = NULL;
 int tabooCount = 0;
 
-static int readConfigFile(char * configFile, logInfo * defConfig, 
+static int readConfigFile(const char * configFile, logInfo * defConfig, 
 			  logInfo ** logsPtr, int * numLogsPtr);
 static int globerr(const char * pathname, int theerr);
 
-static int isolateValue(char * fileName, int lineNum, char * key, 
+static int isolateValue(const char * fileName, int lineNum, char * key, 
 			char ** startPtr, char ** endPtr) {
     char * chptr = *startPtr;
 
@@ -63,7 +64,7 @@ static int isolateValue(char * fileName, int lineNum, char * key,
     return 0;
 }
 
-static char *readPath(char *configFile, int lineNum, char *key,
+static char *readPath(const char *configFile, int lineNum, char *key,
 		      char **startPtr) {
     char oldchar;
     char *endtag, *chptr;
@@ -96,7 +97,7 @@ static char *readPath(char *configFile, int lineNum, char *key,
 	return NULL;
 }
 
-static char * readAddress(char * configFile, int lineNum, char * key, 
+static char * readAddress(const char * configFile, int lineNum, char * key, 
 			  char ** startPtr) {
     char oldchar;
     char * endtag, * chptr;
@@ -127,7 +128,7 @@ static char * readAddress(char * configFile, int lineNum, char * key,
 	return NULL;
 }
 
-int readConfigPath(char * path, logInfo * defConfig, 
+int readConfigPath(const char * path, logInfo * defConfig, 
 			  logInfo ** logsPtr, int * numLogsPtr) {
     struct stat sb;
     DIR * dir;
@@ -223,7 +224,7 @@ static int globerr(const char * pathname, int theerr) {
     return 1;
 }
 
-static int readConfigFile(char * configFile, logInfo * defConfig, 
+static int readConfigFile(const char * configFile, logInfo * defConfig, 
 			  logInfo ** logsPtr, int * numLogsPtr) {
     int fd;
     char * buf, * endtag;
@@ -244,6 +245,8 @@ static int readConfigFile(char * configFile, logInfo * defConfig,
     int createMode;
     struct stat sb, sb2;
     glob_t globResult;
+    const char ** argv;
+    int argc;
 
     /* FIXME: createOwner and createGroup probably shouldn't be fixed
        length arrays -- of course, if we aren't run setuid it doesn't
@@ -671,7 +674,7 @@ static int readConfigFile(char * configFile, logInfo * defConfig,
 
 	    lineNum++;
 	    start++;
-	} else if (*start == '/' || *start == '"') {
+	} else if (*start == '/' || *start == '"' || *start == '\'') {
 	    if (newlog != defConfig) {
 		message(MESS_ERROR, "%s:%d unexpected log filename\n", 
 			configFile, lineNum);
@@ -683,22 +686,29 @@ static int readConfigFile(char * configFile, logInfo * defConfig,
 	    newlog = *logsPtr + *numLogsPtr - 1;
 	    memcpy(newlog, defConfig, sizeof(*newlog));
 
-	    if (*start == '"') {
-		start++;
-		endtag = strchr(start, '"');
-		if (!endtag || (strchr(start, '\n') < endtag)) {
-		    message(MESS_ERROR, "%s:%d end \" expected",
-			    configFile, lineNum);
-		}
-	    } else {
-		endtag = start;
-		while (!isspace(*endtag) && *endtag != '{') endtag++;
+	    endtag = start;
+	    while (*endtag != '\n' && *endtag != '\0') endtag++;
+	    if (*endtag != '\n') {
+		message(MESS_ERROR, "%s:%d missing end of line",
+			configFile, lineNum);
 	    }
-
-	    oldchar = *endtag;
 	    *endtag = '\0';
 
-	    rc = glob(start, GLOB_NOCHECK, globerr, &globResult);
+	    if (poptParseArgvString(start, &argc, &argv)) {
+		message(MESS_ERROR, "%s:%d error parsing filename",
+			configFile, lineNum);
+		return 1;
+	    } else if (argc < 2 || strcmp(argv[1], "{")) {
+		message(MESS_ERROR, "%s:%d { expected after log file name\n",
+			configFile, lineNum);
+		return 1;
+	    } else if (argc > 2) {
+		message(MESS_ERROR, "%s:%d unexpected text after {\n",
+			configFile, lineNum);
+		return 1;
+	    }
+
+	    rc = glob(argv[0], GLOB_NOCHECK, globerr, &globResult);
 	    if (rc == GLOB_ABORTED) return 1;
 
 	    newlog->files = malloc(sizeof(*newlog->files) * 
@@ -729,33 +739,13 @@ static int readConfigFile(char * configFile, logInfo * defConfig,
 	    }
 
 	    newlog->globMem = globResult;
-	    newlog->pattern = strdup(start);
+	    newlog->pattern = strdup(argv[0]);
 
-	    message(MESS_DEBUG, "reading config info for %s\n", start);
+	    message(MESS_DEBUG, "reading config info for %s\n", argv[0]);
 
-	    *endtag = oldchar;
-	    if (*endtag == '"') endtag++;
-	    start = endtag;
+	    free(argv);
 
-	    while (*start && isspace(*start) && *start != '{') {
-		if (*start == '\n') lineNum++;
-		start++;
-	    }
-
-	    if (*start != '{') {
-		message(MESS_ERROR, "%s:%d { expected after log file name\n",
-			configFile, lineNum);
-		return 1;
-	    }
-
-	    start++;
-	    while (isblank(*start) && *start != '\n') start++;
-	
-	    if (*start != '\n' && *start != '}') {
-		message(MESS_ERROR, "%s:%d unexpected text after {\n",
-			configFile, lineNum);
-		return 1;
-	    }
+	    start = endtag + 1;
 	} else if (*start == '}') {
 	    if (newlog == defConfig) {
 		message(MESS_ERROR, "%s:%d unxpected }\n", configFile, lineNum);
