@@ -8,6 +8,11 @@ PROG = logrotate
 MAN = logrotate.8
 LOADLIBES = -lpopt
 
+ifeq ($(WITH_SELINUX),yes)
+CFLAGS += -DWITH_SELINUX
+LOADLIBES += -lselinux -lattr
+endif
+
 # HP-UX using GCC
 ifeq ($(OS_NAME),HP-UX)
     ifeq ($(RPM_OPT_FLAGS),)
