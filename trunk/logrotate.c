@@ -63,10 +63,9 @@ static logState * findState(const char * fn, logState ** statesPtr,
 
 static int runScript(char * logfn, char * script) {
     int fd;
-    char filespec[20];
+    char filespec[32];
     char * cmd;
     int rc;
-    struct stat sb;
 
     if (debug) {
 	message(MESS_DEBUG, "running script with arg %s: \"%s\"\n", 
@@ -74,25 +73,11 @@ static int runScript(char * logfn, char * script) {
 	return 0;
     }
 
-    strcpy(filespec, "/tmp/logrotXXXXXX");
-
-    mktemp(filespec);
-    if ((fd = open(filespec, O_CREAT | O_EXCL | O_WRONLY, 0700)) < 0) {
+    strcpy(filespec, "/tmp/logrotate.XXXXXX");
+    if ((fd = mkstemp(filespec)) < 0 || fchmod(fd, 0700)) {
 	message(MESS_DEBUG, "error creating %s: %s\n", filespec,
 		strerror(errno));
-	return -1;
-    }
-
-    /* make sure we didn't just follow a symlink as part of a DOS */
-    if (stat(filespec, &sb)) {
-	/* huh? */
-	close(fd);
-	return -1;
-    }
-
-    if (S_ISLNK(sb.st_mode)) {
-	message(MESS_DEBUG, "%s is a symlink! probable DOS attack!!\n");
-	close(fd);
+	if (fd >= 0) close(fd);
 	return -1;
     }
 
@@ -313,8 +298,8 @@ int rotateSingleLog(logInfo * log, int logNum, logState ** statesPtr,
 		log->extension, strlen(log->extension)) == 0) {
 	    char *tempstr;
 	    fileext = log->extension;
-	    tempstr = calloc(strlen(baseName)-strlen(log->extension), sizeof(char));
-	    strncpy(tempstr, baseName,
+	    tempstr = calloc(strlen(baseName)-strlen(log->extension)+1, sizeof(char));
+	    strncat(tempstr, baseName,
 		    strlen(baseName)-strlen(log->extension));
 	    free(baseName);
 	    baseName = tempstr;
@@ -554,7 +539,7 @@ int rotateSingleLog(logInfo * log, int logNum, logState ** statesPtr,
 int rotateLogSet(logInfo * log, logState ** statesPtr, int * numStatesPtr, 
 		 int force) {
     FILE * errorFile;
-    char * errorFileName = NULL;
+    char errorFileName[32];
     int oldstderr = 0, newerr;
     int i;
     int hasErrors = 0;
@@ -602,11 +587,9 @@ int rotateLogSet(logInfo * log, logState ** statesPtr, int * numStatesPtr,
 
     if (log->errAddress) {
 	message(MESS_DEBUG, "errors will be mailed to %s\n", log->errAddress);
-	errorFileName = strdup(tmpnam(NULL));
 
-	newerr = open(errorFileName, O_WRONLY | O_CREAT | O_EXCL, 0600);
-
-	if (newerr < 0) {
+	strcpy(errorFileName, "/tmp/logrotate.XXXXXX");
+	if ((newerr = mkstemp(errorFileName)) < 0) {
 	    message(MESS_ERROR, "error creating temporary file %s\n",
 			errorFileName);
 	    return 1;

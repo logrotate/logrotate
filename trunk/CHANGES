@@ -1,3 +1,6 @@
+3.5.2 -> 3.5.3:
+        - patch /tmp file race condition problem, use mkstemp
+
 3.5 -> 3.5.2:
 	- added .swp and .rpmnew to default taboo list
 
