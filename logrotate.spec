@@ -4,13 +4,12 @@
 
 Summary: Rotates, compresses, removes and mails system log files.
 Name: logrotate
-Version: 3.6.9
-Release: 2
+Version: 3.6.10
+Release: 1
 License: GPL
 Group: System Environment/Base
 Source: logrotate-%{PACKAGE_VERSION}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}.root
-Patch1: logrotate-selinux.patch
 
 %description
 The logrotate utility is designed to simplify the administration of
@@ -25,13 +24,12 @@ log files on your system.
 
 %prep
 %setup
-%if %{WITH_SELINUX}
-#SELinux
-%patch1 -p1 -b .selinux
-%endif
 
 %build
-make RPM_OPT_FLAGS="$RPM_OPT_FLAGS"
+make RPM_OPT_FLAGS="$RPM_OPT_FLAGS" \
+%if %{WITH_SELINUX}
+	WITH_SELINUX=yes
+%endif
 
 %install
 rm -rf $RPM_BUILD_ROOT
@@ -59,7 +57,7 @@ rm -rf $RPM_BUILD_ROOT
 
 %changelog
 * Thu Jul 24 2003 Elliot Lee <sopwith@redhat.com> 3.6.10-1
-- Fix #100546
+- Fix #100546, change selinux port.
 
 * Wed Jul 18 2003 Dan Walsh <dwalsh@redhat.com> 3.6.9-2
 - Port to SELinux 2.5

@@ -11,6 +11,12 @@
 #include <time.h>
 #include <unistd.h>
 
+#ifdef WITH_SELINUX
+#include <selinux/selinux.h>
+static security_context_t prev_context=NULL;
+int selinux_enabled=0;
+#endif
+
 #include "basenames.h"
 #include "log.h"
 #include "logrotate.h"
@@ -150,8 +156,42 @@ static int copyTruncate(char * currLog, char * saveLog, struct stat * sb, int fl
 		strerror(errno));
 	    return 1;
 	}
-	if ((fdsave = open(saveLog, O_WRONLY | O_CREAT | O_TRUNC,
-		sb->st_mode)) < 0) {
+#ifdef WITH_SELINUX
+	if ((selinux_enabled=is_selinux_enabled()))
+	  {
+	    security_context_t oldContext;
+	    if (fgetfilecon(fdcurr, &oldContext) >=0) {
+	      if (getfscreatecon(&prev_context) < 0) {
+		message(MESS_ERROR, "error getting default context: %s\n", 
+			strerror(errno));
+		freecon(oldContext);
+		return 1;
+	      }
+	      if (setfscreatecon(oldContext) < 0) {
+		message(MESS_ERROR, "error setting file context %s to %s: %s\n", 
+			saveLog, oldContext,strerror(errno));
+		freecon(oldContext);
+		return 1;
+	      }
+	      freecon(oldContext);
+	    } else {
+	      message(MESS_ERROR, "error getting file context %s: %s\n", currLog,
+		      strerror(errno));
+	      return 1;
+	    }
+	  }
+#endif
+	fdsave = open(saveLog, O_WRONLY | O_CREAT | O_TRUNC,sb->st_mode);
+#ifdef WITH_SELINUX
+	if (selinux_enabled) {
+	  setfscreatecon(prev_context);
+	  if (prev_context!= NULL) {
+	    freecon(prev_context);
+	    prev_context=NULL;
+	  }
+	}
+#endif
+	if (fdsave < 0) {
 	    message(MESS_ERROR, "error creating %s: %s\n", saveLog,
 		strerror(errno));
 	    close(fdcurr);
@@ -416,6 +456,31 @@ int rotateSingleLog(logInfo * log, int logNum, logState ** statesPtr,
     sprintf(firstRotated, "%s/%s.%d%s%s", dirName, baseName,
             logStart, fileext, compext);
     
+#ifdef WITH_SELINUX
+    if ((selinux_enabled=is_selinux_enabled())) {
+      security_context_t oldContext=NULL;
+      if (getfilecon(log->files[logNum], &oldContext)>0) {
+	if (getfscreatecon(&prev_context) < 0) {
+	  message(MESS_ERROR, "error getting default context: %s\n", 
+		  strerror(errno));
+	  freecon(oldContext);
+	  return 1;
+	}
+	if (setfscreatecon(oldContext) < 0) {
+	  message(MESS_ERROR, "error setting file context %s to %s: %s\n", 
+		  log->files[logNum], oldContext,strerror(errno));
+	  freecon(oldContext);
+	  return 1;
+	}
+	freecon(oldContext);
+      } else {
+	message(MESS_ERROR, "error getting file context %s: %s\n", 
+		log->files[logNum], 
+		strerror(errno));
+	return 1;
+      }
+    }
+#endif
     for (i = rotateCount + logStart - 1; (i >= 0) && !hasErrors; i--) {
         tmp = newName;
         newName = oldName;
@@ -637,6 +702,15 @@ int rotateSingleLog(logInfo * log, int logNum, logState ** statesPtr,
 	}
     }
     
+#ifdef WITH_SELINUX
+	if (selinux_enabled) {
+	  setfscreatecon(prev_context);
+	  if (prev_context!= NULL) {
+	    freecon(prev_context);
+	    prev_context=NULL;
+	  }
+	}
+#endif
     return hasErrors;
 }
 
