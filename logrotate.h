@@ -5,6 +5,7 @@
 
 #define LOG_FLAG_COMPRESS	(1 << 0)
 #define LOG_FLAG_CREATE		(1 << 1)
+#define LOG_FLAG_IFEMPTY	(1 << 2)
 
 #define COMPRESS_COMMAND "gzip -9"
 #define COMPRESS_EXT ".gz"
@@ -14,6 +15,7 @@
 
 typedef struct {
     char * fn;
+    char * oldDir;
     enum { ROT_DAYS, ROT_WEEKLY, ROT_MONTHLY, ROT_SIZE } criterium;
     unsigned int threshhold;
     int rotateCount;
