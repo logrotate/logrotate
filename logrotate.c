@@ -11,6 +11,7 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "basenames.h"
 #include "log.h"
 #include "logrotate.h"
 
@@ -30,6 +31,8 @@ static logState * findState(char * fn, logState ** statesPtr,
     int i;
     logState * states = *statesPtr;
     int numStates = *numStatesPtr;
+    time_t nowSecs = time(NULL);
+    struct tm now = *localtime(&nowSecs);
 
     for (i = 0; i < numStates; i++) 
 	if (!strcmp(fn, states[i].fn)) break;
@@ -39,6 +42,10 @@ static logState * findState(char * fn, logState ** statesPtr,
 	states = realloc(states, sizeof(*states) * numStates);
 	states[i].fn = strdup(fn);
 	memset(&states[i].lastRotated, 0, sizeof(states[i].lastRotated));
+
+	states[i].lastRotated.tm_mon = now.tm_mon;
+	states[i].lastRotated.tm_mday = now.tm_mday;
+	states[i].lastRotated.tm_year = now.tm_year;
 
 	*statesPtr = states;
 	*numStatesPtr = numStates;
@@ -67,6 +74,8 @@ int rotateLog(logInfo * log, logState ** statesPtr, int * numStatesPtr) {
     uid_t createUid;
     gid_t createGid;
     mode_t createMode;
+    char * baseName;
+    char * dirName;
 
     message(MESS_DEBUG, "rotating: %s ", log->fn);
     switch (log->criterium) {
@@ -91,8 +100,16 @@ int rotateLog(logInfo * log, logState ** statesPtr, int * numStatesPtr) {
 
     if (log->flags & LOG_FLAG_COMPRESS) ext = COMPRESS_EXT;
 
+    if (log->oldDir) 
+	message(MESS_DEBUG, "olddir is %s ", log->oldDir);
+
+    if (log->flags & LOG_FLAG_IFEMPTY) 
+	message(MESS_DEBUG, "empty log files are rotated ");
+    else
+	message(MESS_DEBUG, "empty log files are not rotated ");
+
     if (log->errAddress) {
-	message(MESS_DEBUG, "errors mailed to %s ", log->errAddress);
+	message(MESS_DEBUG, "errors will be mailed to %s ", log->errAddress);
 	errorFileName = strdup(tmpnam(NULL));
 
 	newerr = open(errorFileName, O_WRONLY | O_CREAT | O_EXCL, 0600);
@@ -103,15 +120,20 @@ int rotateLog(logInfo * log, logState ** statesPtr, int * numStatesPtr) {
 	    return 1;
 	}
 	
-	oldstderr = dup(2);
-	dup2(newerr, 2);
-	close(newerr);
+	if (!debug) {
+	    oldstderr = dup(2);
+	    dup2(newerr, 2);
+	    close(newerr);
 
-	errorFile = fdopen(2, "w");
+	    errorFile = fdopen(2, "w");
 
-	setlinebuf(errorFile);
-	fprintf(errorFile, "errors occured while rotating %s\n\n",
-		log->fn);
+	    setlinebuf(errorFile);
+
+	    fprintf(errorFile, "errors occured while rotating %s\n\n",
+		    log->fn);
+	} else {
+	    errorFile = stderr;
+	}
     } else {
 	message(MESS_DEBUG, "errors displayed on stderr ");
 	errorFile = stderr;
@@ -139,10 +161,21 @@ int rotateLog(logInfo * log, logState ** statesPtr, int * numStatesPtr) {
 		   state->lastRotated.tm_mday != now.tm_mday) {
 	    switch (log->criterium) {
 	      case ROT_WEEKLY:
-		doRotate = !now.tm_wday;
+		/* rotate if:
+		      1) the current weekday is before the weekday of the
+			 last rotation
+		      2) more then a week has passed since the last
+			 rotation 
+		*/
+		doRotate = ((now.tm_wday < state->lastRotated.tm_wday) ||
+			    ((mktime(&now) - mktime(&state->lastRotated)) >
+			       (7 * 24 * 3600)));
 		break;
 	      case ROT_MONTHLY:
-		doRotate = (now.tm_mday == 1);
+		/* rotate if the logs haven't been rotated this month or
+		   this year */
+		doRotate = ((now.tm_mon != state->lastRotated.tm_mon) ||
+			    (now.tm_year != state->lastRotated.tm_year));
 		break;
 	      case ROT_DAYS:
 		/* FIXME: only days=1 is implemented!! */
@@ -158,6 +191,10 @@ int rotateLog(logInfo * log, logState ** statesPtr, int * numStatesPtr) {
 	}
     }
 
+    /* The notifempty flag overrides the normal criteria */
+    if (!(log->flags & LOG_FLAG_IFEMPTY) && !sb.st_size)
+	doRotate = 0;
+
     if (!hasErrors && doRotate) {
 	message(MESS_DEBUG, "log needs rotating\n");
 
@@ -167,19 +204,28 @@ int rotateLog(logInfo * log, logState ** statesPtr, int * numStatesPtr) {
 	    disposeName = log->fn;
 	    finalName = NULL;
 	} else {
-	    oldName = alloca(strlen(log->fn) + 10);
-	    newName = alloca(strlen(log->fn) + 10);
+	    if (log->oldDir)
+		dirName = strdup(log->oldDir);
+	    else
+		dirName = ourDirName(log->fn);
+	    baseName = ourBaseName(log->fn);
+
+	    oldName = alloca(strlen(dirName) + strlen(baseName) + 
+				strlen(log->fn) + 10);
+	    newName = alloca(strlen(dirName) + strlen(baseName) + 
+				strlen(log->fn) + 10);
+	    disposeName = alloca(strlen(dirName) + strlen(baseName) + 
+				strlen(log->fn) + 10);
 
 	    sprintf(oldName, "%s.%d%s", log->fn, log->rotateCount + 1, ext);
 
-	    disposeName = alloca(strlen(log->fn) + 10);
 	    strcpy(disposeName, oldName);
 
 	    for (i = log->rotateCount; i && !hasErrors; i--) {
 		tmp = newName;
 		newName = oldName;
 		oldName = tmp;
-		sprintf(oldName, "%s.%d%s", log->fn, i, ext);
+		sprintf(oldName, "%s/%s.%d%s", dirName, baseName, i, ext);
 
 		message(MESS_DEBUG, "renaming %s to %s\n", oldName, newName);
 
@@ -198,7 +244,7 @@ int rotateLog(logInfo * log, logState ** statesPtr, int * numStatesPtr) {
 	    finalName = oldName;
 
 	    /* note: the gzip extension is *not* used here! */
-	    sprintf(finalName, "%s.1", log->fn);
+	    sprintf(finalName, "%s/%s.1", dirName, baseName);
 
 	    /* if the last rotation doesn't exist, that's okay */
 	    if (!debug && access(disposeName, F_OK)) {
@@ -206,6 +252,8 @@ int rotateLog(logInfo * log, logState ** statesPtr, int * numStatesPtr) {
 			"dispose of it\n", disposeName);
 		disposeName = NULL;
 	    } 
+
+	    free(dirName);
 	}
 
 	if (!hasErrors && log->logAddress && disposeName) {
@@ -324,7 +372,7 @@ int rotateLog(logInfo * log, logState ** statesPtr, int * numStatesPtr) {
 	message(MESS_DEBUG, "log does not need rotating\n");
     }
 
-    if (log->errAddress) {
+    if (log->errAddress && !debug) {
 	fclose(errorFile);
 
 	close(2);
@@ -365,12 +413,10 @@ static int writeState(char * stateFilename, logState * states,
     fprintf(f, "logrotate state -- version 1\n");
 
     for (i = 0; i < numStates; i++) {
-	if (states[i].lastRotated.tm_year) {
-	    fprintf(f, "%s %d-%d-%d\n", states[i].fn, 
-		    states[i].lastRotated.tm_year + 1900,
-		    states[i].lastRotated.tm_mon + 1,
-		    states[i].lastRotated.tm_mday);
-	}
+	fprintf(f, "%s %d-%d-%d\n", states[i].fn, 
+		states[i].lastRotated.tm_year + 1900,
+		states[i].lastRotated.tm_mon + 1,
+		states[i].lastRotated.tm_mday);
     }
 
     fclose(f);
@@ -489,8 +535,10 @@ void usage(void) {
 }
 
 int main(int argc, char ** argv) {
-    logInfo defConfig = { NULL, ROT_SIZE, 1024 * 1024, 0, 0, NULL, 
-			  NULL, NULL, 0, NO_MODE, NO_UID, NO_GID };
+    logInfo defConfig = { NULL, NULL, ROT_SIZE, 1024 * 1024, 0, 0, NULL, 
+			  NULL, NULL, 
+			  LOG_FLAG_IFEMPTY,
+			  NO_MODE, NO_UID, NO_GID };
     int numLogs = 0, numStates = 0;
     logInfo * logs = NULL;
     logState * states = NULL;
