@@ -33,6 +33,7 @@ static logState * findState(char * fn, logState ** statesPtr,
     int numStates = *numStatesPtr;
     time_t nowSecs = time(NULL);
     struct tm now = *localtime(&nowSecs);
+    time_t lr_time;
 
     for (i = 0; i < numStates; i++) 
 	if (!strcmp(fn, states[i].fn)) break;
@@ -48,8 +49,8 @@ static logState * findState(char * fn, logState ** statesPtr,
 	states[i].lastRotated.tm_year = now.tm_year;
 
 	/* fill in the rest of the st->lastRotated fields */
-	lr_time = mktime(&st->lastRotated);
-	st->lastRotated = *localtime(&lr_time);
+	lr_time = mktime(&states[i].lastRotated);
+	states[i].lastRotated = *localtime(&lr_time);
 
 	*statesPtr = states;
 	*numStatesPtr = numStates;
