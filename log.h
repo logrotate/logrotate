@@ -10,9 +10,14 @@
 #define MESS_ERROR	5
 #define MESS_FATAL	6
 
+#define LOG_TIMES	(1 << 0)
+
 void message(int level, char * format, ...);
 void log(int fd, char * format, ...);
 void logSetErrorFile(FILE * f);
 void logSetMessageFile(FILE * f);
+void logSetFlags(int flags);
+void logClearFlags(int flags);
+void logSetLevel(int level);
 
 #endif
