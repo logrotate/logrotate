@@ -1,4 +1,4 @@
-.TH LOGROTATE 8 "Tue Jun 23 1998"
+.TH LOGROTATE 8 "Thu Jun 21 2001"
 .UC 4
 .SH NAME
 logrotate \- rotates, compresses, and mails system logs
@@ -9,12 +9,12 @@ logrotate \- rotates, compresses, and mails system logs
 large numbers of log files.  It allows automatic rotation, compression, 
 removal, and mailing of log files.  Each log file may be handled daily,
 weekly, monthly, or when it grows too large.
-
+.P
 Normally, \fBlogrotate\fR is run as a daily cron job.  It will not modify
 a log multiple times in one day unless the criterium for that log is
 based on the log's size and \fBlogrotate\fR is being run multiple times
 each day, or unless the \fB-f\fR or \fB-force\fR option is used. 
-
+.P
 Any number of config files may be given on the command line. Later config
 files may override the options given in earlier files, so the order
 in which the \fBlogrotate\fR config files are listed in is important.
@@ -23,6 +23,9 @@ which are needed should be used.  See below for more information on how
 to use the \fIinclude\fR directive to accomplish this.  If a directory
 is given on the command line, every file in that directory is used as
 a config file.
+.P
+If no command line arguments are given, \fBlogrotate\fR will print
+version and copyright information, along with a short usage summary.
 
 .SH OPTIONS
 .TP
@@ -129,8 +132,29 @@ a \fBlogrotate\fR configuration file:
 
 .TP
 \fBcompress\fR
-Old versions of log files are compressed with \fBgzip\fR. See also
+Old versions of log files are compressed with \fBgzip\fR by default. See also
 \fBnocompress\fR. 
+
+.TP
+\fBcompresscmd\fR
+Specifies which command to use to compress log files.  The default is
+\fBgzip\fR.  See also \fBcompress\fR.
+
+.TP
+\fBuncompresscmd\fR
+Specifies which command to use to uncompress log files.  The default is
+\fBgunzip\fR.
+
+.TP
+\fBcompressext\fR
+Specifies which extension to use on compressed logfiles, if compression
+is enabled.  The default follows that of the configured compression
+command.
+
+.TP
+\fBcompressoptions\fR
+Command line options may be passed to the compression program, if one is
+in use.  The default, for \fBgzip\fR, is "-9" (maximum compression).
 
 .TP
 \fBcopytruncate\fR
@@ -328,11 +352,16 @@ night.
 .TP 27
 \fI/var/lib/logrotate.status\fR
 Default state file.
+.TP 27
+\fI/etc/logrotate.conf\fR
+Configuration options.
 
 .SH SEE ALSO
 .IR gzip (1)
 
-.SH AUTHOR
+.SH AUTHORS
 .nf
 Erik Troan <ewt@redhat.com>
+.nf
+Preston Brown <pbrown@redhat.com>
 .fi

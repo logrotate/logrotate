@@ -512,11 +512,14 @@ static int readConfigFile(const char * configFile, logInfo * defConfig,
 
 		    newlog->rotateCount = strtoul(start, &chptr, 0);
 		    if (*chptr) {
-			message(MESS_ERROR, "%s:%d bad rotation count'%s'\n",
+			message(MESS_ERROR, "%s:%d bad rotation count '%s'\n",
 				    configFile, lineNum, start);
 			return 1;
 		    }
-
+		    if (newlog->rotateCount <= 0) {
+			message(MESS_ERROR, "%s: %d bad rotation count %d, forcing to 1.\n",
+				configFile, lineNum, newlog->rotateCount);
+		    }
 		    *endtag = oldchar, start = endtag;
 		}
 	    } else if (!strcmp(start, "errors")) {

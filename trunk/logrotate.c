@@ -871,7 +871,7 @@ int main(int argc, const char ** argv) {
     files = poptGetArgs(optCon);
     if (!files) {
 	fprintf(stderr, "logrotate " VERSION 
-		    " - Copyright (C) 1995 - Red Hat Software\n");
+		    " - Copyright (C) 1995-2001 Red Hat, Inc.\n");
 	fprintf(stderr, "This may be freely redistributed under the terms of "
 		    "the GNU Public License\n\n");
 	poptPrintUsage(optCon, stderr, 0);
