@@ -118,6 +118,17 @@ Old versions of log files are compressed with \fBgzip\fR. See also
 \fBnocompress\fR. 
 
 .TP
+\fBcopytruncate\fR
+Truncate the original log file in place after creating a copy,
+instead of moving the old log file and optionally creating a new one,
+It can be used when some program can not be told to close its logfile
+and thus might continue writing (appending) to the previous log file forever.
+Note that there is a very small time slice between copying the file and
+truncating it, so some logging data might be lost.
+When this option is used, the \fBcreate\fR option will have no effect,
+as the old log file stays in place.
+
+.TP
 \fBcreate \fImode\fR \fIowner\fR \fIgroup\fR
 Immediately after rotation (before the \fBpostrotate\fR script is run)
 the log file is created (with the same name as the log file just rotated).
@@ -178,8 +189,18 @@ Old versions of log files are not compressed with \fBgzip\fR. See also
 \fBcompress\fR. 
 
 .TP
+\fBnocopytruncate\fR
+Do not truncate the original log file in place after creating a copy
+(this overrides the \fBcopytruncate\fR option).
+
+.TP
 \fBnocreate\fR
 New log files are not created (this overrides the \fBcreate\fR option).
+
+.TP
+\fBnodelaycompress\fR
+Do not postpone compression of the previous log file to the next rotation cycle
+(this overrides the \fBdelaycompress\fR option).
 
 .TP
 \fBnomail\fR

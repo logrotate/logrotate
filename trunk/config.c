@@ -18,6 +18,10 @@
 #include "log.h"
 #include "logrotate.h"
 
+#if !defined(GLOB_ABORTED) && defined(GLOB_ABEND)
+#define GLOB_ABORTED GLOB_ABEND
+#endif
+
 static char * defTabooExts[] = { ".rpmsave", ".rpmorig", "~", ",v" };
 static int defTabooCount = sizeof(defTabooExts) / sizeof(char *);
 
@@ -345,6 +349,18 @@ static int readConfigFile(char * configFile, logInfo * defConfig,
 		newlog->flags |= LOG_FLAG_DELAYCOMPRESS;
 
 		*endtag = oldchar, start = endtag;
+	    } else if (!strcmp(start, "nodelaycompress")) {
+		newlog->flags &= ~LOG_FLAG_DELAYCOMPRESS;
+
+		*endtag = oldchar, start = endtag;
+	    } else if (!strcmp(start, "copytruncate")) {
+		newlog->flags |= LOG_FLAG_COPYTRUNCATE;
+
+		*endtag = oldchar, start = endtag;
+	    } else if (!strcmp(start, "nocopytruncate")) {
+		newlog->flags &= ~LOG_FLAG_COPYTRUNCATE;
+
+		*endtag = oldchar, start = endtag;
 	    } else if (!strcmp(start, "ifempty")) {
 		newlog->flags |= LOG_FLAG_IFEMPTY;
 
@@ -636,7 +652,7 @@ static int readConfigFile(char * configFile, logInfo * defConfig,
 	    *endtag = '\0';
 
 	    rc = glob(start, 0, globerr, &globResult);
-	    if (rc == GLOB_ABEND) return 1;
+	    if (rc == GLOB_ABORTED) return 1;
 
 	    newlog->files = malloc(sizeof(*newlog->files) * 
 				   globResult.gl_pathc);

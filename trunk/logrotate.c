@@ -4,6 +4,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <getopt.h>
+#include <popt.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -62,7 +63,7 @@ static logState * findState(char * fn, logState ** statesPtr,
 static int runScript(char * logfn, char * script) {
     int fd;
     char filespec[20];
-    char cmd[50];
+    char * cmd;
     int rc;
     struct stat sb;
 
@@ -107,12 +108,83 @@ static int runScript(char * logfn, char * script) {
 
     close(fd);
 
+    cmd = alloca(strlen(filespec) + strlen(logfn) + 2);
     sprintf(cmd, "%s %s", filespec, logfn);
     rc = system(cmd);
 
     unlink(filespec);
 
     return rc;
+}
+
+static int copyTruncate(char * currLog, char * saveLog, struct stat * sb) {
+    char buf[BUFSIZ];
+    int fdcurr = -1, fdsave = -1;
+    ssize_t cnt;
+
+    message(MESS_DEBUG, "copying %s to %s\n", currLog, saveLog);
+
+    if (!debug) {
+	if ((fdcurr = open(currLog, O_RDWR)) < 0) {
+	    message(MESS_ERROR, "error opening %s: %s\n", currLog,
+		strerror(errno));
+	    return 1;
+	}
+	if ((fdsave = open(saveLog, O_WRONLY | O_CREAT | O_TRUNC,
+		sb->st_mode)) < 0) {
+	    message(MESS_ERROR, "error creating %s: %s\n", saveLog,
+		strerror(errno));
+	    close(fdcurr);
+	    return 1;
+	}
+	if (fchmod(fdsave, sb->st_mode)) {
+	    message(MESS_ERROR, "error setting mode of %s: %s\n",
+		saveLog, strerror(errno));
+	    close(fdcurr);
+	    close(fdsave);
+	    return 1;
+	}
+	if (fchown(fdsave, sb->st_uid, sb->st_gid)) {
+	    message(MESS_ERROR, "error setting owner of %s: %s\n",
+		saveLog, strerror(errno));
+	    close(fdcurr);
+	    close(fdsave);
+	    return 1;
+	}
+	while ((cnt = read(fdcurr, buf, sizeof(buf))) > 0) {
+	    if (write(fdsave, buf, cnt) != cnt) {
+		message(MESS_ERROR, "error writing to %s: %s\n", 
+		    saveLog, strerror(errno));
+		close(fdcurr);
+		close(fdsave);
+		return 1;
+	    }
+	}
+	if (cnt != 0) {
+	    message(MESS_ERROR, "error reading %s: %s\n", 
+		currLog, strerror(errno));
+	    close(fdcurr);
+	    close(fdsave);
+	    return 1;
+	}
+    }
+
+    message(MESS_DEBUG, "truncating %s\n", currLog);
+
+    if (!debug) {
+	if (ftruncate(fdcurr, 0)) {
+	    message(MESS_ERROR, "error truncating %s: %s\n", currLog,
+		strerror(errno));
+	    close(fdcurr);
+	    close(fdsave);
+	    return 1;
+	} else {
+	    close(fdcurr);
+	    close(fdsave);
+	}
+    }
+
+    return 0;
 }
 
 int rotateSingleLog(logInfo * log, int logNum, logState ** statesPtr, 
@@ -151,6 +223,10 @@ int rotateSingleLog(logInfo * log, int logNum, logState ** statesPtr,
 
 	if (log->criterium == ROT_SIZE) {
 	    doRotate = (sb.st_size >= log->threshhold);
+	}
+	else if (log->criterium == ROT_FORCE) {
+	    /* user forced rotation of logs from command line */
+	    doRotate = 1;
 	} else if (state->lastRotated.tm_year != now.tm_year || 
 		   state->lastRotated.tm_mon != now.tm_mon ||
 		   state->lastRotated.tm_mday != now.tm_mday) {
@@ -284,11 +360,12 @@ int rotateSingleLog(logInfo * log, int logNum, logState ** statesPtr,
 			     strlen(UNCOMPRESS_PIPE));
 
 	    if (log->flags & LOG_FLAG_COMPRESS)
-		sprintf(command, "%s < %s | /bin/mail -s '%s' %s", 
-			    UNCOMPRESS_PIPE, disposeName, log->files[logNum],
+		sprintf(command, "%s < %s | %s '%s' %s", 
+			    UNCOMPRESS_PIPE, disposeName, MAIL_COMMAND,
+			    log->files[logNum],
 			    log->logAddress);
 	    else
-		sprintf(command, "/bin/mail -s '%s' %s < %s", disposeName, 
+		sprintf(command, "%s '%s' %s < %s", MAIL_COMMAND, disposeName, 
 			    log->logAddress, disposeName);
 
 	    message(MESS_DEBUG, "executing: \"%s\"\n", command);
@@ -322,15 +399,19 @@ int rotateSingleLog(logInfo * log, int logNum, logState ** statesPtr,
 		}
 	    }
 
-	    message(MESS_DEBUG, "renaming %s to %s\n", log->files[logNum], 
+	    if (!(log->flags & LOG_FLAG_COPYTRUNCATE)) {
+		message(MESS_DEBUG, "renaming %s to %s\n", log->files[logNum], 
 		    finalName);
 
-	    if (!debug && !hasErrors && rename(log->files[logNum], finalName)) {
-		fprintf(errorFile, "failed to rename %s to %s: %s\n",
+		if (!debug && !hasErrors &&
+			rename(log->files[logNum], finalName)) {
+		    fprintf(errorFile, "failed to rename %s to %s: %s\n",
 			log->files[logNum], finalName, strerror(errno));
+		}
 	    }
 
-	    if (!hasErrors && log->flags & LOG_FLAG_CREATE) {
+	    if (!hasErrors && log->flags & LOG_FLAG_CREATE &&
+			!(log->flags & LOG_FLAG_COPYTRUNCATE)) {
 		if (log->createUid == NO_UID)
 		    createUid = sb.st_uid;
 		else
@@ -356,6 +437,12 @@ int rotateSingleLog(logInfo * log, int logNum, logState ** statesPtr,
 				log->files[logNum], strerror(errno));
 			hasErrors = 1;
 		    } else {
+			if (fchmod(fd, createMode)) {
+			    message(MESS_ERROR, "error setting mode of "
+				    "%s: %s\n", log->files[logNum], 
+				     strerror(errno));
+			    hasErrors = 1;
+			}
 			if (fchown(fd, createUid, createGid)) {
 			    message(MESS_ERROR, "error setting owner of "
 				    "%s: %s\n", log->files[logNum], 
@@ -366,6 +453,11 @@ int rotateSingleLog(logInfo * log, int logNum, logState ** statesPtr,
 			close(fd);
 		    }
 		}
+	    }
+
+	    if (!hasErrors && log->flags & LOG_FLAG_COPYTRUNCATE) {
+		hasErrors = copyTruncate(log->files[logNum], finalName, &sb);
+
 	    }
 
 	    if (!hasErrors && log->post) {
@@ -399,12 +491,16 @@ int rotateSingleLog(logInfo * log, int logNum, logState ** statesPtr,
     return hasErrors;
 }
 
-int rotateLogSet(logInfo * log, logState ** statesPtr, int * numStatesPtr) {
+int rotateLogSet(logInfo * log, logState ** statesPtr, int * numStatesPtr, 
+		 int force) {
     FILE * errorFile;
     char * errorFileName = NULL;
     int oldstderr = 0, newerr;
     int i;
     int hasErrors = 0;
+
+    if (force)
+	log->criterium = ROT_FORCE;
 
     message(MESS_DEBUG, "rotating pattern: %s ", log->pattern);
     switch (log->criterium) {
@@ -419,6 +515,9 @@ int rotateLogSet(logInfo * log, logState ** statesPtr, int * numStatesPtr) {
 	break;
       case ROT_SIZE:
 	message(MESS_DEBUG, "%d bytes ", log->threshhold);
+	break;
+      case ROT_FORCE:
+	message(MESS_DEBUG, "forced from command line ");
 	break;
     }
 
@@ -488,8 +587,8 @@ int rotateLogSet(logInfo * log, logState ** statesPtr, int * numStatesPtr) {
 
 	    command = alloca(strlen(errorFileName) + strlen(log->errAddress) +
 				50);
-	    sprintf(command, "/bin/mail -s 'errors rotating logs' %s < %s\n",
-		    log->errAddress, errorFileName);
+	    sprintf(command, "%s 'errors rotating logs' %s < %s\n",
+		    MAIL_COMMAND, log->errAddress, errorFileName);
 	    if (system(command)) {
 		message(MESS_ERROR, "error mailing error log to %s -- errors "
 			"left in %s\n", log->errAddress, errorFileName);
@@ -593,7 +692,7 @@ static int readState(char * stateFilename, logState ** statesPtr,
 	}
 
 	/* Hack to hide earlier bug */
-	if (year != 1900 && (year < 1996 || year > 2100)) {
+	if ((year != 1900) && (year < 1996 || year > 2100)) {
 	    message(MESS_ERROR, "bad year %d for file %s in state file %s\n",
 			year, buf2, stateFilename);
 	    fclose(f);
@@ -639,7 +738,7 @@ void usage(void) {
 		" - Copyright (C) 1995 - Red Hat Software\n");
     fprintf(stderr, "This may be freely redistributed under the terms of "
 		"the GNU Public License\n\n");
-    fprintf(stderr, "usage: logrotate [-dv] [-s|--state <file>] <config_file>+\n");
+    fprintf(stderr, "usage: logrotate [-dv] [-f|--force] [-s|--state <file>] <config_file>+\n");
     exit(1);
 }
 
@@ -648,25 +747,29 @@ int main(int argc, char ** argv) {
 			  NULL, NULL, NULL, LOG_FLAG_IFEMPTY,
 			  NO_MODE, NO_UID, NO_GID };
     int numLogs = 0, numStates = 0;
+    int force = 0;
     logInfo * logs = NULL;
     logState * states = NULL;
     char * stateFile = STATEFILE;
     int i;
     int rc = 0;
-    int arg, long_index;
-    struct option options[] = {
-	{ "debug", 0, 0, 'd' },
-	{ "state", 1, 0, 's' },
-	{ "verbose", 0, 0, 'v' },
-	{ 0, 0, 0, 0 } 
+    int arg;
+    char ** files, ** file;
+    poptContext optCon;
+    struct poptOption options[] = {
+	{ "force", 'f', 0 , &force, 0 },
+	{ "debug", 'd', 0, 0, 'd' },
+	{ "state", 's', POPT_ARG_STRING, &stateFile, 0 },
+	{ "verbose", 'v', 0, 0, 'v' },
+	{ 0, 0, 0, 0, 0 } 
     };
 
     logSetLevel(MESS_NORMAL);
 
-    while (1) {
-        arg = getopt_long(argc, argv, "ds:v", options, &long_index);
-        if (arg == -1) break;
+    optCon = poptGetContext("logrotate", argc, argv, options,0);
+    poptReadDefaultConfig(optCon, 1);
 
+    while ((arg = poptGetNextOpt(optCon)) >= 0) {
         switch (arg) {
 	  case 'd':
 	    debug = 1;
@@ -674,29 +777,25 @@ int main(int argc, char ** argv) {
 	  case 'v':
 	    logSetLevel(MESS_DEBUG);
 	    break;
-
-	  case 's':
-	    stateFile = optarg;
-	    break;
-
-          case '?':
-	    usage();
-            break;
 	}
     }
 
-    if (optind == argc) {
+    if (arg < -1) {
+	fprintf(stderr, "logrotate: bad argument %s: %s\n", 
+		poptBadOption(optCon, POPT_BADOPTION_NOALIAS), 
+		poptStrerror(rc));
+	return 2;
+    }
+
+    files = poptGetArgs(optCon);
+    if (!files) {
 	usage();
     }
 
-    /* reset the umask so new files get created properly */
-    umask(0);
-
-    while (optind < argc) {
-	if (readConfigPath(argv[optind], &defConfig, &logs, &numLogs)) {
+    for (file = files; *file; file++) {
+	if (readConfigPath(*file, &defConfig, &logs, &numLogs)) {
 	    exit(1);
 	}
-	optind++;
     }
 
     if (readState(stateFile, &states, &numStates)) {
@@ -706,7 +805,7 @@ int main(int argc, char ** argv) {
     message(MESS_DEBUG, "Handling %d logs\n", numLogs);
 
     for (i = 0; i < numLogs; i++) {
-	rc |= rotateLogSet(logs + i, &states, &numStates);
+	rc |= rotateLogSet(logs + i, &states, &numStates, force);
     }
 
     if (!debug && writeState(stateFile, states, numStates)) {

@@ -5,6 +5,7 @@ PROG = logrotate
 BINDIR = /usr/sbin
 MANDIR = /usr/man
 MAN = logrotate.8
+LOADLIBES = -lpopt
 
 #--------------------------------------------------------------------------
 
