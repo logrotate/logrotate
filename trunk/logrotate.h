@@ -39,7 +39,6 @@ typedef struct {
     mode_t createMode;		/* if any/all of these are -1, we use the */
     uid_t createUid;		/* attributes from the log file just rotated */
     gid_t createGid;
-    glob_t globMem;		/* at least we could theoretically free this */
 } logInfo;
 
 int readConfigPath(const char * path, logInfo * defConfig, 

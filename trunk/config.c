@@ -243,7 +243,7 @@ static int readConfigFile(const char * configFile, logInfo * defConfig,
     struct stat sb, sb2;
     glob_t globResult;
     const char ** argv;
-    int argc;
+    int argc, argNum;
 
     /* FIXME: createOwner and createGroup probably shouldn't be fixed
        length arrays -- of course, if we aren't run setuid it doesn't
@@ -560,8 +560,8 @@ static int readConfigFile(const char * configFile, logInfo * defConfig,
 		while (*start != '\n') start++;
 	    } else if (!strcmp(start, "tabooext")) {
 		if (newlog != defConfig) {
-		    message(MESS_ERROR, "%s:%d include may not appear inside "
-			    "of log file definition", configFile, lineNum);
+		    message(MESS_ERROR, "%s:%d tabooext may not appear inside "
+			    "of log file definition\n", configFile, lineNum);
 		    return 1;
 		}
 
@@ -602,7 +602,7 @@ static int readConfigFile(const char * configFile, logInfo * defConfig,
 	    } else if (!strcmp(start, "include")) {
 		if (newlog != defConfig) {
 		    message(MESS_ERROR, "%s:%d include may not appear inside "
-			    "of log file definition", configFile, lineNum);
+			    "of log file definition\n", configFile, lineNum);
 		    return 1;
 		}
 
@@ -686,59 +686,63 @@ static int readConfigFile(const char * configFile, logInfo * defConfig,
 	    endtag = start;
 	    while (*endtag != '\n' && *endtag != '\0') endtag++;
 	    if (*endtag != '\n') {
-		message(MESS_ERROR, "%s:%d missing end of line",
+		message(MESS_ERROR, "%s:%d missing end of line\n",
 			configFile, lineNum);
 	    }
 	    *endtag = '\0';
 
 	    if (poptParseArgvString(start, &argc, &argv)) {
-		message(MESS_ERROR, "%s:%d error parsing filename",
+		message(MESS_ERROR, "%s:%d error parsing filename\n",
 			configFile, lineNum);
 		return 1;
-	    } else if (argc < 2 || strcmp(argv[1], "{")) {
-		message(MESS_ERROR, "%s:%d { expected after log file name\n",
-			configFile, lineNum);
-		return 1;
-	    } else if (argc > 2) {
-		message(MESS_ERROR, "%s:%d unexpected text after {\n",
+	    } else if (argc < 2 || strcmp(argv[argc - 1], "{")) {
+		message(MESS_ERROR, "%s:%d { expected after log file name(s)\n",
 			configFile, lineNum);
 		return 1;
 	    }
 
-	    rc = glob(argv[0], GLOB_NOCHECK, globerr, &globResult);
-	    if (rc == GLOB_ABORTED) return 1;
-
-	    newlog->files = malloc(sizeof(*newlog->files) * 
-				   globResult.gl_pathc);
+	    /* XXX this leaks the result of the glob <shrug> */
+	    newlog->files = NULL;
 	    newlog->numFiles = 0;
-
-	    for (i = 0; i < globResult.gl_pathc; i++) {
-		/* if we glob directories we can get false matches */
-		if (!lstat(globResult.gl_pathv[i], &sb) && S_ISDIR(sb.st_mode)) 
-		    continue;
-
-		for (j = 0; j < *numLogsPtr - 1; j++) {
-		    for (k = 0; k < (*logsPtr)[j].numFiles; k++) {
-			if (!strcmp((*logsPtr)[j].files[k], 
-				    globResult.gl_pathv[i])) {
-			    message(MESS_ERROR, 
-				    "%s:%d duplicate log entry for %s\n",
-				    configFile, lineNum, 
-				    globResult.gl_pathv[i]);
-			    return 1;
-			}
-		    }
+	    for (argNum = 0; argNum < (argc - 1); argNum++) {
+		rc = glob(argv[argNum], GLOB_NOCHECK, globerr, &globResult);
+		if (rc == GLOB_ABORTED) {
+		    message(MESS_ERROR, "%s:%d glob failed for %s\n",
+			    configFile, lineNum, argv[argNum]);
+		    return 1;
 		}
 
-		newlog->files[newlog->numFiles] = 
-			globResult.gl_pathv[i];
-		newlog->numFiles++;
+		newlog->files = realloc(newlog->files, sizeof(*newlog->files) * 
+				   (newlog->numFiles + globResult.gl_pathc));
+
+		for (i = 0; i < globResult.gl_pathc; i++) {
+		    /* if we glob directories we can get false matches */
+		    if (!lstat(globResult.gl_pathv[i], &sb) && 
+				    S_ISDIR(sb.st_mode)) 
+			continue;
+
+		    for (j = 0; j < *numLogsPtr - 1; j++) {
+			for (k = 0; k < (*logsPtr)[j].numFiles; k++) {
+			    if (!strcmp((*logsPtr)[j].files[k], 
+					globResult.gl_pathv[i])) {
+				message(MESS_ERROR, 
+					"%s:%d duplicate log entry for %s\n",
+					configFile, lineNum, 
+					globResult.gl_pathv[i]);
+				return 1;
+			    }
+			}
+		    }
+
+		    newlog->files[newlog->numFiles] = 
+			    globResult.gl_pathv[i];
+		    newlog->numFiles++;
+		}
 	    }
 
-	    newlog->globMem = globResult;
-	    newlog->pattern = strdup(argv[0]);
+	    newlog->pattern = strdup(start);
 
-	    message(MESS_DEBUG, "reading config info for %s\n", argv[0]);
+	    message(MESS_DEBUG, "reading config info for %s\n", start);
 
 	    free(argv);
 

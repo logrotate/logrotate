@@ -1,3 +1,6 @@
+3.4 -> 3.5:
+	- multiple file names/patterns may be given for a single entry
+
 3.3.2 -> 3.4:
 	- added sharedscripts/nosharedscripts
 	- added simple testbed
