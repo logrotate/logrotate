@@ -2,6 +2,7 @@
 #define H_LOGROTATE
 
 #include <sys/types.h>
+#include <glob.h>
 
 #define LOG_FLAG_COMPRESS	(1 << 0)
 #define LOG_FLAG_CREATE		(1 << 1)
@@ -14,7 +15,9 @@
 #define STATEFILE "/var/lib/logrotate.status"
 
 typedef struct {
-    char * fn;
+    char * pattern;
+    char ** files;
+    int numFiles;
     char * oldDir;
     enum { ROT_DAYS, ROT_WEEKLY, ROT_MONTHLY, ROT_SIZE } criterium;
     unsigned int threshhold;
@@ -26,6 +29,7 @@ typedef struct {
     mode_t createMode;		/* if any/all of these are -1, we use the */
     uid_t createUid;		/* attributes from the log file just rotated */
     gid_t createGid;
+    glob_t globMem;		/* at least we could theoretically free this */
 } logInfo;
 
 int readConfigPath(char * path, logInfo * defConfig, 
