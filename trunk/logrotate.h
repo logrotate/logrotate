@@ -9,6 +9,7 @@
 #define LOG_FLAG_IFEMPTY	(1 << 2)
 #define LOG_FLAG_DELAYCOMPRESS	(1 << 3)
 #define LOG_FLAG_COPYTRUNCATE	(1 << 4)
+#define LOG_FLAG_MISSINGOK	(1 << 5)
 
 #define MAIL_COMMAND "/bin/mail -s"
 #define COMPRESS_COMMAND "gzip -9"

@@ -520,6 +520,14 @@ static int readConfigFile(char * configFile, logInfo * defConfig,
 		newlog->logAddress = NULL;
 
 		*endtag = oldchar, start = endtag;
+	    } else if (!strcmp(start, "missingok")) {
+		newlog->flags |= LOG_FLAG_MISSINGOK;
+
+		*endtag = oldchar, start = endtag;
+	    } else if (!strcmp(start, "nomissingok")) {
+		newlog->flags &= ~LOG_FLAG_MISSINGOK;
+
+		*endtag = oldchar, start = endtag;
 	    } else if (!strcmp(start, "prerotate")) {
 		*endtag = oldchar, start = endtag;
 
