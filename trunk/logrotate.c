@@ -105,7 +105,7 @@ static int runScript(char * logfn, char * script) {
     return rc;
 }
 
-static int copyTruncate(char * currLog, char * saveLog, struct stat * sb) {
+static int copyTruncate(char * currLog, char * saveLog, struct stat * sb, int flags) {
     char buf[BUFSIZ];
     int fdcurr = -1, fdsave = -1;
     ssize_t cnt;
@@ -157,19 +157,25 @@ static int copyTruncate(char * currLog, char * saveLog, struct stat * sb) {
 	}
     }
 
-    message(MESS_DEBUG, "truncating %s\n", currLog);
+    if (flags & LOG_FLAG_COPYTRUNCATE) {
+        message(MESS_DEBUG, "truncating %s\n", currLog);
 
-    if (!debug) {
-	if (ftruncate(fdcurr, 0)) {
-	    message(MESS_ERROR, "error truncating %s: %s\n", currLog,
-		strerror(errno));
-	    close(fdcurr);
-	    close(fdsave);
-	    return 1;
-	} else {
-	    close(fdcurr);
-	    close(fdsave);
-	}
+        if (!debug) {
+	    if (ftruncate(fdcurr, 0)) {
+	        message(MESS_ERROR, "error truncating %s: %s\n", currLog,
+		    strerror(errno));
+	        close(fdcurr);
+	        close(fdsave);
+	        return 1;
+	    } else {
+	        close(fdcurr);
+	        close(fdsave);
+	    }
+        }
+    } else {
+        message(MESS_DEBUG, "Not truncating %s\n", currLog);
+        close(fdcurr);
+        close(fdsave);
     }
 
     return 0;
@@ -400,7 +406,7 @@ int rotateSingleLog(logInfo * log, int logNum, logState ** statesPtr,
 	    }
         }
 	
-        if (!(log->flags & LOG_FLAG_COPYTRUNCATE)) {
+        if (!(log->flags & (LOG_FLAG_COPYTRUNCATE|LOG_FLAG_COPY))) {
             message(MESS_DEBUG, "renaming %s to %s\n", log->files[logNum], 
 		    finalName);
 	    
@@ -412,7 +418,7 @@ int rotateSingleLog(logInfo * log, int logNum, logState ** statesPtr,
         }
 	
         if (!hasErrors && log->flags & LOG_FLAG_CREATE &&
-            !(log->flags & LOG_FLAG_COPYTRUNCATE)) {
+            !(log->flags & (LOG_FLAG_COPYTRUNCATE|LOG_FLAG_COPY))) {
             if (log->createUid == NO_UID)
                 createUid = state->sb.st_uid;
             else
@@ -456,7 +462,7 @@ int rotateSingleLog(logInfo * log, int logNum, logState ** statesPtr,
 	    }
         }
 	
-        if (!hasErrors && log->flags & LOG_FLAG_COPYTRUNCATE)
+        if (!hasErrors && log->flags & (LOG_FLAG_COPYTRUNCATE|LOG_FLAG_COPY))
             hasErrors = copyTruncate(log->files[logNum], finalName,
                                      &state->sb);
 	

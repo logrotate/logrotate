@@ -160,6 +160,14 @@ Command line options may be passed to the compression program, if one is
 in use.  The default, for \fBgzip\fR, is "-9" (maximum compression).
 
 .TP
+\fBcopy\fR
+Make a copy of the log file, but don't change the original at all.
+This option can be used, for instance, to make a snapshot of the current
+log file, or when some other utility needs to truncate or pare the file.
+When this option is used, the \fBcreate\fR option will have no effect,
+as the old log file stays in place.
+
+.TP
 \fBcopytruncate\fR
 Truncate the original log file in place after creating a copy,
 instead of moving the old log file and optionally creating a new one,
@@ -245,6 +253,11 @@ Log files are rotated the first time \fBlogrotate\fR is run in a month
 \fBnocompress\fR
 Old versions of log files are not compressed with \fBgzip\fR. See also
 \fBcompress\fR. 
+
+.TP
+\fBnocopy\fR
+Do not copy the original log file and leave it in place.
+(this overrides the \fBcopy\fR option).
 
 .TP
 \fBnocopytruncate\fR
