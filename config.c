@@ -3,7 +3,6 @@
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
-#include <getopt.h>
 #include <glob.h>
 #include <grp.h>
 #include <popt.h>
