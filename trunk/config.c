@@ -18,8 +18,12 @@
 #include "log.h"
 #include "logrotate.h"
 
-static char * tabooExts[] = { ".rpmsave", ".rpmorig", "~", ",v" };
-static int tabooCount = sizeof(tabooExts) / sizeof(char *);
+static char * defTabooExts[] = { ".rpmsave", ".rpmorig", "~", ",v" };
+static int defTabooCount = sizeof(defTabooExts) / sizeof(char *);
+
+/* I shouldn't use globals here :-( */
+static char ** tabooExts = NULL;
+int tabooCount = 0;
 
 static int readConfigFile(char * configFile, logInfo * defConfig, 
 			  logInfo ** logsPtr, int * numLogsPtr);
@@ -126,6 +130,12 @@ int readConfigPath(char * path, logInfo * defConfig,
     struct dirent * ent;
     int here;
     int i;
+
+    if (!tabooExts) {
+	tabooExts = malloc(sizeof(*tabooExts) * defTabooCount);
+	memcpy(tabooExts, defTabooExts, sizeof(*tabooExts) * defTabooCount);
+	tabooCount = defTabooCount;
+    }
 
     if (stat(path, &sb)) {
 	message(MESS_ERROR, "cannot stat %s: %s\n", path, strerror(errno));
@@ -508,6 +518,47 @@ static int readConfigFile(char * configFile, logInfo * defConfig,
 		scriptDest = &newlog->post;
 
 		while (*start != '\n') start++;
+	    } else if (!strcmp(start, "tabooext")) {
+		if (newlog != defConfig) {
+		    message(MESS_ERROR, "%s:%d include may not appear inside "
+			    "of log file definition", configFile, lineNum);
+		    return 1;
+		}
+
+		*endtag = oldchar, start = endtag;
+		if (!isolateValue(configFile, lineNum, "size", &start, 
+				  &endtag)) {
+		    oldchar = *endtag, *endtag = '\0';
+
+		    if (*start == '+') {
+			start++;
+			while (isspace(*start) && *start) start++;
+		    } else {
+			free(tabooExts);
+			tabooCount = 0;
+			tabooExts = malloc(1);
+		    }
+
+		    while (*start) {
+			chptr = start;
+			while (!isspace(*chptr) && *chptr != ',' && *chptr)
+			    chptr++;
+
+			tabooExts = realloc(tabooExts, sizeof(*tabooExts) * 
+						(tabooCount + 1));
+			/* this is a memory leak if the list gets reset */
+			tabooExts[tabooCount] = malloc(chptr - start + 1);
+			strncpy(tabooExts[tabooCount], start, chptr - start);
+			tabooExts[tabooCount][chptr - start] = '\0';
+			tabooCount++;
+
+			start = chptr;
+			if (*start == ',') start++;
+			while (isspace(*start) && *start) start++;
+		    }
+
+		    *endtag = oldchar, start = endtag;
+		}
 	    } else if (!strcmp(start, "include")) {
 		if (newlog != defConfig) {
 		    message(MESS_ERROR, "%s:%d include may not appear inside "

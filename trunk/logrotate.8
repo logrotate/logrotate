@@ -157,8 +157,9 @@ the \fBinclude\fR directive appears. If a directory is given, most of the
 files in that directory are read before processing of the including file
 continues. The only files which are ignored are files which are not regular
 files (such as directories and named pipes) and files whose names end
-with .rpmorig, .rpmsave, ,v or ~.  The \fBinclude\fR directive may not appear 
-inside of a log file definition. 
+with one of the taboo extensions, as specified by the \fBtabooext\fR
+directive.  The \fBinclude\fR directive may not appear inside of a log
+file definition.
 
 .TP
 \fBmail \fIaddress\fR
@@ -226,6 +227,14 @@ Log files are rotated when they grow bigger then \fIsize\fR bytes. If
 \fIsize\fR is followed by \fIM\fR, the size if assumed to be in megabytes.
 If the \fIk\fR is used, the size is in kilobytes. So \fBsize 100\fR,
 \fIsize 100k\fR, and \fIsize 100M\fR are all valid.
+
+.TP
+\fBtabooext\fR [+] \fIlist\fR
+The current taboo extension list is changed (see the \fBinclude\fR directive
+for information on the taboo extensions). If a + precedes the list of
+extensions, the current taboo extension list is augmented, otherwise it
+is replaced. At startup, the taboo extension list 
+contains .rpmorig, .rpmsave, ,v and ~.
 
 .TP
 \fBweekly\fR
