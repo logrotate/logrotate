@@ -34,5 +34,5 @@ rm -rf $RPM_BUILD_ROOT
 %attr(0755, root, root) /usr/sbin/logrotate
 %attr(0644, root, root) /usr/man/man8/logrotate.8
 %attr(0644, root, root) /etc/cron.daily/logrotate
-%attr(0644, root, root) %config /etc/logrotate.conf
+%attr(0755, root, root) %config /etc/logrotate.conf
 %attr(0755, root, root) %dir /etc/logrotate.d
