@@ -110,7 +110,8 @@ rotations, rather then being removed. Likewise, any errors that occur
 while processing the log file are also mailed to www@my.org (overriding
 the global \fIerrors\fR directive).  Note that the double quotes around
 the filename at the beginning of this section allows logrotate to rotate
-logs with spaces in the name.
+logs with spaces in the name. Normal shell quoting rules apply, with ', ",
+and \\ characters supported.
 
 The last section definest the parameters for all of the files in
 \fI/var/log/news\fR. Each file is rotated on a monthly basis, and 

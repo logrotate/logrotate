@@ -43,6 +43,10 @@ rm -rf $RPM_BUILD_ROOT
 %attr(0755, root, root) %dir /etc/logrotate.d
 
 %changelog
+* Tue Jul 11 2000 Erik Troan <ewt@redhat.com>
+- support spaces in filenames
+- added sharedscripts
+
 * Sun Jun 18 2000 Matt Wilson <msw@redhat.com>
 - use %%{_mandir} for man pages
 
