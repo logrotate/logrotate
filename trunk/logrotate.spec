@@ -1,6 +1,6 @@
 Summary: Rotates, compresses, and mails system logs
 Name: logrotate
-Version: 2.4
+Version: 2.5
 Release: 1
 Copyright: GPL
 Group: Utilities/System
