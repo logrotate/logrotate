@@ -23,7 +23,8 @@
 #define GLOB_ABORTED GLOB_ABEND
 #endif
 
-static char * defTabooExts[] = { ".rpmsave", ".rpmorig", "~", ",v" };
+static char * defTabooExts[] = { ".rpmsave", ".rpmorig", "~", ",v",
+				 ".rpmnew", ".swp" };
 static int defTabooCount = sizeof(defTabooExts) / sizeof(char *);
 
 /* I shouldn't use globals here :-( */
