@@ -14,6 +14,9 @@
 #include "log.h"
 #include "logrotate.h"
 
+static char * tabooExts[] = { ".rpmsave", ".rpmorig", "~" };
+static int tabooCount = sizeof(tabooExts) / sizeof(char *);
+
 static int readConfigFile(char * configFile, logInfo * defConfig, 
 			  logInfo ** logsPtr, int * numLogsPtr);
 
@@ -84,6 +87,7 @@ int readConfigPath(char * path, logInfo * defConfig,
     DIR * dir;
     struct dirent * ent;
     int here;
+    int i;
 
     if (stat(path, &sb)) {
 	message(MESS_ERROR, "cannot stat %s: %s\n", path, strerror(errno));
@@ -128,11 +132,18 @@ int readConfigPath(char * path, logInfo * defConfig,
 		(ent->d_name[1] == '.' && !ent->d_name[2]))) {
 		/* noop */
 	    } else if (ent) {
-		if (readConfigFile(ent->d_name, defConfig, logsPtr, 
-				   numLogsPtr)) {
-		    fchdir(here);
-		    close(here);
-		    return 1;
+		for (i = 0; i < tabooCount; i++) {
+		    if (!strcmp(ent->d_name + strlen(ent->d_name) -
+				strlen(tabooExts[i]), tabooExts[i])) break;
+		}
+
+		if (i == tabooCount) {
+		    if (readConfigFile(ent->d_name, defConfig, logsPtr, 
+				       numLogsPtr)) {
+			fchdir(here);
+			close(here);
+			return 1;
+		    }
 		}
 	    }
 	} while (ent);
