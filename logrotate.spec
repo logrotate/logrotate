@@ -1,6 +1,6 @@
 Summary: Rotates, compresses, and mails system logs
 Name: logrotate
-Version: 3.0
+Version: 3.1
 Release: 1
 Copyright: GPL
 Group: Utilities/System
@@ -36,8 +36,3 @@ rm -rf $RPM_BUILD_ROOT
 %attr(0755, root, root) /etc/cron.daily/logrotate
 %attr(0644, root, root) %config /etc/logrotate.conf
 %attr(0755, root, root) %dir /etc/logrotate.d
-
-%changelog
-* Thu Mar 18 1999 Preston Brown <pbrown@redhat.com>
-- fixed bug #143
-
