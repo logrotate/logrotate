@@ -1,7 +1,7 @@
 Summary: Rotates, compresses, removes and mails system log files.
 Name: logrotate
 Version: 3.3.2
-Release: 1
+Release: 2
 Copyright: GPL
 Group: System Environment/Base
 Source: ftp://ftp.redhat.com/pub/redhat/code/logrotate/logrotate-%{PACKAGE_VERSION}.tar.gz
@@ -25,7 +25,7 @@ log files on your system.
 make RPM_OPT_FLAGS="$RPM_OPT_FLAGS"
 
 %install
-make PREFIX=$RPM_BUILD_ROOT install
+make PREFIX=$RPM_BUILD_ROOT MANDIR=%{_mandir} install
 mkdir -p $RPM_BUILD_ROOT/etc/logrotate.d
 mkdir -p $RPM_BUILD_ROOT/etc/cron.daily
 
@@ -37,12 +37,15 @@ rm -rf $RPM_BUILD_ROOT
 
 %files
 %attr(0755, root, root) /usr/sbin/logrotate
-%attr(0644, root, root) /usr/man/man8/logrotate.8*
+%attr(0644, root, root) %{_mandir}/man8/logrotate.8*
 %attr(0755, root, root) /etc/cron.daily/logrotate
 %attr(0644, root, root) %config /etc/logrotate.conf
 %attr(0755, root, root) %dir /etc/logrotate.d
 
 %changelog
+* Sun Jun 18 2000 Matt Wilson <msw@redhat.com>
+- use %%{_mandir} for man pages
+
 * Thu Feb 24 2000 Erik Troan <ewt@redhat.com>
 - don't rotate lastlog
 
