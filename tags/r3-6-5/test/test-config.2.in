@@ -1,0 +1,6 @@
+"&DIR&/test.log" {
+    monthly
+    rotate 2
+    mail user@myhost.org
+    maillast
+}
