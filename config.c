@@ -654,6 +654,50 @@ static int readConfigFile(const char * configFile, logInfo * defConfig,
 		}
 
 		message(MESS_DEBUG, "extension is now %s\n", newlog->extension);
+
+	    } else if (!strcmp(start, "compresscmd")) {
+		*endtag = oldchar, start = endtag;
+		if (!(newlog->compress_prog = readPath(configFile, lineNum, "compress", &start))) {
+		    return 1;
+		}
+
+		if (access(newlog->compress_prog, X_OK)) {
+		    message(MESS_ERROR, "%s:%d compression program %s is not an executable file\n", configFile, lineNum, 
+				newlog->compress_prog);
+		    return 1;
+		}
+
+		message(MESS_DEBUG, "compress_prog is now %s\n", newlog->compress_prog);
+
+	    } else if (!strcmp(start, "uncompresscmd")) {
+		*endtag = oldchar, start = endtag;
+		if (!(newlog->uncompress_prog = readPath(configFile, lineNum, "uncompress", &start))) {
+		    return 1;
+		}
+
+		if (access(newlog->uncompress_prog, X_OK)) {
+		    message(MESS_ERROR, "%s:%d uncompression program %s is not an executable file\n", configFile, lineNum, 
+				newlog->uncompress_prog);
+		    return 1;
+		}
+
+		message(MESS_DEBUG, "uncompress_prog is now %s\n", newlog->uncompress_prog);
+
+	    } else if (!strcmp(start, "compressoptions")) {
+		*endtag = oldchar, start = endtag;
+		if (!(newlog->compress_options = readPath(configFile, lineNum, "compressoptions", &start))) {
+		    return 1;
+		}
+
+		message(MESS_DEBUG, "compress_options is now %s\n", newlog->compress_options);
+
+	    } else if (!strcmp(start, "compressext")) {
+		*endtag = oldchar, start = endtag;
+		if (!(newlog->compress_ext = readPath(configFile, lineNum, "compress-ext", &start))) {
+		    return 1;
+		}
+
+		message(MESS_DEBUG, "compress_ext is now %s\n", newlog->compress_ext);
 	    } else {
 		message(MESS_ERROR, "%s:%d unknown option '%s' "
 			    "-- ignoring line\n", configFile, lineNum, start);

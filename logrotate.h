@@ -14,9 +14,10 @@
 #define LOG_FLAG_SHAREDSCRIPTS	(1 << 7)
 
 #define DEFAULT_MAIL_COMMAND "/bin/mail -s"
-#define COMPRESS_COMMAND "gzip -9"
+#define COMPRESS_COMMAND "/bin/gzip"
+#define COMPRESS_OPTIONS "-9"
 #define COMPRESS_EXT ".gz"
-#define UNCOMPRESS_PIPE "gunzip"
+#define UNCOMPRESS_COMMAND "/bin/gunzip"
 
 #define NO_FORCE_ROTATE 0
 #define FORCE_ROTATE    1
@@ -35,6 +36,10 @@ typedef struct {
     char * logAddress;
     char * errAddress;
     char * extension;
+    char * compress_prog;
+    char * uncompress_prog;
+    char * compress_options;
+    char * compress_ext;
     int flags;
     mode_t createMode;		/* if any/all of these are -1, we use the */
     uid_t createUid;		/* attributes from the log file just rotated */
