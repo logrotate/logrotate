@@ -1,5 +1,6 @@
 3.5.2 -> 3.5.3:
-        - patch /tmp file race condition problem, use mkstemp
+        - patch /tmp file race condition problem, use mkstemp;	
+	  Thanks go to Solar Designer <solar@openwall.com>
 
 3.5 -> 3.5.2:
 	- added .swp and .rpmnew to default taboo list
