@@ -1,6 +1,6 @@
 Summary: Rotates, compresses, removes and mails system log files.
 Name: logrotate
-Version: 3.3.1
+Version: 3.3.2
 Release: 1
 Copyright: GPL
 Group: System Environment/Base
@@ -43,6 +43,8 @@ rm -rf $RPM_BUILD_ROOT
 %attr(0755, root, root) %dir /etc/logrotate.d
 
 %changelog
+* Thu Feb 24 2000 Erik Troan <ewt@redhat.com>
+- don't rotate lastlog
 
 * Thu Feb 03 2000 Erik Troan <ewt@redhat.com>
 - gzipped manpages

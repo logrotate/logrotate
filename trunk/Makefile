@@ -51,22 +51,15 @@ cvstag:
 	cvs tag -F $(CVSTAG) .
 
 archive: cvstag
-	@rm -rf /tmp/$(PROG)-$(VERSION)
-	@mkdir /tmp/$(PROG)-$(VERSION)
-	@rm -rf /tmp/$(PROG)-$(VERSION)
-	@mkdir /tmp/$(PROG)-$(VERSION)
-	@tar cSpf - * | (cd /tmp/$(PROG)-$(VERSION); tar xSpf -)
-	@cd /tmp/$(PROG)-$(VERSION); \
-	    make clean; \
-	    find . -name "RCS" -exec rm {} \;  ; \
-	    find . -name ".depend" -exec rm {} \;  ; \
-	    rm -rf *gz test* *.tar foo* shared \;
-	@cd /tmp; tar czSpf $(PROG)-$(VERSION).tar.gz $(PROG)-$(VERSION)
-	@rm -rf /tmp/$(PROG)-$(VERSION)
-	@cp /tmp/$(PROG)-$(VERSION).tar.gz .
-	@rm -f /tmp/$(PROG)-$(VERSION).tar.gz
+	@rm -rf /tmp/logrotate-$(VERSION) /tmp/logrotate
+	@cd /tmp; cvs export -r$(CVSTAG) logrotate; mv logrotate logrotate-$(VERSION)
+	@cd /tmp/logrotate-$(VERSION)
+	@cd /tmp; tar czSpf logrotate-$(VERSION).tar.gz logrotate-$(VERSION)
+	@rm -rf /tmp/logrotate-$(VERSION)
+	@cp /tmp/logrotate-$(VERSION).tar.gz .
+	@rm -f /tmp/logrotate-$(VERSION).tar.gz
 	@echo " "
-	@echo "The final archive is ./$(PROG)-$(VERSION).tar.gz."
+	@echo "The final archive is ./logrotate-$(VERSION).tar.gz."
 
 ifeq (.depend,$(wildcard .depend))
 include .depend
