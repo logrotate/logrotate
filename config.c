@@ -902,7 +902,7 @@ static int readConfigFile(const char * configFile, logInfo * defConfig,
 			free(dirName);
 			return 1;
 		    }
-		    ld = alloca(strlen(dirName) + strlen(newlog->oldDir) + 1);
+		    ld = alloca(strlen(dirName) + strlen(newlog->oldDir) + 2);
 		    sprintf(ld, "%s/%s", dirName, newlog->oldDir);
 		    free(dirName);
 
