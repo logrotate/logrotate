@@ -1,7 +1,7 @@
 %if %{?WITH_SELINUX:0}%{!?WITH_SELINUX:1}
 %define WITH_SELINUX 1
+BuildRequires: libselinux-devel
 %endif
-
 Summary: Rotates, compresses, removes and mails system log files.
 Name: logrotate
 Version: 3.7
