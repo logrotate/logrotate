@@ -617,6 +617,19 @@ static int readConfigFile(char * configFile, logInfo * defConfig,
 		}
 
 		message(MESS_DEBUG, "olddir is now %s\n", newlog->oldDir);
+	    } else if (!strcmp(start, "extension")) {
+		*endtag = oldchar, start = endtag;
+
+		if (!isolateValue(configFile, lineNum, "extension name", &start, 
+				  &endtag)) {
+		    oldchar = *endtag, *endtag = '\0';
+
+		    newlog->extension = strdup(start);
+
+		    *endtag = oldchar, start = endtag;
+		}
+
+		message(MESS_DEBUG, "extension is now %s\n", newlog->extension);
 	    } else {
 		message(MESS_ERROR, "%s:%d unknown option '%s' "
 			    "-- ignoring line\n", configFile, lineNum, start);
