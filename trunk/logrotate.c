@@ -308,7 +308,17 @@ int rotateSingleLog(logInfo * log, int logNum, logState ** statesPtr,
     state->lastRotated = now;
     
     if (log->oldDir)
-        dirName = strdup(log->oldDir);
+      {
+	if(log->oldDir[0] != '/')
+	  {
+	    char *ld = ourDirName(log->files[logNum]);
+	    dirName = malloc(strlen(ld) + strlen(log->oldDir) + 1);
+	    sprintf(dirName, "%s/%s", ld, log->oldDir);
+	    free(ld);
+	  }
+	else
+	  dirName = strdup(log->oldDir);
+      }
     else
         dirName = ourDirName(log->files[logNum]);
     baseName = strdup(ourBaseName(log->files[logNum]));

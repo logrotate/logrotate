@@ -718,6 +718,7 @@ static int readConfigFile(const char * configFile, logInfo * defConfig,
 		    return 1;
 		}
 
+#if 0
 		if (stat(newlog->oldDir, &sb)) {
 		    message(MESS_ERROR, "%s:%d error verifying olddir "
 				"path %s: %s\n", configFile, lineNum, 
@@ -731,6 +732,7 @@ static int readConfigFile(const char * configFile, logInfo * defConfig,
 				newlog->oldDir);
 		    return 1;
 		}
+#endif
 
 		message(MESS_DEBUG, "olddir is now %s\n", newlog->oldDir);
 	    } else if (!strcmp(start, "extension")) {
@@ -890,14 +892,8 @@ static int readConfigFile(const char * configFile, logInfo * defConfig,
 	    }
 
 	    if (newlog->oldDir) {
-		if (stat(newlog->oldDir, &sb)) {
-		    message(MESS_ERROR, "%s:%d error verifying olddir "
-				"path %s: %s\n", configFile, lineNum, 
-				newlog->oldDir, strerror(errno));
-		    return 1;
-		}
-
 		for (i = 0; i < newlog->numFiles; i++) {
+		    char *ld;
 		    dirName = ourDirName(newlog->files[i]);
 		    if (stat(dirName, &sb2)) {
 			message(MESS_ERROR, "%s:%d error verifying log file "
@@ -906,7 +902,8 @@ static int readConfigFile(const char * configFile, logInfo * defConfig,
 			free(dirName);
 			return 1;
 		    }
-
+		    ld = alloca(strlen(dirName) + strlen(newlog->oldDir) + 1);
+		    sprintf(ld, "%s/%s", dirName, newlog->oldDir);
 		    free(dirName);
 
 		    if (sb.st_dev != sb2.st_dev) {
@@ -914,6 +911,15 @@ static int readConfigFile(const char * configFile, logInfo * defConfig,
 				    "are on different devices\n", configFile,
 				    lineNum, newlog->oldDir, newlog->files[i]);
 			return 1;
+		    }
+
+		    if(newlog->oldDir[0] == '/') dirName = ld;
+		    else dirName = newlog->oldDir;
+		    if(stat(dirName, &sb)) {
+			message(MESS_ERROR, "%s:%d error verifying olddir "
+				"path %s: %s\n", configFile, lineNum,
+				dirName, strerror(errno));
+				return 1;
 		    }
 		}
 	    }
