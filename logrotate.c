@@ -615,6 +615,16 @@ static int writeState(char * stateFilename, logState * states,
     int i;
 
     f = fopen(stateFilename, "w");
+
+    /* If file is zero length, we have nothing to lose. pm@debian.org */
+
+    if (feof(f)) {
+	fclose(F);
+	f = NULL;
+	message(MESS_ERROR, "state file %s is zero length, starting fresh\n",
+		stateFilename);
+    }
+    
     if (!f) {
 	message(MESS_ERROR, "error creating state file %s: %s\n", 
 		    stateFilename, strerror(errno));
