@@ -1,3 +1,11 @@
+3.0 -> 3.1:
+	- fixed small alloca()
+	- added missingok flag
+	- use popt to display usage message
+
+2.9 -> 3.0
+	- updates for glibc 2.1
+
 2.8 -> 2.9:
 	- fixed a bug parsing lines where { immediately follows the filename
 	- allow log file patterns to be placed in double quotes, which	

@@ -108,7 +108,7 @@ static int runScript(char * logfn, char * script) {
 
     close(fd);
 
-    cmd = alloca(strlen(filespec) + strlen(logfn) + 2);
+    cmd = alloca(strlen(filespec) + strlen(logfn) + 20);
     sprintf(cmd, "/bin/sh %s %s", filespec, logfn);
     rc = system(cmd);
 
@@ -214,6 +214,11 @@ int rotateSingleLog(logInfo * log, int logNum, logState ** statesPtr,
     if (log->flags & LOG_FLAG_COMPRESS) compext = COMPRESS_EXT;
     
     if (stat(log->files[logNum], &sb)) {
+	if ((log->flags & LOG_FLAG_MISSINGOK) && (errno == ENOENT)) {
+	    message(MESS_DEBUG, "file %s does not exist -- skipping\n", 
+		    log->files[logNum]);
+	    return 0;
+	}
 	fprintf(errorFile, "stat of %s failed: %s\n", log->files[logNum],
 		strerror(errno));
 	hasErrors = 1;
@@ -748,19 +753,13 @@ static int readState(char * stateFilename, logState ** statesPtr,
 
 }
 
-void usage(void) {
-    fprintf(stderr, "logrotate " VERSION 
-		" - Copyright (C) 1995 - Red Hat Software\n");
-    fprintf(stderr, "This may be freely redistributed under the terms of "
-		"the GNU Public License\n\n");
-    fprintf(stderr, "usage: logrotate [-dv] [-f|--force] [-s|--state <file>] <config_file>+\n");
-    exit(1);
-}
-
 int main(int argc, char ** argv) {
-    logInfo defConfig = { NULL, NULL, 0, NULL, ROT_SIZE, 1024 * 1024, 0, NULL, 
-			  NULL, NULL, NULL, NULL, LOG_FLAG_IFEMPTY,
-			  NO_MODE, NO_UID, NO_GID };
+    logInfo defConfig = { NULL, NULL, 0, NULL, ROT_SIZE, 
+			  /* threshHold */ 1024 * 1024, 0,
+			  /* pre */ NULL, NULL, NULL, NULL, 
+			  /* extension */ NULL, 
+			  /* flags */ LOG_FLAG_IFEMPTY,
+			  /* createMode */ NO_MODE, NO_UID, NO_GID };
     int numLogs = 0, numStates = 0;
     int force = 0;
     logInfo * logs = NULL;
@@ -808,7 +807,12 @@ int main(int argc, char ** argv) {
 
     files = poptGetArgs(optCon);
     if (!files) {
-	usage();
+	fprintf(stderr, "logrotate " VERSION 
+		    " - Copyright (C) 1995 - Red Hat Software\n");
+	fprintf(stderr, "This may be freely redistributed under the terms of "
+		    "the GNU Public License\n\n");
+	poptPrintUsage(optCon, stderr, 0);
+	exit(1);
     }
 
     for (file = files; *file; file++) {
