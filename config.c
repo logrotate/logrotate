@@ -511,7 +511,7 @@ static int readConfigFile(const char * configFile, logInfo * defConfig,
 		    oldchar = *endtag, *endtag = '\0';
 
 		    newlog->rotateCount = strtoul(start, &chptr, 0);
-		    if (*chptr) {
+		    if (*chptr || newlog->rotateCount < 0) {
 			message(MESS_ERROR, "%s:%d bad rotation count '%s'\n",
 				    configFile, lineNum, start);
 			return 1;
