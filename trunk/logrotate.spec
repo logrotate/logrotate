@@ -52,6 +52,7 @@ rm -rf $RPM_BUILD_ROOT
 * Tue Jan 29 2002 Elliot Lee <sopwith@redhat.com> 3.6.2-1
 - Fix bug #55809 (include logrotate.status in %files)
 - Fix bug #58328 (incorrect error detection when reading state file)
+- Allow 'G' size specifier from bug #57242
 
 * Mon Dec 10 2001 Preston Brown <pbrown@redhat.com>
 - noreplace config file
