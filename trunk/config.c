@@ -54,12 +54,9 @@ static int isolateValue(const char * fileName, int lineNum, char * key,
 
     while (*chptr != '\n') chptr++;
 
-    while (isblank(*chptr)) chptr--;
+    while (isspace(*chptr)) chptr--;
 
-    if (*chptr == '\n')
-	*endPtr = chptr;
-    else
-	*endPtr = chptr + 1;
+    *endPtr = chptr + 1;
 
     return 0;
 }
