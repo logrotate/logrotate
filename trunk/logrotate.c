@@ -94,7 +94,7 @@ static int runScript(char * logfn, char * script) {
     close(fd);
 
     cmd = alloca(strlen(filespec) + strlen(logfn) + 20);
-    sprintf(cmd, "/bin/sh %s %s", filespec, logfn);
+    sprintf(cmd, "/bin/sh %s '%s'", filespec, logfn);
     rc = system(cmd);
 
     unlink(filespec);
@@ -318,7 +318,7 @@ int rotateSingleLog(logInfo * log, int logNum, logState ** statesPtr,
 
 		command = alloca(strlen(oldName) +
 				    strlen(log->compress_prog) + 1 + strlen(log->compress_options) + 20);
-		sprintf(command, "%s %s %s", log->compress_prog, log->compress_options, oldName);
+		sprintf(command, "%s %s '%s'", log->compress_prog, log->compress_options, oldName);
 		message(MESS_DEBUG, "compressing previous log with: %s\n",
 				    command);
 		if (!debug && system(command)) {
@@ -471,7 +471,7 @@ int rotateSingleLog(logInfo * log, int logNum, logState ** statesPtr,
 
 		command = alloca(strlen(finalName) + strlen(log->compress_prog) + 1 + strlen(log->compress_options) + 20);
 
-		sprintf(command, "%s %s %s", log->compress_prog, log->compress_options, finalName);
+		sprintf(command, "%s %s '%s'", log->compress_prog, log->compress_options, finalName);
 		message(MESS_DEBUG, "compressing new log with: %s\n", command);
 		if (!debug && system(command)) {
 		    fprintf(errorFile, "failed to compress log %s\n", 
