@@ -14,6 +14,8 @@
 	- (these were suggested and originally implemented by 
 	  Henning Schmiedehausen)
 	- updated the man page to reflect these changes
+	- made "make install" accept PREFIX argument
+	- added .spec file to tarball
 
 2.0.2 -> 2.1:
 	- Don't output state information for logs that have never been
