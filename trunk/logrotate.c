@@ -64,6 +64,7 @@ static int runScript(char * logfn, char * script) {
     char filespec[20];
     char cmd[50];
     int rc;
+    struct stat sb;
 
     if (debug) {
 	message(MESS_DEBUG, "running script with arg %s: \"%s\"\n", 
@@ -71,21 +72,34 @@ static int runScript(char * logfn, char * script) {
 	return 0;
     }
 
-    strcpy(filespec, "logrotXXXXXX");
+    strcpy(filespec, "/tmp/logrotXXXXXX");
 
-    fd = mkstemp(filespec);
+    mktemp(filespec);
+    if ((fd = open(filespec, O_CREAT | O_EXCL | O_WRONLY, 0700)) < 0) {
+	message(MESS_DEBUG, "error creating %s: %s\n", filespec,
+		strerror(errno));
+	return -1;
+    }
+
+    /* make sure we didn't just follow a symlink as part of a DOS */
+    if (stat(filespec, &sb)) {
+	/* huh? */
+	close(fd);
+	return -1;
+    }
+
+    if (S_ISLNK(sb.st_mode)) {
+	message(MESS_DEBUG, "%s is a symlink! probable DOS attack!!\n");
+	close(fd);
+	return -1;
+    }
+
     if (write(fd, "#!/bin/sh\n\n", 11) != 11) {
 	close(fd);
 	unlink(filespec);
 	return -1;
     }
     if (write(fd, script, strlen(script)) != strlen(script)) {
-	close(fd);
-	unlink(filespec);
-	return -1;
-    }
-
-    if (fchmod(fd, 0700)) {
 	close(fd);
 	unlink(filespec);
 	return -1;
