@@ -6,6 +6,7 @@
 	  (Jos Vos)
 	- added nomail option
 	- added mail, nomail documentation to man page
+	- added the tabooext directive
 
 2.3 -> 2.4:
 	- glob log names in config file
