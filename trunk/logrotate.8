@@ -111,7 +111,18 @@ a \fBlogrotate\fR configuration file:
 .TP
 \fBcompress\fR
 Old versions of log files are compressed with \fBgzip\fR. See also
-\fBnocompress\fR.
+
+.TP
+\fBcreate \fImode\fR \fIowner\fR \fIgroup\fR
+Immediately after rotation (before the \fBpostrotate\fR script is run)
+the log file is created (with the same name as the log file just rotated).
+\fImode\fR specifies the mode for the log file in octal (the same
+as \fBchmod(2)\fR), \fIowner\fR specifies the user name who will own the
+log file, and \fIgroup\fR specifies the group the log file will belong
+to. Any of the log file attributes may be omitted, in which case those
+attributes for the new file will use the same values as the original log
+file for the omitted attributes. This option can be disabled using the
+\fBnocreate\fR option.
 
 .TP
 \fBdaily\fR
@@ -136,9 +147,14 @@ file definition.
 \fBmonthly\fR
 Log files are rotated on the first day of every month.
 
+.TP
 \fBnocompress\fR
 Old versions of log files are not compressed with \fBgzip\fR. See also
 \fBcompress\fR. 
+
+.TP
+\fBnocreate\fR
+New log files are not created (this overrides the \fBcreate\fR option).
 
 .TP
 \fBpostrotate\fR/\fBendscript\fR
