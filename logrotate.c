@@ -365,10 +365,12 @@ static int writeState(char * stateFilename, logState * states,
     fprintf(f, "logrotate state -- version 1\n");
 
     for (i = 0; i < numStates; i++) {
-	fprintf(f, "%s %d-%d-%d\n", states[i].fn, 
-		states[i].lastRotated.tm_year + 1900,
-		states[i].lastRotated.tm_mon + 1,
-		states[i].lastRotated.tm_mday);
+	if (states[i].lastRotated.tm_year) {
+	    fprintf(f, "%s %d-%d-%d\n", states[i].fn, 
+		    states[i].lastRotated.tm_year + 1900,
+		    states[i].lastRotated.tm_mon + 1,
+		    states[i].lastRotated.tm_mday);
+	}
     }
 
     fclose(f);
@@ -439,7 +441,8 @@ static int readState(char * stateFilename, logState ** statesPtr,
 	    return 1;
 	}
 
-	if (year < 1996 || year > 2100) {
+	/* Hack to hide earlier bug */
+	if (year != 1900 && (year < 1996 || year > 2100)) {
 	    message(MESS_ERROR, "bad year %d for file %s in state file %s\n",
 			year, buf2, stateFilename);
 	    fclose(f);
@@ -453,7 +456,8 @@ static int readState(char * stateFilename, logState ** statesPtr,
 	    return 1;
 	}
 
-	if (day < 1 || day > 30) {
+	/* 0 to hide earlier bug */
+	if (day < 0 || day > 30) {
 	    message(MESS_ERROR, "bad day %d for file %s in state file %s\n",
 			day, buf2, stateFilename);
 	    fclose(f);
