@@ -4,6 +4,8 @@ LOGROTATE=../logrotate
 
 cleanup() {
     rm -f test*.log* state test-config.[1-9] scriptout mail-out
+
+    [ -n "$1" ] && echo "Running test $1"
 }
 
 genconfig() {
@@ -104,9 +106,23 @@ preptest() {
 # we don't want any stuff left from previous runs
 cleanup
 
+# Without a log file, no rotations should occur
 preptest test.log 1 2
-$LOGROTATE -s state -m mailer test-config.1 --force
+$LOGROTATE -s state -m mailer test-config.1 
 
+checkoutput test.log* <<EOF
+test.log zero
+test.log.1 first
+EOF
+
+# Put in place a state file that will force a rotation
+cat > state <<EOF
+logrotate state -- version 1
+"$PWD/test.log" 2000-1-1
+EOF
+
+# Now force the rotation
+$LOGROTATE -s state -m mailer test-config.1
 checkoutput test.log* <<EOF
 test.log
 test.log.1 zero
@@ -122,7 +138,7 @@ test.log.1 zero
 test.log.2 first
 EOF
 
-cleanup
+cleanup 1
 
 preptest test.log 2 3
 $LOGROTATE -s state -m mailer test-config.2 --force
@@ -136,7 +152,7 @@ if [ -f test.log ]; then
     echo "erroneously created test.log"
 fi
 
-cleanup
+cleanup 2
 
 preptest test.log 3 1
 $LOGROTATE -s state -m mailer test-config.3 --force
@@ -147,7 +163,7 @@ test.log.1 zero
 scriptout foo
 EOF
 
-cleanup
+cleanup 3
 
 preptest test.log 3 1
 preptest test2.log 3 1
@@ -161,7 +177,7 @@ test2.log.1 zero
 scriptout foo foo
 EOF
 
-cleanup
+cleanup 4
 
 preptest test.log 4 1
 preptest test2.log 4 1
@@ -175,5 +191,5 @@ test2.log.1 zero
 scriptout foo
 EOF
 
-cleanup
+cleanup 5
 
