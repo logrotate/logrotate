@@ -1,4 +1,4 @@
-VERSION = 2.1
+VERSION = 2.2
 CFLAGS = -Wall -D_GNU_SOURCE -DVERSION=\"$(VERSION)\" $(RPM_OPT_FLAGS)
 PROG = logrotate
 BINDIR = /usr/sbin
@@ -7,7 +7,7 @@ MAN = logrotate.8
 
 #--------------------------------------------------------------------------
 
-OBJS = logrotate.o log.o config.o
+OBJS = logrotate.o log.o config.o basenames.o
 SOURCES = $(subst .o,.c,$(OBJS) $(LIBOBJS))
 
 ifeq ($(RPM_OPT_FLAGS),)
@@ -34,8 +34,12 @@ depend:
 	$(CPP) $(CFLAGS) -M $(SOURCES) > .depend
 
 install:
-	install -s -m 755 -o 0 -g 0 $(PROG) $(BINDIR)
-	install -m 644 -o 0 -g 0 $(MAN) $(MANDIR)/man`echo $(MAN) | sed "s/.*\.//"`/$(MAN)
+	[ -d $(PREFIX)/$(BINDIR) ] || mkdir -p $(PREFIX)/$(BINDIR)
+	[ -d $(PREFIX)/$(MANDIR) ] || mkdir -p $(PREFIX)/$(MANDIR)
+	[ -d $(PREFIX)/$(MANDIR)/man8 ] || mkdir -p $(PREFIX)/$(MANDIR)/man8
+
+	install -s -m 755 $(PROG) $(PREFIX)/$(BINDIR)
+	install -m 644 $(MAN) $(PREFIX)/$(MANDIR)/man`echo $(MAN) | sed "s/.*\.//"`/$(MAN)
 
 rcstag:
 	rcs -q -N$(RCSVERSION): RCS/*,v
