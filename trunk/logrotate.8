@@ -304,10 +304,12 @@ Do not rotate the log if it is empty (this overrides the \fBifempty\fR option).
 
 .TP
 \fBolddir \fIdirectory\fR
-Logs are moved into \fIdirectory\fR for rotation. The \fIdirectory\fR must
-be on the same physical device as the log file being rotated. When this
-option is used all old versions of the log end up in \fIdirectory\fR.  This
-option may be overriden by the \fBnoolddir\fR option.
+Logs are moved into \fIdirectory\fR for rotation. The \fIdirectory\fR
+must be on the same physical device as the log file being rotated,
+and is assumed to be relative to the directory holding the log file
+unless an absolute path name is specified. When this option is used all
+old versions of the log end up in \fIdirectory\fR.  This option may be
+overriden by the \fBnoolddir\fR option.
 
 .TP
 \fBpostrotate\fR/\fBendscript\fR

@@ -1,6 +1,4 @@
 #!/bin/bash
 
-echo "Args: $*" >> mail-out
-echo "---" >> mail-out
+echo "$*" > mail-out
 cat >> mail-out
-echo "---" >> mail-out

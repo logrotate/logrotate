@@ -27,10 +27,6 @@
     #define COMPRESS_COMMAND "/bin/gzip"
 #endif
 
-#ifndef COMPRESS_OPTIONS
-    #define COMPRESS_OPTIONS ""
-#endif
-
 #ifndef COMPRESS_EXT
     #define COMPRESS_EXT ".gz"
 #endif

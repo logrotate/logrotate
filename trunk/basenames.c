@@ -23,9 +23,8 @@ static void stripTrailingSlashes(char *path) {
 char * ourDirName(char * origname) {
     char * slash;
     char * name;
-    int i = strlen(origname);
 
-    name = strcpy(malloc(i + 1), origname);
+    name = strdup(origname);
 
     stripTrailingSlashes(name);
 

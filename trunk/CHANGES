@@ -1,3 +1,13 @@
+3.6.8 -> 3.7:
+	- always use compressext for the extension for compressed
+	  files; before compresscmd and compressext had to agree
+	- moved all compression to one code block
+	- compression, scripts don't use system() anymore
+	- compress and maillast didn't work together properly
+	- delaycompress and mailfirst didn't work properly
+	- don't use system() for mailing (or uncompressing) logs anymore
+	- use "-s" for speciying the subjected of mailed logs
+
 3.5.4 -> 3.6:
         - See .spec file for changes
 

@@ -19,6 +19,13 @@
 #define NO_FORCE_ROTATE 0
 #define FORCE_ROTATE    1
 
+struct rotatePatternElement {
+    enum { RP_NONE = 0, RP_FILENAME, RP_STRING, RP_COUNT, RP_MONTH, RP_DAY, 
+	   RP_YEAR } type;
+    char * arg;
+    struct rotatePatternElement * next;
+};
+
 typedef struct {
     char * pattern;
     char ** files;
@@ -33,12 +40,15 @@ typedef struct {
     char * extension;
     char * compress_prog;
     char * uncompress_prog;
-    char * compress_options;
     char * compress_ext;
+    struct rotatePatternElement * rotatePattern;
     int flags;
     mode_t createMode;		/* if any/all of these are -1, we use the */
     uid_t createUid;		/* attributes from the log file just rotated */
     gid_t createGid;
+    /* these are at the end so they end up nil */
+    const char ** compress_options_list;
+    int compress_options_count;
 } logInfo;
 
 int readConfigPath(const char * path, logInfo * defConfig, 
