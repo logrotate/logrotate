@@ -873,6 +873,12 @@ static int readConfigFile(const char * configFile, logInfo * defConfig,
 	}
     }
 
+    if(scriptStart) {
+      message(MESS_ERROR, "%s:prerotate or postrotate without endscript\n",
+	      configFile);
+      return 1;
+    }
+
     return 0;
 }
 
