@@ -498,7 +498,9 @@ int rotateSingleLog(logInfo * log, int logNum, logState ** statesPtr,
 		    command = alloca(strlen(mailFilename) + 100 + 
 				     strlen(UNCOMPRESS_PIPE));
 
-		    if (log->flags & LOG_FLAG_COMPRESS)
+		    if ((log->flags & LOG_FLAG_COMPRESS) &&
+			    !(log->flags & LOG_FLAG_DELAYCOMPRESS) &&
+			    (log->flags & LOG_FLAG_MAILFIRST))
 			sprintf(command, "%s < %s | %s '%s' %s", 
 				    UNCOMPRESS_PIPE, mailFilename, mailCommand,
 				    log->files[logNum],
