@@ -34,7 +34,6 @@ typedef struct {
     int rotateCount;
     char * pre, * post;
     char * logAddress;
-    char * errAddress;
     char * extension;
     char * compress_prog;
     char * uncompress_prog;

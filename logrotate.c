@@ -536,9 +536,6 @@ int rotateSingleLog(logInfo * log, int logNum, logState ** statesPtr,
 
 int rotateLogSet(logInfo * log, logState ** statesPtr, int * numStatesPtr, 
 		 int force) {
-    FILE * errorFile;
-    char errorFileName[32];
-    int oldstderr = 0, newerr;
     int i;
     int hasErrors = 0;
 
@@ -583,39 +580,10 @@ int rotateLogSet(logInfo * log, logState ** statesPtr, int * numStatesPtr,
 	message(MESS_DEBUG, "old logs are removed\n");
     }
 
-    if (log->errAddress) {
-	message(MESS_DEBUG, "errors will be mailed to %s\n", log->errAddress);
-
-	strcpy(errorFileName, "/tmp/logrotate.XXXXXX");
-	if ((newerr = mkstemp(errorFileName)) < 0) {
-	    message(MESS_ERROR, "error creating temporary file %s\n",
-			errorFileName);
-	    return 1;
-	}
-	
-	if (!debug) {
-	    oldstderr = dup(2);
-	    dup2(newerr, 2);
-	    close(newerr);
-
-	    errorFile = fdopen(2, "w");
-
-	    setlinebuf(errorFile);
-
-	    fprintf(errorFile, "errors occured while rotating %s\n\n",
-		    log->pattern);
-	} else {
-	    errorFile = stderr;
-	}
-    } else {
-	message(MESS_DEBUG, "errors displayed on stderr\n");
-	errorFile = stderr;
-    }
-
     if (log->pre && (log->flags & LOG_FLAG_SHAREDSCRIPTS)) {
 	message(MESS_DEBUG, "running shared prerotate script\n");
 	if (runScript(log->pattern, log->pre)) {
-	    fprintf(errorFile, "error running shared prerotate script for %s-- 
+	    fprintf(stderr, "error running shared prerotate script for %s-- 
 			leaving old logs in place\n", log->pattern);
 	    hasErrors = 1;
 	}
@@ -623,38 +591,15 @@ int rotateLogSet(logInfo * log, logState ** statesPtr, int * numStatesPtr,
 
     for (i = 0; i < log->numFiles; i++)
 	hasErrors |= rotateSingleLog(log, i, statesPtr, numStatesPtr, 
-					errorFile);
+					stderr);
 
     if (log->post && (log->flags & LOG_FLAG_SHAREDSCRIPTS)) {
 	message(MESS_DEBUG, "running shared postrotate script\n");
 	if (runScript(log->pattern, log->post)) {
-	    fprintf(errorFile, 
+	    fprintf(stderr, 
 	       "error running shared postrotate script for %s\n", log->pattern);
 	    hasErrors = 1;
 	}
-    }
-
-    if (log->errAddress && !debug) {
-	fclose(errorFile);
-
-	close(2);
-	dup2(oldstderr, 2);
-	close(oldstderr);
-
-	if (hasErrors) {
-	    char * command;
-
-	    command = alloca(strlen(errorFileName) + strlen(log->errAddress) +
-				50);
-	    sprintf(command, "%s 'errors rotating logs' %s < %s\n",
-		    mailCommand, log->errAddress, errorFileName);
-	    if (system(command)) {
-		message(MESS_ERROR, "error mailing error log to %s -- errors "
-			"left in %s\n", log->errAddress, errorFileName);
-	    }
-	}
-
-	unlink(errorFileName);
     }
 
     return hasErrors;
@@ -816,9 +761,11 @@ static int readState(char * stateFilename, logState ** statesPtr,
 int main(int argc, const char ** argv) {
     logInfo defConfig = { NULL, NULL, 0, NULL, ROT_SIZE, 
 			  /* threshHold */ 1024 * 1024, 0,
-			  /* pre */ NULL, NULL, NULL, NULL, 
+			  /* pre, post */ NULL, NULL,
+			  /* logAddress */ NULL, 
 			  /* extension */ NULL, 
-			  /* compression */ COMPRESS_COMMAND, UNCOMPRESS_COMMAND, COMPRESS_OPTIONS, COMPRESS_EXT,
+			  /* compression */ COMPRESS_COMMAND,
+			  UNCOMPRESS_COMMAND, COMPRESS_OPTIONS, COMPRESS_EXT,
 			  /* flags */ LOG_FLAG_IFEMPTY,
 			  /* createMode */ NO_MODE, NO_UID, NO_GID };
     int numLogs = 0, numStates = 0;
@@ -836,7 +783,7 @@ int main(int argc, const char ** argv) {
 		"Don't do anything, just test (implies -v)" },
 	{ "force", 'f', 0 , &force, 0, "Force file rotation" },
 	{ "mail", 'm', POPT_ARG_STRING, &mailCommand, 0, 
-		"Command to use to rotate logs", "command" },
+		"Command to use to mail logs", "command" },
 	{ "state", 's', POPT_ARG_STRING, &stateFile, 0, "Path of state file",
 		"statefile" },
 	{ "verbose", 'v', 0, 0, 'v', "Display messages during rotation" },
