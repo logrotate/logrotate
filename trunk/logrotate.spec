@@ -1,7 +1,7 @@
 Summary: Rotates, compresses, and mails system logs
 Name: logrotate
 Version: 2.3
-Release: 2
+Release: 3
 Copyright: GPL
 Group: Utilities/System
 Source: ftp.redhat.com:/pub/redhat/code/logrotate/logrotate-2.3.tar.gz
