@@ -125,10 +125,12 @@ given address.
 .TP
 \fBinclude \fIfile_or_directory\fR
 Reads the file given as an argument as if it was included inline where
-the \fBinclude\fR directive appears. If a directory is given, all of the
+the \fBinclude\fR directive appears. If a directory is given, most of the
 files in that directory are read before processing of the including file
-continues. The \fBinclude\fR directive may not appear inside of a log
-file definition.
+continues. The only files which are ignored are files whose names end
+with .rpmorig, .rpmsave, or ~.  The \fBinclude\fR directive may not appear 
+inside of a log
+file definition. 
 
 .TP
 \fBmonthly\fR
