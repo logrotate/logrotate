@@ -1,3 +1,9 @@
+2.2 -> 2.3:
+	- fill in all of last rotated structure (this probable isn't
+	  really necessary but it's a bit cleaner and will avoid future
+	  problems);
+	- fixed .spec file
+
 2.1 -> 2.2:
 	- If a file is rotated and we have no state information for it,
 	  right out the current time.
