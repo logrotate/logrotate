@@ -1,6 +1,6 @@
 Summary: Rotates, compresses, removes and mails system log files.
 Name: logrotate
-Version: 3.6
+Version: 3.6.1
 Release: 1
 License: GPL
 Group: System Environment/Base
@@ -41,10 +41,13 @@ rm -rf $RPM_BUILD_ROOT
 %attr(0755, root, root) /usr/sbin/logrotate
 %attr(0644, root, root) %{_mandir}/man8/logrotate.8*
 %attr(0755, root, root) /etc/cron.daily/logrotate
-%attr(0644, root, root) %config /etc/logrotate.conf
+%attr(0644, root, root) %config(noreplace) /etc/logrotate.conf
 %attr(0755, root, root) %dir /etc/logrotate.d
 
 %changelog
+* Mon Dec 10 2001 Preston Brown <pbrown@redhat.com>
+- noreplace config file
+
 * Wed Nov 28 2001 Preston Brown <pbrown@redhat.com> 3.6-1
 - patch from Alexander Kourakos <awk@awks.org> to stop the shared
   postrotate/prerotate scripts from running if none of the log(s) need
