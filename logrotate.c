@@ -416,7 +416,7 @@ int rotateSingleLog(logInfo * log, int logNum, logState ** statesPtr,
     sprintf(firstRotated, "%s/%s.%d%s%s", dirName, baseName,
             logStart, fileext, compext);
     
-    for (i = rotateCount + logStart; (i >= 0) && !hasErrors; i--) {
+    for (i = rotateCount + logStart - 1; (i >= 0) && !hasErrors; i--) {
         tmp = newName;
         newName = oldName;
         oldName = tmp;
