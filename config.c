@@ -735,8 +735,9 @@ static int readConfigFile(char * configFile, logInfo * defConfig,
 	    start++;
 	    while (isblank(*start) && *start != '\n') start++;
 	
-	    if (*start != '\n') {
-		message(MESS_ERROR, "%s:%d unexpected text after {\n");
+	    if (*start != '\n' && *start != '}') {
+		message(MESS_ERROR, "%s:%d unexpected text after {\n",
+			configFile, lineNum);
 		return 1;
 	    }
 	} else if (*start == '}') {

@@ -2,6 +2,7 @@
 	- fixed small alloca()
 	- added missingok flag
 	- use popt to display usage message
+	- handle /some/file { } in config file
 
 2.9 -> 3.0
 	- updates for glibc 2.1
