@@ -7,8 +7,8 @@
 #include "log.h"
 
 int logLevel = MESS_DEBUG;
-static FILE * errorFile = stderr;
-static FILE * messageFile = stderr;
+static FILE * errorFile =  NULL;
+static FILE * messageFile = NULL;
 int flags = 0;
 
 void logSetLevel(int level) {
@@ -55,9 +55,15 @@ void log(int fd, char * format, ...) {
 
 void message(int level, char * format, ...) {
     va_list args;
-    FILE * where = errorFile;
+    FILE * where = NULL;
     int showTime = 0;
 
+    if (errorFile == NULL)
+	errorFile = stderr;
+    if (messageFile == NULL)
+	messageFile = stderr;
+    where = errorFile;
+    
     if (level >= logLevel) {
 	va_start(args, format);
 
@@ -91,5 +97,4 @@ void message(int level, char * format, ...) {
 	if (level == MESS_FATAL) exit(1);
     }
 }
-
 
