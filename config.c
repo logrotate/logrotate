@@ -40,6 +40,8 @@ int tabooCount = 0;
 static int readConfigFile(const char * configFile, logInfo * defConfig, 
 			  logInfo ** logsPtr, int * numLogsPtr);
 static int globerr(const char * pathname, int theerr);
+static struct rotatePatternElement * parsePattern(const char * pattern,
+					const char * configFile, int lineNum);
 
 static int isolateValue(const char * fileName, int lineNum, char * key, 
 			char ** startPtr, char ** endPtr) {
@@ -168,6 +170,74 @@ static void free_namelist (char **namelist, int files_count)
     for (i=0; i<files_count; ++i)
 	free(namelist[i]);
     free(namelist);
+}
+
+static struct rotatePatternElement * parsePattern(const char * pattern,
+					const char * configFile, int lineNum) {
+    struct rotatePatternElement * head, * item;
+    struct rotatePatternElement new;
+    const char * field;
+    const char * start;
+
+    /* dummy head node; we build off of it */
+    head = alloca(sizeof(*head));
+    item = head;
+
+    start = field = pattern;
+    memset(&new, 0, sizeof(new));
+    while (*field) {
+	if (*field != '%') {
+	    field++;
+	    continue;
+	}
+
+	switch (*field) {
+	  case '%':
+	    break;
+	  case 'f':
+	    new.type = RP_FILENAME;
+	    break;
+	  case 'c':
+	    new.type = RP_COUNT;
+	    break;
+	  default:
+	    message(MESS_ERROR, "%s:%d unknown element %c in pattern %s",
+		    configFile, lineNum, *field, pattern);
+	    return NULL;
+	}
+
+	if (new.type != RP_NONE) {
+	    if (start != field) {
+		/* fixed string */
+		item->next = malloc(sizeof(*item->next));
+		item->type = RP_STRING;
+		item->arg = malloc(field - start + 1);
+		strncpy(item->arg, start, field - start);
+		item->arg[field-start] = '\0';
+		item = item->next;
+	    }
+
+	    item->next = malloc(sizeof(*item->next));
+	    *item->next = new;
+	    item = item->next;
+
+	    memset(&new, 0, sizeof(new));
+	}
+
+	field++;
+    }
+
+    if (start != field) {
+	/* fixed string */
+	item->next = malloc(sizeof(*item->next));
+	item->type = RP_STRING;
+	item->arg = malloc(field - start + 1);
+	strncpy(item->arg, start, field-start);
+	item->arg[field-start] = '\0';
+	item = item->next;
+    }
+    
+    return NULL;
 }
 
 int readConfigPath(const char * path, logInfo * defConfig, 
@@ -658,7 +728,7 @@ static int readConfigFile(const char * configFile, logInfo * defConfig,
 		}
 
 		*endtag = oldchar, start = endtag;
-		if (!isolateValue(configFile, lineNum, "size", &start, 
+		if (!isolateValue(configFile, lineNum, "tabooext", &start, 
 				  &endtag)) {
 		    oldchar = *endtag, *endtag = '\0';
 
@@ -699,7 +769,7 @@ static int readConfigFile(const char * configFile, logInfo * defConfig,
 		}
 
 		*endtag = oldchar, start = endtag;
-		if (!isolateValue(configFile, lineNum, "size", &start, 
+		if (!isolateValue(configFile, lineNum, "include", &start, 
 				  &endtag)) {
 		    oldchar = *endtag, *endtag = '\0';
 
@@ -711,6 +781,20 @@ static int readConfigFile(const char * configFile, logInfo * defConfig,
 
 		    *endtag = oldchar, start = endtag;
 		}
+	    } else if (!strcmp(start, "pattern")) {
+		char * patternString;
+
+		*endtag = oldchar, start = endtag;
+		if (!(patternString = readPath(configFile, lineNum,
+						"pattern", &start))) {
+		    return 1;
+		}
+
+		newlog->rotatePattern = parsePattern(patternString,
+					    configFile, lineNum);
+		if (!newlog->rotatePattern) return 1;
+
+		message(MESS_DEBUG, "pattern is now %s\n", patternString);
 	    } else if (!strcmp(start, "olddir")) {
 		*endtag = oldchar, start = endtag;
 		if (!(newlog->oldDir = readPath(configFile, lineNum,
@@ -778,13 +862,22 @@ static int readConfigFile(const char * configFile, logInfo * defConfig,
 		message(MESS_DEBUG, "uncompress_prog is now %s\n", newlog->uncompress_prog);
 
 	    } else if (!strcmp(start, "compressoptions")) {
+		char * options;
+
 		*endtag = oldchar, start = endtag;
-		if (!(newlog->compress_options = readPath(configFile, lineNum, "compressoptions", &start))) {
+		if (!(options = readPath(configFile, lineNum, "compressoptions", &start))) {
 		    return 1;
 		}
 
-		message(MESS_DEBUG, "compress_options is now %s\n", newlog->compress_options);
+		if (poptParseArgvString(options, 
+					&newlog->compress_options_count,
+					&newlog->compress_options_list)) {
+		    message(MESS_ERROR, "%s:%d invalid compression options\n", 
+			    configFile, lineNum);
+		    return 1;
+		}
 
+		message(MESS_DEBUG, "compress_options is now %s\n", options);
 	    } else if (!strcmp(start, "compressext")) {
 		*endtag = oldchar, start = endtag;
 		if (!(newlog->compress_ext = readPath(configFile, lineNum, "compress-ext", &start))) {

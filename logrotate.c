@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -28,6 +29,11 @@ typedef struct {
     int doRotate;
 } logState;
 
+struct stateSet {
+    logState * states;
+    int numStates;
+};
+
 #define NO_MODE ((mode_t) -1)
 #define NO_UID  ((uid_t) -1)
 #define NO_GID  ((gid_t) -1)
@@ -36,39 +42,10 @@ int debug = 0;
 char * mailCommand = DEFAULT_MAIL_COMMAND;
 time_t nowSecs = 0;
 
-/* converts ' to '\''
- * returns pointer to a newly allocated string. */
-char *escapeSingleQuotes(const char *src)
-{
-	int c = 0;
-	int i;
-	char *newstr, *s;
-
-	for (i = 0; i < strlen(src); i++) {
-		if (src[i] == '\'') c++;
-	}
-	newstr = malloc(strlen(src) + (c * 3) + 1);
-
-	s = newstr;
-	for (i = 0; i < strlen(src); i++) {
-		if (src[i] == '\'') {
-			strcpy(s, "'\\''");
-			s += 4;
-		} else {
-			*s = src[i];
-			s++;
-		}
-	}
-	*s = '\0';
-
-	return newstr;
-}
-
-static logState * findState(const char * fn, logState ** statesPtr, 
-			    int * numStatesPtr) {
+static logState * findState(const char * fn, struct stateSet * sip) {
     int i;
-    logState * states = *statesPtr;
-    int numStates = *numStatesPtr;
+    logState * states = sip->states;
+    int numStates = sip->numStates;
     struct tm now = *localtime(&nowSecs);
     time_t lr_time;
 
@@ -90,8 +67,8 @@ static logState * findState(const char * fn, logState ** statesPtr,
 	lr_time = mktime(&states[i].lastRotated);
 	states[i].lastRotated = *localtime(&lr_time);
 
-	*statesPtr = states;
-	*numStatesPtr = numStates;
+	sip->states = states;
+	sip->numStates = numStates;
     }
 
     return (states + i);
@@ -99,7 +76,7 @@ static logState * findState(const char * fn, logState ** statesPtr,
 
 static int runScript(char * logfn, char * script) {
     int fd;
-    char *filespec, *cmd, *escapedlogfn;
+    char *filespec;
     int rc;
     char buf[256];
 
@@ -132,13 +109,137 @@ static int runScript(char * logfn, char * script) {
 
     close(fd);
 
-    escapedlogfn = escapeSingleQuotes(logfn);
-    cmd = alloca(strlen(filespec) + strlen(escapedlogfn) + 20);
-    sprintf(cmd, "/bin/sh %s '%s'", filespec, escapedlogfn);
-    free(escapedlogfn);
-    rc = system(cmd);
+    if (!fork()) {
+	execlp(filespec, logfn, NULL);
+	exit(1);
+    }
+
+    wait(&rc);
 
     unlink(filespec);
+
+    return rc;
+}
+
+static int compressLogFile(char * name, logInfo * log) {
+    char * compressedName;
+    const char ** fullCommand;
+    int inFile;
+    int outFile;
+    int i;
+    int status;
+
+    fullCommand = alloca(sizeof(*fullCommand) * 
+			 (log->compress_options_count + 2));
+    fullCommand[0] = log->compress_prog;
+    for (i = 0; i < log->compress_options_count; i++)
+	fullCommand[i + 1] = log->compress_options_list[i];
+    fullCommand[log->compress_options_count + 1] = NULL;
+    
+    compressedName = alloca(strlen(name) + 
+			    strlen(log->compress_ext) + 2);
+    sprintf(compressedName, "%s%s", name, log->compress_ext);
+
+    if ((inFile = open(name, O_RDONLY)) < 0) {
+	message(MESS_ERROR, "unable to open %s for compression\n", name);
+	return 1;
+    }
+    
+    if ((outFile = open(compressedName, O_RDWR | O_CREAT | O_TRUNC, 0666)) < 0) {
+	message(MESS_ERROR, "unable to open %s for compressed output\n", 
+		compressedName);
+	close(inFile);
+	return 1;
+    }
+
+    message(MESS_DEBUG, "compressing log with: %s\n", fullCommand[0]);
+
+    if (!fork()) {
+	dup2(inFile, 0);
+	close(inFile);
+	dup2(outFile, 1);
+	close(outFile);
+
+	execvp(fullCommand[0], (void *) fullCommand);
+	exit(1);
+    }
+
+    close(inFile);
+    close(outFile);
+
+    wait(&status);
+
+    if (!WIFEXITED(status) || WEXITSTATUS(status)) {
+	message(MESS_ERROR, "failed to compress log %s\n", name);
+	return 1;
+    }
+
+    unlink(name);
+
+    return 0;
+}
+
+static int mailLog(char * logFile, char * mailCommand, char * uncompressCommand, 
+		   char * address, char * subject) {
+    int mailInput;
+    pid_t mailChild, uncompressChild;
+    int mailStatus, uncompressStatus;
+    int uncompressPipe[2];
+    char * mailArgv[] = { mailCommand, "-s", subject, address, NULL };
+    int rc = 0;
+
+    if ((mailInput = open(logFile, O_RDONLY)) < 0) {
+	message(MESS_ERROR, "failed to open %s for mailing: %s\n", logFile,
+		strerror(errno));
+	return 1;
+    }
+
+    if (uncompressCommand) {
+	pipe(uncompressPipe);
+	if (!(uncompressChild = fork())) {
+	    /* uncompress child */
+	    dup2(mailInput, 0);
+	    close(mailInput);
+	    dup2(uncompressPipe[1], 1);
+	    close(uncompressPipe[0]);
+	    close(uncompressPipe[1]);
+
+	    execlp(uncompressCommand, uncompressCommand, NULL);
+	    exit(1);
+	}
+
+	close(mailInput);
+	mailInput = uncompressPipe[0];
+	close(uncompressPipe[1]);
+    }
+
+    if (!(mailChild = fork())) {
+	dup2(mailInput, 0);
+	close(mailInput);
+	close(1);
+
+	execvp(mailArgv[0], mailArgv);
+	exit(1);
+    }
+
+    close(mailInput);
+
+    waitpid(mailChild, &mailStatus, 0);
+
+    if (!WIFEXITED(mailStatus) || WEXITSTATUS(mailStatus)) {
+	message(MESS_ERROR, "mail command failed for %s\n", logFile);
+	rc = 1;
+    }
+
+    if (uncompressCommand) {
+	waitpid(uncompressChild, &uncompressStatus, 0);
+
+	if (!WIFEXITED(uncompressStatus) || WEXITSTATUS(uncompressStatus)) {
+	    message(MESS_ERROR, "uncompress command failed mailing %s\n", 
+		    logFile);
+	    rc = 1;
+	}
+    }
 
     return rc;
 }
@@ -260,8 +361,7 @@ static int copyTruncate(char * currLog, char * saveLog, struct stat * sb, int fl
     return 0;
 }
 
-int findNeedRotating(logInfo * log, int logNum, logState ** statesPtr, 
-                     int * numStatesPtr) {
+int findNeedRotating(logInfo * log, int logNum, struct stateSet * sip) {
     struct stat sb;
     logState * state = NULL;
     struct tm now = *localtime(&nowSecs);
@@ -274,12 +374,12 @@ int findNeedRotating(logInfo * log, int logNum, logState ** statesPtr,
                     log->files[logNum]);
             return 0;
         }
-        fprintf(stderr, "stat of %s failed: %s\n", log->files[logNum],
+        message(MESS_ERROR, "stat of %s failed: %s\n", log->files[logNum],
                 strerror(errno));
         return 1;
     }
 
-    state = findState(log->files[logNum], statesPtr, numStatesPtr);
+    state = findState(log->files[logNum], sip);
     state->doRotate = 0;
     state->sb = sb;
 
@@ -341,8 +441,7 @@ int findNeedRotating(logInfo * log, int logNum, logState ** statesPtr,
     return 0;
 }
 
-int rotateSingleLog(logInfo * log, int logNum, logState ** statesPtr, 
-		    int * numStatesPtr, FILE * errorFile) {
+int rotateSingleLog(logInfo * log, int logNum, logState * state) {
     struct tm now = *localtime(&nowSecs);
     char * oldName, * newName = NULL;
     char * disposeName;
@@ -353,7 +452,6 @@ int rotateSingleLog(logInfo * log, int logNum, logState ** statesPtr,
     int hasErrors = 0;
     int i;
     int fd;
-    logState * state = NULL;
     uid_t createUid;
     gid_t createGid;
     mode_t createMode;
@@ -364,34 +462,28 @@ int rotateSingleLog(logInfo * log, int logNum, logState ** statesPtr,
     int rotateCount = log->rotateCount ? log->rotateCount : 1;
     int logStart = (log->logStart == -1) ? 1 : log->logStart;
 
-    /* Logs with rotateCounts of 0 are rotated to .1, then removed. This
+    if (!state->doRotate) return 0;
+
+    /* Logs with rotateCounts of 0 are rotated once, then removed. This
        lets scripts run properly, and everything gets mailed properly. */
 
-    state = findState(log->files[logNum], statesPtr, numStatesPtr);
-    
-    if (!state->doRotate)
-        return hasErrors;
-    
     message(MESS_DEBUG, "rotating log %s, log->rotateCount is %d\n", log->files[logNum], log->rotateCount);
     
     if (log->flags & LOG_FLAG_COMPRESS) compext = log->compress_ext;
     
     state->lastRotated = now;
     
-    if (log->oldDir)
-      {
-	if(log->oldDir[0] != '/')
-	  {
+    if (log->oldDir) {
+	if (log->oldDir[0] != '/') {
 	    char *ld = ourDirName(log->files[logNum]);
 	    dirName = malloc(strlen(ld) + strlen(log->oldDir) + 2);
 	    sprintf(dirName, "%s/%s", ld, log->oldDir);
 	    free(ld);
-	  }
-	else
+	} else
 	  dirName = strdup(log->oldDir);
-      }
-    else
+    } else
         dirName = ourDirName(log->files[logNum]);
+
     baseName = strdup(ourBaseName(log->files[logNum]));
 
     alloc_size = strlen(dirName) + strlen(baseName) + 
@@ -425,23 +517,7 @@ int rotateSingleLog(logInfo * log, int logNum, logState ** statesPtr,
             message(MESS_DEBUG, "previous log %s does not exist\n",
 		    oldName);
         } else {
-            char * escapedName;
-            char * command;
-	    
-            escapedName = escapeSingleQuotes(oldName);
-            command = alloca(strlen(log->compress_prog) +
-                             strlen(log->compress_options) +
-                             strlen(escapedName) + 10);
-            sprintf(command, "%s %s '%s'", log->compress_prog,
-                    log->compress_options, escapedName);
-            free(escapedName);
-            message(MESS_DEBUG, "compressing previous log with: %s\n",
-		    command);
-            if (!debug && system(command)) {
-                fprintf(errorFile,
-			"failed to compress previous log %s\n", oldName);
-                hasErrors = 1;
-	    }
+	    hasErrors = compressLogFile(oldName, log);
 	}
     }
     
@@ -454,7 +530,8 @@ int rotateSingleLog(logInfo * log, int logNum, logState ** statesPtr,
     firstRotated = alloca(strlen(dirName) + strlen(baseName) +
                           strlen(fileext) + strlen(compext) + 30);
     sprintf(firstRotated, "%s/%s.%d%s%s", dirName, baseName,
-            logStart, fileext, compext);
+            logStart, fileext, 
+	    (log->flags & LOG_FLAG_DELAYCOMPRESS) ? "" : compext);
     
 #ifdef WITH_SELINUX
     if ((selinux_enabled=is_selinux_enabled())) {
@@ -496,7 +573,7 @@ int rotateSingleLog(logInfo * log, int logNum, logState ** statesPtr,
                 message(MESS_DEBUG, "old log %s does not exist\n",
                         oldName);
             } else {
-                fprintf(errorFile, "error renaming %s to %s: %s\n",
+                message(MESS_ERROR, "error renaming %s to %s: %s\n",
                         oldName, newName, strerror(errno));
                 hasErrors = 1;
 	    }
@@ -522,7 +599,7 @@ int rotateSingleLog(logInfo * log, int logNum, logState ** statesPtr,
         if (log->pre && !(log->flags & LOG_FLAG_SHAREDSCRIPTS)) {
             message(MESS_DEBUG, "running prerotate script\n");
             if (runScript(log->files[logNum], log->pre)) {
-                fprintf(errorFile, "error running prerotate script, "
+                message(MESS_ERROR, "error running prerotate script, "
 			"leaving old log in place\n");
                 hasErrors = 1;
 	    }
@@ -534,7 +611,7 @@ int rotateSingleLog(logInfo * log, int logNum, logState ** statesPtr,
 	    
             if (!debug && !hasErrors &&
 		rename(log->files[logNum], finalName)) {
-                fprintf(errorFile, "failed to rename %s to %s: %s\n",
+                message(MESS_ERROR, "failed to rename %s to %s: %s\n",
 			log->files[logNum], finalName, strerror(errno));
 	    }
 
@@ -605,7 +682,7 @@ int rotateSingleLog(logInfo * log, int logNum, logState ** statesPtr,
 	    !(log->flags & LOG_FLAG_SHAREDSCRIPTS)) {
             message(MESS_DEBUG, "running postrotate script\n");
             if (runScript(log->files[logNum], log->post)) {
-                fprintf(errorFile, "error running postrotate script\n");
+                message(MESS_ERROR, "error running postrotate script\n");
                 hasErrors = 1;
 	    }
         }
@@ -613,81 +690,33 @@ int rotateSingleLog(logInfo * log, int logNum, logState ** statesPtr,
         if (!hasErrors && 
 	    (log->flags & LOG_FLAG_COMPRESS) &&
 	    !(log->flags & LOG_FLAG_DELAYCOMPRESS)) {
-            char * escapedName;
-            char * command;
-	    
-            escapedName = escapeSingleQuotes(finalName);
-            command = alloca(strlen(log->compress_prog) +
-                             strlen(log->compress_options) +
-                             strlen(escapedName) + 10);
-            sprintf(command, "%s %s '%s'", log->compress_prog,
-                    log->compress_options, escapedName);
-            free(escapedName);
-            message(MESS_DEBUG, "compressing new log with: %s\n", command);
-            if (!debug && system(command)) {
-                fprintf(errorFile, "failed to compress log %s\n", 
-			finalName);
-                hasErrors = 1;
-	    }
-        }
+	    hasErrors = compressLogFile(finalName, log);
+	}
 	
         if (!hasErrors && log->logAddress) {
-            char * command;
             char * mailFilename;
-	    int mailfile_is_compressed;
 	    
             if (log->flags & LOG_FLAG_MAILFIRST)
                 mailFilename = firstRotated;
             else
                 mailFilename = disposeName;
 
-	    mailfile_is_compressed = (log->flags & LOG_FLAG_COMPRESS)
-	      && ((log->flags & (LOG_FLAG_DELAYCOMPRESS|LOG_FLAG_MAILFIRST))
-		  != (LOG_FLAG_DELAYCOMPRESS|LOG_FLAG_MAILFIRST));
-
-	    if (!mailfile_is_compressed
-		&& !strcmp(compext,
-			   mailFilename+strlen(mailFilename)-strlen(compext)))
-	      {
-		char *ctmp;
-		ctmp = alloca(strlen(mailFilename));
-		strcpy(ctmp, mailFilename);
-		ctmp[strlen(ctmp)-strlen(compext)] = '\0';
-		mailFilename = ctmp;
-	      }
-
             if (mailFilename) {
-		char * escapedMailFilename = escapeSingleQuotes(mailFilename);
-                if (mailfile_is_compressed) {
-                    char * escapedFN = escapeSingleQuotes(log->files[logNum]);
-                    command = alloca(strlen(log->uncompress_prog) +
-				     strlen(escapedMailFilename) +
-				     strlen(mailCommand) +
-				     strlen(escapedFN) +
-				     strlen(log->logAddress) + 20);
-                    sprintf(command, "%s < '%s' | %s '%s' %s", 
-			    log->uncompress_prog, escapedMailFilename,
-			    mailCommand, escapedFN, log->logAddress);
-		    free(escapedFN);
+		/* if the log is compressed (and we're not mailing a
+		   file whose compression has been delayed), we need
+		   to uncompress it */
+                if ((log->flags & LOG_FLAG_COMPRESS) &&
+		    !((log->flags & LOG_FLAG_DELAYCOMPRESS) &&
+		      (log->flags & LOG_FLAG_MAILFIRST))) {
+		    if (mailLog(mailFilename, mailCommand, 
+				log->uncompress_prog, log->logAddress, 
+				log->files[logNum])) 
+			hasErrors = 1;
 		} else {
-                    command = alloca(strlen(mailCommand) +
-				     strlen(escapedMailFilename) +
-				     strlen(log->logAddress) +
-				     strlen(escapedMailFilename) + 20);
-                    sprintf(command, "%s '%s' %s < '%s'", mailCommand, 
-			    escapedMailFilename, log->logAddress, escapedMailFilename);
-                }
-		free(escapedMailFilename);
-		
-                message(MESS_DEBUG, "executing: \"%s\"\n", command);
-		
-                if (!debug && system(command)) {
-                    sprintf(newName, "%s.%d", log->files[logNum], (unsigned int)getpid());
-                    fprintf(errorFile, "Failed to mail %s to %s!\n",
-                            mailFilename, log->logAddress);
-		    
-                    hasErrors = 1;
-                } 
+		    if (mailLog(mailFilename, mailCommand, NULL, 
+			        log->logAddress, mailFilename))
+			hasErrors = 1;
+		}
 	    }
         }
 	
@@ -695,7 +724,7 @@ int rotateSingleLog(logInfo * log, int logNum, logState ** statesPtr,
             message(MESS_DEBUG, "removing old log %s\n", disposeName);
 	    
             if (!debug && unlink(disposeName)) {
-                fprintf(errorFile, "Failed to remove old log %s: %s\n",
+                message(MESS_ERROR, "Failed to remove old log %s: %s\n",
 			disposeName, strerror(errno));
                 hasErrors = 1;
 	    }
@@ -714,11 +743,11 @@ int rotateSingleLog(logInfo * log, int logNum, logState ** statesPtr,
     return hasErrors;
 }
 
-int rotateLogSet(logInfo * log, logState ** statesPtr, int * numStatesPtr, 
-		 int force) {
+int rotateLogSet(logInfo * log, struct stateSet * sip, int force) {
     int i;
     int hasErrors = 0;
     int numRotated = 0;
+    logState * state;
 
     if (force)
 	log->criterium = ROT_FORCE;
@@ -762,10 +791,10 @@ int rotateLogSet(logInfo * log, logState ** statesPtr, int * numStatesPtr,
     }
     
     for (i = 0; i < log->numFiles; i++) {
-        hasErrors |= findNeedRotating(log, i, statesPtr, numStatesPtr);
+        hasErrors |= findNeedRotating(log, i, sip);
 	
         /* sure is a lot of findStating going on .. */
-        if ((findState(log->files[i], statesPtr, numStatesPtr))->doRotate)
+        if ((findState(log->files[i], sip))->doRotate)
             numRotated++;
     }
     
@@ -776,7 +805,7 @@ int rotateLogSet(logInfo * log, logState ** statesPtr, int * numStatesPtr,
         } else {
             message(MESS_DEBUG, "running first action script\n");
             if (runScript(log->pattern, log->first)) {
-                fprintf(stderr, "error running first action script "
+                message(MESS_ERROR, "error running first action script "
                         "for %s\n", log->pattern);
                 hasErrors = 1;
             }
@@ -790,7 +819,7 @@ int rotateLogSet(logInfo * log, logState ** statesPtr, int * numStatesPtr,
         } else {
             message(MESS_DEBUG, "running shared prerotate script\n");
             if (runScript(log->pattern, log->pre)) {
-                fprintf(stderr, "error running shared prerotate script "
+                message(MESS_ERROR, "error running shared prerotate script "
                         "for %s\n", log->pattern);
                 hasErrors = 1;
             }
@@ -798,8 +827,11 @@ int rotateLogSet(logInfo * log, logState ** statesPtr, int * numStatesPtr,
     }
     
     /* should there be an if(!hasErrors) here? */
-    for (i = 0; i < log->numFiles; i++)
-        hasErrors |= rotateSingleLog(log, i, statesPtr, numStatesPtr, stderr);
+    for (i = 0; i < log->numFiles; i++) {
+	state = findState(log->files[i], sip);
+	
+	hasErrors |= rotateSingleLog(log, i, state);
+    }
     
     if (log->post && (log->flags & LOG_FLAG_SHAREDSCRIPTS)) {
         if (!numRotated) {
@@ -808,7 +840,7 @@ int rotateLogSet(logInfo * log, logState ** statesPtr, int * numStatesPtr,
         } else {
             message(MESS_DEBUG, "running shared postrotate script\n");
             if (runScript(log->pattern, log->post)) {
-                fprintf(stderr, "error running shared postrotate script "
+                message(MESS_ERROR, "error running shared postrotate script "
                         "for %s\n", log->pattern);
                 hasErrors = 1;
             }
@@ -822,7 +854,7 @@ int rotateLogSet(logInfo * log, logState ** statesPtr, int * numStatesPtr,
         } else {
             message(MESS_DEBUG, "running last action script\n");
             if (runScript(log->pattern, log->last)) {
-                fprintf(stderr, "error running last action script "
+                message(MESS_ERROR, "error running last action script "
                         "for %s\n", log->pattern);
                 hasErrors = 1;
             }
@@ -832,8 +864,7 @@ int rotateLogSet(logInfo * log, logState ** statesPtr, int * numStatesPtr,
     return hasErrors;
 }
 
-static int writeState(char * stateFilename, logState * states, 
-		      int numStates) {
+static int writeState(char * stateFilename, struct stateSet si) {
     FILE * f;
     char * chptr;
     int i;
@@ -848,9 +879,9 @@ static int writeState(char * stateFilename, logState * states,
     
     fprintf(f, "logrotate state -- version 2\n");
     
-    for (i = 0; i < numStates; i++) {
+    for (i = 0; i < si.numStates; i++) {
 	fputc('"', f);
-	for (chptr = states[i].fn; *chptr; chptr++) {
+	for (chptr = si.states[i].fn; *chptr; chptr++) {
 	    switch (*chptr) {
 	    case '"':
 		fputc('\\', f);
@@ -861,9 +892,9 @@ static int writeState(char * stateFilename, logState * states,
 	
 	fputc('"', f);
 	fprintf(f, " %d-%d-%d\n", 
-		states[i].lastRotated.tm_year + 1900,
-		states[i].lastRotated.tm_mon + 1,
-		states[i].lastRotated.tm_mday);
+		si.states[i].lastRotated.tm_year + 1900,
+		si.states[i].lastRotated.tm_mon + 1,
+		si.states[i].lastRotated.tm_mday);
     }
     
     fclose(f);
@@ -871,8 +902,7 @@ static int writeState(char * stateFilename, logState * states,
     return 0;
 }
 
-static int readState(char * stateFilename, logState ** statesPtr, 
-		     int * numStatesPtr) {
+static int readState(char * stateFilename, struct stateSet * sip) {
     FILE * f;
     char buf[1024];
     const char ** argv;
@@ -975,7 +1005,7 @@ static int readState(char * stateFilename, logState ** statesPtr,
 
 	year -= 1900, month -= 1;
 
-	st = findState(argv[0], statesPtr, numStatesPtr);
+	st = findState(argv[0], sip);
 
 	st->lastRotated.tm_mon = month;
 	st->lastRotated.tm_mday = day;
@@ -1003,13 +1033,14 @@ int main(int argc, const char ** argv) {
 			  /* logAddress */ NULL, 
 			  /* extension */ NULL, 
 			  /* compression */ COMPRESS_COMMAND,
-			  UNCOMPRESS_COMMAND, COMPRESS_OPTIONS, COMPRESS_EXT,
+			  UNCOMPRESS_COMMAND, COMPRESS_EXT,
+			  /* rotate pattern */ NULL,
 			  /* flags */ LOG_FLAG_IFEMPTY,
 			  /* createMode */ NO_MODE, NO_UID, NO_GID };
-    int numLogs = 0, numStates = 0;
+    int numLogs = 0;
     int force = 0;
     logInfo * logs = NULL;
-    logState * states = NULL;
+    struct stateSet si = { NULL, 0 };
     char * stateFile = STATEFILE;
     int i;
     int rc = 0;
@@ -1072,17 +1103,17 @@ int main(int argc, const char ** argv) {
 
     nowSecs = time(NULL);
 
-    if (readState(stateFile, &states, &numStates)) {
+    if (readState(stateFile, &si)) {
 	exit(1);
     }
 
     message(MESS_DEBUG, "\nHandling %d logs\n", numLogs);
 
     for (i = 0; i < numLogs; i++) {
-	rc |= rotateLogSet(logs + i, &states, &numStates, force);
+	rc |= rotateLogSet(logs + i, &si, force);
     }
 
-    if (!debug && writeState(stateFile, states, numStates)) {
+    if (!debug && writeState(stateFile, si)) {
 	exit(1);
     }
 
