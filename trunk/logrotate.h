@@ -7,6 +7,7 @@
 #define LOG_FLAG_COMPRESS	(1 << 0)
 #define LOG_FLAG_CREATE		(1 << 1)
 #define LOG_FLAG_IFEMPTY	(1 << 2)
+#define LOG_FLAG_DELAYCOMPRESS	(1 << 3)
 
 #define COMPRESS_COMMAND "gzip -9"
 #define COMPRESS_EXT ".gz"
