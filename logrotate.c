@@ -95,7 +95,7 @@ int rotateLog(logInfo * log, logState ** statesPtr, int * numStatesPtr) {
 	message(MESS_DEBUG, "errors mailed to %s ", log->errAddress);
 	errorFileName = strdup(tmpnam(NULL));
 
-	newerr = open(errorFileName, O_WRONLY | O_CREAT, 0600);
+	newerr = open(errorFileName, O_WRONLY | O_CREAT | O_EXCL, 0600);
 
 	if (newerr < 0) {
 	    message(MESS_ERROR, "error creating temporary file %s\n",
