@@ -16,7 +16,7 @@
 
 typedef struct {
     char * fn;
-    struct tm lastRotated;
+    struct tm lastRotated;	/* only tm.mon, tm_mday, tm_year are good! */
 } logState;
 
 int debug = 0;
@@ -127,7 +127,8 @@ int rotateLog(logInfo * log, logState ** statesPtr, int * numStatesPtr) {
 	if (log->criterium == ROT_SIZE) {
 	    doRotate = (sb.st_size >= log->threshhold);
 	} else if (state->lastRotated.tm_year != now.tm_year || 
-		   state->lastRotated.tm_yday != now.tm_yday) {
+		   state->lastRotated.tm_mon != now.tm_mon ||
+		   state->lastRotated.tm_mday != now.tm_mday) {
 	    switch (log->criterium) {
 	      case ROT_WEEKLY:
 		doRotate = !now.tm_wday;
@@ -138,6 +139,7 @@ int rotateLog(logInfo * log, logState ** statesPtr, int * numStatesPtr) {
 	      case ROT_DAYS:
 		/* FIXME: only days=1 is implemented!! */
 		doRotate = 1;
+		break;
 	      default:
 		/* ack! */
 		doRotate = 0;
@@ -319,7 +321,7 @@ static int writeState(char * stateFilename, logState * states,
 
     for (i = 0; i < numStates; i++) {
 	fprintf(f, "%s %d-%d-%d\n", states[i].fn, 
-		states[i].lastRotated.tm_year,
+		states[i].lastRotated.tm_year + 1900,
 		states[i].lastRotated.tm_mon + 1,
 		states[i].lastRotated.tm_mday);
     }
@@ -332,6 +334,12 @@ static int writeState(char * stateFilename, logState * states,
 static int readState(char * stateFilename, logState ** statesPtr, 
 		     int * numStatesPtr) {
     FILE * f;
+    char buf[1024];
+    char buf2[1024];
+    int year, month, day;
+    int i;
+    int line = 0;
+    logState * st;
 
     f = fopen(stateFilename, "r");
 
@@ -362,28 +370,72 @@ static int readState(char * stateFilename, logState ** statesPtr,
     if (strcmp(buf, "logrotate state -- version 1\n")) {
 	fclose(f);
 	message(MESS_ERROR, "bad top line in state file %s\n", stateFilename);
+	return 1;
     }
 
-    fclose(f);
+    line++;
 
     while (fgets(buf, sizeof(buf) - 1, f)) {
+	line++;
 	i = strlen(buf);
 	if (buf[i - 1] != '\n') {
-	    message(MESS_ERROR, "line to long in state file %s\n", 
+	    message(MESS_ERROR, "line too long in state file %s\n", 
 			stateFilename);
 	    fclose(f);
 	    return 1;
 	}
 
-	if (sscanf(
+	if (i == 1) continue;
+
+	if (sscanf(buf, "%s %d-%d-%d\n", buf2, &year, &month, &day) != 4) {
+	    message(MESS_ERROR, "bad line %d in state file %s\n", 
+		    stateFilename);
+	    fclose(f);
+	    return 1;
+	}
+
+	if (year < 1996 || year > 2100) {
+	    message(MESS_ERROR, "bad year %d for file %s in state file %s\n",
+			year, buf2, stateFilename);
+	    fclose(f);
+	    return 1;
+	}
+
+	if (month < 1 || month > 12) {
+	    message(MESS_ERROR, "bad month %d for file %s in state file %s\n",
+			month, buf2, stateFilename);
+	    fclose(f);
+	    return 1;
+	}
+
+	if (day < 1 || day > 30) {
+	    message(MESS_ERROR, "bad day %d for file %s in state file %s\n",
+			day, buf2, stateFilename);
+	    fclose(f);
+	    return 1;
+	}
+
+	year -= 1900, month -= 1;
+
+	st = findState(buf2, statesPtr, numStatesPtr);
+
+	st->lastRotated.tm_mon = month;
+	st->lastRotated.tm_mday = day;
+	st->lastRotated.tm_year = year;
     }
- 
+
+    fclose(f);
+
     return 0;
 
 }
 
 void usage(void) {
-    fprintf(stderr, "usage: logrotate [-dv] [-{s|-state} <file>] <config_file>+\n");
+    fprintf(stderr, "logrotate " VERSION 
+		" - Copyright (C) 1995 - Red Hat Software\n");
+    fprintf(stderr, "This may be freely redistributed under the terms of "
+		"the GNU Public License\n\n");
+    fprintf(stderr, "usage: logrotate [-dv] [-s|--state <file>] <config_file>+\n");
     exit(1);
 }
 
@@ -400,7 +452,8 @@ int main(int argc, char ** argv) {
     struct option options[] = {
 	{ "debug", 0, 0, 'd' },
 	{ "state", 1, 0, 's' },
-	{ "verbose", 0, 0, 'v' }
+	{ "verbose", 0, 0, 'v' },
+	{ 0, 0, 0, 0 } 
     };
 
     logSetLevel(MESS_NORMAL);
