@@ -41,6 +41,10 @@ install:
 	install -s -m 755 $(PROG) $(PREFIX)/$(BINDIR)
 	install -m 644 $(MAN) $(PREFIX)/$(MANDIR)/man`echo $(MAN) | sed "s/.*\.//"`/$(MAN)
 
+co:
+	co RCS/*,v
+	(cd examples; co RCS/*,v)
+
 rcstag:
 	rcs -q -N$(RCSVERSION): RCS/*,v
 
