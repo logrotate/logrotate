@@ -292,11 +292,14 @@ int rotateSingleLog(logInfo * log, int logNum, logState ** statesPtr,
 	disposeName = alloca(strlen(dirName) + strlen(baseName) + 
 			    strlen(log->files[logNum]) + 10);
 
+
+	if (log->extension)
+	    fileext = log->extension;
+
 	if (log->extension &&
 		strncmp(&baseName[strlen(baseName)-strlen(log->extension)],
 		log->extension, strlen(log->extension)) == 0) {
 	    char *tempstr;
-	    fileext = log->extension;
 	    tempstr = calloc(strlen(baseName)-strlen(log->extension)+1, sizeof(char));
 	    strncat(tempstr, baseName,
 		    strlen(baseName)-strlen(log->extension));
