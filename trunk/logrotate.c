@@ -12,474 +12,41 @@
 #include <unistd.h>
 
 #include "log.h"
-
-#define LOG_FLAG_COMPRESS	(1 << 0)
-
-#define COMPRESS_COMMAND "gzip -9"
-#define COMPRESS_EXT ".gz"
-#define UNCOMPRESS_PIPE "gunzip"
+#include "logrotate.h"
 
 typedef struct {
     char * fn;
-    enum { ROT_DAYS, ROT_WEEKLY, ROT_MONTHLY, ROT_SIZE } criterium;
-    unsigned int threshhold;
-    int rotateCount;
-    char * pre, * post;
-    char * logAddress;
-    char * errAddress;
-    int flags;
-} logInfo;
+    struct tm lastRotated;
+} logState;
 
 int debug = 0;
 
-static int readConfigFile(char * configFile, logInfo * defConfig, 
-			  logInfo ** logsPtr, int * numLogsPtr);
+static logState * findState(char * fn, logState ** statesPtr, 
+			    int * numStatesPtr) {
+    int i;
+    logState * states = *statesPtr;
+    int numStates = *numStatesPtr;
 
-static int isolateValue(char * fileName, int lineNum, char * key, 
-			char ** startPtr, char ** endPtr) {
-    char * chptr = *startPtr;
+    for (i = 0; i < numStates; i++) 
+	if (!strcmp(fn, states[i].fn)) break;
 
-    while (isblank(*chptr)) chptr++;
-    if (*chptr == '=') {
-	chptr++;
-	while (*chptr && isblank(*chptr)) chptr++;
+    if (i == numStates) {
+	i = numStates++;
+	states = realloc(states, sizeof(*states) * numStates);
+	states[i].fn = strdup(fn);
+	memset(&states[i].lastRotated, 0, sizeof(states[i].lastRotated));
+
+	*statesPtr = states;
+	*numStatesPtr = numStates;
     }
 
-    if (*chptr == '\n') {
-	message(MESS_ERROR, "%s:%d argument expected after %s\n", 
-		fileName, lineNum, key);
-	return 1;
-    }
-
-    *startPtr = chptr;
-
-    while (*chptr != '\n') chptr++;
-	
-    while (isblank(*chptr)) chptr--;
-
-    if (*chptr == '\n')
-	*endPtr = chptr;
-    else
-	*endPtr = chptr + 1;
-
-    return 0;
+    return (states + i);
 }
 
-static char * readAddress(char * configFile, int lineNum, char * key, 
-			  char ** startPtr) {
-    char oldchar;
-    char * endtag, * chptr;
-    char * start = *startPtr;
-    char * address;
-
-    if (!isolateValue(configFile, lineNum, key, &start, 
-		      &endtag)) {
-	oldchar = *endtag, *endtag = '\0';
-
-	chptr = start;
-	while (*chptr && isprint(*chptr) && *chptr != ' ') 
-	    chptr++;
-	if (*chptr) {
-	    message(MESS_ERROR, "%s:%d bad %s address %s\n",
-		    configFile, lineNum, key, start);
-	    return NULL;
-	}
-
-	address = strdup(start);
-
-	*endtag = oldchar, start = endtag;
-
-	*startPtr = start;
-
-	return address;
-    } else
-	return NULL;
-}
-
-static int readConfigPath(char * path, logInfo * defConfig, 
-			  logInfo ** logsPtr, int * numLogsPtr) {
-    struct stat sb;
-    DIR * dir;
-    struct dirent * ent;
-    int here;
-
-    if (stat(path, &sb)) {
-	message(MESS_ERROR, "cannot stat %s: %s\n", path, strerror(errno));
-	return 1;
-    }
-
-    if (S_ISDIR(sb.st_mode)) {
-	dir = opendir(path);
-	if (!dir) {
-	    message(MESS_ERROR, "failed to open directory %s: %s\n", path,
-			strerror(errno));
-	    return 1;
-	}
-
-	here = open(".", O_RDONLY);
-	if (here < 0) {
-	    message(MESS_ERROR, "cannot open current directory: %s\n", 
-		    strerror(errno));
-	    closedir(dir);
-	    return 1;
-	}
-
-	if (chdir(path)) {
-	    message(MESS_ERROR, "error in chdir(\"%s\"): %s\n", path,
-		    strerror(errno));
-	    close(here);
-	    closedir(dir);
-	    return 1;
-	}
-
-	do {
-	    errno = 0;
-	    ent = readdir(dir);
-	    if (errno) {
-		message(MESS_ERROR, "readdir() from %s failed: %s\n", path,
-			strerror(errno));
-		fchdir(here);
-		close(here);
-		closedir(dir);
-		return 1;
-	    } else if (ent && ent->d_name[0] == '.' && (!ent->d_name[1] || 
-		(ent->d_name[1] == '.' && !ent->d_name[2]))) {
-		/* noop */
-	    } else if (ent) {
-		if (readConfigFile(ent->d_name, defConfig, logsPtr, 
-				   numLogsPtr)) {
-		    fchdir(here);
-		    close(here);
-		    return 1;
-		}
-	    }
-	} while (ent);
-
-	closedir(dir);
-
-	fchdir(here);
-	close(here);
-    } else {
-	return readConfigFile(path, defConfig, logsPtr, numLogsPtr);
-    }
-
-    return 0;
-}
-
-static int readConfigFile(char * configFile, logInfo * defConfig, 
-			  logInfo ** logsPtr, int * numLogsPtr) {
-    int fd;
-    char * buf, * endtag;
-    char oldchar;
-    int length;
-    int lineNum = 1;
-    int multiplier;
-    char * scriptStart = NULL;
-    char ** scriptDest = NULL;
-    logInfo * newlog = defConfig;
-    char * start, * chptr;
-
-    fd = open(configFile, O_RDONLY);
-    if (fd < 0) {
-	message(MESS_ERROR, "failed to open config file %s: %s\n",
-		configFile, strerror(errno));
-	return 1;
-    }
-
-    length = lseek(fd, 0, SEEK_END);
-    lseek(fd, 0, SEEK_SET);
-
-    buf = alloca(length + 2);
-    if (!buf) {
-	message(MESS_ERROR, "alloca() of %d bytes failed\n", length);
-	close(fd);
-	return 1;
-    }
-
-    if (read(fd, buf, length) != length) {
-	message(MESS_ERROR, "failed to read %s: %s\n", configFile, 
-		strerror(errno));
-	close(fd);
-	return 1;
-    }
-
-    close(fd);
-
-    /* knowing the buffer ends with a newline makes things a (bit) cleaner */
-    buf[length + 1] = '\0';
-    buf[length] = '\n';
-
-    message(MESS_DEBUG, "reading config file %s\n", configFile);
-
-    start = buf;
-    while (*start) {
-	while (isblank(*start) && (*start)) start++;
-	if (*start == '#') {
-	    while (*start != '\n') start++;
-	}
-
-	if (*start == '\n') {
-	    start++;
-	    lineNum++;
-	    continue;
-	}
-
-	if (scriptStart) {
-	    if (!strncmp(start, "endscript", 9)) {
-		chptr = start + 9;
-		while (isblank(*chptr)) chptr++;
-		if (*chptr == '\n') {
-		    endtag = start;
-		    while (*endtag != '\n') endtag--;
-		    endtag++;
-		    *scriptDest = malloc(endtag - scriptStart + 1);
-		    strncpy(*scriptDest, scriptStart, endtag - scriptStart);
-		    (*scriptDest)[endtag - scriptStart] = '\0';
-		    start = chptr + 1;
-		    lineNum++;
-
-		    scriptDest = NULL;
-		    scriptStart = NULL;
-		}
-	    } 
-
-	    if (scriptStart) {
-		while (*start != '\n') start++;
-		lineNum++;
-		start++;
-	    }
-	} else if (isalpha(*start)) {
-	    endtag = start;
-	    while (isalpha(*endtag)) endtag++;
-	    oldchar = *endtag;
-	    *endtag = '\0';
-
-	    if (!strcmp(start, "compress")) {
-		newlog->flags |= LOG_FLAG_COMPRESS;
-
-		*endtag = oldchar, start = endtag;
-	    } else if (!strcmp(start, "nocompress")) {
-		newlog->flags &= ~LOG_FLAG_COMPRESS;
-
-		*endtag = oldchar, start = endtag;
-	    } else if (!strcmp(start, "size")) {
-		*endtag = oldchar, start = endtag;
-
-		if (!isolateValue(configFile, lineNum, "size", &start, 
-				  &endtag)) {
-		    oldchar = *endtag, *endtag = '\0';
-
-		    length = strlen(start) - 1;
-		    if (start[length] == 'k') {
-			start[length] = '\0';
-			multiplier = 1024;
-		    } else if (start[length] == 'M') {
-			start[length] = '\0';
-			multiplier = 1024 * 1024;
-		    } else if (!isdigit(start[length])) {
-			message(MESS_ERROR, "%s:%d unknown unit '%c'\n",
-				    configFile, lineNum, start[length]);
-			return 1;
-		    } else {
-			multiplier = 1;
-		    }
-
-		    newlog->threshhold = multiplier * strtoul(start, &chptr, 0);
-		    if (*chptr) {
-			message(MESS_ERROR, "%s:%d bad size '%s'\n",
-				    configFile, lineNum, start);
-			return 1;
-		    }
-
-		    newlog->criterium = ROT_SIZE;
-
-		    *endtag = oldchar, start = endtag;
-		}
-#if 0   /* this seems like such a good idea :-( */
-	    } else if (!strcmp(start, "days")) {
-		*endtag = oldchar, start = endtag;
-
-		if (!isolateValue(configFile, lineNum, "size", &start, 
-				  &endtag)) {
-		    oldchar = *endtag, *endtag = '\0';
-
-		    newlog->threshhold = strtoul(start, &chptr, 0);
-		    if (*chptr) {
-			message(MESS_ERROR, "%s:%d bad number of days'%s'\n",
-				    configFile, lineNum, start);
-			return 1;
-		    }
-
-		    newlog->criterium = ROT_DAYS;
-
-		    *endtag = oldchar, start = endtag;
-		}
-#endif
-	    } else if (!strcmp(start, "daily")) {
-		*endtag = oldchar, start = endtag;
-
-		newlog->criterium = ROT_DAYS;
-		newlog->threshhold = 1;
-	    } else if (!strcmp(start, "monthly")) {
-		*endtag = oldchar, start = endtag;
-
-		newlog->criterium = ROT_MONTHLY;
-	    } else if (!strcmp(start, "weekly")) {
-		*endtag = oldchar, start = endtag;
-
-		newlog->criterium = ROT_WEEKLY;
-	    } else if (!strcmp(start, "rotate")) {
-		*endtag = oldchar, start = endtag;
-
-		if (!isolateValue(configFile, lineNum, "rotate count", &start, 
-				  &endtag)) {
-		    oldchar = *endtag, *endtag = '\0';
-
-		    newlog->rotateCount = strtoul(start, &chptr, 0);
-		    if (*chptr) {
-			message(MESS_ERROR, "%s:%d bad rotation count'%s'\n",
-				    configFile, lineNum, start);
-			return 1;
-		    }
-
-		    *endtag = oldchar, start = endtag;
-		}
-	    } else if (!strcmp(start, "errors")) {
-		*endtag = oldchar, start = endtag;
-		if (!(newlog->errAddress = readAddress(configFile, lineNum, 
-						       "error", &start))) {
-		    return 1;
-		}
-	    } else if (!strcmp(start, "mail")) {
-		*endtag = oldchar, start = endtag;
-		if (!(newlog->logAddress = readAddress(configFile, lineNum, 
-						        "mail", &start))) {
-		    return 1;
-		}
-	    } else if (!strcmp(start, "prerotate")) {
-		*endtag = oldchar, start = endtag;
-
-		scriptStart = start;
-		scriptDest = &newlog->pre;
-
-		while (*start != '\n') start++;
-	    } else if (!strcmp(start, "postrotate")) {
-		*endtag = oldchar, start = endtag;
-
-		scriptStart = start;
-		scriptDest = &newlog->post;
-
-		while (*start != '\n') start++;
-	    } else if (!strcmp(start, "include")) {
-		if (newlog != defConfig) {
-		    message(MESS_ERROR, "%s:%d include may not appear inside "
-			    "of log file definition", configFile, lineNum);
-		    return 1;
-		}
-
-		*endtag = oldchar, start = endtag;
-		if (!isolateValue(configFile, lineNum, "size", &start, 
-				  &endtag)) {
-		    oldchar = *endtag, *endtag = '\0';
-
-		    message(MESS_DEBUG, "including %s\n", start);
-
-		    if (readConfigPath(start, defConfig, logsPtr, 
-				       numLogsPtr))
-			return 1;
-
-		    *endtag = oldchar, start = endtag;
-		}
-	    } else {
-		message(MESS_ERROR, "%s:%d unknown option '%s' "
-			    "-- ignoring line\n", configFile, lineNum, start);
-
-		*endtag = oldchar, start = endtag;
-	    }
-
-	    while (isblank(*start)) start++;
-
-	    if (*start != '\n') {
-		message(MESS_ERROR, "%s:%d unexpected text\n", configFile,
-			    lineNum);
-		while (*start != '\n') start++;
-	    }
-
-	    lineNum++;
-	    start++;
-	} else if (*start == '/') {
-	    if (newlog != defConfig) {
-		message(MESS_ERROR, "%s:%d unexpected log filename\n", 
-			configFile, lineNum);
-		return 1;
-	    }
-
-	    (*numLogsPtr)++;
-	    *logsPtr = realloc(*logsPtr, sizeof(**logsPtr) * *numLogsPtr);
-	    newlog = *logsPtr + *numLogsPtr - 1;
-	    memcpy(newlog, defConfig, sizeof(*newlog));
-	    
-	    endtag = start;
-	    while (!isspace(*endtag)) endtag++;
-	    oldchar = *endtag;
-	    *endtag = '\0';
-
-	    newlog->fn = strdup(start);
-
-	    message(MESS_DEBUG, "reading config info for %s\n", start);
-
-	    *endtag = oldchar, start = endtag;
-
-	    while (*start && isspace(*start) && *start != '{') {
-		if (*start == '\n') lineNum++;
-		start++;
-	    }
-
-	    if (*start != '{') {
-		message(MESS_ERROR, "%s:%d { expected after log file name\n",
-			configFile, lineNum);
-		return 1;
-	    }
-
-	    start++;
-	    while (isblank(*start) && *start != '\n') start++;
-	
-	    if (*start != '\n') {
-		message(MESS_ERROR, "%s:%d unexpected text after {\n");
-		return 1;
-	    }
-	} else if (*start == '}') {
-	    if (newlog == defConfig) {
-		message(MESS_ERROR, "%s:%d unxpected }\n", configFile, lineNum);
-		return 1;
-	    }
-	    newlog = defConfig;
-
-	    start++;
-	    while (isblank(*start)) start++;
-
-	    if (*start != '\n') {
-		message(MESS_ERROR, "%s:%d, unexpected text after {\n",
-			configFile, lineNum);
-	    }
-	} else {
-	    message(MESS_ERROR, "%s:%d lines must begin with a keyword "
-			"or a /\n", configFile, lineNum);
-
-	    while (*start != '\n') start++;
-	    lineNum++;
-	    start++;
-	}
-    }
-
-    return 0;
-}
-
-int rotateLog(logInfo * log) {
+int rotateLog(logInfo * log, logState ** statesPtr, int * numStatesPtr) {
     struct stat sb;
     time_t nowSecs = time(NULL);
     struct tm now = *localtime(&nowSecs);
-    struct tm ctime;
     FILE * errorFile;
     char * errorFileName;
     char * oldName, * newName;
@@ -491,6 +58,7 @@ int rotateLog(logInfo * log) {
     int doRotate;
     int i;
     int oldstderr, newerr;
+    logState * state;
 
     message(MESS_DEBUG, "rotating: %s ", log->fn);
     switch (log->criterium) {
@@ -554,12 +122,12 @@ int rotateLog(logInfo * log) {
     }
 
     if (!hasErrors) {
-	ctime = *localtime(&sb.st_ctime);
+	state = findState(log->fn, statesPtr, numStatesPtr);
 
 	if (log->criterium == ROT_SIZE) {
 	    doRotate = (sb.st_size >= log->threshhold);
-	} else if (ctime.tm_year != now.tm_year || 
-		   ctime.tm_yday != now.tm_yday) {
+	} else if (state->lastRotated.tm_year != now.tm_year || 
+		   state->lastRotated.tm_yday != now.tm_yday) {
 	    switch (log->criterium) {
 	      case ROT_WEEKLY:
 		doRotate = !now.tm_wday;
@@ -582,6 +150,8 @@ int rotateLog(logInfo * log) {
 
     if (!hasErrors && doRotate) {
 	message(MESS_DEBUG, "log needs rotating\n");
+
+	state->lastRotated = now;
 
 	if (!log->rotateCount) {
 	    disposeName = log->fn;
@@ -733,23 +303,110 @@ int rotateLog(logInfo * log) {
     return hasErrors;
 }
 
+static int writeState(char * stateFilename, logState * states, 
+		      int numStates) {
+    FILE * f;
+    int i;
+
+    f = fopen(stateFilename, "w");
+    if (!f) {
+	message(MESS_ERROR, "error creating state file %s: %s\n", 
+		    stateFilename, strerror(errno));
+	return 1;
+    }
+
+    fprintf(f, "logrotate state -- version 1\n");
+
+    for (i = 0; i < numStates; i++) {
+	fprintf(f, "%s %d-%d-%d\n", states[i].fn, 
+		states[i].lastRotated.tm_year,
+		states[i].lastRotated.tm_mon + 1,
+		states[i].lastRotated.tm_mday);
+    }
+
+    fclose(f);
+
+    return 0;
+}
+
+static int readState(char * stateFilename, logState ** statesPtr, 
+		     int * numStatesPtr) {
+    FILE * f;
+
+    f = fopen(stateFilename, "r");
+
+    if (!f && errno == ENOENT) {
+	/* create the file before continuing to ensure we have write
+	   access to the file */
+	f = fopen(stateFilename, "w");
+	if (!f) {
+	    message(MESS_ERROR, "error creating state file %s: %s\n", 
+			stateFilename, strerror(errno));
+	    return 1;
+	}
+	fprintf(f, "logrotate state -- version 1\n");
+	fclose(f);
+	return 0;
+    } else if (!f) {
+	message(MESS_ERROR, "error creating state file %s: %s\n", 
+		    stateFilename, strerror(errno));
+	return 1;
+    }
+
+    if (!fgets(buf, sizeof(buf) - 1, f)) {
+	message(MESS_ERROR, "error reading top line of %s\n", stateFilename);
+	fclose(f);
+	return 1;
+    }
+
+    if (strcmp(buf, "logrotate state -- version 1\n")) {
+	fclose(f);
+	message(MESS_ERROR, "bad top line in state file %s\n", stateFilename);
+    }
+
+    fclose(f);
+
+    while (fgets(buf, sizeof(buf) - 1, f)) {
+	i = strlen(buf);
+	if (buf[i - 1] != '\n') {
+	    message(MESS_ERROR, "line to long in state file %s\n", 
+			stateFilename);
+	    fclose(f);
+	    return 1;
+	}
+
+	if (sscanf(
+    }
+ 
+    return 0;
+
+}
+
+void usage(void) {
+    fprintf(stderr, "usage: logrotate [-dv] [-{s|-state} <file>] <config_file>+\n");
+    exit(1);
+}
+
 int main(int argc, char ** argv) {
     logInfo defConfig = { NULL, ROT_SIZE, 1024 * 1024, 0, 0, NULL, 
 			  NULL, NULL, 0 };
-    int numLogs = 0;
+    int numLogs = 0, numStates = 0;
     logInfo * logs = NULL;
+    logState * states = NULL;
+    char * stateFile = STATEFILE;
     int i;
     int rc;
     int arg, long_index;
     struct option options[] = {
 	{ "debug", 0, 0, 'd' },
+	{ "state", 1, 0, 's' },
 	{ "verbose", 0, 0, 'v' }
     };
 
     logSetLevel(MESS_NORMAL);
 
     while (1) {
-        arg = getopt_long(argc, argv, "dv", options, &long_index);
+        arg = getopt_long(argc, argv, "ds:v", options, &long_index);
         if (arg == -1) break;
 
         switch (arg) {
@@ -760,16 +417,18 @@ int main(int argc, char ** argv) {
 	    logSetLevel(MESS_DEBUG);
 	    break;
 
+	  case 's':
+	    stateFile = optarg;
+	    break;
+
           case '?':
-            fprintf(stderr, "usage: logrotate [-dv] <config_files>\n");
-            exit(1);
+	    usage();
             break;
 	}
     }
 
     if (optind == argc) {
-	fprintf(stderr, "usage: logrotate [-dv] <config_files>\n");
-	exit(1);
+	usage();
     }
 
     while (optind < argc) {
@@ -779,10 +438,18 @@ int main(int argc, char ** argv) {
 	optind++;
     }
 
+    if (readState(stateFile, &states, &numStates)) {
+	exit(1);
+    }
+
     message(MESS_DEBUG, "Handling %d logs\n", numLogs);
 
     for (i = 0; i < numLogs; i++) {
-	rc |= rotateLog(logs + i);
+	rc |= rotateLog(logs + i, &states, &numStates);
+    }
+
+    if (!debug && writeState(stateFile, states, numStates)) {
+	exit(1);
     }
 
     return (rc != 0);
