@@ -26,6 +26,7 @@ typedef struct {
 #define NO_GID  ((gid_t) -1)
 
 int debug = 0;
+char * mailCommand = DEFAULT_MAIL_COMMAND;
 
 static logState * findState(char * fn, logState ** statesPtr, 
 			    int * numStatesPtr) {
@@ -208,6 +209,11 @@ int rotateSingleLog(logInfo * log, int logNum, logState ** statesPtr,
     mode_t createMode;
     char * baseName;
     char * dirName;
+    char * firstRotated;
+    int rotateCount = log->rotateCount ? log->rotateCount : 1;
+
+    /* Logs with rotateCounts of 0 are rotated to .1, then removed. This
+       lets scripts run properly, and everything gets mailed properly. */
 
     message(MESS_DEBUG, "rotating file %s\n", log->files[logNum]);
 
@@ -277,139 +283,103 @@ int rotateSingleLog(logInfo * log, int logNum, logState ** statesPtr,
 
 	state->lastRotated = now;
 
-	if (!log->rotateCount) {
-	    disposeName = log->files[logNum];
-	    finalName = NULL;
-	} else {
-	    if (log->oldDir)
-		dirName = strdup(log->oldDir);
-	    else
-		dirName = ourDirName(log->files[logNum]);
-	    baseName = strdup(ourBaseName(log->files[logNum]));
+	if (log->oldDir)
+	    dirName = strdup(log->oldDir);
+	else
+	    dirName = ourDirName(log->files[logNum]);
+	baseName = strdup(ourBaseName(log->files[logNum]));
 
-	    oldName = alloca(strlen(dirName) + strlen(baseName) + 
-				strlen(log->files[logNum]) + 10);
-	    newName = alloca(strlen(dirName) + strlen(baseName) + 
-				strlen(log->files[logNum]) + 10);
-	    disposeName = alloca(strlen(dirName) + strlen(baseName) + 
-				strlen(log->files[logNum]) + 10);
+	oldName = alloca(strlen(dirName) + strlen(baseName) + 
+			    strlen(log->files[logNum]) + 10);
+	newName = alloca(strlen(dirName) + strlen(baseName) + 
+			    strlen(log->files[logNum]) + 10);
+	disposeName = alloca(strlen(dirName) + strlen(baseName) + 
+			    strlen(log->files[logNum]) + 10);
 
-	    if (log->extension &&
-		    strncmp(&baseName[strlen(baseName)-strlen(log->extension)],
-		    log->extension, strlen(log->extension)) == 0) {
-		char *tempstr;
-		fileext = log->extension;
-		tempstr = calloc(strlen(baseName)-strlen(log->extension), sizeof(char));
-		strncpy(tempstr, baseName,
-			strlen(baseName)-strlen(log->extension));
-		free(baseName);
-		baseName = tempstr;
-	    }
-
-	    /* First compress the previous log when necessary */
-	    if (log->flags & LOG_FLAG_COMPRESS &&
-			log->flags & LOG_FLAG_DELAYCOMPRESS) {
-		struct stat sbprev;
-
-		sprintf(oldName, "%s/%s.1%s", dirName, baseName, fileext);
-		if (stat(oldName, &sbprev)) {
-		    message(MESS_DEBUG, "previous log %s does not exist\n",
-					oldName);
-		} else {
-		    char * command;
-
-		    command = alloca(strlen(oldName) +
-					strlen(COMPRESS_COMMAND) + 20);
-		    sprintf(command, "%s %s", COMPRESS_COMMAND, oldName);
-		    message(MESS_DEBUG, "compressing previous log with: %s\n",
-					command);
-		    if (!debug && system(command)) {
-			fprintf(errorFile,
-			    "failed to compress previous log %s\n", oldName);
-			hasErrors = 1;
-		    }
-		}
-	    }
-
-	    sprintf(oldName, "%s/%s.%d%s%s", dirName, baseName,
-		    log->rotateCount + 1, fileext, compext);
-
-	    strcpy(disposeName, oldName);
-
-	    for (i = log->rotateCount; i && !hasErrors; i--) {
-		tmp = newName;
-		newName = oldName;
-		oldName = tmp;
-		sprintf(oldName, "%s/%s.%d%s%s", dirName, baseName, i,
-			fileext, compext);
-
-		message(MESS_DEBUG, "renaming %s to %s\n", oldName, newName);
-
-		if (!debug && rename(oldName, newName)) {
-		    if (errno == ENOENT) {
-			message(MESS_DEBUG, "old log %s does not exist\n",
-				oldName);
-		    } else {
-			fprintf(errorFile, "error renaming %s to %s: %s\n",
-				oldName, newName, strerror(errno));
-			hasErrors = 1;
-		    }
-		}
-	    }
-
-	    finalName = oldName;
-
-	    /* note: the gzip extension is *not* used here! */
-	    sprintf(finalName, "%s/%s.1%s", dirName, baseName, fileext);
-
-	    /* if the last rotation doesn't exist, that's okay */
-	    if (!debug && access(disposeName, F_OK)) {
-		message(MESS_DEBUG, "file %s doesn't exist -- won't try "
-			"dispose of it\n", disposeName);
-		disposeName = NULL;
-	    } 
-
-	    free(dirName);
+	if (log->extension &&
+		strncmp(&baseName[strlen(baseName)-strlen(log->extension)],
+		log->extension, strlen(log->extension)) == 0) {
+	    char *tempstr;
+	    fileext = log->extension;
+	    tempstr = calloc(strlen(baseName)-strlen(log->extension), sizeof(char));
+	    strncpy(tempstr, baseName,
+		    strlen(baseName)-strlen(log->extension));
 	    free(baseName);
+	    baseName = tempstr;
 	}
 
-	if (!hasErrors && log->logAddress && disposeName) {
-	    char * command;
+	/* First compress the previous log when necessary */
+	if (log->flags & LOG_FLAG_COMPRESS &&
+		    log->flags & LOG_FLAG_DELAYCOMPRESS) {
+	    struct stat sbprev;
 
-	    command = alloca(strlen(disposeName) + 100 + 
-			     strlen(UNCOMPRESS_PIPE));
+	    sprintf(oldName, "%s/%s.1%s", dirName, baseName, fileext);
+	    if (stat(oldName, &sbprev)) {
+		message(MESS_DEBUG, "previous log %s does not exist\n",
+				    oldName);
+	    } else {
+		char * command;
 
-	    if (log->flags & LOG_FLAG_COMPRESS)
-		sprintf(command, "%s < %s | %s '%s' %s", 
-			    UNCOMPRESS_PIPE, disposeName, MAIL_COMMAND,
-			    log->files[logNum],
-			    log->logAddress);
-	    else
-		sprintf(command, "%s '%s' %s < %s", MAIL_COMMAND, disposeName, 
-			    log->logAddress, disposeName);
-
-	    message(MESS_DEBUG, "executing: \"%s\"\n", command);
-
-	    if (!debug && system(command)) {
-		sprintf(newName, "%s.%d", log->files[logNum], getpid());
-		fprintf(errorFile, "Failed to mail %s to %s!\n",
-			disposeName, log->logAddress);
-
-		hasErrors = 1;
-	    } 
-	}
-
-	if (!hasErrors && disposeName) {
-	    message(MESS_DEBUG, "removing old log %s\n", disposeName);
-
-	    if (!debug && unlink(disposeName)) {
-		fprintf(errorFile, "Failed to remove old log %s: %s\n",
-			    disposeName, strerror(errno));
-		hasErrors = 1;
+		command = alloca(strlen(oldName) +
+				    strlen(COMPRESS_COMMAND) + 20);
+		sprintf(command, "%s %s", COMPRESS_COMMAND, oldName);
+		message(MESS_DEBUG, "compressing previous log with: %s\n",
+				    command);
+		if (!debug && system(command)) {
+		    fprintf(errorFile,
+			"failed to compress previous log %s\n", oldName);
+		    hasErrors = 1;
+		}
 	    }
 	}
 
-	if (!hasErrors && finalName) {
+	sprintf(oldName, "%s/%s.%d%s%s", dirName, baseName,
+		rotateCount + 1, fileext, compext);
+
+	strcpy(disposeName, oldName);
+
+	firstRotated = alloca(strlen(dirName) + strlen(baseName) +
+			      strlen(fileext) + strlen(compext) + 30);
+	sprintf(firstRotated, "%s/%s.1%s%s", dirName, baseName,
+		fileext, compext);
+
+	for (i = rotateCount; i && !hasErrors; i--) {
+	    tmp = newName;
+	    newName = oldName;
+	    oldName = tmp;
+	    sprintf(oldName, "%s/%s.%d%s%s", dirName, baseName, i,
+		    fileext, compext);
+
+	    message(MESS_DEBUG, "renaming %s to %s\n", oldName, newName);
+
+	    if (!debug && rename(oldName, newName)) {
+		if (errno == ENOENT) {
+		    message(MESS_DEBUG, "old log %s does not exist\n",
+			    oldName);
+		} else {
+		    fprintf(errorFile, "error renaming %s to %s: %s\n",
+			    oldName, newName, strerror(errno));
+		    hasErrors = 1;
+		}
+	    }
+	}
+
+	finalName = oldName;
+
+	/* note: the gzip extension is *not* used here! */
+	sprintf(finalName, "%s/%s.1%s", dirName, baseName, fileext);
+
+	/* if the last rotation doesn't exist, that's okay */
+	if (!debug && access(disposeName, F_OK)) {
+	    message(MESS_DEBUG, "file %s doesn't exist -- won't try "
+		    "dispose of it\n", disposeName);
+	    disposeName = NULL;
+	} 
+
+	free(dirName);
+	free(baseName);
+
+	if (!hasErrors) {
 	    if (log->pre) {
 		message(MESS_DEBUG, "running prerotate script\n");
 		if (runScript(log->files[logNum], log->pre)) {
@@ -488,7 +458,17 @@ int rotateSingleLog(logInfo * log, int logNum, logState ** statesPtr,
 		}
 	    }
 
-	    if (!hasErrors && log->flags & LOG_FLAG_COMPRESS &&
+	    if (!hasErrors && !log->rotateCount) {
+		message(MESS_DEBUG, "removing rotated log (rotateCount == 0)");
+		if (unlink(finalName)) {
+		    fprintf(errorFile, "Failed to remove old log %s: %s\n",
+				finalName, strerror(errno));
+		    hasErrors = 1;
+		}
+	    }
+
+	    if (!hasErrors && log->rotateCount && 
+			(log->flags & LOG_FLAG_COMPRESS) &&
 			!(log->flags & LOG_FLAG_DELAYCOMPRESS)) {
 		char * command;
 
@@ -503,6 +483,51 @@ int rotateSingleLog(logInfo * log, int logNum, logState ** statesPtr,
 		    hasErrors = 1;
 		}
 	    }
+
+	    if (!hasErrors && log->logAddress) {
+		char * command;
+		char * mailFilename;
+
+		if (log->flags & LOG_FLAG_MAILFIRST)
+		    mailFilename = firstRotated;
+		else
+		    mailFilename = disposeName;
+
+		if (mailFilename) {
+		    command = alloca(strlen(mailFilename) + 100 + 
+				     strlen(UNCOMPRESS_PIPE));
+
+		    if (log->flags & LOG_FLAG_COMPRESS)
+			sprintf(command, "%s < %s | %s '%s' %s", 
+				    UNCOMPRESS_PIPE, mailFilename, mailCommand,
+				    log->files[logNum],
+				    log->logAddress);
+		    else
+			sprintf(command, "%s '%s' %s < %s", mailCommand, 
+				    mailFilename, log->logAddress, mailFilename);
+
+		    message(MESS_DEBUG, "executing: \"%s\"\n", command);
+
+		    if (!debug && system(command)) {
+			sprintf(newName, "%s.%d", log->files[logNum], getpid());
+			fprintf(errorFile, "Failed to mail %s to %s!\n",
+				mailFilename, log->logAddress);
+
+			hasErrors = 1;
+		    } 
+		}
+	    }
+
+	    if (!hasErrors && disposeName) {
+		message(MESS_DEBUG, "removing old log %s\n", disposeName);
+
+		if (!debug && unlink(disposeName)) {
+		    fprintf(errorFile, "Failed to remove old log %s: %s\n",
+				disposeName, strerror(errno));
+		    hasErrors = 1;
+		}
+	    }
+
 	}
     } else if (!doRotate) {
 	message(MESS_DEBUG, "log does not need rotating\n");
@@ -608,7 +633,7 @@ int rotateLogSet(logInfo * log, logState ** statesPtr, int * numStatesPtr,
 	    command = alloca(strlen(errorFileName) + strlen(log->errAddress) +
 				50);
 	    sprintf(command, "%s 'errors rotating logs' %s < %s\n",
-		    MAIL_COMMAND, log->errAddress, errorFileName);
+		    mailCommand, log->errAddress, errorFileName);
 	    if (system(command)) {
 		message(MESS_ERROR, "error mailing error log to %s -- errors "
 			"left in %s\n", log->errAddress, errorFileName);
@@ -771,9 +796,11 @@ int main(int argc, char ** argv) {
     char ** files, ** file;
     poptContext optCon;
     struct poptOption options[] = {
-	{ "force", 'f', 0 , &force, 0, "Force file rotation" },
 	{ "debug", 'd', 0, 0, 'd', 
 		"Don't do anything, just test (implies -v)" },
+	{ "force", 'f', 0 , &force, 0, "Force file rotation" },
+	{ "mail", 'm', POPT_ARG_STRING, &mailCommand, 0, 
+		"Command to use to rotate logs", "command" },
 	{ "state", 's', POPT_ARG_STRING, &stateFile, 0, "Path of state file",
 		"statefile" },
 	{ "verbose", 'v', 0, 0, 'v', "Display messages during rotation" },

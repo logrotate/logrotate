@@ -373,6 +373,14 @@ static int readConfigFile(char * configFile, logInfo * defConfig,
 		newlog->oldDir = NULL;
 
 		*endtag = oldchar, start = endtag;
+	    } else if (!strcmp(start, "mailfirst")) {
+		newlog->flags |= LOG_FLAG_MAILFIRST;
+
+		*endtag = oldchar, start = endtag;
+	    } else if (!strcmp(start, "maillast")) {
+		newlog->flags &= ~LOG_FLAG_MAILFIRST;
+
+		*endtag = oldchar, start = endtag;
 	    } else if (!strcmp(start, "create")) {
 		*endtag = oldchar, start = endtag;
 

@@ -1,3 +1,8 @@
+3.2 -> 3.3:
+	- added "mailfirst" and "maillast" flags (based on Tim Wall's patch)
+	- documented "extension" flag
+	- "rotate 0" gives proper script and mail behavior
+
 3.1 -> 3.2:
 	- create wtmp with correct perms
 
