@@ -31,9 +31,12 @@ char * ourDirName(char * origname) {
 
     slash = strrchr(name, '/');
 
-    if (!slash)
-	return (char *) ".";
-    else {
+    if (!slash) {
+	/* No slash, must be current directory */
+	free(name);
+	/* strdup used, as the return value will be free()ed at some point */
+	return strdup(".");
+    } else {
 	/* Remove any trailing slashes and final element. */
 	while (slash > name && *slash == '/')
 	    --slash;
