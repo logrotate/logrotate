@@ -7,32 +7,37 @@ also work on HP-UX 10.20):
         make 3.78.1
     I used the packages at the Software Porting and Archive Centre for HP-UX
     at http://hpux.cs.utah.edu/.
+
+    Obtain and install the following GNU/Linux to HP-UX Porting package:
+	libhplx library
+    See http://devresource.hp.com/LPK/index.html for downloads.
+    This library is needed to provide the ??? function.
  
-2.  Obtain and build popt 1.4 (there doesn't seem to be a build at the Porting
-    Centre.  Install it into the directory of your choice (use "./configure
-    --prefix=/popt/dir").
+2.  Obtain, build, and install popt 1.4 (there doesn't seem to be a build at
+    the Porting Centre.)
+    See ftp://ftp.rpm.org/pub/rpm/dist/rpm-4.0.x/popt-1.6.4.tar.gz
+    Install it into the directory of your choice (i.e. 
+    "./configure --prefix=/opt/popt").
  
-3.  Build logrotate, telling it where to find popt (POPT_DIR defaults to
-    /usr/local):
-        gmake POPT_DIR=/popt/dir
+3.  Build logrotate, telling it where to find popt and hplx installation. The
+    POPT_DIR defaults to /usr/local and HPLX_DIR defaults to /usr/local/hplx:
+        gmake POPT_DIR=/usr/local HPLX_DIR=/usr/local/hplx
  
 4.  Install logrotate into your desired directory (BASEDIR defaults to
     /usr/local):
-        gmake install BASEDIR=/your/dir
+        gmake install BASEDIR=/usr/local
  
-5.  Install the configuration files into your desired location (the
-    directories default to /etc/ and /etc/logrotate.d/ like Linux):
-        cd examples/HP-UX
-        gmake ETC_DIR=/your/etc/dir LOGROTATE_DIR=/your/logrotate/dir
-    Tune the variables in /etc/logrotate.conf and /etc/logrotate.boot to meet
-    your site requirements.
- 
-6.  Set up a cron job to run logrotate daily.
+5.  Copy the configuration files into your desired location.
+        cp examples/logrotate-default /etc/logrotate.conf
+	mkdir /etc/logrotate.d
+
+6.  Set up a cron job to run logrotate daily. See examples/logrotate.cron.
  
 7.  I also recommend setting CLEAN_ADM=0 in /etc/rc.config.d/clean, and
-    setting up an init script to use logrotate.boot for this instead.  This
-    way, logrotate manages all logfile pruning.
+    setting up an init script to use logrotate for this instead.  This way,
+    logrotate manages all logfile pruning.
  
  
 Questions, comments, abuse to:
     Paul D. Gear <citecpdg@citec.qld.gov.au>, <paulgear@bigfoot.com>
+    Danial M. Howard <howadani@isu.edu>, <dmhoward@byu.edu>
