@@ -1,4 +1,5 @@
 VERSION = $(shell awk '/Version:/ { print $$2 }' logrotate.spec)
+CVSROOT = $(shell cat CVS/Root)
 CVSTAG = r$(subst .,-,$(VERSION))
 OS_NAME = $(shell uname -s)
 LFS = $(shell echo `getconf LFS_CFLAGS 2>/dev/null`)
@@ -83,7 +84,7 @@ cvstag:
 
 archive: cvstag
 	@rm -rf /tmp/logrotate-$(VERSION) /tmp/logrotate
-	@cd /tmp; cvs export -r$(CVSTAG) logrotate; mv logrotate logrotate-$(VERSION)
+	@cd /tmp; cvs -d $(CVSROOT) export -r$(CVSTAG) logrotate; mv logrotate logrotate-$(VERSION)
 	@cd /tmp/logrotate-$(VERSION)
 	@cd /tmp; tar czSpf logrotate-$(VERSION).tar.gz logrotate-$(VERSION)
 	@rm -rf /tmp/logrotate-$(VERSION)
