@@ -13,6 +13,7 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "basenames.h"
 #include "log.h"
 #include "logrotate.h"
 
@@ -50,6 +51,39 @@ static int isolateValue(char * fileName, int lineNum, char * key,
 	*endPtr = chptr + 1;
 
     return 0;
+}
+
+static char *readPath(char *configFile, int lineNum, char *key,
+		      char **startPtr) {
+    char oldchar;
+    char *endtag, *chptr;
+    char *start = *startPtr;
+    char *path;
+
+    if (!isolateValue(configFile, lineNum, key, &start,
+		      &endtag)) {
+	oldchar = *endtag, *endtag = '\0';
+
+	chptr = start;
+
+	/* this is technically too restrictive -- let's see if anyone
+	   complains */
+	while (*chptr && isprint(*chptr) && *chptr != ' ')
+	    chptr++;
+	if (*chptr) {
+	    message(MESS_ERROR, "%s:%d bad %s path %s\n",
+		    configFile, lineNum, key, start);
+	    return NULL;
+	}
+	path = strdup(start);
+
+	*endtag = oldchar, start = endtag;
+
+	*startPtr = start;
+
+	return path;
+    } else
+	return NULL;
 }
 
 static char * readAddress(char * configFile, int lineNum, char * key, 
@@ -136,7 +170,11 @@ int readConfigPath(char * path, logInfo * defConfig,
 	    } else if (ent) {
 		for (i = 0; i < tabooCount; i++) {
 		    if (!strcmp(ent->d_name + strlen(ent->d_name) -
-				strlen(tabooExts[i]), tabooExts[i])) break;
+				strlen(tabooExts[i]), tabooExts[i])) {
+			message(MESS_DEBUG, "Ignoring %s, because of %s "
+				"ending\n", ent->d_name, tabooExts[i]);
+			break;
+		    }
 		}
 
 		if (i == tabooCount) {
@@ -174,11 +212,13 @@ static int readConfigFile(char * configFile, logInfo * defConfig,
     char ** scriptDest = NULL;
     logInfo * newlog = defConfig;
     char * start, * chptr;
+    char * dirName;
     struct group * group;
     struct passwd * pw;
     int rc;
     char createOwner[200], createGroup[200];
     mode_t createMode;
+    struct stat sb, sb2;
 
     /* FIXME: createOWnder and createGroup probably shouldn't be fixed
        length arrays -- of course, if we aren't run setuid in doesn't
@@ -189,6 +229,19 @@ static int readConfigFile(char * configFile, logInfo * defConfig,
 	message(MESS_ERROR, "failed to open config file %s: %s\n",
 		configFile, strerror(errno));
 	return 1;
+    }
+
+    if (fstat(fd, &sb)) {
+	message(MESS_ERROR, "fstat of %s failed: %s\n", configFile,
+		strerror(errno));
+	close(fd);
+	return 1;
+    }
+    if (!S_ISREG(sb.st_mode)) {
+	message(MESS_DEBUG, "Ignoring %s because it's not a regular file.\n",
+		configFile);
+	close(fd);
+	return 0;
     }
 
     length = lseek(fd, 0, SEEK_END);
@@ -265,6 +318,18 @@ static int readConfigFile(char * configFile, logInfo * defConfig,
 		*endtag = oldchar, start = endtag;
 	    } else if (!strcmp(start, "nocompress")) {
 		newlog->flags &= ~LOG_FLAG_COMPRESS;
+
+		*endtag = oldchar, start = endtag;
+	    } else if (!strcmp(start, "ifempty")) {
+		newlog->flags |= LOG_FLAG_IFEMPTY;
+
+		*endtag = oldchar, start = endtag;
+	    } else if (!strcmp(start, "notifempty")) {
+		newlog->flags &= ~LOG_FLAG_IFEMPTY;
+
+		*endtag = oldchar, start = endtag;
+	    } else if (!strcmp(start, "noolddir")) {
+		newlog->oldDir = NULL;
 
 		*endtag = oldchar, start = endtag;
 	    } else if (!strcmp(start, "create")) {
@@ -444,6 +509,28 @@ static int readConfigFile(char * configFile, logInfo * defConfig,
 
 		    *endtag = oldchar, start = endtag;
 		}
+	    } else if (!strcmp(start, "olddir")) {
+		*endtag = oldchar, start = endtag;
+		if (!(newlog->oldDir = readPath(configFile, lineNum,
+						"olddir", &start))) {
+		    return 1;
+		}
+
+		if (stat(newlog->oldDir, &sb)) {
+		    message(MESS_ERROR, "%s:%d error verifying olddir "
+				"path %s: %s\n", configFile, lineNum, 
+				newlog->oldDir, strerror(errno));
+		    return 1;
+		}
+
+		if (!S_ISDIR(sb.st_mode)) {
+		    message(MESS_ERROR, "%s:%d olddir path %s is not a "
+				"directory %s: %s\n", configFile, lineNum, 
+				newlog->oldDir, strerror(errno));
+		    return 1;
+		}
+
+		message(MESS_DEBUG, "olddir is now %s\n", newlog->oldDir);
 	    } else {
 		message(MESS_ERROR, "%s:%d unknown option '%s' "
 			    "-- ignoring line\n", configFile, lineNum, start);
@@ -515,6 +602,34 @@ static int readConfigFile(char * configFile, logInfo * defConfig,
 		message(MESS_ERROR, "%s:%d unxpected }\n", configFile, lineNum);
 		return 1;
 	    }
+
+	    if (newlog->oldDir) {
+		if (stat(newlog->oldDir, &sb)) {
+		    message(MESS_ERROR, "%s:%d error verifying olddir "
+				"path %s: %s\n", configFile, lineNum, 
+				newlog->oldDir, strerror(errno));
+		    return 1;
+		}
+
+		dirName = ourDirName(newlog->fn);
+		if (stat(dirName, &sb2)) {
+		    message(MESS_ERROR, "%s:%d error verifying log file "
+				"path %s: %s\n", configFile, lineNum, 
+				dirName, strerror(errno));
+		    free(dirName);
+		    return 1;
+		}
+
+		free(dirName);
+
+		if (sb.st_dev != sb2.st_dev) {
+		    message(MESS_ERROR, "%s:%d olddir %s and log file %s "
+				"are on different devices\n", configFile,
+				lineNum, newlog->oldDir, newlog->fn);
+		    return 1;
+		}
+	    }
+
 	    newlog = defConfig;
 
 	    start++;
