@@ -1,6 +1,6 @@
 Summary: Rotates, compresses, removes and mails system log files.
 Name: logrotate
-Version: 3.6.8
+Version: 3.6.9
 Release: 1
 License: GPL
 Group: System Environment/Base
@@ -49,6 +49,9 @@ rm -rf $RPM_BUILD_ROOT
 %attr(0644, root, root) %verify(not size md5 mtime) %config(noreplace) /var/lib/logrotate.status
 
 %changelog
+* Wed Jul 09 2003 Elliot Lee <sopwith@redhat.com> 3.6.9-1
+- Fix #90229, #90274, #89458, #91408
+
 * Mon Jan 20 2003 Elliot Lee <sopwith@redhat.com> 3.6.8-1
 - Old patch from pm@debian.org
 

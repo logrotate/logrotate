@@ -97,9 +97,7 @@ install:
 	if [ "$(OS_NAME)" = HP-UX ]; then \
 	$(INSTALL) $(PROG) $(PREFIX)/$(BINDIR) 0755 bin bin; \
 	$(INSTALL) $(MAN) $(PREFIX)/$(MANDIR)/man`echo $(MAN) | sed "s/.*\.//"` 0644 bin bin; \
-	fi
-
-	if [ "$(OS_NAME)" = Linux ]; then \
+	else \
 	$(INSTALL) -m 755 $(PROG) $(PREFIX)/$(BINDIR); \
 	$(INSTALL) -m 644 $(MAN) $(PREFIX)/$(MANDIR)/man`echo $(MAN) | sed "s/.*\.//"`/$(MAN); \
 	fi

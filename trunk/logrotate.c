@@ -332,7 +332,7 @@ int rotateSingleLog(logInfo * log, int logNum, logState ** statesPtr,
     if (!state->doRotate)
         return hasErrors;
     
-    message(MESS_DEBUG, "rotating log %s\n", log->files[logNum]);
+    message(MESS_DEBUG, "rotating log %s, log->rotateCount is %d\n", log->files[logNum], log->rotateCount);
     
     if (log->flags & LOG_FLAG_COMPRESS) compext = log->compress_ext;
     
@@ -764,8 +764,6 @@ static int writeState(char * stateFilename, logState * states,
 	fputc('"', f);
 	for (chptr = states[i].fn; *chptr; chptr++) {
 	    switch (*chptr) {
-	    case '\\':
-	    case '\'':
 	    case '"':
 		fputc('\\', f);
 	    }
