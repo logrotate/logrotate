@@ -258,7 +258,7 @@ static int copyTruncate(char * currLog, char * saveLog, struct stat * sb, int fl
 	    return 1;
 	}
 #ifdef WITH_SELINUX
-	if ((selinux_enabled=is_selinux_enabled()))
+	if ((selinux_enabled=(is_selinux_enabled()>0)))
 	  {
 	    security_context_t oldContext;
 	    if (fgetfilecon(fdcurr, &oldContext) >=0) {
@@ -534,7 +534,7 @@ int rotateSingleLog(logInfo * log, int logNum, logState * state) {
 	    (log->flags & LOG_FLAG_DELAYCOMPRESS) ? "" : compext);
     
 #ifdef WITH_SELINUX
-    if ((selinux_enabled=is_selinux_enabled())) {
+    if ((selinux_enabled=(is_selinux_enabled()>0))) {
       security_context_t oldContext=NULL;
       if (getfilecon(log->files[logNum], &oldContext)>0) {
 	if (getfscreatecon(&prev_context) < 0) {
