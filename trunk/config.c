@@ -674,7 +674,7 @@ static int readConfigFile(char * configFile, logInfo * defConfig,
 	    oldchar = *endtag;
 	    *endtag = '\0';
 
-	    rc = glob(start, 0, globerr, &globResult);
+	    rc = glob(start, GLOB_NOCHECK, globerr, &globResult);
 	    if (rc == GLOB_ABORTED) return 1;
 
 	    newlog->files = malloc(sizeof(*newlog->files) * 
@@ -683,8 +683,8 @@ static int readConfigFile(char * configFile, logInfo * defConfig,
 
 	    for (i = 0; i < globResult.gl_pathc; i++) {
 		/* if we glob directories we can get false matches */
-		if (lstat(globResult.gl_pathv[i], &sb)) continue;
-		if (S_ISDIR(sb.st_mode)) continue;
+		if (!lstat(globResult.gl_pathv[i], &sb) && S_ISDIR(sb.st_mode)) 
+		    continue;
 
 		for (j = 0; j < *numLogsPtr - 1; j++) {
 		    for (k = 0; k < (*logsPtr)[j].numFiles; k++) {
