@@ -31,6 +31,7 @@ typedef struct {
     char * pre, * post;
     char * logAddress;
     char * errAddress;
+    char * extension;
     int flags;
     mode_t createMode;		/* if any/all of these are -1, we use the */
     uid_t createUid;		/* attributes from the log file just rotated */

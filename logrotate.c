@@ -196,7 +196,8 @@ int rotateSingleLog(logInfo * log, int logNum, logState ** statesPtr,
     char * disposeName;
     char * finalName;
     char * tmp;
-    char * ext = "";
+    char * compext = "";
+    char * fileext = "";
     int hasErrors = 0;
     int doRotate = 0;
     int i;
@@ -210,7 +211,7 @@ int rotateSingleLog(logInfo * log, int logNum, logState ** statesPtr,
 
     message(MESS_DEBUG, "rotating file %s\n", log->files[logNum]);
 
-    if (log->flags & LOG_FLAG_COMPRESS) ext = COMPRESS_EXT;
+    if (log->flags & LOG_FLAG_COMPRESS) compext = COMPRESS_EXT;
     
     if (stat(log->files[logNum], &sb)) {
 	fprintf(errorFile, "stat of %s failed: %s\n", log->files[logNum],
@@ -279,7 +280,7 @@ int rotateSingleLog(logInfo * log, int logNum, logState ** statesPtr,
 		dirName = strdup(log->oldDir);
 	    else
 		dirName = ourDirName(log->files[logNum]);
-	    baseName = ourBaseName(log->files[logNum]);
+	    baseName = strdup(ourBaseName(log->files[logNum]));
 
 	    oldName = alloca(strlen(dirName) + strlen(baseName) + 
 				strlen(log->files[logNum]) + 10);
@@ -288,12 +289,24 @@ int rotateSingleLog(logInfo * log, int logNum, logState ** statesPtr,
 	    disposeName = alloca(strlen(dirName) + strlen(baseName) + 
 				strlen(log->files[logNum]) + 10);
 
+	    if (log->extension &&
+		    strncmp(&baseName[strlen(baseName)-strlen(log->extension)],
+		    log->extension, strlen(log->extension)) == 0) {
+		char *tempstr;
+		fileext = log->extension;
+		tempstr = calloc(strlen(baseName)-strlen(log->extension), sizeof(char));
+		strncpy(tempstr, baseName,
+			strlen(baseName)-strlen(log->extension));
+		free(baseName);
+		baseName = tempstr;
+	    }
+
 	    /* First compress the previous log when necessary */
 	    if (log->flags & LOG_FLAG_COMPRESS &&
 			log->flags & LOG_FLAG_DELAYCOMPRESS) {
 		struct stat sbprev;
 
-		sprintf(oldName, "%s/%s.1", dirName, baseName);
+		sprintf(oldName, "%s/%s.1%s", dirName, baseName, fileext);
 		if (stat(oldName, &sbprev)) {
 		    message(MESS_DEBUG, "previous log %s does not exist\n",
 					oldName);
@@ -313,8 +326,8 @@ int rotateSingleLog(logInfo * log, int logNum, logState ** statesPtr,
 		}
 	    }
 
-	    sprintf(oldName, "%s/%s.%d%s", dirName, baseName,
-		    log->rotateCount + 1, ext);
+	    sprintf(oldName, "%s/%s.%d%s%s", dirName, baseName,
+		    log->rotateCount + 1, fileext, compext);
 
 	    strcpy(disposeName, oldName);
 
@@ -322,7 +335,8 @@ int rotateSingleLog(logInfo * log, int logNum, logState ** statesPtr,
 		tmp = newName;
 		newName = oldName;
 		oldName = tmp;
-		sprintf(oldName, "%s/%s.%d%s", dirName, baseName, i, ext);
+		sprintf(oldName, "%s/%s.%d%s%s", dirName, baseName, i,
+			fileext, compext);
 
 		message(MESS_DEBUG, "renaming %s to %s\n", oldName, newName);
 
@@ -341,7 +355,7 @@ int rotateSingleLog(logInfo * log, int logNum, logState ** statesPtr,
 	    finalName = oldName;
 
 	    /* note: the gzip extension is *not* used here! */
-	    sprintf(finalName, "%s/%s.1", dirName, baseName);
+	    sprintf(finalName, "%s/%s.1%s", dirName, baseName, fileext);
 
 	    /* if the last rotation doesn't exist, that's okay */
 	    if (!debug && access(disposeName, F_OK)) {
@@ -351,6 +365,7 @@ int rotateSingleLog(logInfo * log, int logNum, logState ** statesPtr,
 	    } 
 
 	    free(dirName);
+	    free(baseName);
 	}
 
 	if (!hasErrors && log->logAddress && disposeName) {
@@ -743,8 +758,8 @@ void usage(void) {
 }
 
 int main(int argc, char ** argv) {
-    logInfo defConfig = { NULL, NULL, 0, NULL, ROT_SIZE, 1024 * 1024, 0, 0, 
-			  NULL, NULL, NULL, LOG_FLAG_IFEMPTY,
+    logInfo defConfig = { NULL, NULL, 0, NULL, ROT_SIZE, 1024 * 1024, 0, NULL, 
+			  NULL, NULL, NULL, NULL, LOG_FLAG_IFEMPTY,
 			  NO_MODE, NO_UID, NO_GID };
     int numLogs = 0, numStates = 0;
     int force = 0;
