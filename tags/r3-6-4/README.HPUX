@@ -1,0 +1,38 @@
+How to build and install logrotate on HP-UX 11.00 (these instructions should
+also work on HP-UX 10.20):
+ 
+1.  Obtain and install the following GNU packages for HP-UX:
+        binutils 2.9.1
+        gcc 2.95.2
+        make 3.78.1
+    I used the packages at the Software Porting and Archive Centre for HP-UX
+    at http://hpux.cs.utah.edu/.
+ 
+2.  Obtain and build popt 1.4 (there doesn't seem to be a build at the Porting
+    Centre.  Install it into the directory of your choice (use "./configure
+    --prefix=/popt/dir").
+ 
+3.  Build logrotate, telling it where to find popt (POPT_DIR defaults to
+    /usr/local):
+        gmake POPT_DIR=/popt/dir
+ 
+4.  Install logrotate into your desired directory (BASEDIR defaults to
+    /usr/local):
+        gmake install BASEDIR=/your/dir
+ 
+5.  Install the configuration files into your desired location (the
+    directories default to /etc/ and /etc/logrotate.d/ like Linux):
+        cd examples/HP-UX
+        gmake ETC_DIR=/your/etc/dir LOGROTATE_DIR=/your/logrotate/dir
+    Tune the variables in /etc/logrotate.conf and /etc/logrotate.boot to meet
+    your site requirements.
+ 
+6.  Set up a cron job to run logrotate daily.
+ 
+7.  I also recommend setting CLEAN_ADM=0 in /etc/rc.config.d/clean, and
+    setting up an init script to use logrotate.boot for this instead.  This
+    way, logrotate manages all logfile pruning.
+ 
+ 
+Questions, comments, abuse to:
+    Paul D. Gear <citecpdg@citec.qld.gov.au>, <paulgear@bigfoot.com>
