@@ -509,7 +509,7 @@ static int readState(char * stateFilename, logState ** statesPtr,
 	}
 
 	/* 0 to hide earlier bug */
-	if (day < 0 || day > 30) {
+	if (day < 0 || day > 31) {
 	    message(MESS_ERROR, "bad day %d for file %s in state file %s\n",
 			day, buf2, stateFilename);
 	    fclose(f);
