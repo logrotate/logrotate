@@ -906,20 +906,20 @@ static int readConfigFile(const char * configFile, logInfo * defConfig,
 		    sprintf(ld, "%s/%s", dirName, newlog->oldDir);
 		    free(dirName);
 
-		    if (sb.st_dev != sb2.st_dev) {
-			message(MESS_ERROR, "%s:%d olddir %s and log file %s "
-				    "are on different devices\n", configFile,
-				    lineNum, newlog->oldDir, newlog->files[i]);
-			return 1;
-		    }
-
-		    if(newlog->oldDir[0] == '/') dirName = ld;
+		    if(newlog->oldDir[0] != '/') dirName = ld;
 		    else dirName = newlog->oldDir;
 		    if(stat(dirName, &sb)) {
 			message(MESS_ERROR, "%s:%d error verifying olddir "
 				"path %s: %s\n", configFile, lineNum,
 				dirName, strerror(errno));
 				return 1;
+		    }
+
+		    if (sb.st_dev != sb2.st_dev) {
+			message(MESS_ERROR, "%s:%d olddir %s and log file %s "
+				    "are on different devices\n", configFile,
+				    lineNum, newlog->oldDir, newlog->files[i]);
+			return 1;
 		    }
 		}
 	    }
