@@ -30,6 +30,34 @@ int debug = 0;
 char * mailCommand = DEFAULT_MAIL_COMMAND;
 time_t nowSecs = 0;
 
+/* converts ' to '\''
+ * returns pointer to a newly allocated string. */
+char *escapeSingleQuotes(const char *src)
+{
+	int c = 0;
+	int i;
+	char *newstr, *s;
+
+	for (i = 0; i < strlen(src); i++) {
+		if (src[i] == '\'') c++;
+	}
+	newstr = malloc(strlen(src) + (c * 3) + 1);
+
+	s = newstr;
+	for (i = 0; i < strlen(src); i++) {
+		if (src[i] == '\'') {
+			strcpy(s, "'\\''");
+			s += 4;
+		} else {
+			*s = src[i];
+			s++;
+		}
+	}
+	*s = '\0';
+
+	return newstr;
+}
+
 static logState * findState(const char * fn, logState ** statesPtr, 
 			    int * numStatesPtr) {
     int i;
@@ -65,7 +93,7 @@ static logState * findState(const char * fn, logState ** statesPtr,
 
 static int runScript(char * logfn, char * script) {
     int fd;
-    char *filespec, *cmd;
+    char *filespec, *cmd, *escapedlogfn;
     int rc;
     char buf[256];
 
@@ -98,8 +126,10 @@ static int runScript(char * logfn, char * script) {
 
     close(fd);
 
-    cmd = alloca(strlen(filespec) + strlen(logfn) + 20);
-    sprintf(cmd, "/bin/sh %s '%s'", filespec, logfn);
+    escapedlogfn = escapeSingleQuotes(logfn);
+    cmd = alloca(strlen(filespec) + strlen(escapedlogfn) + 20);
+    sprintf(cmd, "/bin/sh %s '%s'", filespec, escapedlogfn);
+    free(escapedlogfn);
     rc = system(cmd);
 
     unlink(filespec);
@@ -290,6 +320,7 @@ int rotateSingleLog(logInfo * log, int logNum, logState ** statesPtr,
     char * baseName;
     char * dirName;
     char * firstRotated;
+    size_t alloc_size;
     int rotateCount = log->rotateCount ? log->rotateCount : 1;
     int logStart = (log->logStart == -1) ? 1 : log->logStart;
 
@@ -312,7 +343,7 @@ int rotateSingleLog(logInfo * log, int logNum, logState ** statesPtr,
 	if(log->oldDir[0] != '/')
 	  {
 	    char *ld = ourDirName(log->files[logNum]);
-	    dirName = malloc(strlen(ld) + strlen(log->oldDir) + 1);
+	    dirName = malloc(strlen(ld) + strlen(log->oldDir) + 2);
 	    sprintf(dirName, "%s/%s", ld, log->oldDir);
 	    free(ld);
 	  }
@@ -322,13 +353,14 @@ int rotateSingleLog(logInfo * log, int logNum, logState ** statesPtr,
     else
         dirName = ourDirName(log->files[logNum]);
     baseName = strdup(ourBaseName(log->files[logNum]));
+
+    alloc_size = strlen(dirName) + strlen(baseName) + 
+                 strlen(log->files[logNum]) + strlen(fileext) +
+                 strlen(compext) + 10;
     
-    oldName = alloca(strlen(dirName) + strlen(baseName) + 
-                     strlen(log->files[logNum]) + 10);
-    newName = alloca(strlen(dirName) + strlen(baseName) + 
-                     strlen(log->files[logNum]) + 10);
-    disposeName = alloca(strlen(dirName) + strlen(baseName) + 
-                         strlen(log->files[logNum]) + 10);
+    oldName = alloca(alloc_size);
+    newName = alloca(alloc_size);
+    disposeName = alloca(alloc_size);
     
     if (log->extension &&
 	strncmp(&baseName[strlen(baseName)-strlen(log->extension)],
@@ -353,13 +385,16 @@ int rotateSingleLog(logInfo * log, int logNum, logState ** statesPtr,
             message(MESS_DEBUG, "previous log %s does not exist\n",
 		    oldName);
         } else {
+            char * escapedName;
             char * command;
 	    
+            escapedName = escapeSingleQuotes(oldName);
             command = alloca(strlen(log->compress_prog) +
                              strlen(log->compress_options) +
-                             strlen(oldName) + 10);
+                             strlen(escapedName) + 10);
             sprintf(command, "%s %s '%s'", log->compress_prog,
-                    log->compress_options, oldName);
+                    log->compress_options, escapedName);
+            free(escapedName);
             message(MESS_DEBUG, "compressing previous log with: %s\n",
 		    command);
             if (!debug && system(command)) {
@@ -513,13 +548,16 @@ int rotateSingleLog(logInfo * log, int logNum, logState ** statesPtr,
         if (!hasErrors && 
 	    (log->flags & LOG_FLAG_COMPRESS) &&
 	    !(log->flags & LOG_FLAG_DELAYCOMPRESS)) {
+            char * escapedName;
             char * command;
 	    
+            escapedName = escapeSingleQuotes(finalName);
             command = alloca(strlen(log->compress_prog) +
                              strlen(log->compress_options) +
-                             strlen(oldName) + 10);
+                             strlen(escapedName) + 10);
             sprintf(command, "%s %s '%s'", log->compress_prog,
-                    log->compress_options, finalName);
+                    log->compress_options, escapedName);
+            free(escapedName);
             message(MESS_DEBUG, "compressing new log with: %s\n", command);
             if (!debug && system(command)) {
                 fprintf(errorFile, "failed to compress log %s\n", 
@@ -538,19 +576,29 @@ int rotateSingleLog(logInfo * log, int logNum, logState ** statesPtr,
                 mailFilename = disposeName;
 	    
             if (mailFilename) {
-                command = alloca(strlen(mailFilename) + 100 + 
-                                 strlen(log->uncompress_prog));
-		
+		char * escapedMailFilename = escapeSingleQuotes(mailFilename);
                 if ((log->flags & LOG_FLAG_COMPRESS) &&
 		    !(log->flags & LOG_FLAG_DELAYCOMPRESS) &&
-		    (log->flags & LOG_FLAG_MAILFIRST))
-                    sprintf(command, "%s < %s | %s '%s' %s", 
-			    log->uncompress_prog, mailFilename, mailCommand,
-			    log->files[logNum],
-			    log->logAddress);
-                else
-                    sprintf(command, "%s '%s' %s < %s", mailCommand, 
-			    mailFilename, log->logAddress, mailFilename);
+		    (log->flags & LOG_FLAG_MAILFIRST)) {
+                    char * escapedFN = escapeSingleQuotes(log->files[logNum]);
+                    command = alloca(strlen(log->uncompress_prog) +
+				     strlen(escapedMailFilename) +
+				     strlen(mailCommand) +
+				     strlen(escapedFN) +
+				     strlen(log->logAddress) + 20);
+                    sprintf(command, "%s < '%s' | %s '%s' %s", 
+			    log->uncompress_prog, escapedMailFilename,
+			    mailCommand, escapedFN, log->logAddress);
+		    free(escapedFN);
+		} else {
+                    command = alloca(strlen(mailCommand) +
+				     strlen(escapedMailFilename) +
+				     strlen(log->logAddress) +
+				     strlen(escapedMailFilename) + 20);
+                    sprintf(command, "%s '%s' %s < '%s'", mailCommand, 
+			    escapedMailFilename, log->logAddress, escapedMailFilename);
+                }
+		free(escapedMailFilename);
 		
                 message(MESS_DEBUG, "executing: \"%s\"\n", command);
 		
