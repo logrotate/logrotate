@@ -1,6 +1,7 @@
 VERSION = $(shell awk '/Version:/ { print $$2 }' logrotate.spec)
 CVSTAG = r$(subst .,-,$(VERSION))
-CFLAGS = -Wall -D_GNU_SOURCE -DVERSION=\"$(VERSION)\" $(RPM_OPT_FLAGS)
+LFS = $(shell echo `getconf LFS_CFLAGS`)
+CFLAGS = -Wall -D_GNU_SOURCE -DVERSION=\"$(VERSION)\" $(RPM_OPT_FLAGS) $(LFS)
 PROG = logrotate
 BINDIR = /usr/sbin
 MANDIR = /usr/man
