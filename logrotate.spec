@@ -1,6 +1,6 @@
 Summary: Rotates, compresses, and mails system logs
 Name: logrotate
-Version: 2.2
+Version: 2.3
 Release: 1
 Copyright: GPL
 Group: Utilities/System
@@ -31,8 +31,8 @@ install -m 755 examples/logrotate.cron $RPM_BUILD_ROOT/etc/cron.daily/logrotate
 rm -rf $RPM_BUILD_ROOT
 
 %files
-%attr(0755, 0, 0) /usr/sbin/logrotate
-%attr(0644, 0, 0) /usr/man/man8/logrotate.8
-%attr(0644, 0, 0) /etc/cron.daily/logrotate
-%attr(0644, 0, 0) %config /etc/logrotate.conf
-%attr(0755, 0, 0) %dir /etc/logrotate.d
+%attr(0755, root, root) /usr/sbin/logrotate
+%attr(0644, root, root) /usr/man/man8/logrotate.8
+%attr(0644, root, root) /etc/cron.daily/logrotate
+%attr(0644, root, root) %config /etc/logrotate.conf
+%attr(0755, root, root) %dir /etc/logrotate.d
