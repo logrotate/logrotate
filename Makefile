@@ -10,7 +10,7 @@ LOADLIBES = -lpopt
 
 ifeq ($(WITH_SELINUX),yes)
 CFLAGS += -DWITH_SELINUX
-LOADLIBES += -lselinux -lattr
+LOADLIBES += -lselinux 
 endif
 
 # HP-UX using GCC
