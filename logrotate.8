@@ -69,11 +69,12 @@ compress
     endscript
 }
 
-"/var/log/httpd/access.log" {
+"/var/log/httpd/access.log" /var/log/httpd/error.log {
     rotate 5
     mail www@my.org
     errors www@my.org
     size=100k
+    sharedscripts
     postrotate
 	/sbin/killall -HUP httpd
     endscript
@@ -103,15 +104,18 @@ being removed. After the log file has been rotated (but before the old
 version of the log has been compressed), the command 
 \fI/sbin/killall -HUP syslogd\fR will be executed.
 
-The next section defines the parameters for \fI/var/log/httpd/access.log\fR.
-It is rotated whenever is grows over 100k is size, and the old logs
+The next section defines the parameters for both
+\fI/var/log/httpd/access.log\fRand \fI/var/log/httpd/error.log\fR.
+They are rotated whenever is grows over 100k is size, and the old logs
 files are mailed (uncompressed) to www@my.org after going through 5
 rotations, rather then being removed. Likewise, any errors that occur
 while processing the log file are also mailed to www@my.org (overriding
-the global \fIerrors\fR directive).  Note that the double quotes around
-the filename at the beginning of this section allows logrotate to rotate
-logs with spaces in the name. Normal shell quoting rules apply, with ', ",
-and \\ characters supported.
+the global \fIerrors\fR directive).  The \fBsharedscripts\fR means that
+the \fBpostrotate\fR script will only be run once, not once for each
+log which is rotated. Note that the double quotes around the first filename
+at the beginning of this section allows logrotate to rotate logs with
+spaces in the name. Normal shell quoting rules apply, with ', ", and \\
+characters supported.
 
 The last section definest the parameters for all of the files in
 \fI/var/log/news\fR. Each file is rotated on a monthly basis, and 
