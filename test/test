@@ -9,6 +9,7 @@ cleanup() {
     rm -f test*.log* anothertest*.log* state test-config.[1-9] scriptout mail-out
 
     [ -n "$1" ] && echo "Running test $1"
+    return 0
 }
 
 genconfig() {
@@ -93,7 +94,7 @@ checkoutput() {
 
 	if [ $file != $fileother ]; then
 	    echo "unexpected file $file'" >&2
-	    return 1
+	    exit 2
 	fi
 
 	if [ ! -f $file ]; then
@@ -109,7 +110,7 @@ checkoutput() {
 	    echo "file $file does not contain expected results (compressed $compressed, args $*)" >&2
 	    echo contains: \'$contents\'
 	    echo expected: \'$expected\'
-	    return 1
+	    exit 2
 	fi
     done
 }
@@ -268,5 +269,14 @@ test.log.1.gz 1 zero
 scriptout 0 foo
 EOF
 
-#cleanup 9
+cleanup 9
 
+preptest test.log 9 1 1
+$RLR test-config.9 --force
+
+checkoutput test*.log <<EOF
+test.log 0
+scriptout 0 foo
+EOF
+
+cleanup
