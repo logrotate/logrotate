@@ -1,6 +1,6 @@
 Summary: Rotates, compresses, removes and mails system log files.
 Name: logrotate
-Version: 3.6.1
+Version: 3.6.2
 Release: 1
 License: GPL
 Group: System Environment/Base
@@ -25,12 +25,15 @@ log files on your system.
 make RPM_OPT_FLAGS="$RPM_OPT_FLAGS"
 
 %install
+rm -rf $RPM_BUILD_ROOT
 make PREFIX=$RPM_BUILD_ROOT MANDIR=%{_mandir} install
 mkdir -p $RPM_BUILD_ROOT/etc/logrotate.d
 mkdir -p $RPM_BUILD_ROOT/etc/cron.daily
+mkdir -p $RPM_BUILD_ROOT/var/lib
 
 install -m 644 examples/logrotate-default $RPM_BUILD_ROOT/etc/logrotate.conf
 install -m 755 examples/logrotate.cron $RPM_BUILD_ROOT/etc/cron.daily/logrotate
+touch $RPM_BUILD_ROOT/var/lib/logrotate.status
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -43,8 +46,13 @@ rm -rf $RPM_BUILD_ROOT
 %attr(0755, root, root) /etc/cron.daily/logrotate
 %attr(0644, root, root) %config(noreplace) /etc/logrotate.conf
 %attr(0755, root, root) %dir /etc/logrotate.d
+%attr(0644, root, root) %verify(not size md5 mtime) %config(noreplace) /var/lib/logrotate.status
 
 %changelog
+* Tue Jan 29 2002 Elliot Lee <sopwith@redhat.com> 3.6.2-1
+- Fix bug #55809 (include logrotate.status in %files)
+- Fix bug #58328 (incorrect error detection when reading state file)
+
 * Mon Dec 10 2001 Preston Brown <pbrown@redhat.com>
 - noreplace config file
 

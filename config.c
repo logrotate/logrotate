@@ -464,6 +464,9 @@ static int readConfigFile(const char * configFile, logInfo * defConfig,
 		    } else if (start[length] == 'M') {
 			start[length] = '\0';
 			multiplier = 1024 * 1024;
+		    } else if (start[length] == 'G') {
+			start[length] = '\0';
+			multiplier = 1024 * 1024 * 1024;
 		    } else if (!isdigit(start[length])) {
 			message(MESS_ERROR, "%s:%d unknown unit '%c'\n",
 				    configFile, lineNum, start[length]);

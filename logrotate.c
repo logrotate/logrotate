@@ -712,7 +712,7 @@ static int readState(char * stateFilename, logState ** statesPtr,
 	fprintf(f, "logrotate state -- version 2\n");
 	fclose(f);
 	return 0;
-    } else if (!f) {
+    } else if (error) {
 	message(MESS_ERROR, "error stat()ing state file %s: %s\n", 
 		stateFilename, strerror(errno));
 	return 1;
