@@ -465,7 +465,7 @@ int rotateSingleLog(logInfo * log, int logNum, logState ** statesPtr,
 	
         if (!hasErrors && log->flags & (LOG_FLAG_COPYTRUNCATE|LOG_FLAG_COPY))
             hasErrors = copyTruncate(log->files[logNum], finalName,
-                                     &state->sb);
+                                     &state->sb, log->flags);
 	
         if (!hasErrors && log->post && 
 	    !(log->flags & LOG_FLAG_SHAREDSCRIPTS)) {
