@@ -2,6 +2,8 @@
 	- glob log names in config file
 	- added ,v to taboo list
 	- fixed bug w/ create parsing
+	- use an int rather then a mode_t when parsing create entries as
+	  sscanf requires it
 
 2.2 -> 2.3:
 	- fill in all of last rotated structure (this probable isn't

@@ -227,7 +227,7 @@ static int readConfigFile(char * configFile, logInfo * defConfig,
     struct passwd * pw;
     int rc;
     char createOwner[200], createGroup[200];
-    mode_t createMode;
+    int createMode;
     struct stat sb, sb2;
     glob_t globResult;
 
