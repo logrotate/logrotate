@@ -1,3 +1,6 @@
+3.5 -> 3.5.2:
+	- added .swp and .rpmnew to default taboo list
+
 3.5 -> 3.5.1:
 	- handle state dates in the future a bit more sanely
 
