@@ -511,6 +511,14 @@ static int readConfigFile(const char * configFile, logInfo * defConfig,
 		newlog->flags &= ~LOG_FLAG_IFEMPTY;
 
 		*endtag = oldchar, start = endtag;
+	    } else if (!strcmp(start, "dateext")) {
+		newlog->flags |= LOG_FLAG_DATEEXT;
+
+		*endtag = oldchar, start = endtag;
+	    } else if (!strcmp(start, "nodateext")) {
+		newlog->flags &= ~LOG_FLAG_DATEEXT;
+
+		*endtag = oldchar, start = endtag;
 	    } else if (!strcmp(start, "noolddir")) {
 		newlog->oldDir = NULL;
 
@@ -667,6 +675,21 @@ static int readConfigFile(const char * configFile, logInfo * defConfig,
 		      message(MESS_ERROR, "%s:%d bad start count '%s'\n",
 			      configFile, lineNum, start);
 		      return 1;
+		    }
+		    *endtag = oldchar, start = endtag;
+		}
+	    } else if (!strcmp(start, "maxage")) {
+		*endtag = oldchar, start = endtag;
+
+		if (!isolateValue(configFile, lineNum, "maxage count", &start,
+				  &endtag)) {
+		    oldchar = *endtag, *endtag = '\0';
+
+		    newlog->rotateAge = strtoul(start, &chptr, 0);
+		    if (*chptr || newlog->rotateAge < 0) {
+			message(MESS_ERROR, "%s:%d bad maximum age '%s'\n",
+				configFile, lineNum, start);
+			return 1;
 		    }
 		    *endtag = oldchar, start = endtag;
 		}

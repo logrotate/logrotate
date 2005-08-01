@@ -1,5 +1,4 @@
 .TH LOGROTATE 8 "Wed Nov 5 2002" "Red Hat Linux" "System Administrator's Manual"
-.UC 4
 .SH NAME
 logrotate \- rotates, compresses, and mails system logs
 .SH SYNOPSIS
@@ -30,6 +29,10 @@ any errors occur while rotating logs, \fBlogrotate\fR will exit with
 non-zero status.
 
 .SH OPTIONS
+.TP
+\fB-v\fR
+Turn on verbose mode.
+
 .TP
 \fB-d\fR
 Turns on debug mode and implies \fB-v\fR.  In debug mode, no changes will
@@ -66,10 +69,10 @@ Prints a short usage message.
 from the series of configuration files specified on the command line.  Each
 configuration file can set global options (local definitions override
 global ones, and later definitions override earlier ones) and specify
-a logfile to rotate. A simple configuration file looks like this:
+logfiles to rotate. A simple configuration file looks like this:
 
 .nf
-.ta +3i
+.ta +8n
 # sample logrotate configuration file
 compress
 
@@ -91,7 +94,7 @@ compress
     endscript
 }
 
-/var/log/news/news.crit {
+/var/log/news/* {
     monthly
     rotate 2
     olddir /var/log/news/old
@@ -103,7 +106,7 @@ compress
 }
 .fi
 
-.pp
+.PP
 The first few lines set global options; in the example, logs are
 compressed after they are rotated.  Note that comments may appear
 anywhere in the config file as long as the first non-whitespace
@@ -120,7 +123,8 @@ The next section defines the parameters for both
 They are rotated whenever is grows over 100k is size, and the old logs
 files are mailed (uncompressed) to www@my.org after going through 5
 rotations, rather then being removed. The \fBsharedscripts\fR means that
-the \fBpostrotate\fR script will only be run once, not once for each
+the \fBpostrotate\fR script will only be run once(after the old
+logs have been compressed), not once for each
 log which is rotated. Note that the double quotes around the first filename
 at the beginning of this section allows logrotate to rotate logs with
 spaces in the name. Normal shell quoting rules apply, with ', ", and \\
@@ -200,6 +204,11 @@ file for the omitted attributes. This option can be disabled using the
 Log files are rotated every day.
 
 .TP
+\fBdateext\fR
+Archive old versions of log files adding a daily extension like YYYYMMDD
+instead of simply adding a number.
+
+.TP
 \fBdelaycompress\fR
 Postpone compression of the previous log file to the next rotation cycle.
 This has only effect when used in combination with \fBcompress\fR.
@@ -244,6 +253,12 @@ instead of the about-to-expire file.
 \fBmaillast\fR
 When using the \fBmail\fR command, mail the about-to-expire file,
 instead of the just-rotated file (this is the default).
+
+.TP
+\fBmaxage\fR \fIcount\fR
+Remove rotated logs older than <count> days. The age is only checked
+if the logfile is to be rotated. The files are mailed to the
+configured address if \fBmaillast\fR and \fBmail\fR are configured.
 
 .TP
 \fBmissingok\fR
@@ -294,7 +309,7 @@ overrides the \fBolddir\fR option).
 
 .TP
 \fBnosharedscripts\fR
-Run \fBprerotate\fR and \fBpostrotate\fR scripts for every script which
+Run \fBprerotate\fR and \fBpostrotate\fR scripts for every log file which
 is rotated (this is the default, and overrides the \fBsharedscripts\fR
 option).
 
@@ -340,7 +355,7 @@ The lines between \fBlastaction\fR and \fBendscript\fR (both of which
 must appear on lines by themselves) are executed once after all log
 files that match the wildcarded pattern are rotated, after postrotate script
 is run and only if at least one log is rotated. These directives may only
-appear inside of a log file definition. See \fBlastaction\fR as well.
+appear inside of a log file definition. See \fBfirstaction\fR as well.
 
 .TP
 \fBrotate \fIcount\fR
@@ -363,8 +378,8 @@ times for log file entries which match multiple files (such as the
 /var/log/news/* example). If \fBsharedscript\fR is specified, the scripts
 are only run once, no matter how many logs match the wildcarded pattern.
 However, if none of the logs in the pattern require rotating, the scripts
-will not be run at all. This option overrides the \fbnosharedscripts\fR
-option.
+will not be run at all. This option overrides the \fBnosharedscripts\fR
+option and implies \fBcreate\fR option.
 
 .TP
 \fBstart \fIcount\fR
@@ -393,7 +408,7 @@ night.
 .SH FILES
 .PD 0
 .TP 27
-\fI/var/lib/logrotate/status\fR
+\fI/var/lib/logrotate.status\fR
 Default state file.
 .TP 27
 \fI/etc/logrotate.conf\fR
