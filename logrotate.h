@@ -15,6 +15,7 @@
 #define LOG_FLAG_MAILFIRST	(1 << 6)
 #define LOG_FLAG_SHAREDSCRIPTS	(1 << 7)
 #define LOG_FLAG_COPY		(1 << 8)
+#define LOG_FLAG_DATEEXT	(1 << 9)
 
 #define NO_FORCE_ROTATE 0
 #define FORCE_ROTATE    1
@@ -34,6 +35,7 @@ typedef struct {
     enum { ROT_DAYS, ROT_WEEKLY, ROT_MONTHLY, ROT_SIZE, ROT_FORCE } criterium;
     unsigned int threshhold;
     int rotateCount;
+    int rotateAge;
     int logStart;
     char * pre, * post, * first, * last;
     char * logAddress;
