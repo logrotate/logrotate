@@ -5,24 +5,27 @@
 
 /* Return NAME with any leading path stripped off.  */
 
-char *ourBaseName(char *name) {
+char *ourBaseName(char *name)
+{
     char *base;
 
     base = strrchr(name, '/');
     return base ? base + 1 : name;
 }
 
-static void stripTrailingSlashes(char *path) {
-    char * last;
+static void stripTrailingSlashes(char *path)
+{
+    char *last;
 
     last = path + strlen(path) - 1;
     while (last > path && *last == '/')
 	*last-- = '\0';
 }
 
-char * ourDirName(char * origname) {
-    char * slash;
-    char * name;
+char *ourDirName(char *origname)
+{
+    char *slash;
+    char *name;
 
     name = strdup(origname);
 

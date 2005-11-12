@@ -29,41 +29,45 @@
 #define isblank(c) 	( (c) == ' ' || (c) == '\t' ) ? 1 : 0
 #endif
 
-static char * defTabooExts[] = { ".rpmsave", ".rpmorig", "~", ",v",
-				 ".rpmnew", ".swp" };
+static char *defTabooExts[] = { ".rpmsave", ".rpmorig", "~", ",v",
+    ".rpmnew", ".swp"
+};
 static int defTabooCount = sizeof(defTabooExts) / sizeof(char *);
 
 /* I shouldn't use globals here :-( */
-static char ** tabooExts = NULL;
+static char **tabooExts = NULL;
 int tabooCount = 0;
 
-static int readConfigFile(const char * configFile, logInfo * defConfig, 
-			  logInfo ** logsPtr, int * numLogsPtr);
-static int globerr(const char * pathname, int theerr);
-static struct rotatePatternElement * parsePattern(const char * pattern,
-					const char * configFile, int lineNum);
+static int readConfigFile(const char *configFile, logInfo * defConfig,
+			  logInfo ** logsPtr, int *numLogsPtr);
+static int globerr(const char *pathname, int theerr);
 
-static int isolateValue(const char * fileName, int lineNum, char * key, 
-			char ** startPtr, char ** endPtr) {
-    char * chptr = *startPtr;
+static int isolateValue(const char *fileName, int lineNum, char *key,
+			char **startPtr, char **endPtr)
+{
+    char *chptr = *startPtr;
 
-    while (isblank(*chptr)) chptr++;
+    while (isblank(*chptr))
+	chptr++;
     if (*chptr == '=') {
 	chptr++;
-	while (*chptr && isblank(*chptr)) chptr++;
+	while (*chptr && isblank(*chptr))
+	    chptr++;
     }
 
     if (*chptr == '\n') {
-	message(MESS_ERROR, "%s:%d argument expected after %s\n", 
+	message(MESS_ERROR, "%s:%d argument expected after %s\n",
 		fileName, lineNum, key);
 	return 1;
     }
 
     *startPtr = chptr;
 
-    while (*chptr != '\n') chptr++;
+    while (*chptr != '\n')
+	chptr++;
 
-    while (isspace(*chptr)) chptr--;
+    while (isspace(*chptr))
+	chptr--;
 
     *endPtr = chptr + 1;
 
@@ -71,14 +75,14 @@ static int isolateValue(const char * fileName, int lineNum, char * key,
 }
 
 static char *readPath(const char *configFile, int lineNum, char *key,
-		      char **startPtr) {
+		      char **startPtr)
+{
     char oldchar;
     char *endtag, *chptr;
     char *start = *startPtr;
     char *path;
 
-    if (!isolateValue(configFile, lineNum, key, &start,
-		      &endtag)) {
+    if (!isolateValue(configFile, lineNum, key, &start, &endtag)) {
 	oldchar = *endtag, *endtag = '\0';
 
 	chptr = start;
@@ -103,19 +107,19 @@ static char *readPath(const char *configFile, int lineNum, char *key,
 	return NULL;
 }
 
-static char * readAddress(const char * configFile, int lineNum, char * key, 
-			  char ** startPtr) {
+static char *readAddress(const char *configFile, int lineNum, char *key,
+			 char **startPtr)
+{
     char oldchar;
-    char * endtag, * chptr;
-    char * start = *startPtr;
-    char * address;
+    char *endtag, *chptr;
+    char *start = *startPtr;
+    char *address;
 
-    if (!isolateValue(configFile, lineNum, key, &start, 
-		      &endtag)) {
+    if (!isolateValue(configFile, lineNum, key, &start, &endtag)) {
 	oldchar = *endtag, *endtag = '\0';
 
 	chptr = start;
-	while (*chptr && isprint(*chptr) && *chptr != ' ') 
+	while (*chptr && isprint(*chptr) && *chptr != ' ')
 	    chptr++;
 	if (*chptr) {
 	    message(MESS_ERROR, "%s:%d bad %s address %s\n",
@@ -134,19 +138,19 @@ static char * readAddress(const char * configFile, int lineNum, char * key,
 	return NULL;
 }
 
-static int checkFile(const char * fname) {
+static int checkFile(const char *fname)
+{
     int i;
 
     /* Check if fname is '.' or '..'; if so, return false */
-    if (fname[0] == '.' &&
-	(!fname[1] || (fname[1] == '.' && !fname[2])))
+    if (fname[0] == '.' && (!fname[1] || (fname[1] == '.' && !fname[2])))
 	return 0;
 
     /* Check if fname is ending in a taboo-extension; if so, return
        false */
     for (i = 0; i < tabooCount; i++) {
 	if (!strcmp(fname + strlen(fname) - strlen(tabooExts[i]),
-	    tabooExts[i])) {
+		    tabooExts[i])) {
 	    message(MESS_ERROR, "Ignoring %s, because of %s "
 		    "ending\n", fname, tabooExts[i]);
 
@@ -154,102 +158,31 @@ static int checkFile(const char * fname) {
 	}
     }
 
-      /* All checks have been passed; return true */
+    /* All checks have been passed; return true */
     return 1;
 }
 
 /* Used by qsort to sort filelist */
-static int compar(const void *p, const void *q) {
-	return  strcoll(*((char **)p), *((char **)q));
+static int compar(const void *p, const void *q)
+{
+    return strcoll(*((char **) p), *((char **) q));
 }
 
-/* Free memory blocks pointed to by pointers in namelist and namelist itself */
-static void free_namelist (char **namelist, int files_count)
+/* Free memory blocks pointed to by pointers in a 2d array and the array itself */
+static void free_2d_array(char **array, int lines_count)
 {
     int i;
-    for (i=0; i<files_count; ++i)
-	free(namelist[i]);
-    free(namelist);
+    for (i = 0; i < lines_count; ++i)
+	free(array[i]);
+    free(array);
 }
 
-static struct rotatePatternElement * parsePattern(const char * pattern,
-					const char * configFile, int lineNum) {
-    struct rotatePatternElement * head, * item;
-    struct rotatePatternElement new;
-    const char * field;
-    const char * start;
 
-    /* dummy head node; we build off of it */
-    head = alloca(sizeof(*head));
-    item = head;
-
-    start = field = pattern;
-    memset(&new, 0, sizeof(new));
-    while (*field) {
-	if (*field != '%') {
-	    field++;
-	    continue;
-	}
-
-	switch (*field) {
-	  case '%':
-	    break;
-	  case 'f':
-	    new.type = RP_FILENAME;
-	    break;
-	  case 'c':
-	    new.type = RP_COUNT;
-	    break;
-	  default:
-	    message(MESS_ERROR, "%s:%d unknown element %c in pattern %s",
-		    configFile, lineNum, *field, pattern);
-	    return NULL;
-	}
-
-	if (new.type != RP_NONE) {
-	    if (start != field) {
-		/* fixed string */
-		item->next = malloc(sizeof(*item->next));
-		item->type = RP_STRING;
-		item->arg = malloc(field - start + 1);
-		strncpy(item->arg, start, field - start);
-		item->arg[field-start] = '\0';
-		item = item->next;
-	    }
-
-	    item->next = malloc(sizeof(*item->next));
-	    *item->next = new;
-	    item = item->next;
-
-	    memset(&new, 0, sizeof(new));
-	}
-
-	field++;
-    }
-
-    if (start != field) {
-	/* fixed string */
-	item->next = malloc(sizeof(*item->next));
-	item->type = RP_STRING;
-	item->arg = malloc(field - start + 1);
-	strncpy(item->arg, start, field-start);
-	item->arg[field-start] = '\0';
-	item = item->next;
-    }
-    
-    return NULL;
-}
-
-int readConfigPath(const char * path, logInfo * defConfig, 
-			  logInfo ** logsPtr, int * numLogsPtr) {
+static int readConfigPath(const char *path, logInfo * defConfig,
+			  logInfo ** logsPtr, int *numLogsPtr)
+{
     struct stat sb;
     int here;
-
-    if (!tabooExts) {
-	tabooExts = malloc(sizeof(*tabooExts) * defTabooCount);
-	memcpy(tabooExts, defTabooExts, sizeof(*tabooExts) * defTabooCount);
-	tabooCount = defTabooCount;
-    }
 
     if (stat(path, &sb)) {
 	message(MESS_ERROR, "cannot stat %s: %s\n", path, strerror(errno));
@@ -257,21 +190,22 @@ int readConfigPath(const char * path, logInfo * defConfig,
     }
 
     if (S_ISDIR(sb.st_mode)) {
-	char		**namelist, **p;
-	struct dirent	*dp;
-	int		files_count,i;
-	DIR		*dirp;
+	char **namelist, **p;
+	struct dirent *dp;
+	int files_count, i;
+	DIR *dirp;
 
 	here = open(".", O_RDONLY);
 	if (here < 0) {
-	    message(MESS_ERROR, "cannot open current directory: %s\n", 
+	    message(MESS_ERROR, "cannot open current directory: %s\n",
 		    strerror(errno));
 	    return 1;
 	}
 
-	if ( (dirp = opendir(path)) == NULL) {
+	if ((dirp = opendir(path)) == NULL) {
 	    message(MESS_ERROR, "cannot open directory %s: %s\n", path,
 		    strerror(errno));
+	    close(here);
 	    return 1;
 	}
 	files_count = 0;
@@ -280,32 +214,43 @@ int readConfigPath(const char * path, logInfo * defConfig,
 	    if (checkFile(dp->d_name)) {
 		/* Realloc memory for namelist array if necessary */
 		if (files_count % REALLOC_STEP == 0) {
-		    p = (char **) realloc(namelist, (files_count + REALLOC_STEP) * sizeof(char *));
+		    p = (char **) realloc(namelist,
+					  (files_count +
+					   REALLOC_STEP) * sizeof(char *));
 		    if (p) {
 			namelist = p;
-			memset(namelist + files_count, '\0', REALLOC_STEP * sizeof(char *));
+			memset(namelist + files_count, '\0',
+			       REALLOC_STEP * sizeof(char *));
 		    } else {
-			free_namelist(namelist, files_count);
-			message(MESS_ERROR, "cannot realloc: %s\n", strerror(errno));
+			free_2d_array(namelist, files_count);
+			closedir(dirp);
+			close(here);
+			message(MESS_ERROR, "cannot realloc: %s\n",
+				strerror(errno));
 			return 1;
 		    }
 		}
 		/* Alloc memory for file name */
-		if ( (namelist[files_count] = (char *) malloc( strlen(dp->d_name) + 1)) ) {
+		if ((namelist[files_count] =
+		     (char *) malloc(strlen(dp->d_name) + 1))) {
 		    strcpy(namelist[files_count], dp->d_name);
 		    files_count++;
 		} else {
-		    free_namelist(namelist, files_count);
-		    message(MESS_ERROR, "cannot realloc: %s\n", strerror(errno));
+		    free_2d_array(namelist, files_count);
+		    closedir(dirp);
+		    close(here);
+		    message(MESS_ERROR, "cannot realloc: %s\n",
+			    strerror(errno));
 		    return 1;
 		}
 	    }
 	}
-	closedir( dirp );
+	closedir(dirp);
 
 	if (files_count > 0) {
 	    qsort(namelist, files_count, sizeof(char *), compar);
 	} else {
+	    close(here);
 	    return 0;
 	}
 
@@ -313,25 +258,25 @@ int readConfigPath(const char * path, logInfo * defConfig,
 	    message(MESS_ERROR, "error in chdir(\"%s\"): %s\n", path,
 		    strerror(errno));
 	    close(here);
-	    free_namelist(namelist, files_count);
+	    free_2d_array(namelist, files_count);
 	    return 1;
 	}
 
-	for (i=0; i<files_count; ++i) {
-	  assert(namelist[i] != NULL);
-	  
-	  if (readConfigFile(namelist[i], defConfig, logsPtr, 
-			     numLogsPtr)) {
-	    fchdir(here);
-	    close(here);
-	    free_namelist(namelist, files_count);
-	    return 1;
-	  }
-	};
+	for (i = 0; i < files_count; ++i) {
+	    assert(namelist[i] != NULL);
+
+	    if (readConfigFile(namelist[i], defConfig, logsPtr,
+			       numLogsPtr)) {
+		fchdir(here);
+		close(here);
+		free_2d_array(namelist, files_count);
+		return 1;
+	    }
+	}
 
 	fchdir(here);
 	close(here);
-	free_namelist(namelist, files_count);
+	free_2d_array(namelist, files_count);
     } else {
 	return readConfigFile(path, defConfig, logsPtr, numLogsPtr);
     }
@@ -339,36 +284,84 @@ int readConfigPath(const char * path, logInfo * defConfig,
     return 0;
 }
 
-static int globerr(const char * pathname, int theerr) {
-    message(MESS_ERROR, "error accessing %s: %s\n", pathname, 
+int readAllConfigPaths(const char **paths, logInfo ** logsPtr,
+		       int *numLogsPtr)
+{
+    int i;
+    const char **file;
+    logInfo defConfig = { /* pattern */ NULL,
+	/* files, numFiles */ NULL, 0,
+	/* oldDir */ NULL,
+	/* criterium */ ROT_SIZE,
+	/* threshHold */ 1024 * 1024,
+	/* rotateCount/Age */ 0, 0,
+	/* log start */ -1,
+	/* pre, post */ NULL, NULL,
+	/* first, last */ NULL, NULL,
+	/* logAddress */ NULL,
+	/* extension */ NULL,
+	/* compress_prog */ NULL,
+	/* uncompress_prog */ NULL,
+	/* compress_ext */ NULL,
+	/* flags */ LOG_FLAG_IFEMPTY,
+	/* createMode/Uid/Gid */ NO_MODE, NO_UID, NO_GID,
+	/* compress_options_list/count */ NULL, 0
+    };
+
+    tabooExts = malloc(sizeof(*tabooExts) * defTabooCount);
+    for (i = 0; i < defTabooCount; i++) {
+	if ((tabooExts[i] = (char *) malloc(strlen(defTabooExts[i]) + 1))) {
+	    strcpy(tabooExts[i], defTabooExts[i]);
+	    tabooCount++;
+	} else {
+	    free_2d_array(tabooExts, tabooCount);
+	    message(MESS_ERROR, "cannot malloc: %s\n", strerror(errno));
+	    return 1;
+	}
+    }
+
+    for (file = paths; *file; file++) {
+	if (readConfigPath(*file, &defConfig, logsPtr, numLogsPtr)) {
+	    free_2d_array(tabooExts, tabooCount);
+	    return 1;
+	}
+    }
+    free_2d_array(tabooExts, tabooCount);
+    return 0;
+}
+
+static int globerr(const char *pathname, int theerr)
+{
+    message(MESS_ERROR, "error accessing %s: %s\n", pathname,
 	    strerror(theerr));
 
     /* We want the glob operation to abort on error, so return 1 */
     return 1;
 }
 
-static int readConfigFile(const char * configFile, logInfo * defConfig, 
-			  logInfo ** logsPtr, int * numLogsPtr) {
+static int readConfigFile(const char *configFile, logInfo * defConfig,
+			  logInfo ** logsPtr, int *numLogsPtr)
+{
     int fd;
-    char * buf, * endtag;
+    char *buf, *endtag;
     char oldchar, foo;
     int length;
     int lineNum = 1;
     int multiplier;
     int i, j, k;
-    char * scriptStart = NULL;
-    char ** scriptDest = NULL;
-    logInfo * newlog = defConfig;
-    char * start, * chptr;
-    char * dirName;
-    struct group * group;
-    struct passwd * pw;
+    char *scriptStart = NULL;
+    char **scriptDest = NULL;
+    logInfo *newlog = defConfig;
+    char *start, *chptr;
+    char *dirName;
+    struct group *group;
+    struct passwd *pw;
     int rc;
     char createOwner[200], createGroup[200];
     int createMode;
     struct stat sb, sb2;
     glob_t globResult;
-    const char ** argv;
+    const char **argv;
     int argc, argNum;
 
     /* FIXME: createOwner and createGroup probably shouldn't be fixed
@@ -389,7 +382,8 @@ static int readConfigFile(const char * configFile, logInfo * defConfig,
 	return 1;
     }
     if (!S_ISREG(sb.st_mode)) {
-	message(MESS_DEBUG, "Ignoring %s because it's not a regular file.\n",
+	message(MESS_DEBUG,
+		"Ignoring %s because it's not a regular file.\n",
 		configFile);
 	close(fd);
 	return 0;
@@ -406,7 +400,7 @@ static int readConfigFile(const char * configFile, logInfo * defConfig,
     }
 
     if (read(fd, buf, length) != length) {
-	message(MESS_ERROR, "failed to read %s: %s\n", configFile, 
+	message(MESS_ERROR, "failed to read %s: %s\n", configFile,
 		strerror(errno));
 	close(fd);
 	return 1;
@@ -422,9 +416,11 @@ static int readConfigFile(const char * configFile, logInfo * defConfig,
 
     start = buf;
     while (*start) {
-	while (isblank(*start) && (*start)) start++;
+	while (isblank(*start) && (*start))
+	    start++;
 	if (*start == '#') {
-	    while (*start != '\n') start++;
+	    while (*start != '\n')
+		start++;
 	}
 
 	if (*start == '\n') {
@@ -436,13 +432,16 @@ static int readConfigFile(const char * configFile, logInfo * defConfig,
 	if (scriptStart) {
 	    if (!strncmp(start, "endscript", 9)) {
 		chptr = start + 9;
-		while (isblank(*chptr)) chptr++;
+		while (isblank(*chptr))
+		    chptr++;
 		if (*chptr == '\n') {
 		    endtag = start;
-		    while (*endtag != '\n') endtag--;
+		    while (*endtag != '\n')
+			endtag--;
 		    endtag++;
 		    *scriptDest = malloc(endtag - scriptStart + 1);
-		    strncpy(*scriptDest, scriptStart, endtag - scriptStart);
+		    strncpy(*scriptDest, scriptStart,
+			    endtag - scriptStart);
 		    (*scriptDest)[endtag - scriptStart] = '\0';
 		    start = chptr + 1;
 		    lineNum++;
@@ -450,16 +449,18 @@ static int readConfigFile(const char * configFile, logInfo * defConfig,
 		    scriptDest = NULL;
 		    scriptStart = NULL;
 		}
-	    } 
+	    }
 
 	    if (scriptStart) {
-		while (*start != '\n') start++;
+		while (*start != '\n')
+		    start++;
 		lineNum++;
 		start++;
 	    }
 	} else if (isalpha(*start)) {
 	    endtag = start;
-	    while (isalpha(*endtag)) endtag++;
+	    while (isalpha(*endtag))
+		endtag++;
 	    oldchar = *endtag;
 	    *endtag = '\0';
 
@@ -535,13 +536,15 @@ static int readConfigFile(const char * configFile, logInfo * defConfig,
 		*endtag = oldchar, start = endtag;
 
 		endtag = start;
-		while (*endtag != '\n') endtag++;
-		while (isspace(*endtag)) endtag--;
+		while (*endtag != '\n')
+		    endtag++;
+		while (isspace(*endtag))
+		    endtag--;
 		endtag++;
 		oldchar = *endtag, *endtag = '\0';
-		
-		rc = sscanf(start, "%o %s %s%c", &createMode, 
-				createOwner, createGroup, &foo);
+
+		rc = sscanf(start, "%o %s %s%c", &createMode,
+			    createOwner, createGroup, &foo);
 		if (rc == 4) {
 		    message(MESS_ERROR, "%s:%d extra arguments for "
 			    "create\n", configFile, lineNum);
@@ -550,27 +553,27 @@ static int readConfigFile(const char * configFile, logInfo * defConfig,
 
 		if (rc > 0)
 		    newlog->createMode = createMode;
-		
+
 		if (rc > 1) {
 		    pw = getpwnam(createOwner);
 		    if (!pw) {
-			message(MESS_ERROR, "%s:%d unknown user '%s'\n", 
+			message(MESS_ERROR, "%s:%d unknown user '%s'\n",
 				configFile, lineNum, createOwner);
 			return 1;
-		    } 
+		    }
 		    newlog->createUid = pw->pw_uid;
 		    endpwent();
-		} 
+		}
 		if (rc > 2) {
 		    group = getgrnam(createGroup);
 		    if (!group) {
-			message(MESS_ERROR, "%s:%d unknown group '%s'\n", 
+			message(MESS_ERROR, "%s:%d unknown group '%s'\n",
 				configFile, lineNum, createGroup);
 			return 1;
-		    } 
+		    }
 		    newlog->createGid = group->gr_gid;
 		    endgrent();
-		} 
+		}
 
 		newlog->flags |= LOG_FLAG_CREATE;
 
@@ -582,7 +585,7 @@ static int readConfigFile(const char * configFile, logInfo * defConfig,
 	    } else if (!strcmp(start, "size")) {
 		*endtag = oldchar, start = endtag;
 
-		if (!isolateValue(configFile, lineNum, "size", &start, 
+		if (!isolateValue(configFile, lineNum, "size", &start,
 				  &endtag)) {
 		    oldchar = *endtag, *endtag = '\0';
 
@@ -598,16 +601,17 @@ static int readConfigFile(const char * configFile, logInfo * defConfig,
 			multiplier = 1024 * 1024 * 1024;
 		    } else if (!isdigit(start[length])) {
 			message(MESS_ERROR, "%s:%d unknown unit '%c'\n",
-				    configFile, lineNum, start[length]);
+				configFile, lineNum, start[length]);
 			return 1;
 		    } else {
 			multiplier = 1;
 		    }
 
-		    newlog->threshhold = multiplier * strtoul(start, &chptr, 0);
+		    newlog->threshhold =
+			multiplier * strtoul(start, &chptr, 0);
 		    if (*chptr) {
 			message(MESS_ERROR, "%s:%d bad size '%s'\n",
-				    configFile, lineNum, start);
+				configFile, lineNum, start);
 			return 1;
 		    }
 
@@ -615,18 +619,19 @@ static int readConfigFile(const char * configFile, logInfo * defConfig,
 
 		    *endtag = oldchar, start = endtag;
 		}
-#if 0   /* this seems like such a good idea :-( */
+#if 0				/* this seems like such a good idea :-( */
 	    } else if (!strcmp(start, "days")) {
 		*endtag = oldchar, start = endtag;
 
-		if (!isolateValue(configFile, lineNum, "size", &start, 
+		if (!isolateValue(configFile, lineNum, "size", &start,
 				  &endtag)) {
 		    oldchar = *endtag, *endtag = '\0';
 
 		    newlog->threshhold = strtoul(start, &chptr, 0);
 		    if (*chptr) {
-			message(MESS_ERROR, "%s:%d bad number of days'%s'\n",
-				    configFile, lineNum, start);
+			message(MESS_ERROR,
+				"%s:%d bad number of days'%s'\n",
+				configFile, lineNum, start);
 			return 1;
 		    }
 
@@ -648,17 +653,23 @@ static int readConfigFile(const char * configFile, logInfo * defConfig,
 		*endtag = oldchar, start = endtag;
 
 		newlog->criterium = ROT_WEEKLY;
+	    } else if (!strcmp(start, "yearly")) {
+		*endtag = oldchar, start = endtag;
+
+		newlog->criterium = ROT_YEARLY;
 	    } else if (!strcmp(start, "rotate")) {
 		*endtag = oldchar, start = endtag;
 
-		if (!isolateValue(configFile, lineNum, "rotate count", &start, 
-				  &endtag)) {
+		if (!isolateValue
+		    (configFile, lineNum, "rotate count", &start,
+		     &endtag)) {
 		    oldchar = *endtag, *endtag = '\0';
 
 		    newlog->rotateCount = strtoul(start, &chptr, 0);
 		    if (*chptr || newlog->rotateCount < 0) {
-			message(MESS_ERROR, "%s:%d bad rotation count '%s'\n",
-				    configFile, lineNum, start);
+			message(MESS_ERROR,
+				"%s:%d bad rotation count '%s'\n",
+				configFile, lineNum, start);
 			return 1;
 		    }
 		    *endtag = oldchar, start = endtag;
@@ -666,23 +677,25 @@ static int readConfigFile(const char * configFile, logInfo * defConfig,
 	    } else if (!strcmp(start, "start")) {
 		*endtag = oldchar, start = endtag;
 
-		if (!isolateValue(configFile, lineNum, "start count", &start,
-				  &endtag)) {
+		if (!isolateValue
+		    (configFile, lineNum, "start count", &start,
+		     &endtag)) {
 		    oldchar = *endtag, *endtag = '\0';
 
 		    newlog->logStart = strtoul(start, &chptr, 0);
 		    if (*chptr || newlog->logStart < 0) {
-		      message(MESS_ERROR, "%s:%d bad start count '%s'\n",
-			      configFile, lineNum, start);
-		      return 1;
+			message(MESS_ERROR, "%s:%d bad start count '%s'\n",
+				configFile, lineNum, start);
+			return 1;
 		    }
 		    *endtag = oldchar, start = endtag;
 		}
 	    } else if (!strcmp(start, "maxage")) {
 		*endtag = oldchar, start = endtag;
 
-		if (!isolateValue(configFile, lineNum, "maxage count", &start,
-				  &endtag)) {
+		if (!isolateValue
+		    (configFile, lineNum, "maxage count", &start,
+		     &endtag)) {
 		    oldchar = *endtag, *endtag = '\0';
 
 		    newlog->rotateAge = strtoul(start, &chptr, 0);
@@ -694,12 +707,13 @@ static int readConfigFile(const char * configFile, logInfo * defConfig,
 		    *endtag = oldchar, start = endtag;
 		}
 	    } else if (!strcmp(start, "errors")) {
-		message(MESS_DEBUG, "%s: %d: the errors directive is deprecated and no longer used.\n",
+		message(MESS_DEBUG,
+			"%s: %d: the errors directive is deprecated and no longer used.\n",
 			configFile, lineNum);
 	    } else if (!strcmp(start, "mail")) {
 		*endtag = oldchar, start = endtag;
-		if (!(newlog->logAddress = readAddress(configFile, lineNum, 
-							"mail", &start))) {
+		if (!(newlog->logAddress = readAddress(configFile, lineNum,
+						       "mail", &start))) {
 		    return 1;
 		}
 	    } else if (!strcmp(start, "nomail")) {
@@ -721,45 +735,52 @@ static int readConfigFile(const char * configFile, logInfo * defConfig,
 		scriptStart = start;
 		scriptDest = &newlog->pre;
 
-		while (*start != '\n') start++;
+		while (*start != '\n')
+		    start++;
 	    } else if (!strcmp(start, "firstaction")) {
 		*endtag = oldchar, start = endtag;
 
 		scriptStart = start;
 		scriptDest = &newlog->first;
 
-		while (*start != '\n') start++;
+		while (*start != '\n')
+		    start++;
 	    } else if (!strcmp(start, "postrotate")) {
 		*endtag = oldchar, start = endtag;
 
 		scriptStart = start;
 		scriptDest = &newlog->post;
 
-		while (*start != '\n') start++;
+		while (*start != '\n')
+		    start++;
 	    } else if (!strcmp(start, "lastaction")) {
 		*endtag = oldchar, start = endtag;
 
 		scriptStart = start;
 		scriptDest = &newlog->last;
 
-		while (*start != '\n') start++;
+		while (*start != '\n')
+		    start++;
 	    } else if (!strcmp(start, "tabooext")) {
 		if (newlog != defConfig) {
-		    message(MESS_ERROR, "%s:%d tabooext may not appear inside "
-			    "of log file definition\n", configFile, lineNum);
+		    message(MESS_ERROR,
+			    "%s:%d tabooext may not appear inside "
+			    "of log file definition\n", configFile,
+			    lineNum);
 		    return 1;
 		}
 
 		*endtag = oldchar, start = endtag;
-		if (!isolateValue(configFile, lineNum, "tabooext", &start, 
+		if (!isolateValue(configFile, lineNum, "tabooext", &start,
 				  &endtag)) {
 		    oldchar = *endtag, *endtag = '\0';
 
 		    if (*start == '+') {
 			start++;
-			while (isspace(*start) && *start) start++;
+			while (isspace(*start) && *start)
+			    start++;
 		    } else {
-			free(tabooExts);
+			free_2d_array(tabooExts, tabooCount);
 			tabooCount = 0;
 			tabooExts = malloc(1);
 		    }
@@ -769,74 +790,65 @@ static int readConfigFile(const char * configFile, logInfo * defConfig,
 			while (!isspace(*chptr) && *chptr != ',' && *chptr)
 			    chptr++;
 
-			tabooExts = realloc(tabooExts, sizeof(*tabooExts) * 
-						(tabooCount + 1));
-			/* this is a memory leak if the list gets reset */
+			tabooExts = realloc(tabooExts, sizeof(*tabooExts) *
+					    (tabooCount + 1));
 			tabooExts[tabooCount] = malloc(chptr - start + 1);
-			strncpy(tabooExts[tabooCount], start, chptr - start);
+			strncpy(tabooExts[tabooCount], start,
+				chptr - start);
 			tabooExts[tabooCount][chptr - start] = '\0';
 			tabooCount++;
 
 			start = chptr;
-			if (*start == ',') start++;
-			while (isspace(*start) && *start) start++;
+			if (*start == ',')
+			    start++;
+			while (isspace(*start) && *start)
+			    start++;
 		    }
 
 		    *endtag = oldchar, start = endtag;
 		}
 	    } else if (!strcmp(start, "include")) {
 		if (newlog != defConfig) {
-		    message(MESS_ERROR, "%s:%d include may not appear inside "
-			    "of log file definition\n", configFile, lineNum);
+		    message(MESS_ERROR,
+			    "%s:%d include may not appear inside "
+			    "of log file definition\n", configFile,
+			    lineNum);
 		    return 1;
 		}
 
 		*endtag = oldchar, start = endtag;
-		if (!isolateValue(configFile, lineNum, "include", &start, 
+		if (!isolateValue(configFile, lineNum, "include", &start,
 				  &endtag)) {
 		    oldchar = *endtag, *endtag = '\0';
 
 		    message(MESS_DEBUG, "including %s\n", start);
 
-		    if (readConfigPath(start, defConfig, logsPtr, 
+		    if (readConfigPath(start, defConfig, logsPtr,
 				       numLogsPtr))
 			return 1;
 
 		    *endtag = oldchar, start = endtag;
 		}
-	    } else if (!strcmp(start, "pattern")) {
-		char * patternString;
-
-		*endtag = oldchar, start = endtag;
-		if (!(patternString = readPath(configFile, lineNum,
-						"pattern", &start))) {
-		    return 1;
-		}
-
-		newlog->rotatePattern = parsePattern(patternString,
-					    configFile, lineNum);
-		if (!newlog->rotatePattern) return 1;
-
-		message(MESS_DEBUG, "pattern is now %s\n", patternString);
 	    } else if (!strcmp(start, "olddir")) {
 		*endtag = oldchar, start = endtag;
 		if (!(newlog->oldDir = readPath(configFile, lineNum,
 						"olddir", &start))) {
 		    return 1;
 		}
-
 #if 0
 		if (stat(newlog->oldDir, &sb)) {
 		    message(MESS_ERROR, "%s:%d error verifying olddir "
-				"path %s: %s\n", configFile, lineNum, 
-				newlog->oldDir, strerror(errno));
+			    "path %s: %s\n", configFile, lineNum,
+			    newlog->oldDir, strerror(errno));
+		    free(newlog->oldDir);
 		    return 1;
 		}
 
 		if (!S_ISDIR(sb.st_mode)) {
 		    message(MESS_ERROR, "%s:%d olddir path %s is not a "
-				"directory\n", configFile, lineNum, 
-				newlog->oldDir);
+			    "directory\n", configFile, lineNum,
+			    newlog->oldDir);
+		    free(newlog->oldDir);
 		    return 1;
 		}
 #endif
@@ -845,8 +857,9 @@ static int readConfigFile(const char * configFile, logInfo * defConfig,
 	    } else if (!strcmp(start, "extension")) {
 		*endtag = oldchar, start = endtag;
 
-		if (!isolateValue(configFile, lineNum, "extension name", &start, 
-				  &endtag)) {
+		if (!isolateValue
+		    (configFile, lineNum, "extension name", &start,
+		     &endtag)) {
 		    oldchar = *endtag, *endtag = '\0';
 
 		    newlog->extension = strdup(start);
@@ -854,83 +867,118 @@ static int readConfigFile(const char * configFile, logInfo * defConfig,
 		    *endtag = oldchar, start = endtag;
 		}
 
-		message(MESS_DEBUG, "extension is now %s\n", newlog->extension);
+		message(MESS_DEBUG, "extension is now %s\n",
+			newlog->extension);
 
 	    } else if (!strcmp(start, "compresscmd")) {
 		*endtag = oldchar, start = endtag;
-		if (!(newlog->compress_prog = readPath(configFile, lineNum, "compress", &start))) {
+		if (!
+		    (newlog->compress_prog =
+		     readPath(configFile, lineNum, "compress", &start))) {
 		    return 1;
 		}
 
 		if (access(newlog->compress_prog, X_OK)) {
-		    message(MESS_ERROR, "%s:%d compression program %s is not an executable file\n", configFile, lineNum, 
-				newlog->compress_prog);
+		    message(MESS_ERROR,
+			    "%s:%d compression program %s is not an executable file\n",
+			    configFile, lineNum, newlog->compress_prog);
+		    free(newlog->compress_prog);
 		    return 1;
 		}
 
-		message(MESS_DEBUG, "compress_prog is now %s\n", newlog->compress_prog);
+		message(MESS_DEBUG, "compress_prog is now %s\n",
+			newlog->compress_prog);
 
 	    } else if (!strcmp(start, "uncompresscmd")) {
 		*endtag = oldchar, start = endtag;
-		if (!(newlog->uncompress_prog = readPath(configFile, lineNum, "uncompress", &start))) {
+		if (!
+		    (newlog->uncompress_prog =
+		     readPath(configFile, lineNum, "uncompress",
+			      &start))) {
 		    return 1;
 		}
 
 		if (access(newlog->uncompress_prog, X_OK)) {
-		    message(MESS_ERROR, "%s:%d uncompression program %s is not an executable file\n", configFile, lineNum, 
-				newlog->uncompress_prog);
+		    message(MESS_ERROR,
+			    "%s:%d uncompression program %s is not an executable file\n",
+			    configFile, lineNum, newlog->uncompress_prog);
+		    free(newlog->uncompress_prog);
 		    return 1;
 		}
 
-		message(MESS_DEBUG, "uncompress_prog is now %s\n", newlog->uncompress_prog);
+		message(MESS_DEBUG, "uncompress_prog is now %s\n",
+			newlog->uncompress_prog);
 
 	    } else if (!strcmp(start, "compressoptions")) {
-		char * options;
+		char *options;
 
 		*endtag = oldchar, start = endtag;
-		if (!(options = readPath(configFile, lineNum, "compressoptions", &start))) {
+		if (!
+		    (options =
+		     readPath(configFile, lineNum, "compressoptions",
+			      &start))) {
 		    return 1;
 		}
 
-		if (poptParseArgvString(options, 
+		if (poptParseArgvString(options,
 					&newlog->compress_options_count,
 					&newlog->compress_options_list)) {
-		    message(MESS_ERROR, "%s:%d invalid compression options\n", 
+		    message(MESS_ERROR,
+			    "%s:%d invalid compression options\n",
 			    configFile, lineNum);
+		    free(options);
 		    return 1;
 		}
 
-		message(MESS_DEBUG, "compress_options is now %s\n", options);
+		message(MESS_DEBUG, "compress_options is now %s\n",
+			options);
+		free(options);
 	    } else if (!strcmp(start, "compressext")) {
 		*endtag = oldchar, start = endtag;
-		if (!(newlog->compress_ext = readPath(configFile, lineNum, "compress-ext", &start))) {
+		if (!
+		    (newlog->compress_ext =
+		     readPath(configFile, lineNum, "compress-ext",
+			      &start))) {
 		    return 1;
 		}
 
-		message(MESS_DEBUG, "compress_ext is now %s\n", newlog->compress_ext);
+		message(MESS_DEBUG, "compress_ext is now %s\n",
+			newlog->compress_ext);
 	    } else {
 		message(MESS_ERROR, "%s:%d unknown option '%s' "
-			    "-- ignoring line\n", configFile, lineNum, start);
+			"-- ignoring line\n", configFile, lineNum, start);
 
 		*endtag = oldchar, start = endtag;
 	    }
 
-	    while (isblank(*start)) start++;
+	    while (isblank(*start))
+		start++;
 
 	    if (*start != '\n') {
 		message(MESS_ERROR, "%s:%d unexpected text\n", configFile,
-			    lineNum);
-		while (*start != '\n') start++;
+			lineNum);
+		while (*start != '\n')
+		    start++;
 	    }
 
 	    lineNum++;
 	    start++;
 	} else if (*start == '/' || *start == '"' || *start == '\'') {
 	    if (newlog != defConfig) {
-		message(MESS_ERROR, "%s:%d unexpected log filename\n", 
+		message(MESS_ERROR, "%s:%d unexpected log filename\n",
 			configFile, lineNum);
 		return 1;
 	    }
+
+	    /* If no compression options were found in config file,
+	     * set default values using allocated strings, that can be
+	     * free()ed by free_logInfo() */
+	    if (!newlog->compress_prog)
+		newlog->compress_prog = strdup(COMPRESS_COMMAND);
+	    if (!newlog->uncompress_prog)
+		newlog->uncompress_prog = strdup(UNCOMPRESS_COMMAND);
+	    if (!newlog->compress_ext)
+		newlog->compress_ext = strdup(COMPRESS_EXT);
 
 	    (*numLogsPtr)++;
 	    *logsPtr = realloc(*logsPtr, sizeof(**logsPtr) * *numLogsPtr);
@@ -938,7 +986,8 @@ static int readConfigFile(const char * configFile, logInfo * defConfig,
 	    memcpy(newlog, defConfig, sizeof(*newlog));
 
 	    endtag = start;
-	    while (*endtag != '{' && *endtag != '\0') endtag++;
+	    while (*endtag != '{' && *endtag != '\0')
+		endtag++;
 	    if (*endtag != '{') {
 		message(MESS_ERROR, "%s:%d missing end of line\n",
 			configFile, lineNum);
@@ -950,51 +999,57 @@ static int readConfigFile(const char * configFile, logInfo * defConfig,
 			configFile, lineNum);
 		return 1;
 	    } else if (argc < 1) {
-		message(MESS_ERROR, "%s:%d { expected after log file name(s)\n",
+		message(MESS_ERROR,
+			"%s:%d { expected after log file name(s)\n",
 			configFile, lineNum);
 		return 1;
 	    }
 
-	    /* XXX this leaks the result of the glob <shrug> */
 	    newlog->files = NULL;
 	    newlog->numFiles = 0;
 	    for (argNum = 0; argNum < argc; argNum++) {
-		rc = glob(argv[argNum], GLOB_NOCHECK, globerr, &globResult);
+		rc = glob(argv[argNum], GLOB_NOCHECK, globerr,
+			  &globResult);
 		if (rc == GLOB_ABORTED) {
-		    if(newlog->flags & LOG_FLAG_MISSINGOK)
-		        continue;
+		    if (newlog->flags & LOG_FLAG_MISSINGOK)
+			continue;
 
 		    message(MESS_ERROR, "%s:%d glob failed for %s\n",
 			    configFile, lineNum, argv[argNum]);
 		    return 1;
 		}
 
-		newlog->files = realloc(newlog->files, sizeof(*newlog->files) * 
-				   (newlog->numFiles + globResult.gl_pathc));
+		newlog->files =
+		    realloc(newlog->files,
+			    sizeof(*newlog->files) * (newlog->numFiles +
+						      globResult.
+						      gl_pathc));
 
 		for (i = 0; i < globResult.gl_pathc; i++) {
 		    /* if we glob directories we can get false matches */
-		    if (!lstat(globResult.gl_pathv[i], &sb) && 
-				    S_ISDIR(sb.st_mode)) 
+		    if (!lstat(globResult.gl_pathv[i], &sb) &&
+			S_ISDIR(sb.st_mode))
 			continue;
 
 		    for (j = 0; j < *numLogsPtr - 1; j++) {
 			for (k = 0; k < (*logsPtr)[j].numFiles; k++) {
-			    if (!strcmp((*logsPtr)[j].files[k], 
+			    if (!strcmp((*logsPtr)[j].files[k],
 					globResult.gl_pathv[i])) {
-				message(MESS_ERROR, 
+				message(MESS_ERROR,
 					"%s:%d duplicate log entry for %s\n",
-					configFile, lineNum, 
+					configFile, lineNum,
 					globResult.gl_pathv[i]);
+				globfree(&globResult);
 				return 1;
 			    }
 			}
 		    }
 
-		    newlog->files[newlog->numFiles] = 
-			    globResult.gl_pathv[i];
+		    newlog->files[newlog->numFiles] =
+			strdup(globResult.gl_pathv[i]);
 		    newlog->numFiles++;
 		}
+		globfree(&globResult);
 	    }
 
 	    newlog->pattern = strdup(start);
@@ -1006,7 +1061,8 @@ static int readConfigFile(const char * configFile, logInfo * defConfig,
 	    start = endtag + 1;
 	} else if (*start == '}') {
 	    if (newlog == defConfig) {
-		message(MESS_ERROR, "%s:%d unxpected }\n", configFile, lineNum);
+		message(MESS_ERROR, "%s:%d unxpected }\n", configFile,
+			lineNum);
 		return 1;
 	    }
 
@@ -1015,29 +1071,34 @@ static int readConfigFile(const char * configFile, logInfo * defConfig,
 		    char *ld;
 		    dirName = ourDirName(newlog->files[i]);
 		    if (stat(dirName, &sb2)) {
-			message(MESS_ERROR, "%s:%d error verifying log file "
-				    "path %s: %s\n", configFile, lineNum, 
-				    dirName, strerror(errno));
+			message(MESS_ERROR,
+				"%s:%d error verifying log file "
+				"path %s: %s\n", configFile, lineNum,
+				dirName, strerror(errno));
 			free(dirName);
 			return 1;
 		    }
-		    ld = alloca(strlen(dirName) + strlen(newlog->oldDir) + 2);
+		    ld = alloca(strlen(dirName) + strlen(newlog->oldDir) +
+				2);
 		    sprintf(ld, "%s/%s", dirName, newlog->oldDir);
 		    free(dirName);
 
-		    if(newlog->oldDir[0] != '/') dirName = ld;
-		    else dirName = newlog->oldDir;
-		    if(stat(dirName, &sb)) {
+		    if (newlog->oldDir[0] != '/')
+			dirName = ld;
+		    else
+			dirName = newlog->oldDir;
+		    if (stat(dirName, &sb)) {
 			message(MESS_ERROR, "%s:%d error verifying olddir "
 				"path %s: %s\n", configFile, lineNum,
 				dirName, strerror(errno));
-				return 1;
+			return 1;
 		    }
 
 		    if (sb.st_dev != sb2.st_dev) {
-			message(MESS_ERROR, "%s:%d olddir %s and log file %s "
-				    "are on different devices\n", configFile,
-				    lineNum, newlog->oldDir, newlog->files[i]);
+			message(MESS_ERROR,
+				"%s:%d olddir %s and log file %s "
+				"are on different devices\n", configFile,
+				lineNum, newlog->oldDir, newlog->files[i]);
 			return 1;
 		    }
 		}
@@ -1046,7 +1107,8 @@ static int readConfigFile(const char * configFile, logInfo * defConfig,
 	    newlog = defConfig;
 
 	    start++;
-	    while (isblank(*start)) start++;
+	    while (isblank(*start))
+		start++;
 
 	    if (*start != '\n') {
 		message(MESS_ERROR, "%s:%d, unexpected text after {\n",
@@ -1054,21 +1116,22 @@ static int readConfigFile(const char * configFile, logInfo * defConfig,
 	    }
 	} else {
 	    message(MESS_ERROR, "%s:%d lines must begin with a keyword "
-			"or a filename (possibly in double quotes)\n", 
-			configFile, lineNum);
+		    "or a filename (possibly in double quotes)\n",
+		    configFile, lineNum);
 
-	    while (*start != '\n') start++;
+	    while (*start != '\n')
+		start++;
 	    lineNum++;
 	    start++;
 	}
     }
 
-    if(scriptStart) {
-      message(MESS_ERROR, "%s:prerotate or postrotate without endscript\n",
-	      configFile);
-      return 1;
+    if (scriptStart) {
+	message(MESS_ERROR,
+		"%s:prerotate or postrotate without endscript\n",
+		configFile);
+	return 1;
     }
 
     return 0;
 }
-
