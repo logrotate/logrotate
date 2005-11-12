@@ -123,8 +123,7 @@ The next section defines the parameters for both
 They are rotated whenever is grows over 100k is size, and the old logs
 files are mailed (uncompressed) to www@my.org after going through 5
 rotations, rather then being removed. The \fBsharedscripts\fR means that
-the \fBpostrotate\fR script will only be run once(after the old
-logs have been compressed), not once for each
+the \fBpostrotate\fR script will only be run once, not once for each
 log which is rotated. Note that the double quotes around the first filename
 at the beginning of this section allows logrotate to rotate logs with
 spaces in the name. Normal shell quoting rules apply, with ', ", and \\
@@ -295,6 +294,11 @@ Do not postpone compression of the previous log file to the next rotation cycle
 (this overrides the \fBdelaycompress\fR option).
 
 .TP
+\fBnodateext\fR
+Do not archive  old versions of log files with date extension
+(this overrides the \fBdateext\fR option).
+
+.TP
 \fBnomail\fR
 Don't mail old log files to any address.
 
@@ -404,6 +408,10 @@ of the last rotation or if more then a week has passed since the last
 rotation. This is normally the same as rotating logs on the first day
 of the week, but it works better if \fIlogrotate\fR is not run every
 night.
+
+.TP
+\fByearly\fR
+Log files are rotated if the current year is not the same as the last rotation.
 
 .SH FILES
 .PD 0

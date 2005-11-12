@@ -17,44 +17,42 @@
 #define LOG_FLAG_COPY		(1 << 8)
 #define LOG_FLAG_DATEEXT	(1 << 9)
 
+#define NO_MODE ((mode_t) -1)
+#define NO_UID  ((uid_t) -1)
+#define NO_GID  ((gid_t) -1)
+
 #define NO_FORCE_ROTATE 0
 #define FORCE_ROTATE    1
 
-struct rotatePatternElement {
-    enum { RP_NONE = 0, RP_FILENAME, RP_STRING, RP_COUNT, RP_MONTH, RP_DAY, 
-	   RP_YEAR } type;
-    char * arg;
-    struct rotatePatternElement * next;
-};
 
 typedef struct {
-    char * pattern;
-    char ** files;
+    char *pattern;
+    char **files;
     int numFiles;
-    char * oldDir;
-    enum { ROT_DAYS, ROT_WEEKLY, ROT_MONTHLY, ROT_SIZE, ROT_FORCE } criterium;
+    char *oldDir;
+    enum { ROT_DAYS, ROT_WEEKLY, ROT_MONTHLY, ROT_YEARLY, ROT_SIZE,
+	    ROT_FORCE } criterium;
     unsigned int threshhold;
     int rotateCount;
     int rotateAge;
     int logStart;
-    char * pre, * post, * first, * last;
-    char * logAddress;
-    char * extension;
-    char * compress_prog;
-    char * uncompress_prog;
-    char * compress_ext;
-    struct rotatePatternElement * rotatePattern;
+    char *pre, *post, *first, *last;
+    char *logAddress;
+    char *extension;
+    char *compress_prog;
+    char *uncompress_prog;
+    char *compress_ext;
     int flags;
     mode_t createMode;		/* if any/all of these are -1, we use the */
     uid_t createUid;		/* attributes from the log file just rotated */
     gid_t createGid;
     /* these are at the end so they end up nil */
-    const char ** compress_options_list;
+    const char **compress_options_list;
     int compress_options_count;
 } logInfo;
 
-int readConfigPath(const char * path, logInfo * defConfig, 
-			  logInfo ** logsPtr, int * numLogsPtr);
+int readAllConfigPaths(const char **paths, logInfo ** logsPtr,
+		       int *numLogsPtr);
 
 extern int debug;
 

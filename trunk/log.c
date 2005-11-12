@@ -8,34 +8,40 @@
 #include "log.h"
 
 int logLevel = MESS_DEBUG;
-static FILE * errorFile =  NULL;
-static FILE * messageFile = NULL;
+static FILE *errorFile = NULL;
+static FILE *messageFile = NULL;
 int flags = 0;
 
-void logSetLevel(int level) {
+void logSetLevel(int level)
+{
     logLevel = level;
 }
 
-void logSetErrorFile(FILE * f) {
+void logSetErrorFile(FILE * f)
+{
     errorFile = f;
 }
 
-void logSetMessageFile(FILE * f) {
+void logSetMessageFile(FILE * f)
+{
     messageFile = f;
 }
 
-void logSetFlags(int newFlags) {
+void logSetFlags(int newFlags)
+{
     flags |= newFlags;
 }
 
-void logClearFlags(int newFlags) {
+void logClearFlags(int newFlags)
+{
     flags &= ~newFlags;
 }
 
 #if 0
-void log(int fd, char * format, ...) {
+void log(int fd, char *format, ...)
+{
     int i = 0;
-    char * buf = NULL;
+    char *buf = NULL;
     va_list args;
     int size;
 
@@ -43,7 +49,8 @@ void log(int fd, char * format, ...) {
 
     do {
 	i += 1000;
-	if (buf) free(buf);
+	if (buf)
+	    free(buf);
 	buf = malloc(i);
 	size = vsnprintf(buf, i, format, args);
     } while (size >= i);
@@ -56,9 +63,10 @@ void log(int fd, char * format, ...) {
 }
 #endif
 
-void message(int level, char * format, ...) {
+void message(int level, char *format, ...)
+{
     va_list args;
-    FILE * where = NULL;
+    FILE *where = NULL;
     int showTime = 0;
 
     if (errorFile == NULL)
@@ -66,23 +74,23 @@ void message(int level, char * format, ...) {
     if (messageFile == NULL)
 	messageFile = stderr;
     where = errorFile;
-    
+
     if (level >= logLevel) {
 	va_start(args, format);
 
 	switch (level) {
-	  case MESS_DEBUG:
+	case MESS_DEBUG:
 	    where = messageFile;
 	    showTime = 1;
 	    break;
 
-	  case MESS_NORMAL:
-	  case MESS_VERBOSE:
+	case MESS_NORMAL:
+	case MESS_VERBOSE:
 	    where = messageFile;
 	    break;
 
-	  default:
-	    if (flags & LOG_TIMES) 
+	default:
+	    if (flags & LOG_TIMES)
 		fprintf(where, "%ld: ", (long) time(NULL));
 	    fprintf(errorFile, "error: ");
 	    break;
@@ -97,7 +105,7 @@ void message(int level, char * format, ...) {
 
 	va_end(args);
 
-	if (level == MESS_FATAL) exit(1);
+	if (level == MESS_FATAL)
+	    exit(1);
     }
 }
-

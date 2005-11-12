@@ -12,14 +12,14 @@
 
 #define LOG_TIMES	(1 << 0)
 
-void message(int level, char * format, ...)
+void message(int level, char *format, ...)
 #ifdef __GNUC__
-       __attribute__ ((format (printf, 2, 3)));
+    __attribute__ ((format(printf, 2, 3)));
 #else
-       ;
+;
 #endif
 #if 0
-void log(int fd, char * format, ...);
+void log(int fd, char *format, ...);
 #endif
 void logSetErrorFile(FILE * f);
 void logSetMessageFile(FILE * f);

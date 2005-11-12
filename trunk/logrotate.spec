@@ -4,19 +4,11 @@ BuildRequires: libselinux-devel
 %endif
 Summary: Rotates, compresses, removes and mails system log files.
 Name: logrotate
-Version: 3.7.2
+Version: 3.7.3
 Release: 1
 License: GPL
 Group: System Environment/Base
 Source: logrotate-%{PACKAGE_VERSION}.tar.gz
-#Patch0: logrotate-3.7.1-share.patch
-Patch1: logrotate-3.7.1-man.patch
-Patch2: logrotate-3.7.1-conf.patch
-Patch3: logrotate-3.7.1-noTMPDIR.patch
-Patch4: logrotate-3.7.1-selinux.patch
-Patch5: logrotate-3.7.1-dateext.patch
-Patch6: logrotate-3.7.1-maxage.patch
-Patch7: logrotate-3.7.1-scriptFailInfo.patch
 BuildRoot: %{_tmppath}/%{name}-%{version}.root
 
 %description
@@ -32,14 +24,6 @@ log files on your system.
 
 %prep
 %setup
-#%patch0 -p1 -b .share
-%patch1 -p1 -b .orig
-%patch2 -p1 -b .conf
-%patch3 -p1 -b .noTMPDIR
-%patch4 -p1 -b .selinux
-%patch5 -p1 -b .dateext
-%patch6 -p1 -b .maxage
-%patch7 -p1 -b .scriptFailInfo
 
 %build
 make RPM_OPT_FLAGS="$RPM_OPT_FLAGS -g" \
@@ -72,6 +56,46 @@ rm -rf $RPM_BUILD_ROOT
 %attr(0644, root, root) %verify(not size md5 mtime) %config(noreplace) /var/lib/logrotate.status
 
 %changelog
+* Sat Nov 12 2005 Peter Vrabec <pvrabec@redhat.com> 3.7.3-1
+- new upstream release
+- indent sources
+
+* Fri Nov 11 2005 Peter Vrabec <pvrabec@redhat.com> 3.7.2-12
+- fix_free_segfaults (#172918)
+
+* Mon Nov 07 2005 Peter Vrabec <pvrabec@redhat.com> 3.7.2-11
+- man description for "nodateext" option (#171577)
+- remove not working "pattern" option (#171577)
+
+* Tue Oct 25 2005 Peter Vrabec <pvrabec@redhat.com> 3.7.2-10
+- some more clean up (#171587)
+
+* Thu Oct 20 2005 Peter Vrabec <pvrabec@redhat.com> 3.7.2-9
+- fix_free_segfaults (#171093)
+
+* Tue Oct 18 2005 Peter Vrabec <pvrabec@redhat.com> 3.7.2-8
+- fix leaks of tabooExts
+
+* Sat Oct 15 2005 Peter Vrabec <pvrabec@redhat.com> 3.7.2-7
+- fix_free_segfaults (#170904)
+
+* Wed Oct 12 2005 Peter Vrabec <pvrabec@redhat.com> 3.7.2-6
+- code clean up (#169885)
+
+* Mon Oct 10 2005 Peter Vrabec <pvrabec@redhat.com> 3.7.2-5
+- fix bug introduced in logrotate 3.7.2-3(#169858)
+- fix some memory leaks (#169888)
+
+* Fri Sep 23 2005 Peter Vrabec <pvrabec@redhat.com> 3.7.2-4
+- do not run compression program in debug mode (#166912)
+
+* Wed Sep 07 2005 Peter Vrabec <pvrabec@redhat.com> 3.7.2-3
+- even when sharedscript option used, do postrotate 
+  script before compress (#167575)
+
+* Wed Aug 17 2005 Peter Vrabec <pvrabec@redhat.com> 3.7.2-2
+- allow yearly rotations(#134612)
+
 * Mon Aug 01 2005 Peter Vrabec <pvrabec@redhat.com> 3.7.2-1
 - new upstream release
 
