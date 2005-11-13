@@ -93,12 +93,11 @@ static void free_logInfo(logInfo ** logsPtr, int *numLogsPtr)
 	freeLogItem(compress_prog);
 	freeLogItem(uncompress_prog);
 	freeLogItem(compress_ext);
+	freeLogItem(compress_options_list);
 
 	for (j = 0; j < log->numFiles; j++)
 	    free(log->files[j]);
 	free(log->files);
-
-	free(log->compress_options_list);
     }
     free(*logsPtr);
     *numLogsPtr = 0;
