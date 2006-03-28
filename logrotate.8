@@ -216,9 +216,10 @@ and thus might continue writing to the previous log file for some time.
 
 .TP
 \fBextension \fIext\fR
-Log files are given the final extension \fIext\fR after rotation. If 
-compression is used, the compression extension (normally \fB.gz\fR)
-appears after \fIext\fR.
+Log files with \fIext\fR extension can keep it after the rotation. 
+If compression  is  used,  the compression extension (normally \fB.gz\fR) 
+appears after \fIext\fR. For example you have a logfile named mylog.foo 
+and want to rotate it to mylog.1.foo.gz instead of mylog.foo.1.gz.
 
 .TP
 \fBifempty\fR
