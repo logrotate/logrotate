@@ -294,6 +294,7 @@ int readAllConfigPaths(const char **paths, logInfo ** logsPtr,
 	/* oldDir */ NULL,
 	/* criterium */ ROT_SIZE,
 	/* threshHold */ 1024 * 1024,
+	/* minsize */ 0,
 	/* rotateCount/Age */ 0, 0,
 	/* log start */ -1,
 	/* pre, post */ NULL, NULL,
@@ -582,10 +583,12 @@ static int readConfigFile(const char *configFile, logInfo * defConfig,
 		newlog->flags &= ~LOG_FLAG_CREATE;
 
 		*endtag = oldchar, start = endtag;
-	    } else if (!strcmp(start, "size")) {
+	    } else if (!strcmp(start, "size") || !strcmp(start, "minsize")) {
+		unsigned int size = 0;
+		char *opt = start;
 		*endtag = oldchar, start = endtag;
 
-		if (!isolateValue(configFile, lineNum, "size", &start,
+		if (!isolateValue(configFile, lineNum, opt, &start,
 				  &endtag)) {
 		    oldchar = *endtag, *endtag = '\0';
 
@@ -607,15 +610,18 @@ static int readConfigFile(const char *configFile, logInfo * defConfig,
 			multiplier = 1;
 		    }
 
-		    newlog->threshhold =
-			multiplier * strtoul(start, &chptr, 0);
+		    size = multiplier * strtoul(start, &chptr, 0);
 		    if (*chptr) {
 			message(MESS_ERROR, "%s:%d bad size '%s'\n",
 				configFile, lineNum, start);
 			return 1;
 		    }
 
-		    newlog->criterium = ROT_SIZE;
+		    if (!strcmp(opt, "size")) {
+			newlog->criterium = ROT_SIZE;
+			newlog->threshhold = size;
+		    } else
+			newlog->minsize = size;
 
 		    *endtag = oldchar, start = endtag;
 		}

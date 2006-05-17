@@ -518,6 +518,8 @@ int findNeedRotating(logInfo * log, int logNum, struct stateSet *sip)
 	    state->doRotate = 0;
 	    break;
 	}
+	if (log->minsize && sb.st_size < log->minsize)
+	    state->doRotate = 0;
     }
 
     /* The notifempty flag overrides the normal criteria */
@@ -1005,6 +1007,9 @@ int rotateLogSet(logInfo * log, struct stateSet *sip, int force)
 	message(MESS_DEBUG, "empty log files are rotated, ");
     else
 	message(MESS_DEBUG, "empty log files are not rotated, ");
+
+    if (log->minsize) 
+	message(MESS_DEBUG, "only log files >= %d bytes are rotated, ",	log->minsize);
 
     if (log->logAddress) {
 	message(MESS_DEBUG, "old logs mailed to %s\n", log->logAddress);
