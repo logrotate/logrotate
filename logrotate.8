@@ -120,7 +120,7 @@ version of the log has been compressed), the command
 
 The next section defines the parameters for both
 \fI/var/log/httpd/access.log\fR and \fI/var/log/httpd/error.log\fR.
-They are rotated whenever is grows over 100k is size, and the old logs
+They are rotated whenever it grows over 100k in size, and the old logs
 files are mailed (uncompressed) to www@my.org after going through 5
 rotations, rather then being removed. The \fBsharedscripts\fR means that
 the \fBpostrotate\fR script will only be run once, not once for each
@@ -259,6 +259,16 @@ instead of the just-rotated file (this is the default).
 Remove rotated logs older than <count> days. The age is only checked
 if the logfile is to be rotated. The files are mailed to the
 configured address if \fBmaillast\fR and \fBmail\fR are configured.
+
+.TP
+\fBminsize\fR \fIsize\fR
+Log files are rotated when they grow bigger then \fIsize\fR bytes, but not
+before the additionally specified time interval (\fBdaily\fR, \fBweekly\fR,
+\fBmonthly\fR, or \fByearly\fR).  The related \fBsize\fR option is similar
+except that it is mutually exclusive with the time interval options, and it
+causes log files to be rotated without regard for the last rotation time.
+When \fBminsize\fR is used, both the size and timestamp of a log file are
+considered.
 
 .TP
 \fBmissingok\fR

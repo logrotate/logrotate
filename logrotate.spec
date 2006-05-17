@@ -4,8 +4,8 @@ BuildRequires: libselinux-devel
 %endif
 Summary: Rotates, compresses, removes and mails system log files.
 Name: logrotate
-Version: 3.7.3
-Release: 3
+Version: 3.7.4
+Release: 1
 License: GPL
 Group: System Environment/Base
 Source: logrotate-%{PACKAGE_VERSION}.tar.gz
@@ -56,6 +56,9 @@ rm -rf $RPM_BUILD_ROOT
 %attr(0644, root, root) %verify(not size md5 mtime) %config(noreplace) /var/lib/logrotate.status
 
 %changelog
+* Wed May 17 2006 Peter Vrabec <pvrabec@redhat.com> 3.7.4-1
+- add new "minsize" option
+
 * Tue Mar 28 2005 Peter Vrabec <pvrabec@redhat.com> 3.7.3-3
 - correct man page "extension" option description  (#185318)
 
