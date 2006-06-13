@@ -385,7 +385,7 @@ static int copyTruncate(char *currLog, char *saveLog, struct stat *sb,
 		}
 		freecon(oldContext);
 	    } else {
-		    if (errno != ENOSUP) {
+		    if (errno != ENOTSUP) {
 			    message(MESS_ERROR, "getting file context %s: %s\n",
 				    currLog, strerror(errno));
 			    if (selinux_enforce) {
@@ -777,7 +777,7 @@ int prerotateSingleLog(logInfo * log, int logNum, logState * state,
 		}
 		freecon(oldContext);
 	    } else {
-		if (errno != ENOENT && errno != ENOSUP) {
+		if (errno != ENOENT && errno != ENOTSUP) {
 			message(MESS_ERROR, "getting file context %s: %s\n",
 				log->files[logNum], strerror(errno));
 			if (selinux_enforce) {
