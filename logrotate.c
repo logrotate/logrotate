@@ -367,7 +367,7 @@ static int copyTruncate(char *currLog, char *saveLog, struct stat *sb,
 	    if (fgetfilecon(fdcurr, &oldContext) >= 0) {
 		if (getfscreatecon(&prev_context) < 0) {
 		    message(MESS_ERROR,
-			    "error getting default context: %s\n",
+			    "getting default context: %s\n",
 			    strerror(errno));
 		    if (selinux_enforce) {
 			freecon(oldContext);
@@ -376,7 +376,7 @@ static int copyTruncate(char *currLog, char *saveLog, struct stat *sb,
 		}
 		if (setfscreatecon(oldContext) < 0) {
 		    message(MESS_ERROR,
-			    "error setting file context %s to %s: %s\n",
+			    "setting file context %s to %s: %s\n",
 			    saveLog, oldContext, strerror(errno));
 		    if (selinux_enforce) {
 			freecon(oldContext);
@@ -385,11 +385,13 @@ static int copyTruncate(char *currLog, char *saveLog, struct stat *sb,
 		}
 		freecon(oldContext);
 	    } else {
-		message(MESS_ERROR, "error getting file context %s: %s\n",
-			currLog, strerror(errno));
-		if (selinux_enforce) {
-		    return 1;
-		}
+		    if (errno != ENOSUP) {
+			    message(MESS_ERROR, "getting file context %s: %s\n",
+				    currLog, strerror(errno));
+			    if (selinux_enforce) {
+				    return 1;
+			    }
+		    }
 	    }
 	}
 #endif
@@ -756,7 +758,7 @@ int prerotateSingleLog(logInfo * log, int logNum, logState * state,
 	    if (getfilecon(log->files[logNum], &oldContext) > 0) {
 		if (getfscreatecon(&prev_context) < 0) {
 		    message(MESS_ERROR,
-			    "error getting default context: %s\n",
+			    "getting default context: %s\n",
 			    strerror(errno));
 		    if (selinux_enforce) {
 			freecon(oldContext);
@@ -765,7 +767,7 @@ int prerotateSingleLog(logInfo * log, int logNum, logState * state,
 		}
 		if (setfscreatecon(oldContext) < 0) {
 		    message(MESS_ERROR,
-			    "error setting file context %s to %s: %s\n",
+			    "setting file context %s to %s: %s\n",
 			    log->files[logNum], oldContext,
 			    strerror(errno));
 		    if (selinux_enforce) {
@@ -775,10 +777,12 @@ int prerotateSingleLog(logInfo * log, int logNum, logState * state,
 		}
 		freecon(oldContext);
 	    } else {
-		message(MESS_ERROR, "error getting file context %s: %s\n",
-			log->files[logNum], strerror(errno));
-		if (selinux_enforce) {
-		    return 1;
+		if (errno != ENOENT && errno != ENOSUP) {
+			message(MESS_ERROR, "getting file context %s: %s\n",
+				log->files[logNum], strerror(errno));
+			if (selinux_enforce) {
+				return 1;
+			}
 		}
 	    }
 	}
