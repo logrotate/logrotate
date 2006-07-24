@@ -151,7 +151,7 @@ static int checkFile(const char *fname)
     for (i = 0; i < tabooCount; i++) {
 	if (!strcmp(fname + strlen(fname) - strlen(tabooExts[i]),
 		    tabooExts[i])) {
-	    message(MESS_ERROR, "Ignoring %s, because of %s "
+	    message(MESS_DEBUG, "Ignoring %s, because of %s "
 		    "ending\n", fname, tabooExts[i]);
 
 	    return 0;
