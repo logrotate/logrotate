@@ -12,6 +12,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <glob.h>
+#include <locale.h>
 
 #ifdef WITH_SELINUX
 #include <selinux/selinux.h>
@@ -364,8 +365,8 @@ static int copyTruncate(char *currLog, char *saveLog, struct stat *sb,
 #ifdef WITH_SELINUX
 	if (selinux_enabled) {
 	    security_context_t oldContext;
-	    if (fgetfilecon(fdcurr, &oldContext) >= 0) {
-		if (getfscreatecon(&prev_context) < 0) {
+	    if (fgetfilecon_raw(fdcurr, &oldContext) >= 0) {
+		if (getfscreatecon_raw(&prev_context) < 0) {
 		    message(MESS_ERROR,
 			    "getting default context: %s\n",
 			    strerror(errno));
@@ -374,7 +375,7 @@ static int copyTruncate(char *currLog, char *saveLog, struct stat *sb,
 			return 1;
 		    }
 		}
-		if (setfscreatecon(oldContext) < 0) {
+		if (setfscreatecon_raw(oldContext) < 0) {
 		    message(MESS_ERROR,
 			    "setting file context %s to %s: %s\n",
 			    saveLog, oldContext, strerror(errno));
@@ -399,7 +400,7 @@ static int copyTruncate(char *currLog, char *saveLog, struct stat *sb,
 	    createOutputFile(saveLog, O_WRONLY | O_CREAT | O_TRUNC, sb);
 #ifdef WITH_SELINUX
 	if (selinux_enabled) {
-	    setfscreatecon(prev_context);
+	    setfscreatecon_raw(prev_context);
 	    if (prev_context != NULL) {
 		freecon(prev_context);
 		prev_context = NULL;
@@ -755,8 +756,8 @@ int prerotateSingleLog(logInfo * log, int logNum, logState * state,
 #ifdef WITH_SELINUX
 	if (selinux_enabled) {
 	    security_context_t oldContext = NULL;
-	    if (getfilecon(log->files[logNum], &oldContext) > 0) {
-		if (getfscreatecon(&prev_context) < 0) {
+	    if (getfilecon_raw(log->files[logNum], &oldContext) > 0) {
+		if (getfscreatecon_raw(&prev_context) < 0) {
 		    message(MESS_ERROR,
 			    "getting default context: %s\n",
 			    strerror(errno));
@@ -765,7 +766,7 @@ int prerotateSingleLog(logInfo * log, int logNum, logState * state,
 			return 1;
 		    }
 		}
-		if (setfscreatecon(oldContext) < 0) {
+		if (setfscreatecon_raw(oldContext) < 0) {
 		    message(MESS_ERROR,
 			    "setting file context %s to %s: %s\n",
 			    log->files[logNum], oldContext,
@@ -911,6 +912,8 @@ int rotateSingleLog(logInfo * log, int logNum, logState * state,
 				      &sb);
 		if (fd < 0)
 		    hasErrors = 1;
+                else
+                    close(fd);
 	    }
 	}
 
@@ -955,7 +958,7 @@ int postrotateSingleLog(logInfo * log, int logNum, logState * state,
 
 #ifdef WITH_SELINUX
     if (selinux_enabled) {
-	setfscreatecon(prev_context);
+	setfscreatecon_raw(prev_context);
 	if (prev_context != NULL) {
 	    freecon(prev_context);
 	    prev_context = NULL;
@@ -1342,6 +1345,7 @@ int main(int argc, const char **argv)
     };
 
     logSetLevel(MESS_NORMAL);
+    setlocale (LC_ALL, "");
 
     optCon = poptGetContext("logrotate", argc, argv, options, 0);
     poptReadDefaultConfig(optCon, 1);
