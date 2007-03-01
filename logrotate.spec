@@ -1,15 +1,19 @@
-%if %{?WITH_SELINUX:0}%{!?WITH_SELINUX:1}
-%define WITH_SELINUX 1
-BuildRequires: libselinux-devel
-%endif
-Summary: Rotates, compresses, removes and mails system log files.
+Summary: Rotates, compresses, removes and mails system log files
 Name: logrotate
-Version: 3.7.4
-Release: 4
+Version: 3.7.5
+Release: 1
 License: GPL
 Group: System Environment/Base
-Source: logrotate-%{PACKAGE_VERSION}.tar.gz
-BuildRoot: %{_tmppath}/%{name}-%{version}.root
+# The source for this package was pulled from cvs.
+# Use the following commands to generate the tarball:
+#  export CVSROOT=:pserver:anonymous@rhlinux.redhat.com:/usr/local/CVS
+#  cvs login (hit return)
+#  cvs co logrotate
+#  cd logrotate
+#  make create-archive
+Source: logrotate-%{version}.tar.gz
+BuildRequires: libselinux-devel
+BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 %description
 The logrotate utility is designed to simplify the administration of
@@ -23,42 +27,74 @@ Install the logrotate package if you need a utility to deal with the
 log files on your system.
 
 %prep
-%setup
+%setup -q
 
 %build
-make RPM_OPT_FLAGS="$RPM_OPT_FLAGS -g" \
-%if %{WITH_SELINUX}
-	WITH_SELINUX=yes
-%endif
+make %{?_smp_mflags} RPM_OPT_FLAGS="$RPM_OPT_FLAGS" WITH_SELINUX=yes
 
 %install
 rm -rf $RPM_BUILD_ROOT
 make PREFIX=$RPM_BUILD_ROOT MANDIR=%{_mandir} install
-mkdir -p $RPM_BUILD_ROOT/etc/logrotate.d
-mkdir -p $RPM_BUILD_ROOT/etc/cron.daily
-mkdir -p $RPM_BUILD_ROOT/var/lib
+mkdir -p $RPM_BUILD_ROOT/%{_sysconfdir}/logrotate.d
+mkdir -p $RPM_BUILD_ROOT/%{_sysconfdir}/cron.daily
+mkdir -p $RPM_BUILD_ROOT/%{_localstatedir}/lib
 
-install -m 644 examples/logrotate-default $RPM_BUILD_ROOT/etc/logrotate.conf
-install -m 755 examples/logrotate.cron $RPM_BUILD_ROOT/etc/cron.daily/logrotate
-touch $RPM_BUILD_ROOT/var/lib/logrotate.status
+install -p -m 644 examples/logrotate-default $RPM_BUILD_ROOT/%{_sysconfdir}/logrotate.conf
+install -p -m 755 examples/logrotate.cron $RPM_BUILD_ROOT/%{_sysconfdir}/cron.daily/logrotate
+touch $RPM_BUILD_ROOT/%{_localstatedir}/lib/logrotate.status
 
 %clean
 rm -rf $RPM_BUILD_ROOT
 
 %files
 %defattr(-,root,root)
-%doc CHANGES
-%attr(0755, root, root) /usr/sbin/logrotate
+%doc CHANGES COPYING
+%attr(0755, root, root) %{_sbindir}/logrotate
 %attr(0644, root, root) %{_mandir}/man8/logrotate.8*
-%attr(0755, root, root) /etc/cron.daily/logrotate
-%attr(0644, root, root) %config(noreplace) /etc/logrotate.conf
-%attr(0755, root, root) %dir /etc/logrotate.d
-%attr(0644, root, root) %verify(not size md5 mtime) %config(noreplace) /var/lib/logrotate.status
+%attr(0755, root, root) %{_sysconfdir}/cron.daily/logrotate
+%attr(0644, root, root) %config(noreplace) %{_sysconfdir}/logrotate.conf
+%attr(0755, root, root) %dir %{_sysconfdir}/logrotate.d
+%attr(0644, root, root) %verify(not size md5 mtime) %config(noreplace) %{_localstatedir}/lib/logrotate.status
 
 %changelog
+* Thu Mar 01 2007 Peter Vrabec <pvrabec@redhat.com> 3.7.5-1
+- new upstream release.
+
+* Fri Feb 09 2007 Peter Vrabec <pvrabec@redhat.com> 3.7.4-13
+- another spec file fixes (#226104)
+
+* Thu Feb 08 2007 Peter Vrabec <pvrabec@redhat.com> 3.7.4-12
+- fix problem with compress_options_list (#227706)
+- fix spec file to meet Fedora standards (#226104)
+
+* Tue Jan 23 2007 Peter Vrabec <pvrabec@redhat.com> 3.7.4-11
+- logrotate won't stop if there are some errors in configuration
+  or glob failures (#166510, #182062)
+
+* Wed Jan 10 2007 Peter Vrabec <pvrabec@redhat.com> 3.7.4-10
+- fix some rpmlint issues
+
+* Tue Jan 09 2007 Peter Vrabec <pvrabec@redhat.com> 3.7.4-9
+- allow multibyte characters in readPath() (#122145)
+
+* Fri Jan 05 2007 Peter Vrabec <pvrabec@redhat.com> 3.7.4-8
+- "size" option was ignored in config files (#221341)
+
+* Sun Oct 01 2006 Jesse Keating <jkeating@redhat.com> - 3.7.4-7
+- rebuilt for unwind info generation, broken in gcc-4.1.1-21
+
+* Tue Sep 26 2006 Peter Vrabec <pvrabec@redhat.com> 3.7.4-6
+- fix leaking file descriptor (#205072)
+
+* Wed Aug 09 2006 Dan Walsh <dwalsh@redhat.com> 3.7.4-5
+- Use selinux raw functions
+
 * Mon Jul 24 2006 Peter Vrabec <pvrabec@redhat.com> 3.7.4-4
-- make error message, about ignoring certain config files, 
+- make error message, about ignoring certain config files,
   a debug message instead (#196052)
+
+* Wed Jul 12 2006 Jesse Keating <jkeating@redhat.com> - 3.7.4-3.1
+- rebuild
 
 * Tue Jun 13 2006 Peter Vrabec <pvrabec@redhat.com> 3.7.4-3
 - rename ENOSUP to ENOTSUP
@@ -67,10 +103,19 @@ rm -rf $RPM_BUILD_ROOT
 - clean up a couple of SELinux problems. Patch from Daniel J. Walsh.
 
 * Wed May 17 2006 Peter Vrabec <pvrabec@redhat.com> 3.7.4-1
-- add new "minsize" option
+- add new "minsize" option (#173088)
 
-* Tue Mar 28 2005 Peter Vrabec <pvrabec@redhat.com> 3.7.3-3
+* Tue Mar 28 2006 Peter Vrabec <pvrabec@redhat.com> 3.7.3-3
 - correct man page "extension" option description  (#185318)
+
+* Fri Feb 10 2006 Jesse Keating <jkeating@redhat.com> - 3.7.3-2.2.1
+- bump again for double-long bug on ppc(64)
+
+* Tue Feb 07 2006 Jesse Keating <jkeating@redhat.com> - 3.7.3-2.2
+- rebuilt for new gcc4.1 snapshot and glibc changes
+
+* Fri Dec 09 2005 Jesse Keating <jkeating@redhat.com>
+- rebuilt
 
 * Sun Nov 13 2005 Peter Vrabec <pvrabec@redhat.com> 3.7.3-2
 - fix_free_segfaults (#172918)
@@ -212,7 +257,7 @@ rm -rf $RPM_BUILD_ROOT
 - Apply various bugfix patches from the openwall people
 
 * Tue Jan 29 2002 Elliot Lee <sopwith@redhat.com> 3.6.2-1
-- Fix bug #55809 (include logrotate.status in %files)
+- Fix bug #55809 (include logrotate.status in "files")
 - Fix bug #58328 (incorrect error detection when reading state file)
 - Allow 'G' size specifier from bug #57242
 

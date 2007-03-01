@@ -114,7 +114,7 @@ co:
 cvstag:
 	cvs tag -cF $(CVSTAG) .
 
-archive: cvstag
+create-archive:
 	@rm -rf /tmp/logrotate-$(VERSION) /tmp/logrotate
 	@cd /tmp; cvs -d $(CVSROOT) export -r$(CVSTAG) logrotate; mv logrotate logrotate-$(VERSION)
 	@cd /tmp/logrotate-$(VERSION)
@@ -124,6 +124,8 @@ archive: cvstag
 	@rm -f /tmp/logrotate-$(VERSION).tar.gz
 	@echo " "
 	@echo "The final archive is ./logrotate-$(VERSION).tar.gz."
+
+archive: clean cvstag create-archive
 
 ifeq (.depend,$(wildcard .depend))
 include .depend
