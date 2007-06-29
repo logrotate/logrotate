@@ -31,7 +31,7 @@
 #endif
 
 static char *defTabooExts[] = { ".rpmsave", ".rpmorig", "~", ",v",
-    ".rpmnew", ".swp"
+    ".rpmnew", ".swp", ".cfsaved"
 };
 static int defTabooCount = sizeof(defTabooExts) / sizeof(char *);
 
@@ -432,6 +432,7 @@ int readAllConfigPaths(const char **paths, logInfo ** logsPtr,
 	/* uncompress_prog */ NULL,
 	/* compress_ext */ NULL,
 	/* flags */ LOG_FLAG_IFEMPTY,
+	/* shred_cycles */ 0,
 	/* createMode/Uid/Gid */ NO_MODE, NO_UID, NO_GID,
 	/* compress_options_list/count */ NULL, 0
     };
@@ -638,6 +639,14 @@ static int readConfigFile(const char *configFile, logInfo * defConfig,
 		newlog->flags &= ~LOG_FLAG_DELAYCOMPRESS;
 
 		*endtag = oldchar, start = endtag;
+		} else if (!strcmp(start, "shred")) {
+		newlog->flags |= LOG_FLAG_SHRED;
+
+		*endtag = oldchar, start = endtag;
+		} else if (!strcmp(start, "noshred")) { 
+		newlog->flags &= ~LOG_FLAG_SHRED;
+
+		*endtag = oldchar, start = endtag;
 	    } else if (!strcmp(start, "sharedscripts")) {
 		newlog->flags |= LOG_FLAG_SHAREDSCRIPTS;
 
@@ -833,7 +842,22 @@ static int readConfigFile(const char *configFile, logInfo * defConfig,
 		    *endtag = oldchar, start = endtag;
 		}
 #endif
-	    } else if (!strcmp(start, "daily")) {
+	    } else if (!strcmp(start, "shredcycles")) {
+		*endtag = oldchar, start = endtag;
+
+		if (!isolateValue(configFile, lineNum, "shred cycles", 
+				&start, &endtag)) {
+			oldchar = *endtag, *endtag = '\0';
+
+			newlog->shred_cycles = strtoul(start, &chptr, 0);
+			if (*chptr || newlog->shred_cycles < 0) {
+				message(MESS_ERROR, "%s:%d bad shred cycles '%s'\n",
+						configFile, lineNum, start);
+				return 1;
+			}
+			*endtag = oldchar, start = endtag;
+		}
+		} else if (!strcmp(start, "daily")) {
 		*endtag = oldchar, start = endtag;
 
 		newlog->criterium = ROT_DAYS;

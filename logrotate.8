@@ -326,7 +326,12 @@ overrides the \fBolddir\fR option).
 \fBnosharedscripts\fR
 Run \fBprerotate\fR and \fBpostrotate\fR scripts for every log file which
 is rotated (this is the default, and overrides the \fBsharedscripts\fR
-option).
+option). If the scripts exit with error, the remaining actions will
+not be executed for the affected log only.
+
+.TP
+\fBnoshred\fR
+Do not use \fBshred\fR when deleting old log files. See also \fBshred\fR. 
 
 .TP
 \fBnotifempty\fR
@@ -346,7 +351,8 @@ overriden by the \fBnoolddir\fR option.
 The lines between \fBpostrotate\fR and \fBendscript\fR (both of which
 must appear on lines by themselves) are executed after the log file is
 rotated. These directives may only appear inside of a log file definition.
-See \fBprerotate\fR as well.
+See \fBprerotate\fR as well. See \fBsharedscripts\fR and
+\fBnosharedscripts\fR for error handling.
 
 .TP
 \fBprerotate\fR/\fBendscript\fR
@@ -354,7 +360,8 @@ The lines between \fBprerotate\fR and \fBendscript\fR (both of which
 must appear on lines by themselves) are executed before the log file is
 rotated and only if the log will actually be rotated. These directives
 may only appear inside of a log file definition.  See \fBpostrotate\fR
-as well.
+as well.  See \fBsharedscripts\fR and \fBnosharedscripts\fR for error
+handling.
 
 .TP
 \fBfirstaction\fR/\fBendscript\fR
@@ -362,7 +369,8 @@ The lines between \fBfirstaction\fR and \fBendscript\fR (both of which
 must appear on lines by themselves) are executed once before all log
 files that match the wildcarded pattern are rotated, before prerotate script
 is run and only if at least one log will actually be rotated. These directives
-may only appear inside of a log file definition. See \fBlastaction\fR as well.
+may only appear inside of a log file definition. If the script exits
+with error, no further processing is done. See \fBlastaction\fR as well.
 
 .TP
 \fBlastaction\fR/\fBendscript\fR
@@ -370,7 +378,9 @@ The lines between \fBlastaction\fR and \fBendscript\fR (both of which
 must appear on lines by themselves) are executed once after all log
 files that match the wildcarded pattern are rotated, after postrotate script
 is run and only if at least one log is rotated. These directives may only
-appear inside of a log file definition. See \fBfirstaction\fR as well.
+appear inside of a log file definition. If the script exits with
+error, just an error message is shown (as this is the last
+action). See \fBfirstaction\fR as well.
 
 .TP
 \fBrotate \fIcount\fR
@@ -393,8 +403,20 @@ times for log file entries which match multiple files (such as the
 /var/log/news/* example). If \fBsharedscript\fR is specified, the scripts
 are only run once, no matter how many logs match the wildcarded pattern.
 However, if none of the logs in the pattern require rotating, the scripts
-will not be run at all. This option overrides the \fBnosharedscripts\fR
-option and implies \fBcreate\fR option.
+will not be run at all. If the scripts exit with error, the remaining
+actions will not be executed for any logs. This option overrides the
+\fBnosharedscripts\fR option and implies \fBcreate\fR option.
+
+.TP
+\fBshred\fR
+Delete log files using \fBshred\fR -u instead of unlink().  This should
+ensure that logs are not readable after their scheduled deletion; this is
+off by default.  See also \fBnoshred\fR. 
+
+.TP
+\fBshredcycles\fR \fIcount\fR
+Asks GNU \fBshred\fR to overwite log files \fBcount\fR times before 
+deletion.  Without this option, \fBshred\fR's default will be used.
 
 .TP
 \fBstart \fIcount\fR
