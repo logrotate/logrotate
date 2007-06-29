@@ -16,6 +16,7 @@
 #define LOG_FLAG_SHAREDSCRIPTS	(1 << 7)
 #define LOG_FLAG_COPY		(1 << 8)
 #define LOG_FLAG_DATEEXT	(1 << 9)
+#define LOG_FLAG_SHRED		(1 << 10)
 
 #define NO_MODE ((mode_t) -1)
 #define NO_UID  ((uid_t) -1)
@@ -44,6 +45,7 @@ typedef struct {
     char *uncompress_prog;
     char *compress_ext;
     int flags;
+	int shred_cycles;		/* if !=0, pass -n shred_cycles to GNU shred */
     mode_t createMode;		/* if any/all of these are -1, we use the */
     uid_t createUid;		/* attributes from the log file just rotated */
     gid_t createGid;

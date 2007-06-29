@@ -53,6 +53,8 @@ int debug = 0;
 char *mailCommand = DEFAULT_MAIL_COMMAND;
 time_t nowSecs = 0;
 
+static int shred_file(char * filename, logInfo *log);
+
 static int globerr(const char *pathname, int theerr)
 {
     message(MESS_ERROR, "error accessing %s: %s\n", pathname,
@@ -149,7 +151,7 @@ static int runScript(char *logfn, char *script)
     }
 
     if (!fork()) {
-	execl("/bin/sh", "sh", "-c", script, NULL);
+	execl("/bin/sh", "sh", "-c", script, script, logfn, NULL);
 	exit(1);
     }
 
@@ -188,11 +190,54 @@ int createOutputFile(char *fileName, int flags, struct stat *sb)
     return fd;
 }
 
-static int removeLogFile(char *name)
+#define SHRED_CALL "shred -u "
+#define SHRED_COUNT_FLAG "-n "
+#define DIGITS 10
+/* unlink, but try to call shred from GNU fileutils */
+static int shred_file(char * filename, logInfo *log)
+{
+	int len, ret;
+	char *cmd;
+	char count[DIGITS];    /*  that's a lot of shredding :)  */
+
+	if (!(log->flags & LOG_FLAG_SHRED)) {
+		return unlink(filename);
+	}
+
+	len = strlen(filename) + strlen(SHRED_CALL);
+	len += strlen(SHRED_COUNT_FLAG) + DIGITS;
+	cmd = malloc(len);
+
+	if (!cmd) {
+		message(MESS_ERROR, "malloc error while shredding");
+		return unlink(filename);
+	}
+	strcpy(cmd, SHRED_CALL);
+	if (log->shred_cycles != 0) {
+		strcat(cmd, SHRED_COUNT_FLAG);
+		snprintf(count, DIGITS - 1, "%d", log->shred_cycles);
+		strcat(count, " ");
+		strcat(cmd, count);
+	}
+	strcat(cmd, filename);
+	ret = system(cmd);
+	free(cmd);
+	if (ret != 0) {
+		message(MESS_ERROR, "Failed to shred %s\n, trying unlink", filename);
+		if (ret != -1) {
+			message(MESS_NORMAL, "Shred returned %d\n", ret);
+		}
+		return unlink(filename);
+	} else {
+		return ret;
+	}
+}
+
+static int removeLogFile(char *name, logInfo *log)
 {
     message(MESS_DEBUG, "removing old log %s\n", name);
 
-    if (!debug && unlink(name)) {
+    if (!debug && shred_file(name, log)) {
 	message(MESS_ERROR, "Failed to remove old log %s: %s\n",
 		name, strerror(errno));
 	return 1;
@@ -255,7 +300,7 @@ static int compressLogFile(char *name, logInfo * log, struct stat *sb)
 	return 1;
     }
 
-    unlink(name);
+    shred_file(name, log);
 
     return 0;
 }
@@ -697,7 +742,7 @@ int prerotateSingleLog(logInfo * log, int logNum, logState * state,
 						   mailCommand, logNum,
 						   log);
 			    if (!hasErrors)
-				hasErrors = removeLogFile(mailFilename);
+				hasErrors = removeLogFile(mailFilename, log);
 			}
 			mail_out = i;
 		    }
@@ -737,7 +782,7 @@ int prerotateSingleLog(logInfo * log, int logNum, logState * state,
 			    mailLogWrapper(mailFilename, mailCommand,
 					   logNum, log);
 		    if (!hasErrors)
-			hasErrors = removeLogFile(mailFilename);
+			hasErrors = removeLogFile(mailFilename, log);
 		}
 	    }
 	}
@@ -954,7 +999,7 @@ int postrotateSingleLog(logInfo * log, int logNum, logState * state,
     }
 
     if (!hasErrors && rotNames->disposeName)
-	hasErrors = removeLogFile(rotNames->disposeName);
+	hasErrors = removeLogFile(rotNames->disposeName, log);
 
 #ifdef WITH_SELINUX
     if (selinux_enabled) {
@@ -1043,6 +1088,8 @@ int rotateLogSet(logInfo * log, struct stateSet *sip, int force)
 		message(MESS_ERROR, "error running first action script "
 			"for %s\n", log->pattern);
 		hasErrors = 1;
+		/* finish early, firstaction failed, affects all logs in set */
+		return hasErrors;
 	    }
 	}
     }
@@ -1067,16 +1114,25 @@ int rotateLogSet(logInfo * log, struct stateSet *sip, int force)
 	    hasErrors |= logHasErrors[i];
 	}
 
-	if (log->pre) {
+	if (log->pre
+	    && (! ( (logHasErrors[j] && !(log->flags & LOG_FLAG_SHAREDSCRIPTS))
+		   || (hasErrors && (log->flags & LOG_FLAG_SHAREDSCRIPTS)) ) )) {
 	    if (!numRotated) {
 		message(MESS_DEBUG, "not running prerotate script, "
 			"since no logs will be rotated\n");
 	    } else {
 		message(MESS_DEBUG, "running prerotate script\n");
 		if (runScript(log->pattern, log->pre)) {
-		    message(MESS_ERROR,
-			    "error running shared prerotate script "
-			    "for %s\n", log->pattern);
+		    if (log->flags & LOG_FLAG_SHAREDSCRIPTS)
+			message(MESS_ERROR,
+				"error running shared prerotate script "
+				"for '%s'\n", log->pattern);
+		    else {
+			message(MESS_ERROR,
+				"error running non-shared prerotate script "
+				"for %s of '%s'\n", log->files[j], log->pattern);
+		    }
+		    logHasErrors[j] = 1;
 		    hasErrors = 1;
 		}
 	    }
@@ -1085,22 +1141,33 @@ int rotateLogSet(logInfo * log, struct stateSet *sip, int force)
 	for (i = j;
 	     ((log->flags & LOG_FLAG_SHAREDSCRIPTS) && i < log->numFiles)
 	     || (!(log->flags & LOG_FLAG_SHAREDSCRIPTS) && i == j); i++) {
-	    if (!logHasErrors[i]) {
+	    if (! ( (logHasErrors[i] && !(log->flags & LOG_FLAG_SHAREDSCRIPTS))
+		   || (hasErrors && (log->flags & LOG_FLAG_SHAREDSCRIPTS)) ) ) {
 		logHasErrors[i] |=
 		    rotateSingleLog(log, i, state[i], rotNames[i]);
 		hasErrors |= logHasErrors[i];
 	    }
 	}
 
-	if (log->post) {
+	if (log->post
+	    && (! ( (logHasErrors[j] && !(log->flags & LOG_FLAG_SHAREDSCRIPTS))
+		   || (hasErrors && (log->flags & LOG_FLAG_SHAREDSCRIPTS)) ) )) {
 	    if (!numRotated) {
 		message(MESS_DEBUG, "not running postrotate script, "
 			"since no logs were rotated\n");
 	    } else {
 		message(MESS_DEBUG, "running postrotate script\n");
 		if (runScript(log->pattern, log->post)) {
-		    message(MESS_ERROR, "error running postrotate script "
-			    "for %s\n", log->pattern);
+		    if (log->flags & LOG_FLAG_SHAREDSCRIPTS)
+			message(MESS_ERROR,
+				"error running shared postrotate script "
+				"for '%s'\n", log->pattern);
+		    else {
+			message(MESS_ERROR,
+				"error running non-shared postrotate script "
+				"for %s of '%s'\n", log->files[j], log->pattern);
+		    }
+		    logHasErrors[j] = 1;
 		    hasErrors = 1;
 		}
 	    }
@@ -1109,7 +1176,8 @@ int rotateLogSet(logInfo * log, struct stateSet *sip, int force)
 	for (i = j;
 	     ((log->flags & LOG_FLAG_SHAREDSCRIPTS) && i < log->numFiles)
 	     || (!(log->flags & LOG_FLAG_SHAREDSCRIPTS) && i == j); i++) {
-	    if (!logHasErrors[i]) {
+	    if (! ( (logHasErrors[i] && !(log->flags & LOG_FLAG_SHAREDSCRIPTS))
+		   || (hasErrors && (log->flags & LOG_FLAG_SHAREDSCRIPTS)) ) ) {
 		logHasErrors[i] |=
 		    postrotateSingleLog(log, i, state[i], rotNames[i]);
 		hasErrors |= logHasErrors[i];
