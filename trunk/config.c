@@ -15,6 +15,7 @@
 #include <unistd.h>
 #include <assert.h>
 #include <wchar.h>
+#include <wctype.h>
 
 #include "basenames.h"
 #include "log.h"
@@ -194,8 +195,6 @@ static void free_2d_array(char **array, int lines_count)
 
 static void copyLogInfo(logInfo * to, logInfo * from)
 {
-    int i;
-
     memset(to, 0, sizeof(*to));
     if (from->oldDir)
 	to->oldDir = strdup(from->oldDir);
@@ -481,7 +480,7 @@ static int readConfigFile(const char *configFile, logInfo * defConfig,
     int fd;
     char *buf, *endtag;
     char oldchar, foo;
-    int length;
+    off_t length;
     int lineNum = 1;
     int multiplier;
     int i, j, k;
@@ -526,12 +525,11 @@ static int readConfigFile(const char *configFile, logInfo * defConfig,
 	return 0;
     }
 
-    length = lseek(fd, 0, SEEK_END);
-    lseek(fd, 0, SEEK_SET);
+    length = sb.st_size;
 
     buf = alloca(length + 2);
     if (!buf) {
-	message(MESS_ERROR, "alloca() of %d bytes failed\n", length);
+	message(MESS_ERROR, "alloca() of %d bytes failed\n", (int) length);
 	close(fd);
 	return 1;
     }

@@ -119,7 +119,7 @@ static logState *findState(const char *fn, struct stateSet *sip)
 	    break;
 
     if (i == numStates) {
-	i = numStates++;
+	numStates++;
 	states = realloc(states, sizeof(*states) * numStates);
 	states[i].fn = strdup(fn);
 	memset(&states[i].lastRotated, 0, sizeof(states[i].lastRotated));
