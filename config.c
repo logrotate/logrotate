@@ -16,6 +16,7 @@
 #include <assert.h>
 #include <wchar.h>
 #include <wctype.h>
+#include <fnmatch.h>
 
 #include "basenames.h"
 #include "log.h"
@@ -32,7 +33,7 @@
 #endif
 
 static char *defTabooExts[] = { ".rpmsave", ".rpmorig", "~", ",v",
-    ".rpmnew", ".swp", ".cfsaved"
+    ".rpmnew", ".swp", ".cfsaved", ".rhn-cfg-tmp-*"
 };
 static int defTabooCount = sizeof(defTabooExts) / sizeof(char *);
 
@@ -157,6 +158,7 @@ static char *readAddress(const char *configFile, int lineNum, char *key,
 static int checkFile(const char *fname)
 {
     int i;
+	char pattern[PATH_MAX];
 
     /* Check if fname is '.' or '..'; if so, return false */
     if (fname[0] == '.' && (!fname[1] || (fname[1] == '.' && !fname[2])))
@@ -165,13 +167,13 @@ static int checkFile(const char *fname)
     /* Check if fname is ending in a taboo-extension; if so, return
        false */
     for (i = 0; i < tabooCount; i++) {
-	if (!strcmp(fname + strlen(fname) - strlen(tabooExts[i]),
-		    tabooExts[i])) {
-	    message(MESS_DEBUG, "Ignoring %s, because of %s "
-		    "ending\n", fname, tabooExts[i]);
-
-	    return 0;
-	}
+        snprintf(pattern, PATH_MAX - 1, "*%s", tabooExts[i]);
+        if (!fnmatch(pattern, fname, 0))
+        {
+            message(MESS_DEBUG, "Ignoring %s, because of %s "
+                "ending\n", fname, tabooExts[i]);
+            return 0;
+        }
     }
 
     /* All checks have been passed; return true */
