@@ -8,6 +8,9 @@ rotate 4
 # create new (empty) log files after rotating old ones
 create
 
+# use date as a suffix of the rotated file
+dateext
+
 # uncomment this if you want your log files compressed
 #compress
 

@@ -1,8 +1,9 @@
 3.7.5 -> 3.7.6
 	- patches from Leonardo Chiquitto <leonardo@iken.com.br> that
 	  fix compile warnings
-	- examples/logrotate-default: add btmp rotation
+	- examples/logrotate-default: add btmp rotation, dateext
 	- update man page
+	- tabooext honor wildcards
 
 3.7.1 -> 3.7.5
 	- import Fedora patches
