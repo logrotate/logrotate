@@ -1,3 +1,9 @@
+3.7.5 -> 3.7.6
+	- patches from Leonardo Chiquitto <leonardo@iken.com.br> that
+	  fix compile warnings
+	- examples/logrotate-default: add btmp rotation
+	- update man page
+
 3.7.1 -> 3.7.5
 	- import Fedora patches
 	- add option to use shred for deleting files, patch by

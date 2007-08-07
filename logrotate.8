@@ -57,7 +57,7 @@ and mail it to the recipient. The default mail command is \fB/bin/mail
 \fB-s, -\-state <statefile>\fR
 Tells \fBlogrotate\fR to use an alternate state file.  This is useful
 if logrotate is being run as a different user for various sets of
-log files.  The default state file is \fI/var/lib/logrotate/status\fR.
+log files.  The default state file is \fI/var/lib/logrotate.status\fR.
 
 .TP
 \fB-\-usage\fR
@@ -123,11 +123,11 @@ The next section defines the parameters for both
 They are rotated whenever it grows over 100k in size, and the old logs
 files are mailed (uncompressed) to www@my.org after going through 5
 rotations, rather then being removed. The \fBsharedscripts\fR means that
-the \fBpostrotate\fR script will only be run once, not once for each
-log which is rotated. Note that the double quotes around the first filename
-at the beginning of this section allows logrotate to rotate logs with
-spaces in the name. Normal shell quoting rules apply, with ', ", and \\
-characters supported.
+the \fBpostrotate\fR script will only be run once (after the old logs have 
+been compressed), not once for each log which is rotated. Note that the double
+quotes around the first filename at the beginning of this section allows
+logrotate to rotate logs with spaces in the name. Normal shell quoting rules
+apply, with ', ", and \\ characters supported.
 
 The last section defines the parameters for all of the files in
 \fI/var/log/news\fR. Each file is rotated on a monthly basis.  This is
