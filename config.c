@@ -432,6 +432,7 @@ int readAllConfigPaths(const char **paths, logInfo ** logsPtr,
 	/* compress_prog */ NULL,
 	/* uncompress_prog */ NULL,
 	/* compress_ext */ NULL,
+	/* dateformat */ NULL,
 	/* flags */ LOG_FLAG_IFEMPTY,
 	/* shred_cycles */ 0,
 	/* createMode/Uid/Gid */ NO_MODE, NO_UID, NO_GID,
@@ -685,6 +686,20 @@ static int readConfigFile(const char *configFile, logInfo * defConfig,
 		*endtag = oldchar, start = endtag;
 	    } else if (!strcmp(start, "nodateext")) {
 		newlog->flags &= ~LOG_FLAG_DATEEXT;
+		
+		*endtag = oldchar, start = endtag;
+	    } else if (!strcmp(start, "dateformat")) {
+		*endtag = oldchar, start = endtag;
+		
+		endtag = start;
+		while (*endtag != '\n')
+		    endtag++;
+		while (isspace(*endtag))
+		    endtag--;
+		endtag++;
+		oldchar = *endtag, *endtag = '\0';
+
+		newlog->dateformat = strdup(start);
 
 		*endtag = oldchar, start = endtag;
 	    } else if (!strcmp(start, "noolddir")) {

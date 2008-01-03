@@ -96,6 +96,7 @@ static void free_logInfo(logInfo ** logsPtr, int *numLogsPtr)
 	freeLogItem(compress_prog);
 	freeLogItem(uncompress_prog);
 	freeLogItem(compress_ext);
+	freeLogItem(dateformat);
 	freeLogItem(compress_options_list);
 
 	for (j = 0; j < log->numFiles; j++)
@@ -599,6 +600,9 @@ int prerotateSingleLog(logInfo * log, int logNum, logState * state,
     size_t alloc_size;
     int rotateCount = log->rotateCount ? log->rotateCount : 1;
     int logStart = (log->logStart == -1) ? 1 : log->logStart;
+#define DATEEXT_LEN 30
+	char dext_str[DATEEXT_LEN];
+	char *dext;
 
     if (!state->doRotate)
 	return 0;
@@ -653,6 +657,16 @@ int prerotateSingleLog(logInfo * log, int logNum, logState * state,
 	free(rotNames->baseName);
 	rotNames->baseName = tempstr;
     }
+	/* Create the extension according to dateformat */
+	if (log->dateformat) {
+		strftime(dext_str, sizeof(dext_str), log->dateformat, &now);
+	} else {
+		strftime(dext_str, sizeof(dext_str), "%Y%m%d", &now);
+	}
+	dext = dext_str;
+	while (*dext == ' ')
+		dext++;
+	message(MESS_DEBUG, "dext '%s'\n", dext);
 
     /* First compress the previous log when necessary */
     if (log->flags & LOG_FLAG_COMPRESS &&
@@ -762,9 +776,8 @@ int prerotateSingleLog(logInfo * log, int logNum, logState * state,
 	    rotNames->disposeName = NULL;
 	}
 	/* firstRotated is most recently created/compressed rotated log */
-	sprintf(rotNames->firstRotated, "%s/%s-%04d%02d%02d%s%s",
-		rotNames->dirName, rotNames->baseName, now.tm_year + 1900,
-		now.tm_mon + 1, now.tm_mday, fileext, compext);
+	sprintf(rotNames->firstRotated, "%s/%s-%s%s%s",
+		rotNames->dirName, rotNames->baseName, dext, fileext, compext);
 	globfree(&globResult);
 	free(glob_pattern);
     } else {
@@ -864,9 +877,8 @@ int prerotateSingleLog(logInfo * log, int logNum, logState * state,
 	    alloca(strlen(rotNames->dirName) + strlen(rotNames->baseName) +
 		   strlen(fileext) + strlen(compext) + 30);
 	struct stat fst_buf;
-	sprintf(rotNames->finalName, "%s/%s-%04d%02d%02d%s",
-		rotNames->dirName, rotNames->baseName, now.tm_year + 1900,
-		now.tm_mon + 1, now.tm_mday, fileext);
+	sprintf(rotNames->finalName, "%s/%s-%s%s",
+		rotNames->dirName, rotNames->baseName, dext, fileext);
 	sprintf(destFile, "%s%s", rotNames->finalName, compext);
 	if (!stat(destFile, &fst_buf)) {
 	    message(MESS_DEBUG,

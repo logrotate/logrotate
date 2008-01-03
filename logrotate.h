@@ -44,6 +44,7 @@ typedef struct {
     char *compress_prog;
     char *uncompress_prog;
     char *compress_ext;
+	char *dateformat;		/* specify format for strftime (for dateext) */
     int flags;
 	int shred_cycles;		/* if !=0, pass -n shred_cycles to GNU shred */
     mode_t createMode;		/* if any/all of these are -1, we use the */
