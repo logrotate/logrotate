@@ -412,6 +412,7 @@ static int copyTruncate(char *currLog, char *saveLog, struct stat *sb,
 	if (selinux_enabled) {
 	    security_context_t oldContext;
 	    if (fgetfilecon_raw(fdcurr, &oldContext) >= 0) {
+		message(MESS_DEBUG, "got old context %s\n", oldContext);
 		if (getfscreatecon_raw(&prev_context) < 0) {
 		    message(MESS_ERROR,
 			    "getting default context: %s\n",
@@ -421,6 +422,7 @@ static int copyTruncate(char *currLog, char *saveLog, struct stat *sb,
 			return 1;
 		    }
 		}
+		message(MESS_DEBUG, "set the new context to the old %s\n", oldContext);
 		if (setfscreatecon_raw(oldContext) < 0) {
 		    message(MESS_ERROR,
 			    "setting file context %s to %s: %s\n",
@@ -430,6 +432,7 @@ static int copyTruncate(char *currLog, char *saveLog, struct stat *sb,
 			return 1;
 		    }
 		}
+		message(MESS_DEBUG, "set default create context\n");
 		freecon(oldContext);
 	    } else {
 		    if (errno != ENOTSUP) {
@@ -446,6 +449,7 @@ static int copyTruncate(char *currLog, char *saveLog, struct stat *sb,
 	    createOutputFile(saveLog, O_WRONLY | O_CREAT | O_TRUNC, sb);
 #ifdef WITH_SELINUX
 	if (selinux_enabled) {
+		message(MESS_DEBUG, "set fscreate context %s\n", prev_context);
 	    setfscreatecon_raw(prev_context);
 	    if (prev_context != NULL) {
 		freecon(prev_context);
@@ -666,7 +670,6 @@ int prerotateSingleLog(logInfo * log, int logNum, logState * state,
 	dext = dext_str;
 	while (*dext == ' ')
 		dext++;
-	message(MESS_DEBUG, "dext '%s'\n", dext);
 
     /* First compress the previous log when necessary */
     if (log->flags & LOG_FLAG_COMPRESS &&
@@ -911,6 +914,9 @@ int rotateSingleLog(logInfo * log, int logNum, logState * state,
     int hasErrors = 0;
     struct stat sb;
     int fd;
+#ifdef WITH_SELINUX
+	security_context_t savedContext;
+#endif
 
     if (!state->doRotate)
 	return 0;
@@ -918,9 +924,52 @@ int rotateSingleLog(logInfo * log, int logNum, logState * state,
     if (!hasErrors) {
 
 	if (!(log->flags & (LOG_FLAG_COPYTRUNCATE | LOG_FLAG_COPY))) {
-	    message(MESS_DEBUG, "renaming %s to %s\n", log->files[logNum],
-		    rotNames->finalName);
+#ifdef WITH_SELINUX
+		if (selinux_enabled) {
+			security_context_t oldContext;
+			int fdcurr = -1;
 
+			if ((fdcurr = open(log->files[logNum], O_RDWR)) < 0) {
+				message(MESS_ERROR, "error opening %s: %s\n",
+						log->files[logNum],
+					strerror(errno));
+				return 1;
+			}
+			if (fgetfilecon_raw(fdcurr, &oldContext) >= 0) {
+				if (getfscreatecon_raw(&savedContext) < 0) {
+					message(MESS_ERROR,
+						"getting default context: %s\n",
+						strerror(errno));
+					if (selinux_enforce) {
+						freecon(oldContext);
+						return 1;
+					}
+				}
+				if (setfscreatecon_raw(oldContext) < 0) {
+					message(MESS_ERROR,
+						"setting file context %s to %s: %s\n",
+						log->files[logNum], oldContext, strerror(errno));
+					if (selinux_enforce) {
+					freecon(oldContext);
+					return 1;
+					}
+				}
+				message(MESS_DEBUG, "fscreate context set to %s\n",
+						oldContext);
+				freecon(oldContext);
+			} else {
+				if (errno != ENOTSUP) {
+					message(MESS_ERROR, "getting file context %s: %s\n",
+						log->files[logNum], strerror(errno));
+					if (selinux_enforce) {
+						return 1;
+					}
+				}
+			}
+		}
+#endif
+		message(MESS_DEBUG, "renaming %s to %s\n", log->files[logNum],
+		    rotNames->finalName);
 	    if (!debug && !hasErrors &&
 		rename(log->files[logNum], rotNames->finalName)) {
 		message(MESS_ERROR, "failed to rename %s to %s: %s\n",
@@ -960,19 +1009,28 @@ int rotateSingleLog(logInfo * log, int logNum, logState * state,
 	    else
 		sb.st_mode = log->createMode;
 
-	    message(MESS_DEBUG, "creating new log mode = 0%o uid = %d "
-		    "gid = %d\n", (unsigned int) sb.st_mode,
+	    message(MESS_DEBUG, "creating new %s mode = 0%o uid = %d "
+		    "gid = %d\n", log->files[logNum], (unsigned int) sb.st_mode,
 		    (int) sb.st_uid, (int) sb.st_gid);
 
 	    if (!debug) {
-		fd = createOutputFile(log->files[logNum], O_CREAT | O_RDWR,
-				      &sb);
-		if (fd < 0)
-		    hasErrors = 1;
-                else
-                    close(fd);
+			fd = createOutputFile(log->files[logNum], O_CREAT | O_RDWR,
+						  &sb);
+			if (fd < 0)
+				hasErrors = 1;
+			else
+				close(fd);
 	    }
 	}
+#ifdef WITH_SELINUX
+	if (selinux_enabled) {
+	    setfscreatecon_raw(savedContext);
+	    if (prev_context != NULL) {
+			freecon(prev_context);
+			prev_context = NULL;
+	    }
+	}
+#endif
 
 	if (!hasErrors
 	    && log->flags & (LOG_FLAG_COPYTRUNCATE | LOG_FLAG_COPY))
