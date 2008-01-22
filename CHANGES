@@ -4,6 +4,7 @@
 	- examples/logrotate-default: add btmp rotation, dateext
 	- update man page
 	- tabooext honor wildcards
+	- fix selinux support with dateext
 
 3.7.1 -> 3.7.5
 	- import Fedora patches
