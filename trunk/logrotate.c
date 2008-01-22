@@ -418,8 +418,10 @@ static int copyTruncate(char *currLog, char *saveLog, struct stat *sb,
 			    "getting default context: %s\n",
 			    strerror(errno));
 		    if (selinux_enforce) {
-			freecon(oldContext);
-			return 1;
+				if (oldContext) {
+					freecon(oldContext);
+				}
+				return 1;
 		    }
 		}
 		message(MESS_DEBUG, "set the new context to the old %s\n", oldContext);
@@ -428,12 +430,16 @@ static int copyTruncate(char *currLog, char *saveLog, struct stat *sb,
 			    "setting file context %s to %s: %s\n",
 			    saveLog, oldContext, strerror(errno));
 		    if (selinux_enforce) {
-			freecon(oldContext);
-			return 1;
+				if (oldContext) {
+					freecon(oldContext);
+				}
+				return 1;
 		    }
 		}
 		message(MESS_DEBUG, "set default create context\n");
-		freecon(oldContext);
+		if (oldContext) {
+			freecon(oldContext);
+		}
 	    } else {
 		    if (errno != ENOTSUP) {
 			    message(MESS_ERROR, "getting file context %s: %s\n",
@@ -818,26 +824,32 @@ int prerotateSingleLog(logInfo * log, int logNum, logState * state,
 	if (selinux_enabled) {
 	    security_context_t oldContext = NULL;
 	    if (getfilecon_raw(log->files[logNum], &oldContext) > 0) {
-		if (getfscreatecon_raw(&prev_context) < 0) {
-		    message(MESS_ERROR,
-			    "getting default context: %s\n",
-			    strerror(errno));
-		    if (selinux_enforce) {
-			freecon(oldContext);
-			return 1;
-		    }
-		}
-		if (setfscreatecon_raw(oldContext) < 0) {
-		    message(MESS_ERROR,
-			    "setting file context %s to %s: %s\n",
-			    log->files[logNum], oldContext,
-			    strerror(errno));
-		    if (selinux_enforce) {
-			freecon(oldContext);
-			return 1;
-		    }
-		}
-		freecon(oldContext);
+			if (getfscreatecon_raw(&prev_context) < 0) {
+				message(MESS_ERROR,
+					"getting default context: %s\n",
+					strerror(errno));
+				if (selinux_enforce) {
+					if (oldContext) {
+						freecon(oldContext);
+					}
+					return 1;
+				}
+			}
+			if (setfscreatecon_raw(oldContext) < 0) {
+				message(MESS_ERROR,
+					"setting file context %s to %s: %s\n",
+					log->files[logNum], oldContext,
+					strerror(errno));
+				if (selinux_enforce) {
+					if (oldContext) {
+						freecon(oldContext);
+					}
+					return 1;
+				}
+			}
+			if (oldContext) {
+				freecon(oldContext);
+			}
 	    } else {
 		if (errno != ENOENT && errno != ENOTSUP) {
 			message(MESS_ERROR, "getting file context %s: %s\n",
@@ -915,7 +927,7 @@ int rotateSingleLog(logInfo * log, int logNum, logState * state,
     struct stat sb;
     int fd;
 #ifdef WITH_SELINUX
-	security_context_t savedContext;
+	security_context_t savedContext = NULL;
 #endif
 
     if (!state->doRotate)
@@ -926,7 +938,7 @@ int rotateSingleLog(logInfo * log, int logNum, logState * state,
 	if (!(log->flags & (LOG_FLAG_COPYTRUNCATE | LOG_FLAG_COPY))) {
 #ifdef WITH_SELINUX
 		if (selinux_enabled) {
-			security_context_t oldContext;
+			security_context_t oldContext = NULL;
 			int fdcurr = -1;
 
 			if ((fdcurr = open(log->files[logNum], O_RDWR)) < 0) {
@@ -941,7 +953,9 @@ int rotateSingleLog(logInfo * log, int logNum, logState * state,
 						"getting default context: %s\n",
 						strerror(errno));
 					if (selinux_enforce) {
-						freecon(oldContext);
+						if (oldContext) {
+							freecon(oldContext);
+						}
 						return 1;
 					}
 				}
@@ -950,13 +964,17 @@ int rotateSingleLog(logInfo * log, int logNum, logState * state,
 						"setting file context %s to %s: %s\n",
 						log->files[logNum], oldContext, strerror(errno));
 					if (selinux_enforce) {
-					freecon(oldContext);
-					return 1;
+						if (oldContext) {
+							freecon(oldContext);
+						}
+						return 1;
 					}
 				}
 				message(MESS_DEBUG, "fscreate context set to %s\n",
 						oldContext);
-				freecon(oldContext);
+				if (oldContext) {
+					freecon(oldContext);
+				}
 			} else {
 				if (errno != ENOTSUP) {
 					message(MESS_ERROR, "getting file context %s: %s\n",
@@ -1025,9 +1043,9 @@ int rotateSingleLog(logInfo * log, int logNum, logState * state,
 #ifdef WITH_SELINUX
 	if (selinux_enabled) {
 	    setfscreatecon_raw(savedContext);
-	    if (prev_context != NULL) {
-			freecon(prev_context);
-			prev_context = NULL;
+	    if (savedContext != NULL) {
+			freecon(savedContext);
+			savedContext = NULL;
 	    }
 	}
 #endif
