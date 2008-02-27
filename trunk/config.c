@@ -157,27 +157,27 @@ static char *readAddress(const char *configFile, int lineNum, char *key,
 
 static int checkFile(const char *fname)
 {
-    int i;
+	int i;
 	char pattern[PATH_MAX];
 
-    /* Check if fname is '.' or '..'; if so, return false */
-    if (fname[0] == '.' && (!fname[1] || (fname[1] == '.' && !fname[2])))
+	/* Check if fname is '.' or '..'; if so, return false */
+	if (fname[0] == '.' && (!fname[1] || (fname[1] == '.' && !fname[2])))
 	return 0;
 
-    /* Check if fname is ending in a taboo-extension; if so, return
-       false */
-    for (i = 0; i < tabooCount; i++) {
-        snprintf(pattern, PATH_MAX - 1, "*%s", tabooExts[i]);
-        if (!fnmatch(pattern, fname, 0))
-        {
-            message(MESS_DEBUG, "Ignoring %s, because of %s "
-                "ending\n", fname, tabooExts[i]);
-            return 0;
-        }
-    }
+	/* Check if fname is ending in a taboo-extension; if so, return false */
+	for (i = 0; i < tabooCount; i++) {
+		snprintf(pattern, PATH_MAX, "*%s", tabooExts[i]);
+		pattern[PATH_MAX - 1] = '\0';
+		if (!fnmatch(pattern, fname, 0))
+		{
+			message(MESS_DEBUG, "Ignoring %s, because of %s ending\n",
+					fname, tabooExts[i]);
+			return 0;
+		}
+	}
 
-    /* All checks have been passed; return true */
-    return 1;
+	/* All checks have been passed; return true */
+	return 1;
 }
 
 /* Used by qsort to sort filelist */
