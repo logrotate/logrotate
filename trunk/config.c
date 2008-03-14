@@ -166,8 +166,7 @@ static int checkFile(const char *fname)
 
 	/* Check if fname is ending in a taboo-extension; if so, return false */
 	for (i = 0; i < tabooCount; i++) {
-		snprintf(pattern, PATH_MAX, "*%s", tabooExts[i]);
-		pattern[PATH_MAX - 1] = '\0';
+		snprintf(pattern, sizeof(pattern), "*%s", tabooExts[i]);
 		if (!fnmatch(pattern, fname, 0))
 		{
 			message(MESS_DEBUG, "Ignoring %s, because of %s ending\n",
