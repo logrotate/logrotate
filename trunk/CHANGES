@@ -1,3 +1,8 @@
+3.7.6 ->
+	- dateformat
+	- fix possible buffer overflows in strings handling
+	- various minor bugfixes
+
 3.7.5 -> 3.7.6
 	- patches from Leonardo Chiquitto <leonardo@iken.com.br> that
 	  fix compile warnings
