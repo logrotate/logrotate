@@ -188,6 +188,7 @@ int createOutputFile(char *fileName, int flags, struct stat *sb)
 	close(fd);
 	return -1;
     }
+
     return fd;
 }
 
@@ -603,15 +604,16 @@ int prerotateSingleLog(logInfo * log, int logNum, logState * state,
     char *compext = "";
     char *fileext = "";
     int hasErrors = 0;
-    int i;
+    int i, j;
     char *glob_pattern;
     glob_t globResult;
     int rc;
-    size_t alloc_size;
     int rotateCount = log->rotateCount ? log->rotateCount : 1;
     int logStart = (log->logStart == -1) ? 1 : log->logStart;
-#define DATEEXT_LEN 30
+#define DATEEXT_LEN 64
 	char dext_str[DATEEXT_LEN];
+	char dformat[DATEEXT_LEN];
+	char dext_pattern[DATEEXT_LEN * 2];
 	char *dext;
 
     if (!state->doRotate)
@@ -642,13 +644,9 @@ int prerotateSingleLog(logInfo * log, int logNum, logState * state,
 
     rotNames->baseName = strdup(ourBaseName(log->files[logNum]));
 
-    alloc_size = strlen(rotNames->dirName) + strlen(rotNames->baseName) +
-	strlen(log->files[logNum]) + strlen(fileext) +
-	strlen(compext) + 18;
-
-    oldName = alloca(alloc_size);
-    newName = alloca(alloc_size);
-    rotNames->disposeName = malloc(alloc_size);
+    oldName = alloca(PATH_MAX);
+    newName = alloca(PATH_MAX);
+    rotNames->disposeName = malloc(PATH_MAX);
 
     if (log->extension &&
 	strncmp(&
@@ -667,34 +665,94 @@ int prerotateSingleLog(logInfo * log, int logNum, logState * state,
 	free(rotNames->baseName);
 	rotNames->baseName = tempstr;
     }
-	/* Create the extension according to dateformat */
+	
+	/* Allow only %Y %d %m and create valid strftime format string
+	 * Construct the glob pattern corresponding to the date format */
+	dext_str[0] = '\0';
 	if (log->dateformat) {
-		strftime(dext_str, sizeof(dext_str), log->dateformat, &now);
+		i = j = 0;
+		dext_pattern[0] = '\0';
+		dext = log->dateformat;
+		while (*dext == ' ')
+			dext++;
+		while ((*dext != '\0') && (!hasErrors)) {
+			/* Will there be a space for a char and '\0'? */
+			if (j >= (sizeof(dext_pattern) - 1)) {
+				message(MESS_ERROR, "Date format %s is too long\n",
+						log->dateformat);
+				hasErrors = 1;
+				break;
+			}
+			if (*dext == '%') {
+				switch (*(dext + 1)) {
+					case 'Y':
+						strncat(dext_pattern, "[0-9][0-9]",
+								sizeof(dext_pattern) - strlen(dext_pattern));
+						j += 10; /* strlen("[0-9][0-9]") */
+					case 'm':
+					case 'd':
+						strncat(dext_pattern, "[0-9][0-9]",
+								sizeof(dext_pattern) - strlen(dext_pattern));
+						j += 10;
+						if (j >= (sizeof(dext_pattern) - 1)) {
+							message(MESS_ERROR, "Date format %s is too long\n",
+									log->dateformat);
+							hasErrors = 1;
+							break;
+						}
+						dformat[i++] = *(dext++);
+						dformat[i] = *dext;
+						dext_pattern[j + 1] = '\0';
+						break;
+					case '%':
+						dext_pattern[j++] = *dext;
+						dext_pattern[j + 1] = '\0';
+						dformat[i++] = *(dext++);
+						dformat[i] = *dext;
+						break;
+					default:
+						/* Expand % and add \0 to pattern:
+						 * dformat += "%%"
+						 * dext_pattern += "%\0" */
+						dformat[i++] = *dext;
+						dformat[i] = '%';
+						dext_pattern[j++] = *dext;
+						dext_pattern[j + 1] = '\0';
+						break;
+				}
+			} else {
+				dformat[i] = *dext;
+				dext_pattern[j++] = *dext;
+				dext_pattern[j + 1] = '\0';
+			}
+			++i;
+			++dext;
+		}
+		dformat[i] = '\0';
+		message(MESS_DEBUG, "Converted '%s' -> '%s'\n", log->dateformat, dformat);
+		strftime(dext_str, sizeof(dext_str), dformat, &now);
 	} else {
-		strftime(dext_str, sizeof(dext_str), "%Y%m%d", &now);
+		/* The default dateformat and glob pattern */
+		strftime(dext_str, sizeof(dext_str), "-%Y%m%d", &now);
+		strncpy(dext_pattern, "-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]",
+				sizeof(dext_pattern));
 	}
-	dext = dext_str;
-	while (*dext == ' ')
-		dext++;
+	message(MESS_DEBUG, "dateext suffix '%s'\n", dext_str);
+	message(MESS_DEBUG, "glob pattern '%s'\n", dext_pattern);
 
     /* First compress the previous log when necessary */
     if (log->flags & LOG_FLAG_COMPRESS &&
 	log->flags & LOG_FLAG_DELAYCOMPRESS) {
 	if (log->flags & LOG_FLAG_DATEEXT) {
-	    /* glob for uncompressed files with our pattern */
-	    glob_pattern =
-		malloc(strlen(rotNames->dirName) +
-		       strlen(rotNames->baseName)
-		       + strlen(fileext) + 44);
-	    sprintf(glob_pattern,
-		    "%s/%s-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]%s",
-		    rotNames->dirName, rotNames->baseName, fileext);
+		/* glob for uncompressed files with our pattern */
+		asprintf(&glob_pattern, "%s/%s%s%s",
+				rotNames->dirName, rotNames->baseName, dext_pattern, fileext);
 	    rc = glob(glob_pattern, 0, globerr, &globResult);
 	    if (!rc && globResult.gl_pathc > 0) {
 		for (i = 0; i < globResult.gl_pathc && !hasErrors; i++) {
 		    struct stat sbprev;
 
-		    sprintf(oldName, "%s", (globResult.gl_pathv)[i]);
+		    snprintf(oldName, PATH_MAX, "%s", (globResult.gl_pathv)[i]);
 		    if (stat(oldName, &sbprev)) {
 			message(MESS_DEBUG,
 				"previous log %s does not exist\n",
@@ -707,7 +765,7 @@ int prerotateSingleLog(logInfo * log, int logNum, logState * state,
 		message(MESS_DEBUG,
 			"glob finding logs to compress failed\n");
 		/* fallback to old behaviour */
-		sprintf(oldName, "%s/%s.%d%s", rotNames->dirName,
+		snprintf(oldName, PATH_MAX, "%s/%s.%d%s", rotNames->dirName,
 			rotNames->baseName, logStart, fileext);
 	    }
 	    globfree(&globResult);
@@ -715,7 +773,7 @@ int prerotateSingleLog(logInfo * log, int logNum, logState * state,
 	} else {
 	    struct stat sbprev;
 
-	    sprintf(oldName, "%s/%s.%d%s", rotNames->dirName,
+	    snprintf(oldName, PATH_MAX, "%s/%s.%d%s", rotNames->dirName,
 		    rotNames->baseName, logStart, fileext);
 	    if (stat(oldName, &sbprev)) {
 		message(MESS_DEBUG, "previous log %s does not exist\n",
@@ -733,12 +791,8 @@ int prerotateSingleLog(logInfo * log, int logNum, logState * state,
     if (log->flags & LOG_FLAG_DATEEXT) {
 	/* glob for compressed files with our pattern
 	 * and compress ext */
-	glob_pattern =
-	    malloc(strlen(rotNames->dirName) + strlen(rotNames->baseName)
-		   + strlen(fileext) + strlen(compext) + 44);
-	sprintf(glob_pattern,
-		"%s/%s-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]%s%s",
-		rotNames->dirName, rotNames->baseName, fileext, compext);
+	asprintf(&glob_pattern, "%s/%s%s%s%s",
+			rotNames->dirName, rotNames->baseName, dext_pattern, fileext, compext);
 	rc = glob(glob_pattern, 0, globerr, &globResult);
 	if (!rc) {
 	    /* search for files to drop, if we find one remember it,
@@ -773,7 +827,7 @@ int prerotateSingleLog(logInfo * log, int logNum, logState * state,
 	    }
 	    if (mail_out != -1) {
 		/* oldName is oldest Backup found (for unlink later) */
-		sprintf(oldName, "%s", (globResult.gl_pathv)[mail_out]);
+		snprintf(oldName, PATH_MAX, "%s", (globResult.gl_pathv)[mail_out]);
 		strcpy(rotNames->disposeName, oldName);
 	    } else {
 		free(rotNames->disposeName);
@@ -785,15 +839,15 @@ int prerotateSingleLog(logInfo * log, int logNum, logState * state,
 	    rotNames->disposeName = NULL;
 	}
 	/* firstRotated is most recently created/compressed rotated log */
-	sprintf(rotNames->firstRotated, "%s/%s-%s%s%s",
-		rotNames->dirName, rotNames->baseName, dext, fileext, compext);
+	sprintf(rotNames->firstRotated, "%s/%s%s%s%s",
+		rotNames->dirName, rotNames->baseName, dext_str, fileext, compext);
 	globfree(&globResult);
 	free(glob_pattern);
     } else {
 	if (log->rotateAge) {
 	    struct stat fst_buf;
-	    for (i = 1; i <= rotateCount; i++) {
-		sprintf(oldName, "%s/%s.%d%s%s", rotNames->dirName,
+	    for (i = 1; i <= rotateCount + 1; i++) {
+		snprintf(oldName, PATH_MAX, "%s/%s.%d%s%s", rotNames->dirName,
 			rotNames->baseName, i, fileext, compext);
 		if (!stat(oldName, &fst_buf)
 		    && (((nowSecs - fst_buf.st_mtime) / 60 / 60 / 24)
@@ -809,7 +863,7 @@ int prerotateSingleLog(logInfo * log, int logNum, logState * state,
 	    }
 	}
 
-	sprintf(oldName, "%s/%s.%d%s%s", rotNames->dirName,
+	snprintf(oldName, PATH_MAX, "%s/%s.%d%s%s", rotNames->dirName,
 		rotNames->baseName, logStart + rotateCount, fileext,
 		compext);
 	strcpy(newName, oldName);
@@ -865,7 +919,7 @@ int prerotateSingleLog(logInfo * log, int logNum, logState * state,
 	    tmp = newName;
 	    newName = oldName;
 	    oldName = tmp;
-	    sprintf(oldName, "%s/%s.%d%s%s", rotNames->dirName,
+	    snprintf(oldName, PATH_MAX, "%s/%s.%d%s%s", rotNames->dirName,
 		    rotNames->baseName, i, fileext, compext);
 
 	    message(MESS_DEBUG,
@@ -885,15 +939,13 @@ int prerotateSingleLog(logInfo * log, int logNum, logState * state,
 	}
     }				/* !LOG_FLAG_DATEEXT */
 
-    rotNames->finalName = malloc(alloc_size);
-
     if (log->flags & LOG_FLAG_DATEEXT) {
 	char *destFile =
 	    alloca(strlen(rotNames->dirName) + strlen(rotNames->baseName) +
 		   strlen(fileext) + strlen(compext) + 30);
 	struct stat fst_buf;
-	sprintf(rotNames->finalName, "%s/%s-%s%s",
-		rotNames->dirName, rotNames->baseName, dext, fileext);
+	asprintf(&(rotNames->finalName), "%s/%s%s%s",
+			rotNames->dirName, rotNames->baseName, dext_str, fileext);
 	sprintf(destFile, "%s%s", rotNames->finalName, compext);
 	if (!stat(destFile, &fst_buf)) {
 	    message(MESS_DEBUG,
@@ -903,7 +955,7 @@ int prerotateSingleLog(logInfo * log, int logNum, logState * state,
 	}
     } else {
 	/* note: the gzip extension is *not* used here! */
-	sprintf(rotNames->finalName, "%s/%s.%d%s", rotNames->dirName,
+	asprintf(&(rotNames->finalName), "%s/%s.%d%s", rotNames->dirName,
 		rotNames->baseName, logStart, fileext);
     }
 
@@ -956,6 +1008,9 @@ int rotateSingleLog(logInfo * log, int logNum, logState * state,
 						if (oldContext) {
 							freecon(oldContext);
 						}
+						if (close(fdcurr) < 0)
+							message(MESS_ERROR, "error closing file %s",
+									log->files[logNum]);
 						return 1;
 					}
 				}
@@ -967,6 +1022,9 @@ int rotateSingleLog(logInfo * log, int logNum, logState * state,
 						if (oldContext) {
 							freecon(oldContext);
 						}
+						if (close(fdcurr) < 0)
+							message(MESS_ERROR, "error closing file %s",
+									log->files[logNum]);
 						return 1;
 					}
 				}
@@ -980,10 +1038,16 @@ int rotateSingleLog(logInfo * log, int logNum, logState * state,
 					message(MESS_ERROR, "getting file context %s: %s\n",
 						log->files[logNum], strerror(errno));
 					if (selinux_enforce) {
+						if (close(fdcurr) < 0)
+							message(MESS_ERROR, "error closing file %s",
+									log->files[logNum]);
 						return 1;
 					}
 				}
 			}
+			if (close(fdcurr) < 0)
+				message(MESS_ERROR, "error closing file %s",
+						log->files[logNum]);
 		}
 #endif
 		message(MESS_DEBUG, "renaming %s to %s\n", log->files[logNum],
