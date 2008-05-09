@@ -1,3 +1,4 @@
+#include <sys/queue.h>
 #include <alloca.h>
 #include <ctype.h>
 #include <dirent.h>
@@ -41,8 +42,7 @@ static int defTabooCount = sizeof(defTabooExts) / sizeof(char *);
 static char **tabooExts = NULL;
 int tabooCount = 0;
 
-static int readConfigFile(const char *configFile, logInfo * defConfig,
-			  logInfo ** logsPtr, int *numLogsPtr);
+static int readConfigFile(const char *configFile, struct logInfo *defConfig);
 static int globerr(const char *pathname, int theerr);
 
 static int isolateValue(const char *fileName, int lineNum, char *key,
@@ -162,7 +162,7 @@ static int checkFile(const char *fname)
 
 	/* Check if fname is '.' or '..'; if so, return false */
 	if (fname[0] == '.' && (!fname[1] || (fname[1] == '.' && !fname[2])))
-	return 0;
+		return 0;
 
 	/* Check if fname is ending in a taboo-extension; if so, return false */
 	for (i = 0; i < tabooCount; i++) {
@@ -194,7 +194,7 @@ static void free_2d_array(char **array, int lines_count)
     free(array);
 }
 
-static void copyLogInfo(logInfo * to, logInfo * from)
+static void copyLogInfo(struct logInfo *to, struct logInfo *from)
 {
     memset(to, 0, sizeof(*to));
     if (from->oldDir)
@@ -231,9 +231,11 @@ static void copyLogInfo(logInfo * to, logInfo * from)
         poptDupArgv(from->compress_options_count, from->compress_options_list, 
                     &to->compress_options_count,  &to->compress_options_list);
     }
+	if (from->dateformat)
+		to->dateformat = strdup(from->dateformat);
 }
 
-static void freeLogInfo(logInfo *log)
+static void freeLogInfo(struct logInfo *log)
 {
     if (log->pattern)
 	free(log->pattern);
@@ -261,40 +263,46 @@ static void freeLogInfo(logInfo *log)
 	free(log->compress_ext);
     if (log->compress_options_list)
 	free(log->compress_options_list);
+	free(log->dateformat);
 }
 
-static void freeTailLogs(logInfo ** logsPtr, int *numLogsPtr,
-			 int newNumLogs)
+static struct logInfo *newLogInfo(struct logInfo *template)
 {
-    int i;
+	struct logInfo *new;
 
-    assert(newNumLogs <= *numLogsPtr);
-	
-    message(MESS_DEBUG, "removing last %d log configs\n",
-	    *numLogsPtr - newNumLogs);
+	if ((new = malloc(sizeof(*new))) == NULL)
+		return NULL;
 
-    if (newNumLogs == *numLogsPtr)
-	return;
+	copyLogInfo(new, template);
+	TAILQ_INSERT_TAIL(&logs, new, list);
+	numLogs++;
 
-    for (i = newNumLogs; i < *numLogsPtr; i++)
-	freeLogInfo(*logsPtr + i);
-
-    if (newNumLogs == 0) {
-    	free (*logsPtr);
-    	*logsPtr = NULL;
-    } else {
-	*logsPtr = realloc(*logsPtr, sizeof(**logsPtr) * newNumLogs);
-    }
-    *numLogsPtr = newNumLogs;
+	return new;
 }
 
+static void removeLogInfo(struct logInfo *log)
+{
+	if (log == NULL)
+		return;
 
-static int readConfigPath(const char *path, logInfo * defConfig,
-			  logInfo ** logsPtr, int *numLogsPtr)
+	freeLogInfo(log);
+	TAILQ_REMOVE(&logs, log, list);
+	numLogs--;
+}
+
+static void freeTailLogs(int num)
+{
+	message(MESS_DEBUG, "removing last %d log configs\n", num);
+
+	while (num--)
+		removeLogInfo(*(logs.tqh_last));
+}
+
+static int readConfigPath(const char *path, struct logInfo *defConfig)
 {
     struct stat sb;
     int here, oldnumlogs, result = 1;
-    logInfo defConfigBackup;
+	struct logInfo defConfigBackup;
 
     if (stat(path, &sb)) {
 	message(MESS_ERROR, "cannot stat %s: %s\n", path, strerror(errno));
@@ -376,12 +384,11 @@ static int readConfigPath(const char *path, logInfo * defConfig,
 
 	for (i = 0; i < files_count; ++i) {
 	    assert(namelist[i] != NULL);
-	    oldnumlogs = *numLogsPtr;
+	    oldnumlogs = numLogs;
 	    copyLogInfo(&defConfigBackup, defConfig);
-	    if (readConfigFile(namelist[i], defConfig, logsPtr,
-		numLogsPtr)) {
+	    if (readConfigFile(namelist[i], defConfig)) {
 		message(MESS_ERROR, "found error in file %s, skipping\n", namelist[i]);
-		freeTailLogs(logsPtr, numLogsPtr, oldnumlogs);
+		freeTailLogs(numLogs - oldnumlogs);
 		freeLogInfo(defConfig);
 		copyLogInfo(defConfig, &defConfigBackup);
 		freeLogInfo(&defConfigBackup);
@@ -396,10 +403,10 @@ static int readConfigPath(const char *path, logInfo * defConfig,
 	close(here);
 	free_2d_array(namelist, files_count);
     } else {
-    	oldnumlogs = *numLogsPtr;
+    	oldnumlogs = numLogs;
 	copyLogInfo(&defConfigBackup, defConfig);
-	if (readConfigFile(path, defConfig, logsPtr, numLogsPtr)) {
-	    freeTailLogs(logsPtr, numLogsPtr, oldnumlogs);
+	if (readConfigFile(path, defConfig)) {
+	    freeTailLogs(numLogs - oldnumlogs);
 	    freeLogInfo(defConfig);
 	    copyLogInfo(defConfig, &defConfigBackup);
 	} else {
@@ -411,12 +418,11 @@ static int readConfigPath(const char *path, logInfo * defConfig,
     return result;
 }
 
-int readAllConfigPaths(const char **paths, logInfo ** logsPtr,
-		       int *numLogsPtr)
+int readAllConfigPaths(const char **paths)
 {
     int i, result = 0;
     const char **file;
-    logInfo defConfig = { /* pattern */ NULL,
+    struct logInfo defConfig = { /* pattern */ NULL,
 	/* files, numFiles */ NULL, 0,
 	/* oldDir */ NULL,
 	/* criterium */ ROT_SIZE,
@@ -451,7 +457,7 @@ int readAllConfigPaths(const char **paths, logInfo ** logsPtr,
     }
 
     for (file = paths; *file; file++) {
-	if (readConfigPath(*file, &defConfig, logsPtr, numLogsPtr)) {
+	if (readConfigPath(*file, &defConfig)) {
 	    result = 1;
 	    break;
 	}
@@ -476,8 +482,7 @@ static int globerr(const char *pathname, int theerr)
     	newlog->what = NULL; \
     }
 
-static int readConfigFile(const char *configFile, logInfo * defConfig,
-			  logInfo ** logsPtr, int *numLogsPtr)
+static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 {
     int fd;
     char *buf, *endtag;
@@ -485,10 +490,10 @@ static int readConfigFile(const char *configFile, logInfo * defConfig,
     off_t length;
     int lineNum = 1;
     int multiplier;
-    int i, j, k;
+    int i, k;
     char *scriptStart = NULL;
     char **scriptDest = NULL;
-    logInfo *newlog = defConfig;
+    struct logInfo *newlog = defConfig;
     char *start, *chptr;
     char *dirName;
     struct group *group;
@@ -501,6 +506,7 @@ static int readConfigFile(const char *configFile, logInfo * defConfig,
     const char **argv;
     int argc, argNum;
     int logerror = 0;
+    struct logInfo *log;
 
     /* FIXME: createOwner and createGroup probably shouldn't be fixed
        length arrays -- of course, if we aren't run setuid it doesn't
@@ -571,7 +577,7 @@ static int readConfigFile(const char *configFile, logInfo * defConfig,
 	    }
 	    start++;
 
-	    freeTailLogs(logsPtr, numLogsPtr, (*numLogsPtr) - 1);
+	    freeTailLogs(1);
 	    newlog = defConfig;
 	    logerror = 0;
 	}				
@@ -698,6 +704,7 @@ static int readConfigFile(const char *configFile, logInfo * defConfig,
 		endtag++;
 		oldchar = *endtag, *endtag = '\0';
 
+		freeLogItem(dateformat);
 		newlog->dateformat = strdup(start);
 
 		*endtag = oldchar, start = endtag;
@@ -1089,8 +1096,7 @@ static int readConfigFile(const char *configFile, logInfo * defConfig,
 
 		    message(MESS_DEBUG, "including %s\n", start);
 
-		    if (readConfigPath(start, defConfig, logsPtr,
-				       numLogsPtr))
+		    if (readConfigPath(start, defConfig))
 			return 1;
 
 		    *endtag = oldchar, start = endtag;
@@ -1294,9 +1300,8 @@ static int readConfigFile(const char *configFile, logInfo * defConfig,
 		continue;
 	    }
 
-	    /* If no compression options were found in config file,
-	     * set default values using allocated strings, that can be
-	     * free()ed by free_logInfo() */
+	    /* If no compression options were found in config file, set
+	       default values */
 	    if (!newlog->compress_prog)
 		newlog->compress_prog = strdup(COMPRESS_COMMAND);
 	    if (!newlog->uncompress_prog)
@@ -1304,10 +1309,10 @@ static int readConfigFile(const char *configFile, logInfo * defConfig,
 	    if (!newlog->compress_ext)
 		newlog->compress_ext = strdup(COMPRESS_EXT);
 
-	    (*numLogsPtr)++;
-	    *logsPtr = realloc(*logsPtr, sizeof(**logsPtr) * *numLogsPtr);
-	    newlog = *logsPtr + *numLogsPtr - 1;
-	    copyLogInfo(newlog, defConfig);
+	    /* Allocate a new logInfo structure and insert it into the logs
+	       queue, copying the actual values from defConfig */
+	    if ((newlog = newLogInfo(defConfig)) == NULL)
+		return 1;
 
 	    endtag = start;
 	    while (*endtag != '{' && *endtag != '\0')
@@ -1356,9 +1361,10 @@ static int readConfigFile(const char *configFile, logInfo * defConfig,
 			S_ISDIR(sb.st_mode))
 			continue;
 
-		    for (j = 0; j < *numLogsPtr - 1; j++) {
-			for (k = 0; k < (*logsPtr)[j].numFiles; k++) {
-			    if (!strcmp((*logsPtr)[j].files[k],
+		    for (log = logs.tqh_first; log != NULL;
+				log = log->list.tqe_next) {
+			for (k = 0; k < log->numFiles; k++) {
+			    if (!strcmp(log->files[k],
 					globResult.gl_pathv[i])) {
 				message(MESS_ERROR,
 					"%s:%d duplicate log entry for %s\n",

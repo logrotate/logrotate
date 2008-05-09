@@ -1,6 +1,4 @@
 VERSION = $(shell awk '/Version:/ { print $$2 }' logrotate.spec)
-CVSROOT = $(shell cat CVS/Root)
-CVSTAG = r$(subst .,-,$(VERSION))
 OS_NAME = $(shell uname -s)
 LFS = $(shell echo `getconf LFS_CFLAGS 2>/dev/null`)
 CFLAGS = -Wall -D_GNU_SOURCE -D$(OS_NAME) -DVERSION=\"$(VERSION)\" $(RPM_OPT_FLAGS) $(LFS)
@@ -110,9 +108,6 @@ install:
 co:
 	co RCS/*,v
 	(cd examples; co RCS/*,v)
-
-cvstag:
-	cvs tag -cF $(CVSTAG) .
 
 create-archive:
 	@rm -rf /tmp/logrotate-$(VERSION) /tmp/logrotate

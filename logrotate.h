@@ -2,6 +2,7 @@
 #define H_LOGROTATE
 
 #include <sys/types.h>
+#include <sys/queue.h>
 #include <glob.h>
 
 #include "config.h"
@@ -25,8 +26,7 @@
 #define NO_FORCE_ROTATE 0
 #define FORCE_ROTATE    1
 
-
-typedef struct {
+struct logInfo {
     char *pattern;
     char **files;
     int numFiles;
@@ -53,11 +53,14 @@ typedef struct {
     /* these are at the end so they end up nil */
     const char **compress_options_list;
     int compress_options_count;
-} logInfo;
+    TAILQ_ENTRY(logInfo) list;
+};
 
-int readAllConfigPaths(const char **paths, logInfo ** logsPtr,
-		       int *numLogsPtr);
+TAILQ_HEAD(logInfoHead, logInfo) logs;
 
+extern int numLogs;
 extern int debug;
+
+int readAllConfigPaths(const char **paths);
 
 #endif
