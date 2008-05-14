@@ -1,17 +1,10 @@
 Summary: Rotates, compresses, removes and mails system log files
 Name: logrotate
-Version: 3.7.6
+Version: 3.7.7
 Release: 1
 License: GPL+
 Group: System Environment/Base
-# The source for this package was pulled from cvs.
-# Use the following commands to generate the tarball:
-#  export CVSROOT=:pserver:anonymous@rhlinux.redhat.com:/usr/local/CVS
-#  cvs login (hit return)
-#  cvs co logrotate
-#  cd logrotate
-#  make create-archive
-Source: logrotate-%{version}.tar.gz
+Source: https://fedorahosted.org/releases/l/o/logrotate/logrotate-%{version}.tar.gz
 Requires: coreutils >= 5.92 libsepol libselinux popt
 BuildRequires: libselinux-devel popt-devel
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
@@ -58,8 +51,12 @@ rm -rf $RPM_BUILD_ROOT
 %attr(0644, root, root) %verify(not size md5 mtime) %config(noreplace) %{_localstatedir}/lib/logrotate.status
 
 %changelog
+* Wed May 14 2008 Tomas Smetana <tsmetana@redhat.com> 3.7.7-1
+- new upstream version
+
 * Tue Aug 07 2007 Tomas Smetana <tsmetana@redhat.com> 3.7.6-1
 - new upstream version
+
 * Thu Mar 01 2007 Peter Vrabec <pvrabec@redhat.com> 3.7.5-1
 - new upstream release.
 
