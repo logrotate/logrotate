@@ -119,10 +119,10 @@ static int runScript(char *logfn, char *script)
 	return 0;
     }
 
-    if (!fork()) {
-	execl("/bin/sh", "sh", "-c", script, script, logfn, NULL);
-	exit(1);
-    }
+	if (!fork()) {
+		execl("/bin/sh", "sh", "-c", script, "logrotate_script", logfn, NULL);
+		exit(1);
+	}
 
     wait(&rc);
     return rc;
