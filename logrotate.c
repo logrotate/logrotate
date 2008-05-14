@@ -1,4 +1,3 @@
-#include <sys/queue.h>
 #include <alloca.h>
 #include <ctype.h>
 #include <dirent.h>
@@ -30,30 +29,31 @@ int selinux_enforce = 0;
 #define GLOB_ABORTED GLOB_ABEND
 #endif
 
-struct logState {
+typedef struct {
     char *fn;
     struct tm lastRotated;	/* only tm.mon, tm_mday, tm_year are good! */
     struct stat sb;
     int doRotate;
-    LIST_ENTRY(logState) list;
-};
+} logState;
 
-struct logNames {
+typedef struct {
     char *firstRotated;
     char *disposeName;
     char *finalName;
     char *dirName;
     char *baseName;
+} logNames;
+
+struct stateSet {
+    logState *states;
+    int numStates;
 };
 
-LIST_HEAD(stateSet, logState) states;
-
-int numLogs = 0;
 int debug = 0;
 char *mailCommand = DEFAULT_MAIL_COMMAND;
 time_t nowSecs = 0;
 
-static int shred_file(char *filename, struct logInfo *log);
+static int shred_file(char * filename, logInfo *log);
 
 static int globerr(const char *pathname, int theerr)
 {
@@ -64,49 +64,80 @@ static int globerr(const char *pathname, int theerr)
     return 1;
 }
 
-static struct logState *newState(const char *fn)
+/* logInfo instances may share dynamic allocated memory, so to avoid
+ * free memory already free'd, it is necessary check if a item in a
+ * logInfo instance points to the same memory address of the item in
+ * previous instances, which were free'd before. */
+
+#define freeLogItem(what) \
+    if (log->what) { \
+        for (j = 0; j < i; j++) \
+            if (log->what == (*logsPtr + j)->what) \
+                break; \
+        if (j == i) \
+            free(log->what); \
+    }
+
+static void free_logInfo(logInfo ** logsPtr, int *numLogsPtr)
 {
-	struct tm now = *localtime(&nowSecs);
-	struct logState *new;
-	time_t lr_time;
+    int i, j;
+    logInfo *log;
 
-	if ((new = malloc(sizeof(*new))) == NULL)
-		return NULL;
+    for (i = 0; i < *numLogsPtr; i++) {
+	log = *logsPtr + i;
+	freeLogItem(pattern);
+	freeLogItem(oldDir);
+	freeLogItem(pre);
+	freeLogItem(post);
+	freeLogItem(first);
+	freeLogItem(last);
+	freeLogItem(logAddress);
+	freeLogItem(extension);
+	freeLogItem(compress_prog);
+	freeLogItem(uncompress_prog);
+	freeLogItem(compress_ext);
+	freeLogItem(compress_options_list);
 
-	if ((new->fn = strdup(fn)) == NULL)
-		return NULL;
-
-	new->doRotate = 0;
-
-	memset(&new->lastRotated, 0, sizeof(new->lastRotated));
-	new->lastRotated.tm_mon = now.tm_mon;
-	new->lastRotated.tm_mday = now.tm_mday;
-	new->lastRotated.tm_year = now.tm_year;
-
-	/* fill in the rest of the new->lastRotated fields */
-	lr_time = mktime(&new->lastRotated);
-	new->lastRotated = *localtime(&lr_time);
-
-	return new;
+	for (j = 0; j < log->numFiles; j++)
+	    free(log->files[j]);
+	free(log->files);
+    }
+    free(*logsPtr);
+    *numLogsPtr = 0;
 }
 
-static struct logState *findState(const char *fn)
+static logState *findState(const char *fn, struct stateSet *sip)
 {
-	struct logState *p;
+    int i;
+    logState *states = sip->states;
+    int numStates = sip->numStates;
+    struct tm now = *localtime(&nowSecs);
+    time_t lr_time;
 
-	for (p = states.lh_first; p != NULL; p = p->list.le_next)
-		if (!strcmp(fn, p->fn))
-			break;
+    for (i = 0; i < numStates; i++)
+	if (!strcmp(fn, states[i].fn))
+	    break;
 
-	/* new state */
-	if (p == NULL) {
-		if ((p = newState(fn)) == NULL)
-			return NULL;
+    if (i == numStates) {
+	numStates++;
+	states = realloc(states, sizeof(*states) * numStates);
+	states[i].fn = strdup(fn);
+	memset(&states[i].lastRotated, 0, sizeof(states[i].lastRotated));
+	states[i].doRotate = 0;
 
-		LIST_INSERT_HEAD(&states, p, list);
-	}
+	states[i].lastRotated.tm_mon = now.tm_mon;
+	states[i].lastRotated.tm_mday = now.tm_mday;
+	states[i].lastRotated.tm_year = now.tm_year;
 
-	return p;
+	/* fill in the rest of the st->lastRotated fields */
+	lr_time = mktime(&states[i].lastRotated);
+	states[i].lastRotated = *localtime(&lr_time);
+
+	sip->states = states;
+	sip->numStates = numStates;
+    }
+
+    return (states + i);
 }
 
 static int runScript(char *logfn, char *script)
@@ -119,10 +150,10 @@ static int runScript(char *logfn, char *script)
 	return 0;
     }
 
-	if (!fork()) {
-		execl("/bin/sh", "sh", "-c", script, "logrotate_script", logfn, NULL);
-		exit(1);
-	}
+    if (!fork()) {
+	execl("/bin/sh", "sh", "-c", script, script, logfn, NULL);
+	exit(1);
+    }
 
     wait(&rc);
     return rc;
@@ -163,7 +194,7 @@ int createOutputFile(char *fileName, int flags, struct stat *sb)
 #define SHRED_COUNT_FLAG "-n "
 #define DIGITS 10
 /* unlink, but try to call shred from GNU fileutils */
-static int shred_file(char *filename, struct logInfo *log)
+static int shred_file(char * filename, logInfo *log)
 {
 	int len, ret;
 	char *cmd;
@@ -202,7 +233,7 @@ static int shred_file(char *filename, struct logInfo *log)
 	}
 }
 
-static int removeLogFile(char *name, struct logInfo *log)
+static int removeLogFile(char *name, logInfo *log)
 {
     message(MESS_DEBUG, "removing old log %s\n", name);
 
@@ -214,7 +245,7 @@ static int removeLogFile(char *name, struct logInfo *log)
     return 0;
 }
 
-static int compressLogFile(char *name, struct logInfo *log, struct stat *sb)
+static int compressLogFile(char *name, logInfo * log, struct stat *sb)
 {
     char *compressedName;
     const char **fullCommand;
@@ -341,7 +372,7 @@ static int mailLog(char *logFile, char *mailCommand,
 }
 
 static int mailLogWrapper(char *mailFilename, char *mailCommand,
-			  int logNum, struct logInfo *log)
+			  int logNum, logInfo * log)
 {
     /* if the log is compressed (and we're not mailing a
      * file whose compression has been delayed), we need
@@ -385,27 +416,20 @@ static int copyTruncate(char *currLog, char *saveLog, struct stat *sb,
 			    "getting default context: %s\n",
 			    strerror(errno));
 		    if (selinux_enforce) {
-				if (oldContext) {
-					freecon(oldContext);
-				}
-				return 1;
+			freecon(oldContext);
+			return 1;
 		    }
 		}
 		if (setfscreatecon_raw(oldContext) < 0) {
 		    message(MESS_ERROR,
 			    "setting file context %s to %s: %s\n",
 			    saveLog, oldContext, strerror(errno));
-			if (selinux_enforce) {
-				if (oldContext) {
-					freecon(oldContext);
-				}
-				return 1;
+		    if (selinux_enforce) {
+			freecon(oldContext);
+			return 1;
 		    }
 		}
-		message(MESS_DEBUG, "set default create context\n");
-		if (oldContext) {
-			freecon(oldContext);
-		}
+		freecon(oldContext);
 	    } else {
 		    if (errno != ENOTSUP) {
 			    message(MESS_ERROR, "getting file context %s: %s\n",
@@ -469,10 +493,10 @@ static int copyTruncate(char *currLog, char *saveLog, struct stat *sb,
     return 0;
 }
 
-int findNeedRotating(struct logInfo *log, int logNum)
+int findNeedRotating(logInfo * log, int logNum, struct stateSet *sip)
 {
     struct stat sb;
-    struct logState *state = NULL;
+    logState *state = NULL;
     struct tm now = *localtime(&nowSecs);
 
     message(MESS_DEBUG, "considering log %s\n", log->files[logNum]);
@@ -488,7 +512,7 @@ int findNeedRotating(struct logInfo *log, int logNum)
 	return 1;
     }
 
-    state = findState(log->files[logNum]);
+    state = findState(log->files[logNum], sip);
     state->doRotate = 0;
     state->sb = sb;
 
@@ -559,8 +583,8 @@ int findNeedRotating(struct logInfo *log, int logNum)
     return 0;
 }
 
-int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
-		       struct logNames *rotNames)
+int prerotateSingleLog(logInfo * log, int logNum, logState * state,
+		       logNames * rotNames)
 {
     struct tm now = *localtime(&nowSecs);
     char *oldName, *newName = NULL;
@@ -568,18 +592,13 @@ int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
     char *compext = "";
     char *fileext = "";
     int hasErrors = 0;
-    int i, j;
+    int i;
     char *glob_pattern;
     glob_t globResult;
     int rc;
+    size_t alloc_size;
     int rotateCount = log->rotateCount ? log->rotateCount : 1;
     int logStart = (log->logStart == -1) ? 1 : log->logStart;
-#define DATEEXT_LEN 64
-#define PATTERN_LEN (DATEEXT_LEN * 2)
-	char dext_str[DATEEXT_LEN];
-	char dformat[DATEEXT_LEN];
-	char dext_pattern[PATTERN_LEN];
-	char *dext;
 
     if (!state->doRotate)
 	return 0;
@@ -609,9 +628,13 @@ int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 
     rotNames->baseName = strdup(ourBaseName(log->files[logNum]));
 
-    oldName = alloca(PATH_MAX);
-    newName = alloca(PATH_MAX);
-    rotNames->disposeName = malloc(PATH_MAX);
+    alloc_size = strlen(rotNames->dirName) + strlen(rotNames->baseName) +
+	strlen(log->files[logNum]) + strlen(fileext) +
+	strlen(compext) + 18;
+
+    oldName = alloca(alloc_size);
+    newName = alloca(alloc_size);
+    rotNames->disposeName = malloc(alloc_size);
 
     if (log->extension &&
 	strncmp(&
@@ -630,84 +653,26 @@ int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 	free(rotNames->baseName);
 	rotNames->baseName = tempstr;
     }
-	
-	/* Allow only %Y %d %m and create valid strftime format string
-	 * Construct the glob pattern corresponding to the date format */
-	dext_str[0] = '\0';
-	if (log->dateformat) {
-		i = j = 0;
-		memset(dext_pattern, 0, sizeof(dext_pattern));
-		dext = log->dateformat;
-		while (*dext == ' ')
-			dext++;
-		while ((*dext != '\0') && (!hasErrors)) {
-			/* Will there be a space for a char and '\0'? */
-			if (j >= (sizeof(dext_pattern) - 1)) {
-				message(MESS_ERROR, "Date format %s is too long\n",
-						log->dateformat);
-				hasErrors = 1;
-				break;
-			}
-			if (*dext == '%') {
-				switch (*(dext + 1)) {
-					case 'Y':
-						strncat(dext_pattern, "[0-9][0-9]",
-								sizeof(dext_pattern) - strlen(dext_pattern));
-						j += 10; /* strlen("[0-9][0-9]") */
-					case 'm':
-					case 'd':
-						strncat(dext_pattern, "[0-9][0-9]",
-								sizeof(dext_pattern) - strlen(dext_pattern));
-						j += 10;
-						if (j >= (sizeof(dext_pattern) - 1)) {
-							message(MESS_ERROR, "Date format %s is too long\n",
-									log->dateformat);
-							hasErrors = 1;
-							break;
-						}
-						dformat[i++] = *(dext++);
-						dformat[i] = *dext;
-						break;
-					default:
-						dformat[i++] = *dext;
-						dformat[i] = '%';
-						dext_pattern[j++] = *dext;
-						break;
-				}
-			} else {
-				dformat[i] = *dext;
-				dext_pattern[j++] = *dext;
-			}
-			++i;
-			++dext;
-		}
-		dformat[i] = '\0';
-		message(MESS_DEBUG, "Converted '%s' -> '%s'\n", log->dateformat, dformat);
-		strftime(dext_str, sizeof(dext_str), dformat, &now);
-	} else {
-		/* The default dateformat and glob pattern */
-		strftime(dext_str, sizeof(dext_str), "-%Y%m%d", &now);
-		strncpy(dext_pattern, "-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]",
-				sizeof(dext_pattern));
-		dext_pattern[PATTERN_LEN - 1] = '\0';
-	}
-	message(MESS_DEBUG, "dateext suffix '%s'\n", dext_str);
-	message(MESS_DEBUG, "glob pattern '%s'\n", dext_pattern);
 
     /* First compress the previous log when necessary */
     if (log->flags & LOG_FLAG_COMPRESS &&
 	log->flags & LOG_FLAG_DELAYCOMPRESS) {
 	if (log->flags & LOG_FLAG_DATEEXT) {
-		/* glob for uncompressed files with our pattern */
-		asprintf(&glob_pattern, "%s/%s%s%s",
-				rotNames->dirName, rotNames->baseName, dext_pattern, fileext);
+	    /* glob for uncompressed files with our pattern */
+	    glob_pattern =
+		malloc(strlen(rotNames->dirName) +
+		       strlen(rotNames->baseName)
+		       + strlen(fileext) + 44);
+	    sprintf(glob_pattern,
+		    "%s/%s-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]%s",
+		    rotNames->dirName, rotNames->baseName, fileext);
 	    rc = glob(glob_pattern, 0, globerr, &globResult);
 	    if (!rc && globResult.gl_pathc > 0) {
 		for (i = 0; i < globResult.gl_pathc && !hasErrors; i++) {
 		    struct stat sbprev;
 
-			snprintf(oldName, PATH_MAX, "%s", (globResult.gl_pathv)[i]);
-			if (stat(oldName, &sbprev)) {
+		    sprintf(oldName, "%s", (globResult.gl_pathv)[i]);
+		    if (stat(oldName, &sbprev)) {
 			message(MESS_DEBUG,
 				"previous log %s does not exist\n",
 				oldName);
@@ -719,7 +684,7 @@ int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 		message(MESS_DEBUG,
 			"glob finding logs to compress failed\n");
 		/* fallback to old behaviour */
-		snprintf(oldName, PATH_MAX, "%s/%s.%d%s", rotNames->dirName,
+		sprintf(oldName, "%s/%s.%d%s", rotNames->dirName,
 			rotNames->baseName, logStart, fileext);
 	    }
 	    globfree(&globResult);
@@ -727,7 +692,7 @@ int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 	} else {
 	    struct stat sbprev;
 
-	    snprintf(oldName, PATH_MAX, "%s/%s.%d%s", rotNames->dirName,
+	    sprintf(oldName, "%s/%s.%d%s", rotNames->dirName,
 		    rotNames->baseName, logStart, fileext);
 	    if (stat(oldName, &sbprev)) {
 		message(MESS_DEBUG, "previous log %s does not exist\n",
@@ -745,8 +710,12 @@ int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
     if (log->flags & LOG_FLAG_DATEEXT) {
 	/* glob for compressed files with our pattern
 	 * and compress ext */
-	asprintf(&glob_pattern, "%s/%s%s%s%s",
-			rotNames->dirName, rotNames->baseName, dext_pattern, fileext, compext);
+	glob_pattern =
+	    malloc(strlen(rotNames->dirName) + strlen(rotNames->baseName)
+		   + strlen(fileext) + strlen(compext) + 44);
+	sprintf(glob_pattern,
+		"%s/%s-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]%s%s",
+		rotNames->dirName, rotNames->baseName, fileext, compext);
 	rc = glob(glob_pattern, 0, globerr, &globResult);
 	if (!rc) {
 	    /* search for files to drop, if we find one remember it,
@@ -773,7 +742,6 @@ int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 						   mailCommand, logNum,
 						   log);
 			    if (!hasErrors)
-				message(MESS_DEBUG, "removing %s\n", mailFilename);
 				hasErrors = removeLogFile(mailFilename, log);
 			}
 			mail_out = i;
@@ -782,7 +750,7 @@ int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 	    }
 	    if (mail_out != -1) {
 		/* oldName is oldest Backup found (for unlink later) */
-		snprintf(oldName, PATH_MAX, "%s", (globResult.gl_pathv)[mail_out]);
+		sprintf(oldName, "%s", (globResult.gl_pathv)[mail_out]);
 		strcpy(rotNames->disposeName, oldName);
 	    } else {
 		free(rotNames->disposeName);
@@ -794,15 +762,16 @@ int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 	    rotNames->disposeName = NULL;
 	}
 	/* firstRotated is most recently created/compressed rotated log */
-	sprintf(rotNames->firstRotated, "%s/%s%s%s%s",
-		rotNames->dirName, rotNames->baseName, dext_str, fileext, compext);
+	sprintf(rotNames->firstRotated, "%s/%s-%04d%02d%02d%s%s",
+		rotNames->dirName, rotNames->baseName, now.tm_year + 1900,
+		now.tm_mon + 1, now.tm_mday, fileext, compext);
 	globfree(&globResult);
 	free(glob_pattern);
     } else {
 	if (log->rotateAge) {
 	    struct stat fst_buf;
-	    for (i = 1; i <= rotateCount + 1; i++) {
-		snprintf(oldName, PATH_MAX, "%s/%s.%d%s%s", rotNames->dirName,
+	    for (i = 1; i <= rotateCount; i++) {
+		sprintf(oldName, "%s/%s.%d%s%s", rotNames->dirName,
 			rotNames->baseName, i, fileext, compext);
 		if (!stat(oldName, &fst_buf)
 		    && (((nowSecs - fst_buf.st_mtime) / 60 / 60 / 24)
@@ -818,7 +787,7 @@ int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 	    }
 	}
 
-	snprintf(oldName, PATH_MAX, "%s/%s.%d%s%s", rotNames->dirName,
+	sprintf(oldName, "%s/%s.%d%s%s", rotNames->dirName,
 		rotNames->baseName, logStart + rotateCount, fileext,
 		compext);
 	strcpy(newName, oldName);
@@ -833,32 +802,26 @@ int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 	if (selinux_enabled) {
 	    security_context_t oldContext = NULL;
 	    if (getfilecon_raw(log->files[logNum], &oldContext) > 0) {
-			if (getfscreatecon_raw(&prev_context) < 0) {
-				message(MESS_ERROR,
-					"getting default context: %s\n",
-					strerror(errno));
-				if (selinux_enforce) {
-					if (oldContext) {
-						freecon(oldContext);
-					}
-					return 1;
-				}
-			}
-			if (setfscreatecon_raw(oldContext) < 0) {
-				message(MESS_ERROR,
-					"setting file context %s to %s: %s\n",
-					log->files[logNum], oldContext,
-					strerror(errno));
-				if (selinux_enforce) {
-					if (oldContext) {
-						freecon(oldContext);
-					}
-					return 1;
-				}
-			}
-			if (oldContext) {
-				freecon(oldContext);
-			}
+		if (getfscreatecon_raw(&prev_context) < 0) {
+		    message(MESS_ERROR,
+			    "getting default context: %s\n",
+			    strerror(errno));
+		    if (selinux_enforce) {
+			freecon(oldContext);
+			return 1;
+		    }
+		}
+		if (setfscreatecon_raw(oldContext) < 0) {
+		    message(MESS_ERROR,
+			    "setting file context %s to %s: %s\n",
+			    log->files[logNum], oldContext,
+			    strerror(errno));
+		    if (selinux_enforce) {
+			freecon(oldContext);
+			return 1;
+		    }
+		}
+		freecon(oldContext);
 	    } else {
 		if (errno != ENOENT && errno != ENOTSUP) {
 			message(MESS_ERROR, "getting file context %s: %s\n",
@@ -874,7 +837,7 @@ int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 	    tmp = newName;
 	    newName = oldName;
 	    oldName = tmp;
-		snprintf(oldName, PATH_MAX, "%s/%s.%d%s%s", rotNames->dirName,
+	    sprintf(oldName, "%s/%s.%d%s%s", rotNames->dirName,
 		    rotNames->baseName, i, fileext, compext);
 
 	    message(MESS_DEBUG,
@@ -894,13 +857,16 @@ int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 	}
     }				/* !LOG_FLAG_DATEEXT */
 
+    rotNames->finalName = malloc(alloc_size);
+
     if (log->flags & LOG_FLAG_DATEEXT) {
 	char *destFile =
 	    alloca(strlen(rotNames->dirName) + strlen(rotNames->baseName) +
 		   strlen(fileext) + strlen(compext) + 30);
 	struct stat fst_buf;
-	asprintf(&(rotNames->finalName), "%s/%s%s%s",
-			rotNames->dirName, rotNames->baseName, dext_str, fileext);
+	sprintf(rotNames->finalName, "%s/%s-%04d%02d%02d%s",
+		rotNames->dirName, rotNames->baseName, now.tm_year + 1900,
+		now.tm_mon + 1, now.tm_mday, fileext);
 	sprintf(destFile, "%s%s", rotNames->finalName, compext);
 	if (!stat(destFile, &fst_buf)) {
 	    message(MESS_DEBUG,
@@ -910,7 +876,7 @@ int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 	}
     } else {
 	/* note: the gzip extension is *not* used here! */
-	asprintf(&(rotNames->finalName), "%s/%s.%d%s", rotNames->dirName,
+	sprintf(rotNames->finalName, "%s/%s.%d%s", rotNames->dirName,
 		rotNames->baseName, logStart, fileext);
     }
 
@@ -927,15 +893,12 @@ int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
     return hasErrors;
 }
 
-int rotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
-		    struct logNames *rotNames)
+int rotateSingleLog(logInfo * log, int logNum, logState * state,
+		    logNames * rotNames)
 {
     int hasErrors = 0;
     struct stat sb;
     int fd;
-#ifdef WITH_SELINUX
-	security_context_t savedContext = NULL;
-#endif
 
     if (!state->doRotate)
 	return 0;
@@ -943,70 +906,9 @@ int rotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
     if (!hasErrors) {
 
 	if (!(log->flags & (LOG_FLAG_COPYTRUNCATE | LOG_FLAG_COPY))) {
-#ifdef WITH_SELINUX
-		if (selinux_enabled) {
-			security_context_t oldContext = NULL;
-			int fdcurr = -1;
-
-			if ((fdcurr = open(log->files[logNum], O_RDWR)) < 0) {
-				message(MESS_ERROR, "error opening %s: %s\n",
-						log->files[logNum],
-					strerror(errno));
-				return 1;
-			}
-			if (fgetfilecon_raw(fdcurr, &oldContext) >= 0) {
-				if (getfscreatecon_raw(&savedContext) < 0) {
-					message(MESS_ERROR,
-						"getting default context: %s\n",
-						strerror(errno));
-					if (selinux_enforce) {
-						if (oldContext) {
-							freecon(oldContext);
-						}
-						if (close(fdcurr) < 0)
-							message(MESS_ERROR, "error closing file %s",
-									log->files[logNum]);
-						return 1;
-					}
-				}
-				if (setfscreatecon_raw(oldContext) < 0) {
-					message(MESS_ERROR,
-						"setting file context %s to %s: %s\n",
-						log->files[logNum], oldContext, strerror(errno));
-					if (selinux_enforce) {
-						if (oldContext) {
-							freecon(oldContext);
-						}
-						if (close(fdcurr) < 0)
-							message(MESS_ERROR, "error closing file %s",
-									log->files[logNum]);
-						return 1;
-					}
-				}
-				message(MESS_DEBUG, "fscreate context set to %s\n",
-						oldContext);
-				if (oldContext) {
-					freecon(oldContext);
-				}
-			} else {
-				if (errno != ENOTSUP) {
-					message(MESS_ERROR, "getting file context %s: %s\n",
-						log->files[logNum], strerror(errno));
-					if (selinux_enforce) {
-						if (close(fdcurr) < 0)
-							message(MESS_ERROR, "error closing file %s",
-									log->files[logNum]);
-						return 1;
-					}
-				}
-			}
-			if (close(fdcurr) < 0)
-				message(MESS_ERROR, "error closing file %s",
-						log->files[logNum]);
-		}
-#endif
-		message(MESS_DEBUG, "renaming %s to %s\n", log->files[logNum],
+	    message(MESS_DEBUG, "renaming %s to %s\n", log->files[logNum],
 		    rotNames->finalName);
+
 	    if (!debug && !hasErrors &&
 		rename(log->files[logNum], rotNames->finalName)) {
 		message(MESS_ERROR, "failed to rename %s to %s: %s\n",
@@ -1046,28 +948,19 @@ int rotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 	    else
 		sb.st_mode = log->createMode;
 
-	    message(MESS_DEBUG, "creating new %s mode = 0%o uid = %d "
-		    "gid = %d\n", log->files[logNum], (unsigned int) sb.st_mode,
+	    message(MESS_DEBUG, "creating new log mode = 0%o uid = %d "
+		    "gid = %d\n", (unsigned int) sb.st_mode,
 		    (int) sb.st_uid, (int) sb.st_gid);
 
 	    if (!debug) {
-			fd = createOutputFile(log->files[logNum], O_CREAT | O_RDWR,
-						  &sb);
-			if (fd < 0)
-				hasErrors = 1;
-			else
-				close(fd);
+		fd = createOutputFile(log->files[logNum], O_CREAT | O_RDWR,
+				      &sb);
+		if (fd < 0)
+		    hasErrors = 1;
+                else
+                    close(fd);
 	    }
 	}
-#ifdef WITH_SELINUX
-	if (selinux_enabled) {
-	    setfscreatecon_raw(savedContext);
-	    if (savedContext != NULL) {
-			freecon(savedContext);
-			savedContext = NULL;
-	    }
-	}
-#endif
 
 	if (!hasErrors
 	    && log->flags & (LOG_FLAG_COPYTRUNCATE | LOG_FLAG_COPY))
@@ -1079,8 +972,8 @@ int rotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
     return hasErrors;
 }
 
-int postrotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
-			struct logNames *rotNames)
+int postrotateSingleLog(logInfo * log, int logNum, logState * state,
+			logNames * rotNames)
 {
     int hasErrors = 0;
 
@@ -1120,14 +1013,14 @@ int postrotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
     return hasErrors;
 }
 
-int rotateLogSet(struct logInfo *log, int force)
+int rotateLogSet(logInfo * log, struct stateSet *sip, int force)
 {
     int i, j;
     int hasErrors = 0;
     int logHasErrors[log->numFiles];
     int numRotated = 0;
-    struct logState **state;
-    struct logNames **rotNames;
+    logState **state;
+    logNames **rotNames;
 
     if (force)
 	log->criterium = ROT_FORCE;
@@ -1177,11 +1070,11 @@ int rotateLogSet(struct logInfo *log, int force)
     }
 
     for (i = 0; i < log->numFiles; i++) {
-	logHasErrors[i] = findNeedRotating(log, i);
+	logHasErrors[i] = findNeedRotating(log, i, sip);
 	hasErrors |= logHasErrors[i];
 
 	/* sure is a lot of findStating going on .. */
-	if ((findState(log->files[i]))->doRotate)
+	if ((findState(log->files[i], sip))->doRotate)
 	    numRotated++;
     }
 
@@ -1201,8 +1094,8 @@ int rotateLogSet(struct logInfo *log, int force)
 	}
     }
 
-    state = malloc(log->numFiles * sizeof(struct logState *));
-    rotNames = malloc(log->numFiles * sizeof(struct logNames *));
+    state = malloc(log->numFiles * sizeof(logState *));
+    rotNames = malloc(log->numFiles * sizeof(logNames *));
 
     for (j = 0;
 	 (!(log->flags & LOG_FLAG_SHAREDSCRIPTS) && j < log->numFiles)
@@ -1211,10 +1104,10 @@ int rotateLogSet(struct logInfo *log, int force)
 	for (i = j;
 	     ((log->flags & LOG_FLAG_SHAREDSCRIPTS) && i < log->numFiles)
 	     || (!(log->flags & LOG_FLAG_SHAREDSCRIPTS) && i == j); i++) {
-	    state[i] = findState(log->files[i]);
+	    state[i] = findState(log->files[i], sip);
 
-	    rotNames[i] = malloc(sizeof(struct logNames));
-	    memset(rotNames[i], 0, sizeof(struct logNames));
+	    rotNames[i] = malloc(sizeof(logNames));
+	    memset(rotNames[i], 0, sizeof(logNames));
 
 	    logHasErrors[i] |=
 		prerotateSingleLog(log, i, state[i], rotNames[i]);
@@ -1321,13 +1214,14 @@ int rotateLogSet(struct logInfo *log, int force)
     return hasErrors;
 }
 
-static int writeState(char *stateFilename)
+static int writeState(char *stateFilename, struct stateSet si)
 {
-    struct logState *p;
     FILE *f;
     char *chptr;
+    int i;
 
     f = fopen(stateFilename, "w");
+
     if (!f) {
 	message(MESS_ERROR, "error creating state file %s: %s\n",
 		stateFilename, strerror(errno));
@@ -1336,9 +1230,9 @@ static int writeState(char *stateFilename)
 
     fprintf(f, "logrotate state -- version 2\n");
 
-    for (p = states.lh_first; p != NULL; p = p->list.le_next) {
+    for (i = 0; i < si.numStates; i++) {
 	fputc('"', f);
-	for (chptr = p->fn; *chptr; chptr++) {
+	for (chptr = si.states[i].fn; *chptr; chptr++) {
 	    switch (*chptr) {
 	    case '"':
 		fputc('\\', f);
@@ -1349,9 +1243,9 @@ static int writeState(char *stateFilename)
 
 	fputc('"', f);
 	fprintf(f, " %d-%d-%d\n",
-		p->lastRotated.tm_year + 1900,
-		p->lastRotated.tm_mon + 1,
-		p->lastRotated.tm_mday);
+		si.states[i].lastRotated.tm_year + 1900,
+		si.states[i].lastRotated.tm_mon + 1,
+		si.states[i].lastRotated.tm_mday);
     }
 
     fclose(f);
@@ -1359,7 +1253,7 @@ static int writeState(char *stateFilename)
     return 0;
 }
 
-static int readState(char *stateFilename)
+static int readState(char *stateFilename, struct stateSet *sip)
 {
     FILE *f;
     char buf[1024];
@@ -1369,7 +1263,7 @@ static int readState(char *stateFilename)
     int i;
     int line = 0;
     int error;
-    struct logState *st;
+    logState *st;
     time_t lr_time;
     struct stat f_stat;
 
@@ -1418,7 +1312,6 @@ static int readState(char *stateFilename)
     line++;
 
     while (fgets(buf, sizeof(buf) - 1, f)) {
-	argv = NULL;
 	line++;
 	i = strlen(buf);
 	if (buf[i - 1] != '\n') {
@@ -1437,6 +1330,7 @@ static int readState(char *stateFilename)
 	    (sscanf(argv[1], "%d-%d-%d", &year, &month, &day) != 3)) {
 	    message(MESS_ERROR, "bad line %d in state file %s\n",
 		    line, stateFilename);
+	    if (argv)
 		free(argv);
 	    fclose(f);
 	    return 1;
@@ -1473,8 +1367,7 @@ static int readState(char *stateFilename)
 
 	year -= 1900, month -= 1;
 
-	if ((st = findState(argv[0])) == NULL)
-		return 1;
+	st = findState(argv[0], sip);
 
 	st->lastRotated.tm_mon = month;
 	st->lastRotated.tm_mday = day;
@@ -1488,19 +1381,23 @@ static int readState(char *stateFilename)
     }
 
     fclose(f);
+
     return 0;
+
 }
 
 int main(int argc, const char **argv)
 {
+    int numLogs = 0;
     int force = 0;
+    logInfo *logs = NULL;
+    struct stateSet si = { NULL, 0 };
     char *stateFile = STATEFILE;
+    int i;
     int rc = 0;
     int arg;
     const char **files;
     poptContext optCon;
-	struct logInfo *log;
-
     struct poptOption options[] = {
 	{"debug", 'd', 0, 0, 'd',
 	 "Don't do anything, just test (implies -v)"},
@@ -1557,28 +1454,33 @@ int main(int argc, const char **argv)
     selinux_enforce = security_getenforce();
 #endif
 
-	TAILQ_INIT(&logs);
-
-	if (readAllConfigPaths(files)) {
+    if (readAllConfigPaths(files, &logs, &numLogs)) {
 	poptFreeContext(optCon);
+	free_logInfo(&logs, &numLogs);
 	exit(1);
     }
 
     poptFreeContext(optCon);
     nowSecs = time(NULL);
 
-	LIST_INIT(&states);
-
-	if (readState(stateFile))
+    if (readState(stateFile, &si)) {
 	exit(1);
+    }
 
     message(MESS_DEBUG, "\nHandling %d logs\n", numLogs);
 
-	for (log = logs.tqh_first; log != NULL; log = log->list.tqe_next)
-	rc |= rotateLogSet(log, force);
+    for (i = 0; i < numLogs; i++) {
+	rc |= rotateLogSet(logs + i, &si, force);
+    }
 
     if (!debug)
-	rc |= writeState(stateFile);
-	
+	rc |= writeState(stateFile, si);
+
+    for (i = 0; i < si.numStates; i++) {
+	free(si.states[i].fn);
+    }
+    free(si.states);
+
+    free_logInfo(&logs, &numLogs);
     return (rc != 0);
 }

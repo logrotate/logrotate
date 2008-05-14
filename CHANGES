@@ -1,16 +1,9 @@
-3.7.6 ->
-	- dateformat
-	- fix possible buffer overflows in strings handling
-	- various minor bugfixes
-	- change logInfo handling (patches by Leonardo Chiquitto)
-
 3.7.5 -> 3.7.6
 	- patches from Leonardo Chiquitto <leonardo@iken.com.br> that
 	  fix compile warnings
 	- examples/logrotate-default: add btmp rotation, dateext
 	- update man page
 	- tabooext honor wildcards
-	- fix selinux support with dateext
 
 3.7.1 -> 3.7.5
 	- import Fedora patches

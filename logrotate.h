@@ -2,7 +2,6 @@
 #define H_LOGROTATE
 
 #include <sys/types.h>
-#include <sys/queue.h>
 #include <glob.h>
 
 #include "config.h"
@@ -26,7 +25,8 @@
 #define NO_FORCE_ROTATE 0
 #define FORCE_ROTATE    1
 
-struct logInfo {
+
+typedef struct {
     char *pattern;
     char **files;
     int numFiles;
@@ -44,7 +44,6 @@ struct logInfo {
     char *compress_prog;
     char *uncompress_prog;
     char *compress_ext;
-	char *dateformat;		/* specify format for strftime (for dateext) */
     int flags;
 	int shred_cycles;		/* if !=0, pass -n shred_cycles to GNU shred */
     mode_t createMode;		/* if any/all of these are -1, we use the */
@@ -53,14 +52,11 @@ struct logInfo {
     /* these are at the end so they end up nil */
     const char **compress_options_list;
     int compress_options_count;
-    TAILQ_ENTRY(logInfo) list;
-};
+} logInfo;
 
-TAILQ_HEAD(logInfoHead, logInfo) logs;
+int readAllConfigPaths(const char **paths, logInfo ** logsPtr,
+		       int *numLogsPtr);
 
-extern int numLogs;
 extern int debug;
-
-int readAllConfigPaths(const char **paths);
 
 #endif

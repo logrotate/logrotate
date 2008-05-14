@@ -30,6 +30,10 @@ non-zero status.
 
 .SH OPTIONS
 .TP
+\fB-v\fR
+Turn on verbose mode.
+
+.TP
 \fB-d\fR
 Turns on debug mode and implies \fB-v\fR.  In debug mode, no changes will
 be made to the logs or to the \fBlogrotate\fR state file.
@@ -58,10 +62,6 @@ log files.  The default state file is \fI/var/lib/logrotate.status\fR.
 .TP
 \fB-\-usage\fR
 Prints a short usage message.
-
-.TP
-\fB-v\fR
-Turns on verbose mode.
 
 .SH CONFIGURATION FILE
 
@@ -122,7 +122,7 @@ The next section defines the parameters for both
 \fI/var/log/httpd/access.log\fR and \fI/var/log/httpd/error.log\fR.
 They are rotated whenever it grows over 100k in size, and the old logs
 files are mailed (uncompressed) to www@my.org after going through 5
-rotations, rather than being removed. The \fBsharedscripts\fR means that
+rotations, rather then being removed. The \fBsharedscripts\fR means that
 the \fBpostrotate\fR script will only be run once (after the old logs have 
 been compressed), not once for each log which is rotated. Note that the double
 quotes around the first filename at the beginning of this section allows
@@ -131,7 +131,7 @@ apply, with ', ", and \\ characters supported.
 
 The last section defines the parameters for all of the files in
 \fI/var/log/news\fR. Each file is rotated on a monthly basis.  This is
-considered a single rotation directive and if errors occur for more than
+considered a single rotation directive and if errors occur for more then
 one file, the log files are not compressed.
 
 Please use wildcards with caution.  If you specify *, \fBlogrotate\fR will
@@ -171,15 +171,15 @@ in use.  The default, for \fBgzip\fR, is "-9" (maximum compression).
 \fBcopy\fR
 Make a copy of the log file, but don't change the original at all.
 This option can be used, for instance, to make a snapshot of the current
-log file, or when some other utility needs to truncate or parse the file.
+log file, or when some other utility needs to truncate or pare the file.
 When this option is used, the \fBcreate\fR option will have no effect,
 as the old log file stays in place.
 
 .TP
 \fBcopytruncate\fR
 Truncate the original log file in place after creating a copy,
-instead of moving the old log file and optionally creating a new one.
-It can be used when some program cannot be told to close its logfile
+instead of moving the old log file and optionally creating a new one,
+It can be used when some program can not be told to close its logfile
 and thus might continue writing (appending) to the previous log file forever.
 Note that there is a very small time slice between copying the file and
 truncating it, so some logging data might be lost.
@@ -208,17 +208,10 @@ Archive old versions of log files adding a daily extension like YYYYMMDD
 instead of simply adding a number.
 
 .TP
-\fBdateformat\fR
-Specify the extension for \fBdateext\fR using the notation similar to
-\fBstrftime(3)\fR function. Only %Y %m and %d specifiers are allowed. The
-default value is -%Y%m%d. Note that also the character separating log name
-from the extension is part of the dateformat string.
-
-.TP
 \fBdelaycompress\fR
 Postpone compression of the previous log file to the next rotation cycle.
 This has only effect when used in combination with \fBcompress\fR.
-It can be used when some program cannot be told to close its logfile
+It can be used when some program can not be told to close its logfile
 and thus might continue writing to the previous log file for some time.
 
 .TP
@@ -230,7 +223,7 @@ and want to rotate it to mylog.1.foo.gz instead of mylog.foo.1.gz.
 
 .TP
 \fBifempty\fR
-Rotate the log file even if it is empty, overriding the \fBnotifempty\fR
+Rotate the log file even if it is empty, overiding the \fBnotifempty\fR
 option (ifempty is the default).
 
 .TP
@@ -269,7 +262,7 @@ configured address if \fBmaillast\fR and \fBmail\fR are configured.
 
 .TP
 \fBminsize\fR \fIsize\fR
-Log files are rotated when they grow bigger than \fIsize\fR bytes, but not
+Log files are rotated when they grow bigger then \fIsize\fR bytes, but not
 before the additionally specified time interval (\fBdaily\fR, \fBweekly\fR,
 \fBmonthly\fR, or \fByearly\fR).  The related \fBsize\fR option is similar
 except that it is mutually exclusive with the time interval options, and it
@@ -393,11 +386,11 @@ action). See \fBfirstaction\fR as well.
 \fBrotate \fIcount\fR
 Log files are rotated <count> times before being removed or mailed to the
 address specified in a \fBmail\fR directive. If \fIcount\fR is 0, old versions
-are removed rather than rotated.
+are removed rather then rotated.
 
 .TP
 \fBsize \fIsize\fR
-Log files are rotated when they grow bigger than \fIsize\fR bytes. If
+Log files are rotated when they grow bigger then \fIsize\fR bytes. If
 \fIsize\fR is followed by \fIM\fR, the size if assumed to be in megabytes.
 If the \fIk\fR is used, the size is in kilobytes. So \fBsize 100\fR,
 \fIsize 100k\fR, and \fIsize 100M\fR are all valid.
@@ -443,8 +436,8 @@ contains .rpmorig, .rpmsave, ,v, .swp, .rpmnew, ~, .cfsaved and .rhn-cfg-tmp-*.
 
 .TP
 \fBweekly\fR
-Log files are rotated if the current weekday is less than the weekday
-of the last rotation or if more than a week has passed since the last
+Log files are rotated if the current weekday is less then the weekday
+of the last rotation or if more then a week has passed since the last
 rotation. This is normally the same as rotating logs on the first day
 of the week, but it works better if \fIlogrotate\fR is not run every
 night.
