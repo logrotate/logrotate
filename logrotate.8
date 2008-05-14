@@ -208,6 +208,13 @@ Archive old versions of log files adding a daily extension like YYYYMMDD
 instead of simply adding a number.
 
 .TP
+\fBdateformat\fR
+Specify the extension for \fBdateext\fR using the notation similar to
+\fBstrftime(3)\fR function. Only %Y %m and %d specifiers are allowed. The
+default value is -%Y%m%d. Note that also the character separating log name
+from the extension is part of the dateformat string.
+
+.TP
 \fBdelaycompress\fR
 Postpone compression of the previous log file to the next rotation cycle.
 This has only effect when used in combination with \fBcompress\fR.
