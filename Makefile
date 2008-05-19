@@ -5,6 +5,9 @@ CFLAGS = -Wall -D_GNU_SOURCE -D$(OS_NAME) -DVERSION=\"$(VERSION)\" $(RPM_OPT_FLA
 PROG = logrotate
 MAN = logrotate.8
 LOADLIBES = -lpopt
+SVNURL= svn+ssh://svn.fedorahosted.org/svn/logrotate
+SVNPUBURL = http://svn.fedorahosted.org/svn/logrotate
+SVNTAG = r$(subst .,-,$(VERSION))
 
 ifeq ($(WITH_SELINUX),yes)
 CFLAGS += -DWITH_SELINUX
@@ -109,9 +112,12 @@ co:
 	co RCS/*,v
 	(cd examples; co RCS/*,v)
 
+svntag:
+	svn copy $(SVNURL)/trunk $(SVNURL)/tags/$(SVNTAG) -m "Release $(VERSION)"
+
 create-archive:
 	@rm -rf /tmp/logrotate-$(VERSION) /tmp/logrotate
-	@cd /tmp; cvs -d $(CVSROOT) export -r$(CVSTAG) logrotate; mv logrotate logrotate-$(VERSION)
+	@cd /tmp; svn export $(SVNPUBURL)/tags/$(SVNTAG) logrotate-$(VERSION)
 	@cd /tmp/logrotate-$(VERSION)
 	@cd /tmp; tar czSpf logrotate-$(VERSION).tar.gz logrotate-$(VERSION)
 	@rm -rf /tmp/logrotate-$(VERSION)
@@ -120,7 +126,7 @@ create-archive:
 	@echo " "
 	@echo "The final archive is ./logrotate-$(VERSION).tar.gz."
 
-archive: clean cvstag create-archive
+archive: clean svntag create-archive
 
 ifeq (.depend,$(wildcard .depend))
 include .depend
