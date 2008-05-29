@@ -278,7 +278,7 @@ static int mailLog(char *logFile, char *mailCommand,
 		   char *uncompressCommand, char *address, char *subject)
 {
     int mailInput;
-    pid_t mailChild, uncompressChild;
+    pid_t mailChild, uncompressChild = 0;
     int mailStatus, uncompressStatus;
     int uncompressPipe[2];
     char *mailArgv[] = { mailCommand, "-s", subject, address, NULL };
@@ -291,22 +291,26 @@ static int mailLog(char *logFile, char *mailCommand,
     }
 
     if (uncompressCommand) {
-	pipe(uncompressPipe);
-	if (!(uncompressChild = fork())) {
-	    /* uncompress child */
-	    dup2(mailInput, 0);
-	    close(mailInput);
-	    dup2(uncompressPipe[1], 1);
-	    close(uncompressPipe[0]);
-	    close(uncompressPipe[1]);
+		if (pipe(uncompressPipe) < 0) {
+			message(MESS_ERROR, "error opening pipe for uncompress: %s",
+					strerror(errno));
+			return 1;
+		}
+		if (!(uncompressChild = fork())) {
+			/* uncompress child */
+			dup2(mailInput, 0);
+			close(mailInput);
+			dup2(uncompressPipe[1], 1);
+			close(uncompressPipe[0]);
+			close(uncompressPipe[1]);
 
-	    execlp(uncompressCommand, uncompressCommand, NULL);
-	    exit(1);
-	}
+			execlp(uncompressCommand, uncompressCommand, NULL);
+			exit(1);
+		}
 
-	close(mailInput);
-	mailInput = uncompressPipe[0];
-	close(uncompressPipe[1]);
+		close(mailInput);
+		mailInput = uncompressPipe[0];
+		close(uncompressPipe[1]);
     }
 
     if (!(mailChild = fork())) {
@@ -699,8 +703,10 @@ int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 	log->flags & LOG_FLAG_DELAYCOMPRESS) {
 	if (log->flags & LOG_FLAG_DATEEXT) {
 		/* glob for uncompressed files with our pattern */
-		asprintf(&glob_pattern, "%s/%s%s%s",
-				rotNames->dirName, rotNames->baseName, dext_pattern, fileext);
+		if (asprintf(&glob_pattern, "%s/%s%s%s", rotNames->dirName,
+					rotNames->baseName, dext_pattern, fileext) < 0) {
+			message(MESS_ERROR, "could not allocate glob pattern memory\n");
+		}
 	    rc = glob(glob_pattern, 0, globerr, &globResult);
 	    if (!rc && globResult.gl_pathc > 0) {
 		for (i = 0; i < globResult.gl_pathc && !hasErrors; i++) {
@@ -745,8 +751,10 @@ int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
     if (log->flags & LOG_FLAG_DATEEXT) {
 	/* glob for compressed files with our pattern
 	 * and compress ext */
-	asprintf(&glob_pattern, "%s/%s%s%s%s",
-			rotNames->dirName, rotNames->baseName, dext_pattern, fileext, compext);
+	if (asprintf(&glob_pattern, "%s/%s%s%s%s", rotNames->dirName,
+				rotNames->baseName, dext_pattern, fileext, compext) < 0) {
+		message(MESS_ERROR, "could not allocate glob pattern memory\n");
+	}
 	rc = glob(glob_pattern, 0, globerr, &globResult);
 	if (!rc) {
 	    /* search for files to drop, if we find one remember it,
@@ -894,25 +902,28 @@ int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 	}
     }				/* !LOG_FLAG_DATEEXT */
 
-    if (log->flags & LOG_FLAG_DATEEXT) {
-	char *destFile =
-	    alloca(strlen(rotNames->dirName) + strlen(rotNames->baseName) +
-		   strlen(fileext) + strlen(compext) + 30);
-	struct stat fst_buf;
-	asprintf(&(rotNames->finalName), "%s/%s%s%s",
-			rotNames->dirName, rotNames->baseName, dext_str, fileext);
-	sprintf(destFile, "%s%s", rotNames->finalName, compext);
-	if (!stat(destFile, &fst_buf)) {
-	    message(MESS_DEBUG,
-		    "destination %s already exists, skipping rotation\n",
-		    rotNames->firstRotated);
-	    hasErrors = 1;
+	if (log->flags & LOG_FLAG_DATEEXT) {
+		char *destFile = alloca(PATH_MAX);
+		struct stat fst_buf;
+
+		if (asprintf(&(rotNames->finalName), "%s/%s%s%s", rotNames->dirName,
+					rotNames->baseName, dext_str, fileext) < 0) {
+			message(MESS_ERROR, "could not allocate finalName memory\n");
+		}
+		snprintf(destFile, PATH_MAX, "%s%s", rotNames->finalName, compext);
+		if (!stat(destFile, &fst_buf)) {
+			message(MESS_DEBUG,
+					"destination %s already exists, skipping rotation\n",
+					rotNames->firstRotated);
+			hasErrors = 1;
+		}
+	} else {
+		/* note: the gzip extension is *not* used here! */
+		if (asprintf(&(rotNames->finalName), "%s/%s.%d%s", rotNames->dirName,
+					rotNames->baseName, logStart, fileext) < 0) {
+			message(MESS_ERROR, "could not allocate finalName memory\n");
+		}
 	}
-    } else {
-	/* note: the gzip extension is *not* used here! */
-	asprintf(&(rotNames->finalName), "%s/%s.%d%s", rotNames->dirName,
-		rotNames->baseName, logStart, fileext);
-    }
 
     /* if the last rotation doesn't exist, that's okay */
     if (!debug && rotNames->disposeName

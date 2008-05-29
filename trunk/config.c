@@ -399,7 +399,9 @@ static int readConfigPath(const char *path, struct logInfo *defConfig)
 	    freeLogInfo(&defConfigBackup);
 	}
 
-	fchdir(here);
+	if (fchdir(here) < 0) {
+		message(MESS_ERROR, "could not change directory to '.'");
+	}
 	close(here);
 	free_2d_array(namelist, files_count);
     } else {
@@ -1097,15 +1099,13 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 		    oldchar = *endtag, *endtag = '\0';
 
 		    message(MESS_DEBUG, "including %s\n", start);
-			if (++recursion_depth > MAX_NESTING)
-			{
+			if (++recursion_depth > MAX_NESTING) {
 				message(MESS_ERROR, "%s:%d include nesting too deep\n",
 						configFile, lineNum);
 				--recursion_depth;
 				return 1;
 			}
-		    if (readConfigPath(start, defConfig))
-			{
+		    if (readConfigPath(start, defConfig)) {
 				--recursion_depth;
 				return 1;
 			}
