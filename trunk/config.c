@@ -481,6 +481,7 @@ static int globerr(const char *pathname, int theerr)
 	free(newlog->what); \
     	newlog->what = NULL; \
     }
+#define MAX_NESTING 16U
 
 static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 {
@@ -507,6 +508,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
     int argc, argNum;
     int logerror = 0;
     struct logInfo *log;
+	static unsigned recursion_depth = 0U;
 
     /* FIXME: createOwner and createGroup probably shouldn't be fixed
        length arrays -- of course, if we aren't run setuid it doesn't
@@ -1095,9 +1097,19 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 		    oldchar = *endtag, *endtag = '\0';
 
 		    message(MESS_DEBUG, "including %s\n", start);
-
+			if (++recursion_depth > MAX_NESTING)
+			{
+				message(MESS_ERROR, "%s:%d include nesting too deep\n",
+						configFile, lineNum);
+				--recursion_depth;
+				return 1;
+			}
 		    if (readConfigPath(start, defConfig))
-			return 1;
+			{
+				--recursion_depth;
+				return 1;
+			}
+			--recursion_depth;
 
 		    *endtag = oldchar, start = endtag;
 		}
