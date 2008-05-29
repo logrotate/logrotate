@@ -1,3 +1,7 @@
+3.7.7 ->
+	- do not exit on status file errors
+	- limit config file inclusion nesting
+
 3.7.6 -> 3.7.7
 	- dateformat
 	- fix possible buffer overflows in strings handling

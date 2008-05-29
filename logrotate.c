@@ -1500,6 +1500,7 @@ int main(int argc, const char **argv)
     const char **files;
     poptContext optCon;
 	struct logInfo *log;
+	int state_file_ok = 1;
 
     struct poptOption options[] = {
 	{"debug", 'd', 0, 0, 'd',
@@ -1570,15 +1571,21 @@ int main(int argc, const char **argv)
 	LIST_INIT(&states);
 
 	if (readState(stateFile))
-	exit(1);
+	{
+		state_file_ok = 0;
+		/* exit(1); */
+	}
 
     message(MESS_DEBUG, "\nHandling %d logs\n", numLogs);
 
 	for (log = logs.tqh_first; log != NULL; log = log->list.tqe_next)
 	rc |= rotateLogSet(log, force);
 
-    if (!debug)
-	rc |= writeState(stateFile);
+    if (!debug && state_file_ok)
+		rc |= writeState(stateFile);
+	if (!state_file_ok)	
+		message(MESS_ERROR, "could not read state file, "
+				"will not attempt to write into it\n");
 	
     return (rc != 0);
 }
