@@ -237,31 +237,18 @@ static void copyLogInfo(struct logInfo *to, struct logInfo *from)
 
 static void freeLogInfo(struct logInfo *log)
 {
-    if (log->pattern)
 	free(log->pattern);
-    if (log->files)
 	free_2d_array(log->files, log->numFiles);
-    if (log->oldDir)
 	free(log->oldDir);
-    if (log->pre)
 	free(log->pre);
-    if (log->post)
 	free(log->post);
-    if (log->first)
 	free(log->first);
-    if (log->last)
 	free(log->last);
-    if (log->logAddress)
 	free(log->logAddress);
-    if (log->extension)
 	free(log->extension);
-    if (log->compress_prog)
 	free(log->compress_prog);
-    if (log->uncompress_prog)
 	free(log->uncompress_prog);
-    if (log->compress_ext)
 	free(log->compress_ext);
-    if (log->compress_options_list)
 	free(log->compress_options_list);
 	free(log->dateformat);
 }
@@ -487,10 +474,10 @@ static int globerr(const char *pathname, int theerr)
 }
 
 #define freeLogItem(what) \
-    if (newlog->what) { \
-	free(newlog->what); \
-    	newlog->what = NULL; \
-    }
+	do { \
+		free(newlog->what); \
+		newlog->what = NULL; \
+	} while (0);
 #define MAX_NESTING 16U
 
 static int readConfigFile(const char *configFile, struct logInfo *defConfig)

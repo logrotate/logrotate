@@ -389,9 +389,7 @@ static int copyTruncate(char *currLog, char *saveLog, struct stat *sb,
 			    "getting default context: %s\n",
 			    strerror(errno));
 		    if (selinux_enforce) {
-				if (oldContext) {
-					freecon(oldContext);
-				}
+				freecon(oldContext);
 				return 1;
 		    }
 		}
@@ -400,16 +398,12 @@ static int copyTruncate(char *currLog, char *saveLog, struct stat *sb,
 			    "setting file context %s to %s: %s\n",
 			    saveLog, oldContext, strerror(errno));
 			if (selinux_enforce) {
-				if (oldContext) {
-					freecon(oldContext);
-				}
+				freecon(oldContext);
 				return 1;
 		    }
 		}
 		message(MESS_DEBUG, "set default create context\n");
-		if (oldContext) {
-			freecon(oldContext);
-		}
+		freecon(oldContext);
 	    } else {
 		    if (errno != ENOTSUP) {
 			    message(MESS_ERROR, "getting file context %s: %s\n",
@@ -426,10 +420,8 @@ static int copyTruncate(char *currLog, char *saveLog, struct stat *sb,
 #ifdef WITH_SELINUX
 	if (selinux_enabled) {
 	    setfscreatecon_raw(prev_context);
-	    if (prev_context != NULL) {
 		freecon(prev_context);
 		prev_context = NULL;
-	    }
 	}
 #endif
 	if (fdsave < 0) {
@@ -846,9 +838,7 @@ int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 					"getting default context: %s\n",
 					strerror(errno));
 				if (selinux_enforce) {
-					if (oldContext) {
-						freecon(oldContext);
-					}
+					freecon(oldContext);
 					return 1;
 				}
 			}
@@ -858,15 +848,11 @@ int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 					log->files[logNum], oldContext,
 					strerror(errno));
 				if (selinux_enforce) {
-					if (oldContext) {
-						freecon(oldContext);
-					}
+					freecon(oldContext);
 					return 1;
 				}
 			}
-			if (oldContext) {
-				freecon(oldContext);
-			}
+			freecon(oldContext);
 	    } else {
 		if (errno != ENOENT && errno != ENOTSUP) {
 			message(MESS_ERROR, "getting file context %s: %s\n",
@@ -971,9 +957,7 @@ int rotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 						"getting default context: %s\n",
 						strerror(errno));
 					if (selinux_enforce) {
-						if (oldContext) {
-							freecon(oldContext);
-						}
+						freecon(oldContext);
 						if (close(fdcurr) < 0)
 							message(MESS_ERROR, "error closing file %s",
 									log->files[logNum]);
@@ -985,9 +969,7 @@ int rotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 						"setting file context %s to %s: %s\n",
 						log->files[logNum], oldContext, strerror(errno));
 					if (selinux_enforce) {
-						if (oldContext) {
-							freecon(oldContext);
-						}
+						freecon(oldContext);
 						if (close(fdcurr) < 0)
 							message(MESS_ERROR, "error closing file %s",
 									log->files[logNum]);
@@ -996,9 +978,7 @@ int rotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 				}
 				message(MESS_DEBUG, "fscreate context set to %s\n",
 						oldContext);
-				if (oldContext) {
-					freecon(oldContext);
-				}
+				freecon(oldContext);
 			} else {
 				if (errno != ENOTSUP) {
 					message(MESS_ERROR, "getting file context %s: %s\n",
@@ -1073,10 +1053,8 @@ int rotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 #ifdef WITH_SELINUX
 	if (selinux_enabled) {
 	    setfscreatecon_raw(savedContext);
-	    if (savedContext != NULL) {
-			freecon(savedContext);
-			savedContext = NULL;
-	    }
+		freecon(savedContext);
+		savedContext = NULL;
 	}
 #endif
 
@@ -1120,13 +1098,11 @@ int postrotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 	hasErrors = removeLogFile(rotNames->disposeName, log);
 
 #ifdef WITH_SELINUX
-    if (selinux_enabled) {
-	setfscreatecon_raw(prev_context);
-	if (prev_context != NULL) {
-	    freecon(prev_context);
-	    prev_context = NULL;
+	if (selinux_enabled) {
+		setfscreatecon_raw(prev_context);
+		freecon(prev_context);
+		prev_context = NULL;
 	}
-    }
 #endif
     return hasErrors;
 }
