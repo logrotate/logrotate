@@ -205,12 +205,13 @@ Log files are rotated every day.
 .TP
 \fBdateext\fR
 Archive old versions of log files adding a daily extension like YYYYMMDD
-instead of simply adding a number.
+instead of simply adding a number. The extension may be configured using
+the \fBdateformat\fR option.
 
 .TP
 \fBdateformat\fR
 Specify the extension for \fBdateext\fR using the notation similar to
-\fBstrftime(3)\fR function. Only %Y %m and %d specifiers are allowed. The
+\fBstrftime\fR(3) function. Only %Y %m and %d specifiers are allowed. The
 default value is -%Y%m%d. Note that also the character separating log name
 from the extension is part of the dateformat string.
 
@@ -422,7 +423,7 @@ off by default.  See also \fBnoshred\fR.
 
 .TP
 \fBshredcycles\fR \fIcount\fR
-Asks GNU \fBshred\fR to overwite log files \fBcount\fR times before 
+Asks GNU \fBshred\fR(1) to overwite log files \fBcount\fR times before 
 deletion.  Without this option, \fBshred\fR's default will be used.
 
 .TP
