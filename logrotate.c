@@ -1568,11 +1568,14 @@ int main(int argc, const char **argv)
 	for (log = logs.tqh_first; log != NULL; log = log->list.tqe_next)
 	rc |= rotateLogSet(log, force);
 
-    if (!debug && state_file_ok)
+	if (!debug && state_file_ok)
 		rc |= writeState(stateFile);
-	if (!state_file_ok)	
+	if (!state_file_ok)
+	{
 		message(MESS_ERROR, "could not read state file, "
 				"will not attempt to write into it\n");
+		rc = 1;
+	}
 	
     return (rc != 0);
 }
