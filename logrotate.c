@@ -46,8 +46,11 @@ struct logNames {
     char *baseName;
 };
 
-LIST_HEAD(stateSet, logState) states;
+struct logStates {
+	LIST_HEAD(stateSet, logState) head;
+} **states;
 
+unsigned int hashSize;
 int numLogs = 0;
 int debug = 0;
 char *mailCommand = DEFAULT_MAIL_COMMAND;
@@ -62,6 +65,59 @@ static int globerr(const char *pathname, int theerr)
 
     /* We want the glob operation to continue, so return 0 */
     return 1;
+}
+
+#define HASH_SIZE_MIN 64
+static int allocateHash(void)
+{
+	struct logInfo *log;
+	unsigned int hs;
+	int i;
+
+	hs = 0;
+
+	for (log = logs.tqh_first; log != NULL; log = log->list.tqe_next)
+		hs += log->numFiles;
+
+	hs *= 2;
+
+	/* Enforce some reasonable minimum hash size */
+	if (hs < HASH_SIZE_MIN)
+		hs = HASH_SIZE_MIN;
+
+	states = calloc(hs, sizeof(struct logStates *));
+	if (states == NULL) {
+		message(MESS_ERROR, "could not allocate memory for "
+				"hash table\n");
+		return 1;
+	}
+
+	for (i = 0; i < hs; i++) {
+		states[i] = malloc(sizeof(struct logState));
+		if (states[i] == NULL) {
+			message(MESS_ERROR, "could not allocate memory for "
+				"hash element\n");
+			return 1;
+		}
+		LIST_INIT(&(states[i]->head));
+	}
+
+	hashSize = hs;
+
+	return 0;
+}
+
+#define HASH_CONST 13
+static unsigned hashIndex(const char *fn)
+{
+	unsigned hash = 0;
+
+	while (*fn) {
+		hash *= HASH_CONST;
+		hash += *fn++;
+	}
+
+	return hash % hashSize;
 }
 
 static struct logState *newState(const char *fn)
@@ -92,9 +148,10 @@ static struct logState *newState(const char *fn)
 
 static struct logState *findState(const char *fn)
 {
+	unsigned int i = hashIndex(fn);
 	struct logState *p;
 
-	for (p = states.lh_first; p != NULL; p = p->list.le_next)
+	for (p = states[i]->head.lh_first; p != NULL; p = p->list.le_next)
 		if (!strcmp(fn, p->fn))
 			break;
 
@@ -103,7 +160,7 @@ static struct logState *findState(const char *fn)
 		if ((p = newState(fn)) == NULL)
 			return NULL;
 
-		LIST_INSERT_HEAD(&states, p, list);
+		LIST_INSERT_HEAD(&(states[i]->head), p, list);
 	}
 
 	return p;
@@ -1313,6 +1370,7 @@ static int writeState(char *stateFilename)
     struct logState *p;
     FILE *f;
     char *chptr;
+    int i;
 
     f = fopen(stateFilename, "w");
     if (!f) {
@@ -1323,27 +1381,29 @@ static int writeState(char *stateFilename)
 
     fprintf(f, "logrotate state -- version 2\n");
 
-    for (p = states.lh_first; p != NULL; p = p->list.le_next) {
-	fputc('"', f);
-	for (chptr = p->fn; *chptr; chptr++) {
-	    switch (*chptr) {
-	    case '"':
-		fputc('\\', f);
-	    }
+	for (i = 0; i < hashSize; i++) {
+		for (p = states[i]->head.lh_first; p != NULL;
+				p = p->list.le_next) {
+			fputc('"', f);
+			for (chptr = p->fn; *chptr; chptr++) {
+				switch (*chptr) {
+				case '"':
+					fputc('\\', f);
+				}
 
-	    fputc(*chptr, f);
+				fputc(*chptr, f);
+			}
+
+			fputc('"', f);
+			fprintf(f, " %d-%d-%d\n",
+			p->lastRotated.tm_year + 1900,
+			p->lastRotated.tm_mon + 1,
+			p->lastRotated.tm_mday);
+		}
 	}
 
-	fputc('"', f);
-	fprintf(f, " %d-%d-%d\n",
-		p->lastRotated.tm_year + 1900,
-		p->lastRotated.tm_mon + 1,
-		p->lastRotated.tm_mday);
-    }
-
-    fclose(f);
-
-    return 0;
+	fclose(f);
+	return 0;
 }
 
 static int readState(char *stateFilename)
@@ -1555,7 +1615,8 @@ int main(int argc, const char **argv)
     poptFreeContext(optCon);
     nowSecs = time(NULL);
 
-	LIST_INIT(&states);
+	if (allocateHash() != 0)
+		return 1;
 
 	if (readState(stateFile))
 	{
@@ -1563,13 +1624,14 @@ int main(int argc, const char **argv)
 		/* exit(1); */
 	}
 
-    message(MESS_DEBUG, "\nHandling %d logs\n", numLogs);
+	message(MESS_DEBUG, "\nHandling %d logs\n", numLogs);
 
 	for (log = logs.tqh_first; log != NULL; log = log->list.tqe_next)
-	rc |= rotateLogSet(log, force);
+		rc |= rotateLogSet(log, force);
 
 	if (!debug && state_file_ok)
 		rc |= writeState(stateFile);
+
 	if (!state_file_ok)
 	{
 		message(MESS_ERROR, "could not read state file, "
@@ -1577,5 +1639,5 @@ int main(int argc, const char **argv)
 		rc = 1;
 	}
 	
-    return (rc != 0);
+	return (rc != 0);
 }
