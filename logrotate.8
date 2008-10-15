@@ -211,9 +211,10 @@ the \fBdateformat\fR option.
 .TP
 \fBdateformat\fR
 Specify the extension for \fBdateext\fR using the notation similar to
-\fBstrftime\fR(3) function. Only %Y %m and %d specifiers are allowed. The
-default value is -%Y%m%d. Note that also the character separating log name
-from the extension is part of the dateformat string.
+\fBstrftime\fR(3) function. Only %Y %m %d and %s specifiers are allowed.
+The default value is -%Y%m%d. Note that also the character separating
+log name from the extension is part of the dateformat string. Note: the
+system clock must be set past Sep 9th 2001 for %s to work correctly.
 
 .TP
 \fBdelaycompress\fR

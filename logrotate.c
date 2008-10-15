@@ -721,6 +721,21 @@ int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 						dformat[i++] = *(dext++);
 						dformat[i] = *dext;
 						break;
+					case 's':
+						/* End of year 2293 this pattern does not work. */
+						strncat(dext_pattern,
+								"[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]",
+								sizeof(dext_pattern) - strlen(dext_pattern));
+						j += 50;
+						if (j >= (sizeof(dext_pattern) - 1)) {
+							message(MESS_ERROR, "Date format %s is too long\n",
+									log->dateformat);
+							hasErrors = 1;
+							break;
+						}
+						dformat[i++] = *(dext++);
+						dformat[i] = *dext;
+						break;
 					default:
 						dformat[i++] = *dext;
 						dformat[i] = '%';
