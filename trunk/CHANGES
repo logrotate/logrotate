@@ -3,6 +3,8 @@
 	- limit config file inclusion nesting
 	- use hashes for status file handling (patch by Petr Tesarik
 	  <ptesarik@suse.cz> and Leonardo Chiquitto)
+	- dateformat to allow unixtime (patch by Sami Kerola
+	  <kerolasa@iki.fi>)
 
 3.7.6 -> 3.7.7
 	- dateformat
