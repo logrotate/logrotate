@@ -5,6 +5,8 @@
 	  <ptesarik@suse.cz> and Leonardo Chiquitto)
 	- dateformat to allow unixtime (patch by Sami Kerola
 	  <kerolasa@iki.fi>)
+	- manual page corrections (taken from the Debian patches by
+	  Paul Martin <pm@debian.org>)
 
 3.7.6 -> 3.7.7
 	- dateformat
