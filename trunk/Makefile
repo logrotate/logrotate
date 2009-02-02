@@ -11,7 +11,7 @@ SVNTAG = r$(subst .,-,$(VERSION))
 
 ifeq ($(WITH_SELINUX),yes)
 CFLAGS += -DWITH_SELINUX
-LOADLIBES += -lselinux 
+LOADLIBES += -lselinux
 endif
 
 # HP-UX using GCC
@@ -40,6 +40,7 @@ ifeq ($(OS_NAME),SunOS)
     endif
     CC = gcc
     INSTALL = install
+    LOADLIBES += -lasprintf
     ifeq ($(BASEDIR),)
 	BASEDIR = /usr/local
     endif

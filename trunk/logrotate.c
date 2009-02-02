@@ -15,6 +15,10 @@
 #include <glob.h>
 #include <locale.h>
 
+#if defined(SunOS) 
+#include <syslimits.h>
+#endif
+
 #ifdef WITH_SELINUX
 #include <selinux/selinux.h>
 static security_context_t prev_context = NULL;

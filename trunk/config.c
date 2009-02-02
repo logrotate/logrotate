@@ -29,8 +29,11 @@
 
 #define REALLOC_STEP    10
 
-#if defined(SunOS) && !defined(isblank)
+#if defined(SunOS) 
+#include <syslimits.h>
+#if !defined(isblank)
 #define isblank(c) 	( (c) == ' ' || (c) == '\t' ) ? 1 : 0
+#endif
 #endif
 
 static char *defTabooExts[] = { ".rpmsave", ".rpmorig", "~", ",v",

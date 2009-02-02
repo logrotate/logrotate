@@ -1,3 +1,5 @@
+3.7.8 ->
+	- fix building on Solaris (patch by András Szilárd)
 3.7.7 -> 3.7.8
 	- do not exit on status file errors
 	- limit config file inclusion nesting
