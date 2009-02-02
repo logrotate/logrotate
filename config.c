@@ -306,11 +306,6 @@ static int readConfigPath(const char *path, struct logInfo *defConfig)
 	DIR *dirp;
 
 	here = open(".", O_RDONLY);
-	if (here < 0) {
-	    message(MESS_ERROR, "cannot open current directory: %s\n",
-		    strerror(errno));
-	    return 1;
-	}
 
 	if ((dirp = opendir(path)) == NULL) {
 	    message(MESS_ERROR, "cannot open directory %s: %s\n", path,
