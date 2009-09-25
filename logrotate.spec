@@ -1,6 +1,6 @@
 Summary: Rotates, compresses, removes and mails system log files
 Name: logrotate
-Version: 3.7.8
+Version: 3.7.9
 Release: 1
 License: GPL+
 Group: System Environment/Base
@@ -45,12 +45,16 @@ rm -rf $RPM_BUILD_ROOT
 %doc CHANGES COPYING
 %attr(0755, root, root) %{_sbindir}/logrotate
 %attr(0644, root, root) %{_mandir}/man8/logrotate.8*
+%attr(0644, root, root) %{_mandir}/man5/logrotate.conf.5*
 %attr(0755, root, root) %{_sysconfdir}/cron.daily/logrotate
 %attr(0644, root, root) %config(noreplace) %{_sysconfdir}/logrotate.conf
 %attr(0755, root, root) %dir %{_sysconfdir}/logrotate.d
 %attr(0644, root, root) %verify(not size md5 mtime) %config(noreplace) %{_localstatedir}/lib/logrotate.status
 
 %changelog
+* Fri Sep 25 2009 Daniel Novotny <dnovotny@redhat.com> 3.7.9-1
+- new upstream version
+
 * Wed Jan 28 2009 Tomas Smetana <tsmetana@redhat.com> 3.7.8-1
 - new upstream version
 
