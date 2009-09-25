@@ -532,6 +532,13 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 
     length = sb.st_size;
 
+    if (length > 0xffffff) {
+        message(MESS_ERROR, "file %s too large, probably not a config file.\n",
+                configFile);
+        close(fd);
+        return 1;
+    }    
+
     buf = alloca(length + 2);
     if (!buf) {
 	message(MESS_ERROR, "alloca() of %d bytes failed\n", (int) length);
