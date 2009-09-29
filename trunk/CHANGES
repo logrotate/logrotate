@@ -1,5 +1,10 @@
 3.7.8 ->
 	- fix building on Solaris (patch by András Szilárd)
+	- don't copy config files on the stack -- mmap them instead
+	  (fixes segfaults with too large/invalid config files)
+	- symlinked conf file man page as requested by Fedora guidelines
+	  (thanks to Ivana Hutarova Varekova)
+
 3.7.7 -> 3.7.8
 	- do not exit on status file errors
 	- limit config file inclusion nesting

@@ -18,6 +18,7 @@
 #include <wchar.h>
 #include <wctype.h>
 #include <fnmatch.h>
+#include <sys/mman.h>
 
 #include "basenames.h"
 #include "log.h"
@@ -509,13 +510,13 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
        length arrays -- of course, if we aren't run setuid it doesn't
        matter much */
 
-    fd = open(configFile, O_RDONLY);
+    fd = open(configFile, O_RDONLY | O_CLOEXEC);
     if (fd < 0) {
 	message(MESS_ERROR, "failed to open config file %s: %s\n",
 		configFile, strerror(errno));
 	return 1;
     }
-
+	
     if (fstat(fd, &sb)) {
 	message(MESS_ERROR, "fstat of %s failed: %s\n", configFile,
 		strerror(errno));
@@ -530,34 +531,21 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 	return 0;
     }
 
-    length = sb.st_size;
+	length = sb.st_size;
+	buf = mmap(NULL, (size_t)(length + 2), PROT_READ | PROT_WRITE,
+			MAP_PRIVATE | MAP_POPULATE, fd, (off_t) 0);
+	if (buf == MAP_FAILED) {
+		message(MESS_ERROR, "Error mapping config file %s: %s\n",
+				configFile, strerror(errno));
+		close(fd);
+		return 1;
+	}
 
-    if (length > 0xffffff) {
-        message(MESS_ERROR, "file %s too large, probably not a config file.\n",
-                configFile);
-        close(fd);
-        return 1;
-    }    
-
-    buf = alloca(length + 2);
-    if (!buf) {
-	message(MESS_ERROR, "alloca() of %d bytes failed\n", (int) length);
-	close(fd);
-	return 1;
-    }
-
-    if (read(fd, buf, length) != length) {
-	message(MESS_ERROR, "failed to read %s: %s\n", configFile,
-		strerror(errno));
-	close(fd);
-	return 1;
-    }
-
-    close(fd);
-
-    /* knowing the buffer ends with a newline makes things (a bit) cleaner */
-    buf[length + 1] = '\0';
-    buf[length] = '\n';
+	/* knowing the buffer ends with a newline makes things (a bit) cleaner */
+	buf[length + 1] = '\0';
+	buf[length] = '\n';
+	madvise(buf, (size_t)(length + 2),
+			MADV_SEQUENTIAL | MADV_WILLNEED | MADV_DONTFORK);
 
     message(MESS_DEBUG, "reading config file %s\n", configFile);
 
@@ -573,7 +561,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 		if (*start == 0) {
 		    message(MESS_ERROR, "%s:%d } expected \n",
 			    configFile, lineNum);
-		    return 1;
+		    goto error;
 		} else if (*start == '\n') {
 		    lineNum++;
 		}
@@ -745,7 +733,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 			logerror = 1;
 			continue;
 		    } else {
-			return 1;
+			goto error;
 		    }
 		}
 
@@ -762,7 +750,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 			    logerror = 1;
 			    continue;
 			} else {
-			    return 1;
+			    goto error;
 			}
 		    }
 		    newlog->createUid = pw->pw_uid;
@@ -778,7 +766,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 			    logerror = 1;
 			    continue;
 			} else {
-			    return 1;
+			    goto error;
 			}
 		    }
 		    newlog->createGid = group->gr_gid;
@@ -819,7 +807,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 			    logerror = 1;
 			    continue;
 			} else {
-			    return 1;
+			    goto error;
 			}
 		    } else {
 			multiplier = 1;
@@ -834,7 +822,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 			    logerror = 1;
 			    continue;
 			} else {
-			    return 1;
+			    goto error;
 			}
 		    }
 
@@ -859,7 +847,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 			message(MESS_ERROR,
 				"%s:%d bad number of days'%s'\n",
 				configFile, lineNum, start);
-			return 1;
+			goto error;
 		    }
 
 		    newlog->criterium = ROT_DAYS;
@@ -878,7 +866,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 			if (*chptr || newlog->shred_cycles < 0) {
 				message(MESS_ERROR, "%s:%d bad shred cycles '%s'\n",
 						configFile, lineNum, start);
-				return 1;
+				goto error;
 			}
 			*endtag = oldchar, start = endtag;
 		}
@@ -917,7 +905,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 			    logerror = 1;
 			    continue;
 			} else {
-			    return 1;
+			    goto error;
 			}
 		    }
 		    *endtag = oldchar, start = endtag;
@@ -939,7 +927,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 			    logerror = 1;
 			    continue;
 			} else {
-			    return 1;
+			    goto error;
 			}
 		    }
 		    *endtag = oldchar, start = endtag;
@@ -961,7 +949,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 			    logerror = 1;
 			    continue;
 			} else {
-			    return 1;
+			    goto error;
 			}
 		    }
 		    *endtag = oldchar, start = endtag;
@@ -979,7 +967,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 			logerror = 1;
 			continue;
 		    } else {
-			return 1;
+			goto error;
 		    }
 		}
 	    } else if (!strcmp(start, "nomail")) {
@@ -1103,11 +1091,11 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 				message(MESS_ERROR, "%s:%d include nesting too deep\n",
 						configFile, lineNum);
 				--recursion_depth;
-				return 1;
+				goto error;
 			}
 		    if (readConfigPath(start, defConfig)) {
 				--recursion_depth;
-				return 1;
+				goto error;
 			}
 			--recursion_depth;
 
@@ -1124,7 +1112,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 			logerror = 1;
 			continue;
 		    } else {
-			return 1;
+			goto error;
 		    }
 		}
 #if 0
@@ -1133,7 +1121,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 			    "path %s: %s\n", configFile, lineNum,
 			    newlog->oldDir, strerror(errno));
 		    free(newlog->oldDir);
-		    return 1;
+		    goto error;
 		}
 
 		if (!S_ISDIR(sb.st_mode)) {
@@ -1141,7 +1129,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 			    "directory\n", configFile, lineNum,
 			    newlog->oldDir);
 		    free(newlog->oldDir);
-		    return 1;
+		    goto error;
 		}
 #endif
 
@@ -1175,7 +1163,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 			logerror = 1;
 			continue;
 		    } else {
-			return 1;
+			goto error;
 		    }
 		}
 
@@ -1187,7 +1175,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 			logerror = 1;
 			continue;
 		    } else {
-			return 1;
+			goto error;
 		    }
 		}
 
@@ -1207,7 +1195,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 			logerror = 1;
 			continue;
 		    } else {
-			return 1;
+			goto error;
 		    }
 		}
 
@@ -1219,7 +1207,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 			logerror = 1;
 			continue;
 		    } else {
-			return 1;
+			goto error;
 		    }
 		}
 
@@ -1244,7 +1232,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 			logerror = 1;
 			continue;
 		    } else {
-			return 1;
+			goto error;
 		    }
 		}
 
@@ -1259,7 +1247,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 			logerror = 1;
 			continue;
 		    } else {
-			return 1;
+			goto error;
 		    }
 		}
 
@@ -1279,7 +1267,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 			logerror = 1;
 			continue;
 		    } else {
-			return 1;
+			goto error;
 		    }
 		}
 
@@ -1324,7 +1312,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 	    /* Allocate a new logInfo structure and insert it into the logs
 	       queue, copying the actual values from defConfig */
 	    if ((newlog = newLogInfo(defConfig)) == NULL)
-		return 1;
+		goto error;
 
 	    endtag = start;
 	    while (*endtag != '{' && *endtag != '\0')
@@ -1338,12 +1326,12 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 	    if (poptParseArgvString(start, &argc, &argv)) {
 		message(MESS_ERROR, "%s:%d error parsing filename\n",
 			configFile, lineNum);
-		return 1;
+		goto error;
 	    } else if (argc < 1) {
 		message(MESS_ERROR,
 			"%s:%d { expected after log file name(s)\n",
 			configFile, lineNum);
-		return 1;
+		goto error;
 	    }
 
 	    newlog->files = NULL;
@@ -1408,7 +1396,7 @@ duperror:
 	    if (newlog == defConfig) {
 		message(MESS_ERROR, "%s:%d unexpected }\n", configFile,
 			lineNum);
-		return 1;
+		goto error;
 	    }
 
 	    if (newlog->oldDir) {
@@ -1421,7 +1409,7 @@ duperror:
 				"path %s: %s\n", configFile, lineNum,
 				dirName, strerror(errno));
 			free(dirName);
-			return 1;
+			goto error;
 		    }
 		    ld = alloca(strlen(dirName) + strlen(newlog->oldDir) +
 				2);
@@ -1436,7 +1424,7 @@ duperror:
 			message(MESS_ERROR, "%s:%d error verifying olddir "
 				"path %s: %s\n", configFile, lineNum,
 				dirName, strerror(errno));
-			return 1;
+			goto error;
 		    }
 
 		    if (sb.st_dev != sb2.st_dev) {
@@ -1444,7 +1432,7 @@ duperror:
 				"%s:%d olddir %s and log file %s "
 				"are on different devices\n", configFile,
 				lineNum, newlog->oldDir, newlog->files[i]);
-			return 1;
+			goto error;
 		    }
 		}
 	    }
@@ -1475,8 +1463,13 @@ duperror:
 	message(MESS_ERROR,
 		"%s:prerotate or postrotate without endscript\n",
 		configFile);
-	return 1;
+	goto error;
     }
-
+	munmap(buf, (size_t)(length + 2));
+	close(fd);
     return 0;
+error:
+	munmap(buf, (size_t)(length + 2));
+	close(fd);
+    return 1;
 }
