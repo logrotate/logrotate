@@ -3,7 +3,8 @@ OS_NAME = $(shell uname -s)
 LFS = $(shell echo `getconf LFS_CFLAGS 2>/dev/null`)
 CFLAGS = -Wall -D_GNU_SOURCE -D$(OS_NAME) -DVERSION=\"$(VERSION)\" $(RPM_OPT_FLAGS) $(LFS)
 PROG = logrotate
-MAN = logrotate.8 logrotate.conf.5
+MAN = logrotate.8
+MAN5 = logrotate.conf.5
 LOADLIBES = -lpopt
 SVNURL= svn+ssh://svn.fedorahosted.org/svn/logrotate
 SVNPUBURL = http://svn.fedorahosted.org/svn/logrotate
@@ -105,9 +106,11 @@ install:
 	if [ "$(OS_NAME)" = HP-UX ]; then \
 	$(INSTALL) $(PROG) $(PREFIX)/$(BINDIR) 0755 bin bin; \
 	$(INSTALL) $(MAN) $(PREFIX)/$(MANDIR)/man`echo $(MAN) | sed "s/.*\.//"` 0644 bin bin; \
+	$(INSTALL) $(MAN5) $(PREFIX)/$(MANDIR)/man`echo $(MAN5) | sed "s/.*\.//"` 0644 bin bin; \
 	else \
 	$(INSTALL) -m 755 $(PROG) $(PREFIX)/$(BINDIR); \
 	$(INSTALL) -m 644 $(MAN) $(PREFIX)/$(MANDIR)/man`echo $(MAN) | sed "s/.*\.//"`/$(MAN); \
+	$(INSTALL) -m 644 $(MAN5) $(PREFIX)/$(MANDIR)/man`echo $(MAN5) | sed "s/.*\.//"`/$(MAN5); \
 	fi
 
 co:

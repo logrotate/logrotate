@@ -4,6 +4,7 @@
 	  (fixes segfaults with too large/invalid config files)
 	- symlinked conf file man page as requested by Fedora guidelines
 	  (thanks to Ivana Hutarova Varekova)
+	- cron script logrotate.cron redirects output to /dev/null
 
 3.7.7 -> 3.7.8
 	- do not exit on status file errors
