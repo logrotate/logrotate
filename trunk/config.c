@@ -505,6 +505,12 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
     int logerror = 0;
     struct logInfo *log;
 	static unsigned recursion_depth = 0U;
+	struct flock fd_lock = {
+		.l_start = 0,
+		.l_len = 0,
+		.l_whence = SEEK_SET,
+		.l_type = F_RDLCK
+	};
 
     /* FIXME: createOwner and createGroup probably shouldn't be fixed
        length arrays -- of course, if we aren't run setuid it doesn't
@@ -516,7 +522,12 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 		configFile, strerror(errno));
 	return 1;
     }
-	
+	/* We don't want anybody to change the file while we parse it,
+	 * let's try to lock it for reading. */
+	if (fcntl(fd, F_SETLK, &fd_lock) == -1) {
+		message(MESS_ERROR, "Could not lock file %s for reading\n",
+				configFile);
+	}
     if (fstat(fd, &sb)) {
 	message(MESS_ERROR, "fstat of %s failed: %s\n", configFile,
 		strerror(errno));
