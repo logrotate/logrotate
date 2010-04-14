@@ -436,7 +436,7 @@ static int copyTruncate(char *currLog, char *saveLog, struct stat *sb,
     message(MESS_DEBUG, "copying %s to %s\n", currLog, saveLog);
 
     if (!debug) {
-	if ((fdcurr = open(currLog, O_RDWR)) < 0) {
+	if ((fdcurr = open(currLog, (flags & LOG_FLAG_COPY) ? O_RDONLY : O_RDWR)) < 0) {
 	    message(MESS_ERROR, "error opening %s: %s\n", currLog,
 		    strerror(errno));
 	    return 1;
