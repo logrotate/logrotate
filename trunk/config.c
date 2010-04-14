@@ -45,6 +45,7 @@ static int defTabooCount = sizeof(defTabooExts) / sizeof(char *);
 /* I shouldn't use globals here :-( */
 static char **tabooExts = NULL;
 int tabooCount = 0;
+static int glob_errno = 0;
 
 static int readConfigFile(const char *configFile, struct logInfo *defConfig);
 static int globerr(const char *pathname, int theerr);
@@ -465,8 +466,7 @@ int readAllConfigPaths(const char **paths)
 
 static int globerr(const char *pathname, int theerr)
 {
-    message(MESS_ERROR, "error accessing %s: %s\n", pathname,
-	    strerror(theerr));
+    glob_errno = theerr;
 
     /* We want the glob operation to abort on error, so return 1 */
     return 1;
@@ -505,6 +505,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
     int logerror = 0;
     struct logInfo *log;
 	static unsigned recursion_depth = 0U;
+	char *globerr_msg = NULL;
 	struct flock fd_lock = {
 		.l_start = 0,
 		.l_len = 0,
@@ -1348,16 +1349,25 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 	    newlog->files = NULL;
 	    newlog->numFiles = 0;
 	    for (argNum = 0; argNum < argc && logerror != 1; argNum++) {
+		if (globerr_msg) {
+		    free(globerr_msg);
+		    globerr_msg = NULL;
+		}
+			
 		rc = glob(argv[argNum], GLOB_NOCHECK, globerr,
 			  &globResult);
 		if (rc == GLOB_ABORTED) {
 		    if (newlog->flags & LOG_FLAG_MISSINGOK)
 			continue;
 
-		    message(MESS_ERROR, "%s:%d glob failed for %s\n",
-			    configFile, lineNum, argv[argNum]);
-		    logerror = 1;
-		    break;
+          /* We don't yet know whether this stanza has "missingok"
+		     * set, so store the error message for later. */
+		    rc = asprintf(&globerr_msg, "%s:%d glob failed for %s: %s\n",
+			    configFile, lineNum, argv[argNum], strerror(glob_errno));
+		    if (rc == -1)
+			globerr_msg = NULL;
+		    
+		    globResult.gl_pathc = 0;
 		}
 
 		newlog->files =
@@ -1408,6 +1418,14 @@ duperror:
 		message(MESS_ERROR, "%s:%d unexpected }\n", configFile,
 			lineNum);
 		goto error;
+	    }
+	if (globerr_msg) {
+		if (!(newlog->flags & LOG_FLAG_MISSINGOK))
+		    message(MESS_ERROR, globerr_msg);
+		free(globerr_msg);
+		globerr_msg = NULL;
+		if (!(newlog->flags & LOG_FLAG_MISSINGOK))
+		    return 1;
 	    }
 
 	    if (newlog->oldDir) {
