@@ -5,6 +5,11 @@
 	- symlinked conf file man page as requested by Fedora guidelines
 	  (thanks to Ivana Hutarova Varekova)
 	- cron script logrotate.cron redirects output to /dev/null
+	- added rotating (copying) non-writable, readable files
+	  (patch by Henrique Martins)
+	- fixed missingok problem with globs
+	  (taken from the Debian patches by Ted Percival 
+	   <ted@midg3t.net>)
 
 3.7.7 -> 3.7.8
 	- do not exit on status file errors
