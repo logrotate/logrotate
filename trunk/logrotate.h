@@ -33,8 +33,8 @@ struct logInfo {
     char *oldDir;
     enum { ROT_DAYS, ROT_WEEKLY, ROT_MONTHLY, ROT_YEARLY, ROT_SIZE,
 	    ROT_FORCE } criterium;
-    unsigned int threshhold;
-    unsigned int minsize;
+    unsigned long long threshhold;
+    unsigned long long minsize;
     int rotateCount;
     int rotateAge;
     int logStart;

@@ -1198,7 +1198,7 @@ int rotateLogSet(struct logInfo *log, int force)
     message(MESS_DEBUG, "\nrotating pattern: %s ", log->pattern);
     switch (log->criterium) {
     case ROT_DAYS:
-	message(MESS_DEBUG, "after %d days ", log->threshhold);
+	message(MESS_DEBUG, "after %llu days ", log->threshhold);
 	break;
     case ROT_WEEKLY:
 	message(MESS_DEBUG, "weekly ");
@@ -1210,7 +1210,7 @@ int rotateLogSet(struct logInfo *log, int force)
 	message(MESS_DEBUG, "yearly ");
 	break;
     case ROT_SIZE:
-	message(MESS_DEBUG, "%d bytes ", log->threshhold);
+	message(MESS_DEBUG, "%llu bytes ", log->threshhold);
 	break;
     case ROT_FORCE:
 	message(MESS_DEBUG, "forced from command line ");
