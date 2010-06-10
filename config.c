@@ -793,7 +793,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 
 		*endtag = oldchar, start = endtag;
 	    } else if (!strcmp(start, "size") || !strcmp(start, "minsize")) {
-		unsigned int size = 0;
+		unsigned long long size = 0;
 		char *opt = start;
 		*endtag = oldchar, start = endtag;
 
