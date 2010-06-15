@@ -848,9 +848,10 @@ int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 				    mailLogWrapper(mailFilename,
 						   mailCommand, logNum,
 						   log);
-			    if (!hasErrors)
+			    if (!hasErrors) {
 				message(MESS_DEBUG, "removing %s\n", mailFilename);
 				hasErrors = removeLogFile(mailFilename, log);
+				}
 			}
 			mail_out = i;
 		    }
