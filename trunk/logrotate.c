@@ -1293,7 +1293,7 @@ int rotateLogSet(struct logInfo *log, int force)
 			"since no logs will be rotated\n");
 	    } else {
 		message(MESS_DEBUG, "running prerotate script\n");
-		if (runScript(log->pattern, log->pre)) {
+		if (runScript(log->flags & LOG_FLAG_SHAREDSCRIPTS ? log->pattern : log->files[j], log->pre)) {
 		    if (log->flags & LOG_FLAG_SHAREDSCRIPTS)
 			message(MESS_ERROR,
 				"error running shared prerotate script "
@@ -1328,7 +1328,7 @@ int rotateLogSet(struct logInfo *log, int force)
 			"since no logs were rotated\n");
 	    } else {
 		message(MESS_DEBUG, "running postrotate script\n");
-		if (runScript(log->pattern, log->post)) {
+		if (runScript(log->flags & LOG_FLAG_SHAREDSCRIPTS ? log->pattern : log->files[j], log->post)) {
 		    if (log->flags & LOG_FLAG_SHAREDSCRIPTS)
 			message(MESS_ERROR,
 				"error running shared postrotate script "
