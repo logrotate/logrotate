@@ -577,9 +577,34 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 			    configFile, lineNum);
 		    goto error;
 		} else if (*start == '\n') {
-		    lineNum++;
+		    while (isspace(*start) && (*start)) {
+			if (*start == '\n')
+			    lineNum++;
+			start++;
+		    }
+		} else if (
+		    (strncmp(start, "postrotate", 10) == 0) ||
+		    (strncmp(start, "prerotate", 9) == 0) ||
+		    (strncmp(start, "firstrotate", 11) == 0) ||
+		    (strncmp(start, "lastrotate", 10) == 0)
+		    )
+		{
+		    while (*start) {
+			while ((*start != '\n') && (*start))
+			    start++;
+			while (isspace(*start) && (*start)) {
+			    if (*start == '\n')
+				lineNum++;
+			    start++;
+			}
+			if (strncmp(start, "endscript", 9) == 0) {
+			    start += 9;
+			    break;
+			}
+		    }
+		} else {
+		    start++;
 		}
-		start++;
 	    }
 	    start++;
 

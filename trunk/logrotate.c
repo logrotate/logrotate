@@ -1241,7 +1241,7 @@ int rotateLogSet(struct logInfo *log, int force)
 	message(MESS_DEBUG, "empty log files are not rotated, ");
 
     if (log->minsize) 
-	message(MESS_DEBUG, "only log files >= %d bytes are rotated, ",	log->minsize);
+	message(MESS_DEBUG, "only log files >= %llu bytes are rotated, ",	log->minsize);
 
     if (log->logAddress) {
 	message(MESS_DEBUG, "old logs mailed to %s\n", log->logAddress);
