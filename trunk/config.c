@@ -38,6 +38,8 @@
 #endif
 
 static char *defTabooExts[] = { ".rpmsave", ".rpmorig", "~", ",v",
+    ".disabled", ".dpkg-old", ".dpkg-dist", ".dpkg-new", ".cfsaved",
+    ".ucf-old", ".ucf-dist", ".ucf-new",
     ".rpmnew", ".swp", ".cfsaved", ".rhn-cfg-tmp-*"
 };
 static int defTabooCount = sizeof(defTabooExts) / sizeof(char *);
