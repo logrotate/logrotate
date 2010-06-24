@@ -14,6 +14,8 @@
 #include <unistd.h>
 #include <glob.h>
 #include <locale.h>
+#include <sys/types.h>
+#include <utime.h>
 
 #if defined(SunOS) 
 #include <syslimits.h>
@@ -279,6 +281,7 @@ static int compressLogFile(char *name, struct logInfo *log, struct stat *sb)
 {
     char *compressedName;
     const char **fullCommand;
+    struct utimbuf utim;
     int inFile;
     int outFile;
     int i;
@@ -329,6 +332,12 @@ static int compressLogFile(char *name, struct logInfo *log, struct stat *sb)
 	message(MESS_ERROR, "failed to compress log %s\n", name);
 	return 1;
     }
+
+    utim.actime = sb->st_atime;
+    utim.modtime = sb->st_mtime;
+    utime(compressedName,&utim);
+    /* If we can't change atime/mtime, it's not a disaster.
+       It might possibly fail under SELinux. */
 
     shred_file(name, log);
 
