@@ -1089,6 +1089,7 @@ int rotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 		message(MESS_ERROR, "failed to rename %s to %s: %s\n",
 			log->files[logNum], rotNames->finalName,
 			strerror(errno));
+			hasErrors = 1;
 	    }
 
 	    if (!log->rotateCount) {
