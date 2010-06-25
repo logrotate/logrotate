@@ -1110,15 +1110,15 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 		    *endtag = oldchar, start = endtag;
 		}
 	    } else if (!strcmp(start, "include")) {
-		if (newlog != defConfig) {
-		    message(MESS_ERROR,
-			    "%s:%d include may not appear inside "
-			    "of log file definition\n", configFile,
-			    lineNum);
-		    *endtag = oldchar, start = endtag;
-		    logerror = 1;
-		    continue;
-		}
+// 		if (newlog != defConfig) {
+// 		    message(MESS_ERROR,
+// 			    "%s:%d include may not appear inside "
+// 			    "of log file definition\n", configFile,
+// 			    lineNum);
+// 		    *endtag = oldchar, start = endtag;
+// 		    logerror = 1;
+// 		    continue;
+// 		}
 
 		*endtag = oldchar, start = endtag;
 		if (!isolateValue(configFile, lineNum, "include", &start,
@@ -1132,7 +1132,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 				--recursion_depth;
 				goto error;
 			}
-		    if (readConfigPath(start, defConfig)) {
+		    if (readConfigPath(start, newlog)) {
 				--recursion_depth;
 				goto error;
 			}
