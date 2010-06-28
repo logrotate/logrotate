@@ -10,18 +10,18 @@
 	- fixed missingok problem with globs
 	  (taken from the Debian patches by Ted Percival 
 	   <ted@midg3t.net>)
-	- fixed bug when log files could be removed eve there was
-	  some error in rotation process
+	- fixed bug when log files could be removed even there was
+	  some error in rotation process.
 	- allow setting size greater than 4.2GB in configuration file
 	- pass currently rotated file to postrotate/prerotate script
-	  in nosharedscripts mode.
+	  in nosharedscripts mode
 	- added new TabooExts: ".disabled", ".dpkg-old", ".dpkg-dist",
-	  ".dpkg-new", ".cfsaved", ".ucf-old", ".ucf-dist", ".ucf-new".
+	  ".dpkg-new", ".cfsaved", ".ucf-old", ".ucf-dist", ".ucf-new"
 	  (taken from the Debian patches by Paul Martin <pm@debian.org>)
-	- Don't change utime atime/mtime when compressing files.
+	- Don't change utime atime/mtime when compressing files
 	  (taken from the Debian patches by Paul Martin <pm@debian.org>)
 	- Better *rotate scripts parser. (taken from the Debian patches)
-	- Allow 'include' directive in log file definitions.
+	- Allow 'include' directive in log file definitions
 
 3.7.7 -> 3.7.8
 	- do not exit on status file errors
