@@ -52,7 +52,7 @@ rm -rf $RPM_BUILD_ROOT
 %attr(0644, root, root) %verify(not size md5 mtime) %config(noreplace) %{_localstatedir}/lib/logrotate.status
 
 %changelog
-* Fri Sep 25 2009 Daniel Novotny <dnovotny@redhat.com> 3.7.9-1
+* Mon Jun 28 2010 Jan Kaluza <jkaluza@redhat.com> 3.7.9-1
 - new upstream version
 
 * Wed Jan 28 2009 Tomas Smetana <tsmetana@redhat.com> 3.7.8-1
