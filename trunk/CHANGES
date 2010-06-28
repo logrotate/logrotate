@@ -1,4 +1,4 @@
-3.7.8 ->
+3.7.8 -> 3.7.9
 	- fix building on Solaris (patch by András Szilárd)
 	- don't copy config files on the stack -- mmap them instead
 	  (fixes segfaults with too large/invalid config files)
