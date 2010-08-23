@@ -557,6 +557,15 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
     }
 
 	length = sb.st_size;
+	/* We can't mmap empty file... */
+	if (length == 0) {
+		message(MESS_DEBUG,
+			"Ignoring %s because it's empty.\n",
+			configFile);
+		close(fd);
+		return 0;
+	}
+
 #ifdef __NetBSD__
 	buf = mmap(NULL, (size_t)(length + 2), PROT_READ | PROT_WRITE,
 			MAP_PRIVATE, fd, (off_t) 0);
