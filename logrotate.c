@@ -1,5 +1,10 @@
 #include <sys/queue.h>
+#ifndef __NetBSD__
 #include <alloca.h>
+#endif /* __NetBSD__ */
+#if __NetBSD__
+#include <limits.h>
+#endif /* __NetBSD__ */
 #include <ctype.h>
 #include <dirent.h>
 #include <errno.h>
