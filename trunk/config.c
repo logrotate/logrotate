@@ -1,4 +1,12 @@
 #include <sys/queue.h>
+
+#ifndef __NetBSD__
+#include <alloca.h>
+#endif /* __NetBSD__ */
+#if __NetBSD__
+#include <limits.h>
+#endif /* __NetBSD__ */
+
 #include <alloca.h>
 #include <ctype.h>
 #include <dirent.h>
@@ -518,8 +526,11 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
     /* FIXME: createOwner and createGroup probably shouldn't be fixed
        length arrays -- of course, if we aren't run setuid it doesn't
        matter much */
-
+#ifdef __NetBSD__
+	fd = open(configFile, O_RDONLY);
+#else /* __NetBSD__ */
     fd = open(configFile, O_RDONLY | O_CLOEXEC);
+#endif /* __NetBSD__ */
     if (fd < 0) {
 	message(MESS_ERROR, "failed to open config file %s: %s\n",
 		configFile, strerror(errno));
@@ -546,8 +557,13 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
     }
 
 	length = sb.st_size;
+#ifdef __NetBSD__
+	buf = mmap(NULL, (size_t)(length + 2), PROT_READ | PROT_WRITE,
+			MAP_PRIVATE, fd, (off_t) 0);
+#else /* __NetBSD__ */
 	buf = mmap(NULL, (size_t)(length + 2), PROT_READ | PROT_WRITE,
 			MAP_PRIVATE | MAP_POPULATE, fd, (off_t) 0);
+#endif /* __NetBSD__ */
 	if (buf == MAP_FAILED) {
 		message(MESS_ERROR, "Error mapping config file %s: %s\n",
 				configFile, strerror(errno));
@@ -558,8 +574,13 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 	/* knowing the buffer ends with a newline makes things (a bit) cleaner */
 	buf[length + 1] = '\0';
 	buf[length] = '\n';
+#ifdef __NetBSD__
+	madvise(buf, (size_t)(length + 2),
+			MADV_SEQUENTIAL | MADV_WILLNEED);
+#else /* __NetBSD__ */
 	madvise(buf, (size_t)(length + 2),
 			MADV_SEQUENTIAL | MADV_WILLNEED | MADV_DONTFORK);
+#endif /* __NetBSD__ */
 
     message(MESS_DEBUG, "reading config file %s\n", configFile);
 
