@@ -1,10 +1,9 @@
 #include <sys/queue.h>
-#ifndef __NetBSD__
+#ifdef _ALLOCA_H
 #include <alloca.h>
-#endif /* __NetBSD__ */
-#if __NetBSD__
+#else
 #include <limits.h>
-#endif /* __NetBSD__ */
+#endif
 #include <ctype.h>
 #include <dirent.h>
 #include <errno.h>

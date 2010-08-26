@@ -47,14 +47,6 @@ ifeq ($(OS_NAME),SunOS)
     endif
 endif
 
-# NetBSD
-ifeq ($(OS_NAME),NetBSD)
-    CFLAGS += -I/usr/include
-    CFLAGS += -I$(BASEDIR)/include
-    LOADLIBES += -L/usr/lib
-    LOADLIBES += -L$(BASEDIR)/lib -Wl,-R,$(BASEDIR)/lib
-endif
-
 # Red Hat Linux
 ifeq ($(OS_NAME),Linux)
     INSTALL = install

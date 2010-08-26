@@ -17,11 +17,11 @@
 #endif
 
 #ifdef __NetBSD__
-#define DEFAULT_MAIL_COMMAND "/usr/bin/mail -s"
-#define COMPRESS_COMMAND "/usr/bin/gzip"
-#define UNCOMPRESS_COMMAND "/usr/bin/gunzip"
-#define STATEFILE "/var/log/logrotate.status"
-#endif /* __NetBSD__ */
+   #define DEFAULT_MAIL_COMMAND "/usr/bin/mail -s"
+   #define COMPRESS_COMMAND "/usr/bin/gzip"
+   #define UNCOMPRESS_COMMAND "/usr/bin/gunzip"
+   #define STATEFILE "/var/log/logrotate.status"
+#endif
 
 /*
  * Default settings for Linux - leave these last.
