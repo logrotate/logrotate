@@ -411,7 +411,7 @@ are removed rather than rotated.
 
 .TP
 \fBsize \fIsize\fR
-Log files are rotated when they grow bigger than \fIsize\fR bytes. If
+Log files are rotated only if they grow bigger then \fIsize\fR bytes. If
 \fIsize\fR is followed by \fIk\fR, the size is assumed to be in kilobytes.
 If the \fIM\fR is used, the size is in megabytes, and if \fIG\fR is used, the
 size is in gigabytes. So \fBsize 100\fR, \fIsize 100k\fR, \fIsize 100M\fR and
