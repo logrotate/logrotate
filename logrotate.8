@@ -13,7 +13,7 @@ weekly, monthly, or when it grows too large.
 Normally, \fBlogrotate\fR is run as a daily cron job.  It will not modify
 a log multiple times in one day unless the criterium for that log is
 based on the log's size and \fBlogrotate\fR is being run multiple times
-each day, or unless the \fB-f\fR or \fB-force\fR option is used. 
+each day, or unless the \fB-f\fR or \fB--force\fR option is used. 
 .P
 Any number of config files may be given on the command line. Later config
 files may override the options given in earlier files, so the order
@@ -31,7 +31,11 @@ non-zero status.
 
 .SH OPTIONS
 .TP
-\fB-d\fR
+\fB-?\fR, \fB-\-help\fR
+Prints help message.
+
+.TP
+\fB-d\fR, \fB-\-debug\fR
 Turns on debug mode and implies \fB-v\fR.  In debug mode, no changes will
 be made to the logs or to the \fBlogrotate\fR state file.
 
