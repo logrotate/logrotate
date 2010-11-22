@@ -34,11 +34,44 @@
 
 #define REALLOC_STEP    10
 
-#if defined(SunOS) 
-#include <syslimits.h>
+#if defined(SunOS)
+#include <limits.h>
 #if !defined(isblank)
 #define isblank(c) 	( (c) == ' ' || (c) == '\t' ) ? 1 : 0
 #endif
+#endif
+
+#if !defined(asprintf)
+#include <stdarg.h>
+
+int asprintf(char **string_ptr, const char *format, ...)
+{
+	va_list arg;
+	char *str;
+	int size;
+	int rv;
+
+	va_start(arg, format);
+	size = vsnprintf(NULL, 0, format, arg);
+	size++;
+	va_start(arg, format);
+	str = malloc(size);
+	if (str == NULL) {
+		va_end(arg);
+		/*
+		 * Strictly speaking, GNU asprintf doesn't do this,
+		 * but the caller isn't checking the return value.
+		 */
+		fprintf(stderr, "failed to allocate memory\\n");
+		exit(1);
+	}
+	rv = vsnprintf(str, size, format, arg);
+	va_end(arg);
+
+	*string_ptr = str;
+	return (rv);
+}
+
 #endif
 
 static char *defTabooExts[] = { ".rpmsave", ".rpmorig", "~", ",v",
@@ -508,6 +541,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
     glob_t globResult;
     const char **argv;
     int argc, argNum;
+	int flags;
     int logerror = 0;
     struct logInfo *log;
 	static unsigned recursion_depth = 0U;
@@ -523,22 +557,28 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
        length arrays -- of course, if we aren't run setuid it doesn't
        matter much */
 
-#ifdef O_CLOEXEC
-	fd = open(configFile, O_RDONLY | O_CLOEXEC);
-#else /* O_CLOEXEC */
 	fd = open(configFile, O_RDONLY);
-#endif /* O_CLOEXEC */
-
-    if (fd < 0) {
-	message(MESS_ERROR, "failed to open config file %s: %s\n",
-		configFile, strerror(errno));
-	return 1;
-    }
+	if (fd < 0) {
+		message(MESS_ERROR, "failed to open config file %s: %s\n",
+			configFile, strerror(errno));
+		return 1;
+	}
+	if ((flags = fcntl(fd, F_GETFD)) == -1) {
+		message(MESS_ERROR, "Could not retrieve flags from file %s\n",
+				configFile);
+		return 1;
+	}
+	flags |= FD_CLOEXEC;
+	if (fcntl(fd, F_SETFD, flags) == -1) {
+		message(MESS_ERROR, "Could not set flags on file %s\n",
+				configFile);
+		return 1;
+	}
 	/* We don't want anybody to change the file while we parse it,
 	 * let's try to lock it for reading. */
 	if (fcntl(fd, F_SETLK, &fd_lock) == -1) {
-		message(MESS_ERROR, "Could not lock file %s for reading\n",
-				configFile);
+	message(MESS_ERROR, "Could not lock file %s for reading\n",
+			configFile);
 	}
     if (fstat(fd, &sb)) {
 	message(MESS_ERROR, "fstat of %s failed: %s\n", configFile,

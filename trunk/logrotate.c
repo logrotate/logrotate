@@ -21,8 +21,8 @@
 #include <sys/types.h>
 #include <utime.h>
 
-#if defined(SunOS) 
-#include <syslimits.h>
+#if defined(SunOS)
+#include <limits.h>
 #endif
 
 #ifdef WITH_SELINUX

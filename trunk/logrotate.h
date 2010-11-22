@@ -62,5 +62,8 @@ extern int numLogs;
 extern int debug;
 
 int readAllConfigPaths(const char **paths);
+#if !defined(asprintf)
+int asprintf(char **string_ptr, const char *format, ...);
+#endif
 
 #endif

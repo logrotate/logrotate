@@ -36,13 +36,14 @@ endif
 
 # Solaris using gcc
 ifeq ($(OS_NAME),SunOS)
-    ifeq ($(RPM_OPT_FLAGS),)
-        RPM_OPT_FLAGS = -O2
+    CFLAGS = -I/opt/baw/include -D_GNU_SOURCE -D$(OS_NAME) -DVERSION=\"$(VERSION)\" $(RPM_OPT_FLAGS) $(LFS)
+    CC ?= gcc
+    CPP = $(CC) -E -M
+    INSTALL = /usr/ucb/install
+    ifeq ($(CC),cc)
+        CPP = cc -xM
     endif
-    CC = gcc
-    INSTALL = install
-    LOADLIBES += -lasprintf
-    ifeq ($(BASEDIR),)
+	ifeq ($(BASEDIR),)
 	BASEDIR = /usr/local
     endif
 endif
