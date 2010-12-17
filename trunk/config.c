@@ -776,12 +776,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 				} else if (!strcmp(key, "size") || !strcmp(key, "minsize")) {
 					unsigned long long size = 0;
 					char *opt = key;
-					if (!strcmp(key, "size")) {
-						newlog->criterium = ROT_SIZE;
-						newlog->threshhold = size;
-					} else
-						newlog->minsize = size;
-					
+							
 					if ((key = isolateValue(configFile, lineNum, opt, &start,
 							&buf, length)) != NULL) {
 						free(opt);
@@ -819,6 +814,11 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 								goto error;
 							}
 						}
+						if (!strncmp(key, "size", 4)) {
+						  newlog->criterium = ROT_SIZE;
+						  newlog->threshhold = size;
+						} else
+						  newlog->minsize = size;
 					}
 					else {
 						free(opt);
@@ -1439,8 +1439,10 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 			}
 			break;
 	}
-	if (key)
+	if (key) {
 		free(key);
+		key = NULL;
+	}
 	if (*start == '\n') {
 	    lineNum++;
 	}
