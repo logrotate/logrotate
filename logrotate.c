@@ -32,6 +32,11 @@ int selinux_enabled = 0;
 int selinux_enforce = 0;
 #endif
 
+#ifdef WITH_ACL
+#include "sys/acl.h"
+static acl_t prev_acl = NULL;
+#endif
+
 #include "basenames.h"
 #include "log.h"
 #include "logrotate.h"
@@ -317,6 +322,31 @@ static int compressLogFile(char *name, struct logInfo *log, struct stat *sb)
 	return 1;
     }
 
+#ifdef WITH_ACL
+	if ((prev_acl = acl_get_fd(inFile)) == NULL) {
+		if (errno != ENOTSUP) {
+			message(MESS_ERROR, "getting file ACL %s: %s\n",
+				name, strerror(errno));
+			close(inFile);
+			close(outFile);
+			return 1;
+		}
+	}
+	if (prev_acl) {
+		if (acl_set_fd(outFile, prev_acl) == -1) {
+			message(MESS_ERROR, "setting ACL for %s: %s\n",
+			compressedName, strerror(errno));
+			acl_free(prev_acl);
+			prev_acl = NULL;
+			close(inFile);
+			close(outFile);
+			return 1;
+		}
+		acl_free(prev_acl);
+		prev_acl = NULL;
+	}
+#endif /* WITH_ACL */
+
     if (!fork()) {
 	dup2(inFile, 0);
 	close(inFile);
@@ -489,6 +519,16 @@ static int copyTruncate(char *currLog, char *saveLog, struct stat *sb,
 	    }
 	}
 #endif
+#ifdef WITH_ACL
+	if ((prev_acl = acl_get_fd(fdcurr)) == NULL) {
+		if (errno != ENOTSUP) {
+			message(MESS_ERROR, "getting file ACL %s: %s\n",
+				currLog, strerror(errno));
+			close(fdcurr);
+			return 1;
+		}
+	}
+#endif /* WITH_ACL */
 	fdsave =
 	    createOutputFile(saveLog, O_WRONLY | O_CREAT | O_TRUNC, sb);
 #ifdef WITH_SELINUX
@@ -500,8 +540,28 @@ static int copyTruncate(char *currLog, char *saveLog, struct stat *sb,
 #endif
 	if (fdsave < 0) {
 	    close(fdcurr);
+#ifdef WITH_ACL
+		if (prev_acl)
+			acl_free(prev_acl);
+#endif /* WITH_ACL */
 	    return 1;
 	}
+#ifdef WITH_ACL
+	if (prev_acl) {
+		if (acl_set_fd(fdsave, prev_acl) == -1) {
+			message(MESS_ERROR, "setting ACL for %s: %s\n",
+			saveLog, strerror(errno));
+			acl_free(prev_acl);
+			prev_acl = NULL;
+			close(fdsave);
+			close(fdcurr);
+			return 1;
+		}
+		acl_free(prev_acl);
+		prev_acl = NULL;
+	}
+#endif /* WITH_ACL */
+
 	while ((cnt = read(fdcurr, buf, sizeof(buf))) > 0) {
 	    if (write(fdsave, buf, cnt) != cnt) {
 		message(MESS_ERROR, "error writing to %s: %s\n",
@@ -1086,6 +1146,15 @@ int rotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 						log->files[logNum]);
 		}
 #endif
+#ifdef WITH_ACL
+		if ((prev_acl = acl_get_file(log->files[logNum], ACL_TYPE_ACCESS)) == NULL) {
+			if (errno != ENOTSUP) {
+				message(MESS_ERROR, "getting file ACL %s: %s\n",
+					log->files[logNum], strerror(errno));
+				hasErrors = 1;
+			}
+		}
+#endif /* WITH_ACL */
 		message(MESS_DEBUG, "renaming %s to %s\n", log->files[logNum],
 		    rotNames->finalName);
 	    if (!debug && !hasErrors &&
@@ -1133,12 +1202,35 @@ int rotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 		    (int) sb.st_uid, (int) sb.st_gid);
 
 	    if (!debug) {
+#ifdef WITH_ACL
+			if (prev_acl == NULL && (prev_acl = acl_get_file(log->files[logNum], ACL_TYPE_ACCESS)) == NULL) {
+				if (errno != ENOTSUP) {
+					message(MESS_ERROR, "getting file ACL %s: %s\n",
+						log->files[logNum], strerror(errno));
+					hasErrors = 1;
+				}
+			}
+#endif /* WITH_ACL */
+			if (!hasErrors) {
 			fd = createOutputFile(log->files[logNum], O_CREAT | O_RDWR,
 						  &sb);
 			if (fd < 0)
 				hasErrors = 1;
-			else
+			else {
+#ifdef WITH_ACL
+				if (prev_acl) {
+					if (acl_set_fd(fd, prev_acl) == -1) {
+						message(MESS_ERROR, "setting ACL for %s: %s\n",
+						log->files[logNum], strerror(errno));
+						hasErrors = 1;
+					}
+					acl_free(prev_acl);
+					prev_acl = NULL;
+				}
+#endif /* WITH_ACL */
 				close(fd);
+			}
+			}
 	    }
 	}
 #ifdef WITH_SELINUX
@@ -1155,6 +1247,13 @@ int rotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 		copyTruncate(log->files[logNum], rotNames->finalName,
 			     &state->sb, log->flags);
 
+#ifdef WITH_ACL
+	if (prev_acl) {
+		acl_free(prev_acl);
+		prev_acl = NULL;
+	}
+#endif /* WITH_ACL */
+		
     }
     return hasErrors;
 }
