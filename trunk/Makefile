@@ -15,6 +15,11 @@ CFLAGS += -DWITH_SELINUX
 LOADLIBES += -lselinux
 endif
 
+ifeq ($(WITH_ACL),yes)
+CFLAGS += -DWITH_ACL
+LOADLIBES += -lacl
+endif
+
 # HP-UX using GCC
 ifeq ($(OS_NAME),HP-UX)
     ifeq ($(RPM_OPT_FLAGS),)
