@@ -59,6 +59,14 @@ ifeq ($(OS_NAME),Linux)
     BASEDIR = /usr
 endif
 
+# FreeBSD
+ifeq ($(OS_NAME),FreeBSD)
+    LOADLIBES += -L${LOCALBASE}/lib
+    CFLAGS += -I${LOCALBASE}/include
+    PREFIX=
+endif
+
+
 ifneq ($(POPT_DIR),)
     CFLAGS += -I$(POPT_DIR)
     LOADLIBES += -L$(POPT_DIR)
@@ -113,11 +121,15 @@ install:
 	$(INSTALL) $(PROG) $(PREFIX)/$(BINDIR) 0755 bin bin; \
 	$(INSTALL) $(MAN) $(PREFIX)/$(MANDIR)/man`echo $(MAN) | sed "s/.*\.//"` 0644 bin bin; \
 	$(INSTALL) $(MAN5) $(PREFIX)/$(MANDIR)/man`echo $(MAN5) | sed "s/.*\.//"` 0644 bin bin; \
+	else if [ "$(OS_NAME)" = FreeBSD ]; then \
+	$(BSD_INSTALL_PROGRAM) $(PROG) $(BINDIR); \
+	$(BSD_INSTALL_MAN) $(MAN) $(MANDIR)/man`echo $(MAN) | sed "s/.*\.//"`/$(MAN); \
+	$(BSD_INSTALL_MAN) $(MAN5) $(MANDIR)/man`echo $(MAN5) | sed "s/.*\.//"`/$(MAN5); \
 	else \
 	$(INSTALL) -m 755 $(PROG) $(PREFIX)/$(BINDIR); \
 	$(INSTALL) -m 644 $(MAN) $(PREFIX)/$(MANDIR)/man`echo $(MAN) | sed "s/.*\.//"`/$(MAN); \
 	$(INSTALL) -m 644 $(MAN5) $(PREFIX)/$(MANDIR)/man`echo $(MAN5) | sed "s/.*\.//"`/$(MAN5); \
-	fi
+	fi; fi
 
 co:
 	co RCS/*,v
