@@ -2,6 +2,8 @@
  * OS-specific definitions
  */
 
+#define ROOT_UID 0
+
 #ifdef __hpux
 #define DEFAULT_MAIL_COMMAND "/usr/bin/mailx"
 #define COMPRESS_COMMAND "/usr/contrib/bin/gzip"

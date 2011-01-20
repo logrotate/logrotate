@@ -553,7 +553,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
     char *start, *chptr;
     char *dirName;
     struct group *group;
-    struct passwd *pw;
+    struct passwd *pw = NULL;
     int rc;
     char createOwner[200], createGroup[200];
     int createMode;
@@ -614,6 +614,32 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 	close(fd);
 	return 0;
     }
+    
+	if ((sb.st_mode & 07533) != 0400) {
+		message(MESS_DEBUG,
+			"Ignoring %s because of bad file mode.\n",
+			configFile);
+		close(fd);
+		return 0;
+	}
+
+	if ((pw = getpwnam("root")) == NULL) {
+		message(MESS_DEBUG,
+			"Ignoring %s because there's no password entry for the owner.\n",
+			configFile);
+		close(fd);
+		return 0;
+	}
+
+	if (sb.st_uid != ROOT_UID && (pw == NULL ||
+			sb.st_uid != pw->pw_uid ||
+			strcmp("root", pw->pw_name) != 0)) {
+		message(MESS_DEBUG,
+			"Ignoring %s because the file owner is wrong (should be root).\n",
+			configFile);
+		close(fd);
+		return 0;
+	}
 
 	length = sb.st_size;
 
