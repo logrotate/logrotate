@@ -615,30 +615,37 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 	return 0;
     }
     
-	if ((sb.st_mode & 07533) != 0400) {
-		message(MESS_DEBUG,
-			"Ignoring %s because of bad file mode.\n",
-			configFile);
-		close(fd);
-		return 0;
+	if (!(pw = getpwuid(getuid()))) {
+		message(MESS_ERROR, "Logrotate UID is not in passwd file.\n");
+		return 1;
 	}
 
-	if ((pw = getpwnam("root")) == NULL) {
-		message(MESS_DEBUG,
-			"Ignoring %s because there's no password entry for the owner.\n",
-			configFile);
-		close(fd);
-		return 0;
-	}
+	if (getuid() == ROOT_UID) {
+		if ((sb.st_mode & 07533) != 0400) {
+			message(MESS_DEBUG,
+				"Ignoring %s because of bad file mode.\n",
+				configFile);
+			close(fd);
+			return 0;
+		}
 
-	if (sb.st_uid != ROOT_UID && (pw == NULL ||
-			sb.st_uid != pw->pw_uid ||
-			strcmp("root", pw->pw_name) != 0)) {
-		message(MESS_DEBUG,
-			"Ignoring %s because the file owner is wrong (should be root).\n",
-			configFile);
-		close(fd);
-		return 0;
+		if ((pw = getpwnam("root")) == NULL) {
+			message(MESS_DEBUG,
+				"Ignoring %s because there's no password entry for the owner.\n",
+				configFile);
+			close(fd);
+			return 0;
+		}
+
+		if (sb.st_uid != ROOT_UID && (pw == NULL ||
+				sb.st_uid != pw->pw_uid ||
+				strcmp("root", pw->pw_name) != 0)) {
+			message(MESS_DEBUG,
+				"Ignoring %s because the file owner is wrong (should be root).\n",
+				configFile);
+			close(fd);
+			return 0;
+		}
 	}
 
 	length = sb.st_size;
@@ -897,7 +904,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 						(configFile, lineNum, "start count", &start,
 						&buf, length)) != NULL) {
 
-						newlog->logStart = strtoul(start, &chptr, 0);
+						newlog->logStart = strtoul(key, &chptr, 0);
 						if (*chptr || newlog->logStart < 0) {
 							message(MESS_ERROR, "%s:%d bad start count '%s'\n",
 								configFile, lineNum, key);
@@ -915,7 +922,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 					if ((key = isolateValue
 						(configFile, lineNum, "maxage count", &start,
 						&buf, length)) != NULL) {
-						newlog->rotateAge = strtoul(start, &chptr, 0);
+						newlog->rotateAge = strtoul(key, &chptr, 0);
 						if (*chptr || newlog->rotateAge < 0) {
 							message(MESS_ERROR, "%s:%d bad maximum age '%s'\n",
 								configFile, lineNum, start);
