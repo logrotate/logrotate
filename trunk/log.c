@@ -4,6 +4,7 @@
 #include <time.h>
 #include <sys/time.h>
 #include <unistd.h>
+#include <stdlib.h>
 
 #include "log.h"
 
@@ -106,6 +107,6 @@ void message(int level, char *format, ...)
 	va_end(args);
 
 	if (level == MESS_FATAL)
-	    exit(1);
+	    exit(EXIT_FAILURE);
     }
 }
