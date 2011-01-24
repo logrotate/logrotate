@@ -63,7 +63,7 @@ int asprintf(char **string_ptr, const char *format, ...)
 		 * but the caller isn't checking the return value.
 		 */
 		fprintf(stderr, "failed to allocate memory\\n");
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 	rv = vsnprintf(str, size, format, arg);
 	va_end(arg);
@@ -102,9 +102,9 @@ static char *isolateLine(char **strt, char **buf, size_t length) {
 	char *endtag, *start, *tmp;
 	start = *strt;
 	endtag = start;
-	while (endtag - *buf < length && *endtag != '\n') {
+	while ((size_t) (endtag - *buf) < length && *endtag != '\n') {
 		endtag++;}
-	if (endtag - *buf > length)
+	if ((size_t) (endtag - *buf) > length)
 		return NULL;
 	tmp = endtag - 1;
 	while (isspace(*endtag))
@@ -119,15 +119,15 @@ static char *isolateValue(const char *fileName, int lineNum, char *key,
 {
     char *chptr = *startPtr;
 
-    while (chptr - *buf < length && isblank(*chptr))
+    while ((size_t) (chptr - *buf) < length && isblank(*chptr))
 	chptr++;
-    if (chptr - *buf < length && *chptr == '=') {
+    if ((size_t) (chptr - *buf) < length && *chptr == '=') {
 	chptr++;
-	while ( chptr - *buf < length && isblank(*chptr))
+	while ( (size_t) (chptr - *buf) < length && isblank(*chptr))
 	    chptr++;
     }
 
-    if (chptr - *buf < length && *chptr == '\n') {
+    if ((size_t) (chptr - *buf) < length && *chptr == '\n') {
 		message(MESS_ERROR, "%s:%d argument expected after %s\n",
 			fileName, lineNum, key);
 		return NULL;
@@ -140,12 +140,12 @@ static char *isolateValue(const char *fileName, int lineNum, char *key,
 static char *isolateWord(char **strt, char **buf, size_t length) {
 	char *endtag, *start;
 	start = *strt;
-	while (start - *buf < length && isblank(*start))
+	while ((size_t) (start - *buf) < length && isblank(*start))
 		start++;
 	endtag = start;
-	while (endtag - *buf < length && isalpha(*endtag)) {
+	while ((size_t) (endtag - *buf) < length && isalpha(*endtag)) {
 		endtag++;}
-	if (endtag - *buf > length)
+	if ((size_t) (endtag - *buf) > length)
 		return NULL;
 	char *key = strndup(start, endtag - start);
 	*strt = endtag;
@@ -352,12 +352,12 @@ static void freeTailLogs(int num)
 static int readConfigPath(const char *path, struct logInfo *defConfig)
 {
     struct stat sb;
-    int here, oldnumlogs, result = 1;
+    int here, oldnumlogs, result = RETURN_FAILURE;
 	struct logInfo defConfigBackup;
 
     if (stat(path, &sb)) {
 	message(MESS_ERROR, "cannot stat %s: %s\n", path, strerror(errno));
-	return 1;
+	return RETURN_FAILURE;
     }
 
     if (S_ISDIR(sb.st_mode)) {
@@ -372,7 +372,7 @@ static int readConfigPath(const char *path, struct logInfo *defConfig)
 	    message(MESS_ERROR, "cannot open directory %s: %s\n", path,
 		    strerror(errno));
 	    close(here);
-	    return 1;
+	    return RETURN_FAILURE;
 	}
 	files_count = 0;
 	namelist = NULL;
@@ -393,7 +393,7 @@ static int readConfigPath(const char *path, struct logInfo *defConfig)
 			close(here);
 			message(MESS_ERROR, "cannot realloc: %s\n",
 				strerror(errno));
-			return 1;
+			return RETURN_FAILURE;
 		    }
 		}
 		/* Alloc memory for file name */
@@ -407,7 +407,7 @@ static int readConfigPath(const char *path, struct logInfo *defConfig)
 		    close(here);
 		    message(MESS_ERROR, "cannot realloc: %s\n",
 			    strerror(errno));
-		    return 1;
+		    return RETURN_FAILURE;
 		}
 	    }
 	}
@@ -417,7 +417,7 @@ static int readConfigPath(const char *path, struct logInfo *defConfig)
 	    qsort(namelist, files_count, sizeof(char *), compar);
 	} else {
 	    close(here);
-	    return 0;
+	    return RETURN_SUCCESS;
 	}
 
 	if (chdir(path)) {
@@ -425,7 +425,7 @@ static int readConfigPath(const char *path, struct logInfo *defConfig)
 		    strerror(errno));
 	    close(here);
 	    free_2d_array(namelist, files_count);
-	    return 1;
+	    return RETURN_FAILURE;
 	}
 
 	for (i = 0; i < files_count; ++i) {
@@ -440,7 +440,7 @@ static int readConfigPath(const char *path, struct logInfo *defConfig)
 		freeLogInfo(&defConfigBackup);
 		continue;
 	    } else {
-		result = 0;
+		result = RETURN_SUCCESS;
 	    }
 	    freeLogInfo(&defConfigBackup);
 	}
@@ -458,7 +458,7 @@ static int readConfigPath(const char *path, struct logInfo *defConfig)
 	    freeLogInfo(defConfig);
 	    copyLogInfo(defConfig, &defConfigBackup);
 	} else {
-	    result = 0;
+	    result = RETURN_SUCCESS;
 	}
 	freeLogInfo(&defConfigBackup);
     }
@@ -468,7 +468,7 @@ static int readConfigPath(const char *path, struct logInfo *defConfig)
 
 int readAllConfigPaths(const char **paths)
 {
-    int i, result = 0;
+    int i, result = RETURN_SUCCESS;
     const char **file;
     struct logInfo defConfig = {
 		.pattern = NULL,
@@ -508,13 +508,13 @@ int readAllConfigPaths(const char **paths)
 	} else {
 	    free_2d_array(tabooExts, tabooCount);
 	    message(MESS_ERROR, "cannot malloc: %s\n", strerror(errno));
-	    return 1;
+	    return RETURN_FAILURE;
 	}
     }
 
     for (file = paths; *file; file++) {
 	if (readConfigPath(*file, &defConfig)) {
-	    result = 1;
+	    result = RETURN_FAILURE;
 	    break;
 	}
     }
@@ -526,9 +526,10 @@ int readAllConfigPaths(const char **paths)
 static int globerr(const char *pathname, int theerr)
 {
     glob_errno = theerr;
+	(void) pathname;
 
     /* We want the glob operation to abort on error, so return 1 */
-    return 1;
+    return RETURN_FAILURE;
 }
 
 #define freeLogItem(what) \
@@ -556,7 +557,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
     struct passwd *pw = NULL;
     int rc;
     char createOwner[200], createGroup[200];
-    int createMode;
+    unsigned int createMode;
     struct stat sb, sb2;
     glob_t globResult;
     const char **argv;
@@ -582,18 +583,18 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 	if (fd < 0) {
 		message(MESS_ERROR, "failed to open config file %s: %s\n",
 			configFile, strerror(errno));
-		return 1;
+		return RETURN_FAILURE;
 	}
 	if ((flags = fcntl(fd, F_GETFD)) == -1) {
 		message(MESS_ERROR, "Could not retrieve flags from file %s\n",
 				configFile);
-		return 1;
+		return RETURN_FAILURE;
 	}
 	flags |= FD_CLOEXEC;
 	if (fcntl(fd, F_SETFD, flags) == -1) {
 		message(MESS_ERROR, "Could not set flags on file %s\n",
 				configFile);
-		return 1;
+		return RETURN_FAILURE;
 	}
 	/* We don't want anybody to change the file while we parse it,
 	 * let's try to lock it for reading. */
@@ -605,19 +606,19 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 	message(MESS_ERROR, "fstat of %s failed: %s\n", configFile,
 		strerror(errno));
 	close(fd);
-	return 1;
+	return RETURN_FAILURE;
     }
     if (!S_ISREG(sb.st_mode)) {
 	message(MESS_DEBUG,
 		"Ignoring %s because it's not a regular file.\n",
 		configFile);
 	close(fd);
-	return 0;
+	return RETURN_SUCCESS;
     }
     
 	if (!(pw = getpwuid(getuid()))) {
 		message(MESS_ERROR, "Logrotate UID is not in passwd file.\n");
-		return 1;
+		return RETURN_FAILURE;
 	}
 
 	if (getuid() == ROOT_UID) {
@@ -626,7 +627,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 				"Ignoring %s because of bad file mode.\n",
 				configFile);
 			close(fd);
-			return 0;
+			return RETURN_SUCCESS;
 		}
 
 		if ((pw = getpwnam("root")) == NULL) {
@@ -634,7 +635,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 				"Ignoring %s because there's no password entry for the owner.\n",
 				configFile);
 			close(fd);
-			return 0;
+			return RETURN_SUCCESS;
 		}
 
 		if (sb.st_uid != ROOT_UID && (pw == NULL ||
@@ -644,7 +645,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 				"Ignoring %s because the file owner is wrong (should be root).\n",
 				configFile);
 			close(fd);
-			return 0;
+			return RETURN_SUCCESS;
 		}
 	}
 
@@ -656,7 +657,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 			"Ignoring %s because it's empty.\n",
 			configFile);
 		close(fd);
-		return 0;
+		return RETURN_SUCCESS;
 	}
 
 #ifdef MAP_POPULATE
@@ -671,7 +672,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 		message(MESS_ERROR, "Error mapping config file %s: %s\n",
 				configFile, strerror(errno));
 		close(fd);
-		return 1;
+		return RETURN_FAILURE;
 	}
 
 #ifdef MADV_DONTFORK
@@ -1284,7 +1285,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 									globResult.
 									gl_pathc));
 
-				for (i = 0; i < globResult.gl_pathc; i++) {
+				for (unsigned int i = 0; i < globResult.gl_pathc; i++) {
 					/* if we glob directories we can get false matches */
 					if (!lstat(globResult.gl_pathv[i], &sb) &&
 					S_ISDIR(sb.st_mode)) {
@@ -1334,7 +1335,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 				free(globerr_msg);
 				globerr_msg = NULL;
 				if (!(newlog->flags & LOG_FLAG_MISSINGOK))
-					return 1;
+					return RETURN_FAILURE;
 				}
 
 				if (newlog->oldDir) {
@@ -1491,11 +1492,11 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 
 	munmap(buf, (size_t) length);
 	close(fd);
-    return 0;
+    return RETURN_SUCCESS;
 error:
 	if (key)
 		free(key);
 	munmap(buf, (size_t) length);
 	close(fd);
-    return 1;
+    return RETURN_FAILURE;
 }
