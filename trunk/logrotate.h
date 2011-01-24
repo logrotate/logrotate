@@ -26,9 +26,6 @@
 #define NO_FORCE_ROTATE 0
 #define FORCE_ROTATE    1
 
-#define RETURN_FAILURE	1
-#define RETURN_SUCCESS	0
-
 struct logInfo {
     char *pattern;
     char **files;
