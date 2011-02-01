@@ -989,18 +989,18 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 					free(key);
 					if ((key = isolateValue(configFile, lineNum, "tabooext", &start,
 							&buf, length)) != NULL) {
-
-						if (*key == '+') {
-							key++;
-							while (isspace(*key) && *key)
-								key++;
+						endtag = key;
+						if (*endtag == '+') {
+							endtag++;
+							while (isspace(*endtag) && *endtag)
+								endtag++;
 						} else {
 							free_2d_array(tabooExts, tabooCount);
 							tabooCount = 0;
 							tabooExts = malloc(1);
 						}
 
-						endtag = key;
+
 						while (*endtag) {
 							chptr = endtag;
 							while (!isspace(*chptr) && *chptr != ',' && *chptr)
