@@ -739,10 +739,6 @@ int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 
     rotNames->baseName = strdup(ourBaseName(log->files[logNum]));
 
-    oldName = alloca(PATH_MAX);
-    newName = alloca(PATH_MAX);
-    rotNames->disposeName = malloc(PATH_MAX);
-
     if (log->extension &&
 	strncmp(&
 		(rotNames->
@@ -853,7 +849,7 @@ int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 		for (i = 0; i < globResult.gl_pathc && !hasErrors; i++) {
 		    struct stat sbprev;
 
-			snprintf(oldName, PATH_MAX, "%s", (globResult.gl_pathv)[i]);
+			asprintf(&oldName, "%s", (globResult.gl_pathv)[i]);
 			if (stat(oldName, &sbprev)) {
 			message(MESS_DEBUG,
 				"previous log %s does not exist\n",
@@ -866,15 +862,14 @@ int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 		message(MESS_DEBUG,
 			"glob finding logs to compress failed\n");
 		/* fallback to old behaviour */
-		snprintf(oldName, PATH_MAX, "%s/%s.%d%s", rotNames->dirName,
+		asprintf(&oldName, "%s/%s.%d%s", rotNames->dirName,
 			rotNames->baseName, logStart, fileext);
 	    }
 	    globfree(&globResult);
 	    free(glob_pattern);
 	} else {
 	    struct stat sbprev;
-
-	    snprintf(oldName, PATH_MAX, "%s/%s.%d%s", rotNames->dirName,
+	    asprintf(&oldName, "%s/%s.%d%s", rotNames->dirName,
 		    rotNames->baseName, logStart, fileext);
 	    if (stat(oldName, &sbprev)) {
 		message(MESS_DEBUG, "previous log %s does not exist\n",
@@ -932,7 +927,8 @@ int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 	    }
 	    if (mail_out != -1) {
 		/* oldName is oldest Backup found (for unlink later) */
-		snprintf(oldName, PATH_MAX, "%s", (globResult.gl_pathv)[mail_out]);
+		asprintf(&oldName, "%s", (globResult.gl_pathv)[mail_out]);
+		rotNames->disposeName = malloc(strlen(oldName)+1);
 		strcpy(rotNames->disposeName, oldName);
 	    } else {
 		free(rotNames->disposeName);
@@ -952,7 +948,7 @@ int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 	if (log->rotateAge) {
 	    struct stat fst_buf;
 	    for (i = 1; i <= rotateCount + 1; i++) {
-		snprintf(oldName, PATH_MAX, "%s/%s.%d%s%s", rotNames->dirName,
+		asprintf(&oldName, "%s/%s.%d%s%s", rotNames->dirName,
 			rotNames->baseName, i, fileext, compext);
 		if (!stat(oldName, &fst_buf)
 		    && (((nowSecs - fst_buf.st_mtime) / 60 / 60 / 24)
@@ -968,11 +964,13 @@ int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 	    }
 	}
 
-	snprintf(oldName, PATH_MAX, "%s/%s.%d%s%s", rotNames->dirName,
+	asprintf(&oldName, "%s/%s.%d%s%s", rotNames->dirName,
 		rotNames->baseName, logStart + rotateCount, fileext,
 		compext);
+	newName = alloca(strlen(oldName)+1);
 	strcpy(newName, oldName);
 
+	rotNames->disposeName = malloc(strlen(oldName)+1);
 	strcpy(rotNames->disposeName, oldName);
 
 	sprintf(rotNames->firstRotated, "%s/%s.%d%s%s", rotNames->dirName,
@@ -1015,10 +1013,13 @@ int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 	}
 #endif
 	for (i = rotateCount + logStart - 1; (i >= 0) && !hasErrors; i--) {
+	    tmp = alloca(strlen(newName)+1);
 	    tmp = newName;
+	    newName = alloca(strlen(oldName)+1);
 	    newName = oldName;
+	    oldName = alloca(strlen(tmp)+1);
 	    oldName = tmp;
-		snprintf(oldName, PATH_MAX, "%s/%s.%d%s%s", rotNames->dirName,
+		asprintf(&oldName, "%s/%s.%d%s%s", rotNames->dirName,
 		    rotNames->baseName, i, fileext, compext);
 
 	    message(MESS_DEBUG,
@@ -1039,20 +1040,21 @@ int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
     }				/* !LOG_FLAG_DATEEXT */
 
 	if (log->flags & LOG_FLAG_DATEEXT) {
-		char *destFile = alloca(PATH_MAX);
+		char *destFile;
 		struct stat fst_buf;
 
 		if (asprintf(&(rotNames->finalName), "%s/%s%s%s", rotNames->dirName,
 					rotNames->baseName, dext_str, fileext) < 0) {
 			message(MESS_ERROR, "could not allocate finalName memory\n");
 		}
-		snprintf(destFile, PATH_MAX, "%s%s", rotNames->finalName, compext);
+		asprintf(&destFile, "%s%s", rotNames->finalName, compext);
 		if (!stat(destFile, &fst_buf)) {
 			message(MESS_DEBUG,
 					"destination %s already exists, skipping rotation\n",
 					rotNames->firstRotated);
 			hasErrors = 1;
 		}
+		free(destFile);
 	} else {
 		/* note: the gzip extension is *not* used here! */
 		if (asprintf(&(rotNames->finalName), "%s/%s.%d%s", rotNames->dirName,

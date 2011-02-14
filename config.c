@@ -222,7 +222,7 @@ static char *readAddress(const char *configFile, int lineNum, char *key,
 static int checkFile(const char *fname)
 {
 	int i;
-	char pattern[PATH_MAX];
+	char *pattern;
 
 	/* Check if fname is '.' or '..'; if so, return false */
 	if (fname[0] == '.' && (!fname[1] || (fname[1] == '.' && !fname[2])))
@@ -230,7 +230,7 @@ static int checkFile(const char *fname)
 
 	/* Check if fname is ending in a taboo-extension; if so, return false */
 	for (i = 0; i < tabooCount; i++) {
-		snprintf(pattern, sizeof(pattern), "*%s", tabooExts[i]);
+		asprintf(&pattern, "*%s", tabooExts[i]);
 		if (!fnmatch(pattern, fname, 0))
 		{
 			message(MESS_DEBUG, "Ignoring %s, because of %s ending\n",
@@ -238,7 +238,7 @@ static int checkFile(const char *fname)
 			return 0;
 		}
 	}
-
+	free(pattern);
 	/* All checks have been passed; return true */
 	return 1;
 }
