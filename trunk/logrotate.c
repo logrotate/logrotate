@@ -1014,6 +1014,7 @@ int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 	    }
 	}
 #endif
+
 	for (i = rotateCount + logStart - 1; (i >= 0) && !hasErrors; i--) {
 		free(newName);
 		newName = oldName;
@@ -1034,9 +1035,9 @@ int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 		    hasErrors = 1;
 		}
 	    }
-	    free(newName);
-	    free(oldName);
+	    
 	}
+	free(newName);
     }				/* !LOG_FLAG_DATEEXT */
 
 	if (log->flags & LOG_FLAG_DATEEXT) {
