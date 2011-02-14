@@ -233,6 +233,7 @@ static int checkFile(const char *fname)
 		asprintf(&pattern, "*%s", tabooExts[i]);
 		if (!fnmatch(pattern, fname, 0))
 		{
+			free(pattern);
 			message(MESS_DEBUG, "Ignoring %s, because of %s ending\n",
 					fname, tabooExts[i]);
 			return 0;
