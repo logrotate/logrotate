@@ -694,7 +694,6 @@ int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 {
     struct tm now = *localtime(&nowSecs);
     char *oldName, *newName = NULL;
-    char *tmp;
     char *compext = "";
     char *fileext = "";
     int hasErrors = 0;
@@ -857,6 +856,7 @@ int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 		    } else {
 			hasErrors = compressLogFile(oldName, log, &sbprev);
 		    }
+		    free(oldName);
 		}
 	    } else {
 		message(MESS_DEBUG,
@@ -867,6 +867,7 @@ int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 	    }
 	    globfree(&globResult);
 	    free(glob_pattern);
+		free(oldName);
 	} else {
 	    struct stat sbprev;
 	    asprintf(&oldName, "%s/%s.%d%s", rotNames->dirName,
@@ -877,6 +878,7 @@ int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 	    } else {
 		hasErrors = compressLogFile(oldName, log, &sbprev);
 	    }
+	    free(oldName);
 	}
     }
 
@@ -930,6 +932,7 @@ int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 		asprintf(&oldName, "%s", (globResult.gl_pathv)[mail_out]);
 		rotNames->disposeName = malloc(strlen(oldName)+1);
 		strcpy(rotNames->disposeName, oldName);
+		free(oldName);
 	    } else {
 		free(rotNames->disposeName);
 		rotNames->disposeName = NULL;
@@ -961,17 +964,16 @@ int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 		    if (!hasErrors)
 			hasErrors = removeLogFile(mailFilename, log);
 		}
+		free(oldName);
 	    }
 	}
 
 	asprintf(&oldName, "%s/%s.%d%s%s", rotNames->dirName,
 		rotNames->baseName, logStart + rotateCount, fileext,
 		compext);
-	newName = alloca(strlen(oldName)+1);
-	strcpy(newName, oldName);
+	newName = strdup(oldName);
 
-	rotNames->disposeName = malloc(strlen(oldName)+1);
-	strcpy(rotNames->disposeName, oldName);
+	rotNames->disposeName = strdup(oldName);
 
 	sprintf(rotNames->firstRotated, "%s/%s.%d%s%s", rotNames->dirName,
 		rotNames->baseName, logStart, fileext,
@@ -1013,12 +1015,8 @@ int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 	}
 #endif
 	for (i = rotateCount + logStart - 1; (i >= 0) && !hasErrors; i--) {
-	    tmp = alloca(strlen(newName)+1);
-	    tmp = newName;
-	    newName = alloca(strlen(oldName)+1);
-	    newName = oldName;
-	    oldName = alloca(strlen(tmp)+1);
-	    oldName = tmp;
+		free(newName);
+		newName = oldName;
 		asprintf(&oldName, "%s/%s.%d%s%s", rotNames->dirName,
 		    rotNames->baseName, i, fileext, compext);
 
@@ -1036,6 +1034,8 @@ int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 		    hasErrors = 1;
 		}
 	    }
+	    free(newName);
+	    free(oldName);
 	}
     }				/* !LOG_FLAG_DATEEXT */
 
