@@ -71,7 +71,7 @@ int debug = 0;
 char *mailCommand = DEFAULT_MAIL_COMMAND;
 time_t nowSecs = 0;
 
-static int shred_file(char *filename, struct logInfo *log);
+static int shred_file(int fd, char *filename, struct logInfo *log);
 
 static int globerr(const char *pathname, int theerr)
 {
@@ -231,59 +231,77 @@ int createOutputFile(char *fileName, int flags, struct stat *sb)
     return fd;
 }
 
-#define SHRED_CALL "shred -u "
-#define SHRED_COUNT_FLAG "-n "
 #define DIGITS 10
+
 /* unlink, but try to call shred from GNU fileutils */
-static int shred_file(char *filename, struct logInfo *log)
+static int shred_file(int fd, char *filename, struct logInfo *log)
 {
-	int len, ret;
-	char *cmd;
 	char count[DIGITS];    /*  that's a lot of shredding :)  */
+	const char **fullCommand;
+	int id = 0;
+	int status;
 
 	if (!(log->flags & LOG_FLAG_SHRED)) {
 		return unlink(filename);
 	}
 
-	len = strlen(filename) + strlen(SHRED_CALL);
-	len += strlen(SHRED_COUNT_FLAG) + DIGITS;
-	cmd = malloc(len);
+	message(MESS_DEBUG, "Using shred to remove the file %s\n", filename);
 
-	if (!cmd) {
-		message(MESS_ERROR, "malloc error while shredding");
-		return unlink(filename);
-	}
-	strcpy(cmd, SHRED_CALL);
 	if (log->shred_cycles != 0) {
-		strcat(cmd, SHRED_COUNT_FLAG);
+		fullCommand = alloca(sizeof(*fullCommand) * 6);
+	}
+	else {
+		fullCommand = alloca(sizeof(*fullCommand) * 4);
+	}
+	fullCommand[id++] = "shred";
+	fullCommand[id++] = "-u";
+
+	if (log->shred_cycles != 0) {
+		fullCommand[id++] = "-n";
 		snprintf(count, DIGITS - 1, "%d", log->shred_cycles);
-		strcat(count, " ");
-		strcat(cmd, count);
+		fullCommand[id++] = count;
 	}
-	strcat(cmd, filename);
-	ret = system(cmd);
-	free(cmd);
-	if (ret != 0) {
+	fullCommand[id++] = "-";
+	fullCommand[id++] = NULL;
+
+	if (!fork()) {
+		dup2(fd, 1);
+		close(fd);
+
+		execvp(fullCommand[0], (void *) fullCommand);
+		exit(1);
+	}
+	
+	wait(&status);
+
+	if (!WIFEXITED(status) || WEXITSTATUS(status)) {
 		message(MESS_ERROR, "Failed to shred %s\n, trying unlink", filename);
-		if (ret != -1) {
-			message(MESS_NORMAL, "Shred returned %d\n", ret);
-		}
 		return unlink(filename);
-	} else {
-		return ret;
 	}
+
+	return 0;
 }
 
 static int removeLogFile(char *name, struct logInfo *log)
 {
-    message(MESS_DEBUG, "removing old log %s\n", name);
+	int fd;
+	message(MESS_DEBUG, "removing old log %s\n", name);
 
-    if (!debug && shred_file(name, log)) {
-	message(MESS_ERROR, "Failed to remove old log %s: %s\n",
-		name, strerror(errno));
-	return 1;
-    }
-    return 0;
+	if ((fd = open(name, O_RDWR)) < 0) {
+		message(MESS_ERROR, "error opening %s: %s\n",
+			name, strerror(errno));
+		return 1;
+	}
+
+	if (!debug && shred_file(fd, name, log)) {
+		message(MESS_ERROR, "Failed to remove old log %s: %s\n",
+			name, strerror(errno));
+		close(fd);
+		return 1;
+	}
+
+	close(fd);
+	return 0;
 }
 
 static int compressLogFile(char *name, struct logInfo *log, struct stat *sb)
@@ -310,7 +328,7 @@ static int compressLogFile(char *name, struct logInfo *log, struct stat *sb)
     compressedName = alloca(strlen(name) + strlen(log->compress_ext) + 2);
     sprintf(compressedName, "%s%s", name, log->compress_ext);
 
-    if ((inFile = open(name, O_RDONLY)) < 0) {
+    if ((inFile = open(name, O_RDWR)) < 0) {
 	message(MESS_ERROR, "unable to open %s for compression\n", name);
 	return 1;
     }
@@ -357,7 +375,6 @@ static int compressLogFile(char *name, struct logInfo *log, struct stat *sb)
 	exit(1);
     }
 
-    close(inFile);
     close(outFile);
 
     wait(&status);
@@ -373,7 +390,8 @@ static int compressLogFile(char *name, struct logInfo *log, struct stat *sb)
     /* If we can't change atime/mtime, it's not a disaster.
        It might possibly fail under SELinux. */
 
-    shred_file(name, log);
+    shred_file(inFile, name, log);
+	close(inFile);
 
     return 0;
 }
