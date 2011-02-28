@@ -375,4 +375,23 @@ test.log.$DATESTRING 0 zero
 EOF
 
 rm -rf testdir
+
+# shred test
+cleanup 15
+
+preptest test.log 15 1 0
+rm -rf testdir
+mkdir testdir
+$RLR test-config.15 --force
+
+# this rotation should use shred
+$RLR test-config.15 --force
+
+checkoutput <<EOF
+test.log 0
+test.log.1 0
+EOF
+
+rm -rf testdir
+
 cleanup
