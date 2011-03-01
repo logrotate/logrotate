@@ -279,7 +279,9 @@ static int shred_file(int fd, char *filename, struct logInfo *log)
 		return unlink(filename);
 	}
 
-	return 0;
+	/* We have to unlink it after shred anyway,
+	 * because it doesn't remove the file itself */
+	return unlink(filename);
 }
 
 static int removeLogFile(char *name, struct logInfo *log)
