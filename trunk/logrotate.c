@@ -204,7 +204,9 @@ int createOutputFile(char *fileName, int flags, struct stat *sb)
 {
     int fd;
 
-    fd = open(fileName, flags, sb->st_mode);
+	fd = open(fileName, (flags | O_EXCL | O_NOFOLLOW),
+		(S_IRUSR | S_IWUSR) & sb->st_mode);
+
     if (fd < 0) {
 	message(MESS_ERROR, "error creating output file %s: %s\n",
 		fileName, strerror(errno));
@@ -336,7 +338,7 @@ static int compressLogFile(char *name, struct logInfo *log, struct stat *sb)
     }
 
     outFile =
-	createOutputFile(compressedName, O_RDWR | O_CREAT | O_TRUNC, sb);
+	createOutputFile(compressedName, O_RDWR | O_CREAT, sb);
     if (outFile < 0) {
 	close(inFile);
 	return 1;
@@ -550,7 +552,7 @@ static int copyTruncate(char *currLog, char *saveLog, struct stat *sb,
 	}
 #endif /* WITH_ACL */
 	fdsave =
-	    createOutputFile(saveLog, O_WRONLY | O_CREAT | O_TRUNC, sb);
+	    createOutputFile(saveLog, O_WRONLY | O_CREAT, sb);
 #ifdef WITH_SELINUX
 	if (selinux_enabled) {
 	    setfscreatecon_raw(prev_context);
