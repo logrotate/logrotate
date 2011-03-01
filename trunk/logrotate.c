@@ -82,6 +82,34 @@ static int globerr(const char *pathname, int theerr)
     return 1;
 }
 
+static void unescape(char *arg)
+{
+	char *p = arg;
+	char *next;
+	char escaped;
+	while ((next = strchr(p, '\\')) != NULL) {
+
+		p = next;
+
+		switch (p[1]) {
+		case 'n':
+			escaped = '\n';
+			break;
+		case '\\':
+			escaped = '\\';
+			break;
+		default:
+			++p;
+			continue;
+		}
+
+		/* Overwrite the backslash with the intended character,
+		 * and shift everything down one */
+		*p++ = escaped;
+		memmove(p, p+1, 1 + strlen(p+1));
+	}
+}
+
 #define HASH_SIZE_MIN 64
 static int allocateHash(void)
 {
@@ -1546,7 +1574,13 @@ static int writeState(char *stateFilename)
 			for (chptr = p->fn; *chptr; chptr++) {
 				switch (*chptr) {
 				case '"':
+				case '\\':
 					fputc('\\', f);
+					break;
+				case '\n':
+					fputc('\\', f);
+					fputc('n', f);
+					continue;
 				}
 
 				fputc(*chptr, f);
@@ -1568,6 +1602,7 @@ static int readState(char *stateFilename)
 {
     FILE *f;
     char buf[1024];
+	char *filename;
     const char **argv;
     int argc;
     int year, month, day;
@@ -1678,7 +1713,10 @@ static int readState(char *stateFilename)
 
 	year -= 1900, month -= 1;
 
-	if ((st = findState(argv[0])) == NULL)
+	filename = strdup(argv[0]);
+	unescape(filename);
+	
+	if ((st = findState(filename)) == NULL)
 		return 1;
 
 	st->lastRotated.tm_mon = month;
@@ -1690,6 +1728,7 @@ static int readState(char *stateFilename)
 	st->lastRotated = *localtime(&lr_time);
 
 	free(argv);
+	free(filename);
     }
 
     fclose(f);
