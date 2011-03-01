@@ -45,6 +45,12 @@ static acl_t prev_acl = NULL;
 #define GLOB_ABORTED GLOB_ABEND
 #endif
 
+#ifdef PATH_MAX
+#define STATEFILE_BUFFER_SIZE 2 * PATH_MAX + 16
+#else
+#define STATEFILE_BUFFER_SIZE 4096
+#endif
+
 struct logState {
     char *fn;
     struct tm lastRotated;	/* only tm.mon, tm_mday, tm_year are good! */
@@ -1601,7 +1607,7 @@ static int writeState(char *stateFilename)
 static int readState(char *stateFilename)
 {
     FILE *f;
-    char buf[1024];
+    char buf[STATEFILE_BUFFER_SIZE];
 	char *filename;
     const char **argv;
     int argc;
