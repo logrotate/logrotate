@@ -292,6 +292,8 @@ static void copyLogInfo(struct logInfo *to, struct logInfo *from)
     to->createMode = from->createMode;
     to->createUid = from->createUid;
     to->createGid = from->createGid;
+    to->suUid = from->suUid;
+    to->suGid = from->suGid;
     if (from->compress_options_count) {
         poptDupArgv(from->compress_options_count, from->compress_options_list, 
                     &to->compress_options_count,  &to->compress_options_list);
@@ -751,6 +753,57 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 					newlog->flags |= LOG_FLAG_MAILFIRST;
 				} else if (!strcmp(key, "maillast")) {
 					newlog->flags &= ~LOG_FLAG_MAILFIRST;
+				} else if (!strcmp(key, "su")) {
+					free(key);
+					key = isolateLine(&start, &buf, length);
+					if (key == NULL)
+						continue;
+
+					rc = sscanf(key, "%s %s%c", createOwner,
+								createGroup, &foo);
+					if (rc == 3) {
+						message(MESS_ERROR, "%s:%d extra arguments for "
+							"su\n", configFile, lineNum);
+						if (newlog != defConfig) {
+							state = STATE_ERROR;
+							continue;
+						} else {
+							goto error;
+						}
+					}
+
+					if (rc > 0) {
+						pw = getpwnam(createOwner);
+						if (!pw) {
+							message(MESS_ERROR, "%s:%d unknown user '%s'\n",
+								configFile, lineNum, createOwner);
+							if (newlog != defConfig) {
+								state = STATE_ERROR;
+								continue;
+							} else {
+								goto error;
+							}
+						}
+						newlog->suUid = pw->pw_uid;
+						endpwent();
+					}
+					if (rc > 1) {
+						group = getgrnam(createGroup);
+						if (!group) {
+							message(MESS_ERROR, "%s:%d unknown group '%s'\n",
+								configFile, lineNum, createGroup);
+							if (newlog != defConfig) {
+								state = STATE_ERROR;
+								continue;
+							} else {
+								goto error;
+							}
+						}
+						newlog->suGid = group->gr_gid;
+						endgrent();
+					}
+
+					newlog->flags |= LOG_FLAG_SU;
 				} else if (!strcmp(key, "create")) {
 					free(key);
 					key = isolateLine(&start, &buf, length);

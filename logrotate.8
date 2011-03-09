@@ -455,6 +455,12 @@ be created with a .9, skipping 0-8.  Files will still be rotated the
 number of times specified with the \fBcount\fR directive.
 
 .TP
+\fBsu \fIuser\fR \fIgroup\fR
+Rotate log files set under this user and group instead of using default
+user/group (usually root). \fIuser\fR specifies the user name used for
+rotation and \fIgroup\fR specifies the group used for rotation. 
+
+.TP
 \fBtabooext\fR [+] \fIlist\fR
 The current taboo extension list is changed (see the \fBinclude\fR directive
 for information on the taboo extensions). If a + precedes the list of

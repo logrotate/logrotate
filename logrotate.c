@@ -76,6 +76,8 @@ int numLogs = 0;
 int debug = 0;
 char *mailCommand = DEFAULT_MAIL_COMMAND;
 time_t nowSecs = 0;
+static uid_t save_euid;
+static gid_t save_egid;
 
 static int shred_file(int fd, char *filename, struct logInfo *log);
 
@@ -86,6 +88,25 @@ static int globerr(const char *pathname, int theerr)
 
     /* We want the glob operation to continue, so return 0 */
     return 1;
+}
+
+int switch_user(uid_t user, gid_t group) {
+	save_egid = getegid();
+	save_euid = geteuid();
+	if (save_euid == user && save_egid == group)
+		return 0;
+	message(MESS_DEBUG, "switching euid to %d and egid to %d\n",
+		user, group);
+	if (setegid(group) || seteuid(user)) {
+		message(MESS_ERROR, "error switching euid to %d and egid to %d: %s\n",
+			user, group, strerror(errno));
+		return 1;
+	}
+	return 0;
+}
+
+int switch_user_back() {
+	return switch_user(save_euid, save_egid);
 }
 
 static void unescape(char *arg)
@@ -662,6 +683,34 @@ int findNeedRotating(struct logInfo *log, int logNum)
     struct tm now = *localtime(&nowSecs);
 
     message(MESS_DEBUG, "considering log %s\n", log->files[logNum]);
+
+	/* Check if parent directory of this log has safe permissions */
+	if ((log->flags & LOG_FLAG_SU) == 0 && getuid() == 0) {
+		char *ld = ourDirName(log->files[logNum]);
+		if (stat(ld, &sb)) {
+			/* If parent directory doesn't exist, it's not real error
+			  and rotation is not needed */
+			if (errno != ENOENT) {
+				message(MESS_ERROR, "stat of %s failed: %s\n", ld,
+					strerror(errno));
+				free(ld);
+				return 1;
+			}
+			free(ld);
+			return 0;
+		}
+		/* Don't rotate in directories writable by others or group which is not "root"  */
+		if ((sb.st_gid != 0 && sb.st_mode & S_IWGRP) || sb.st_mode & S_IWOTH) {
+			message(MESS_ERROR, "skipping \"%s\" because parent directory has insecure permissions"
+								" (It's world writable or writable by group which is not \"root\")"
+								" Set \"su\" directive in config file to tell logrotate which user/group"
+								" should be used for rotation.\n"
+								,log->files[logNum]);
+			free(ld);
+			return 0;
+		}
+		free(ld);
+	}
 
     if (stat(log->files[logNum], &sb)) {
 	if ((log->flags & LOG_FLAG_MISSINGOK) && (errno == ENOENT)) {
@@ -1412,6 +1461,12 @@ int rotateLogSet(struct logInfo *log, int force)
 	message(MESS_DEBUG, "old logs are removed\n");
     }
 
+	if (log->flags & LOG_FLAG_SU) {
+		if (switch_user(log->suUid, log->suGid) != 0) {
+			return 1;
+		}
+	}
+
     for (i = 0; i < log->numFiles; i++) {
 	logHasErrors[i] = findNeedRotating(log, i);
 	hasErrors |= logHasErrors[i];
@@ -1431,6 +1486,11 @@ int rotateLogSet(struct logInfo *log, int force)
 		message(MESS_ERROR, "error running first action script "
 			"for %s\n", log->pattern);
 		hasErrors = 1;
+		if (log->flags & LOG_FLAG_SU) {
+			if (switch_user_back() != 0) {
+				return 1;
+			}
+		}
 		/* finish early, firstaction failed, affects all logs in set */
 		return hasErrors;
 	    }
@@ -1553,6 +1613,12 @@ int rotateLogSet(struct logInfo *log, int force)
 	    }
 	}
     }
+
+	if (log->flags & LOG_FLAG_SU) {
+		if (switch_user_back() != 0) {
+			return 1;
+		}
+	}
 
     return hasErrors;
 }

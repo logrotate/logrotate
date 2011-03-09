@@ -18,6 +18,7 @@
 #define LOG_FLAG_COPY		(1 << 8)
 #define LOG_FLAG_DATEEXT	(1 << 9)
 #define LOG_FLAG_SHRED		(1 << 10)
+#define LOG_FLAG_SU			(1 << 11)
 
 #define NO_MODE ((mode_t) -1)
 #define NO_UID  ((uid_t) -1)
@@ -50,6 +51,8 @@ struct logInfo {
     mode_t createMode;		/* if any/all of these are -1, we use the */
     uid_t createUid;		/* attributes from the log file just rotated */
     gid_t createGid;
+    uid_t suUid;			/* switch user to this uid and group to this gid */
+    gid_t suGid;
     /* these are at the end so they end up nil */
     const char **compress_options_list;
     int compress_options_count;
