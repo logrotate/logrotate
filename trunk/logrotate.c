@@ -969,10 +969,10 @@ int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 		/* fallback to old behaviour */
 		asprintf(&oldName, "%s/%s.%d%s", rotNames->dirName,
 			rotNames->baseName, logStart, fileext);
+		free(oldName);
 	    }
 	    globfree(&globResult);
 	    free(glob_pattern);
-		free(oldName);
 	} else {
 	    struct stat sbprev;
 	    asprintf(&oldName, "%s/%s.%d%s", rotNames->dirName,
