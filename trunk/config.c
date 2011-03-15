@@ -1384,7 +1384,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 				}
 			if (globerr_msg) {
 				if (!(newlog->flags & LOG_FLAG_MISSINGOK))
-					message(MESS_ERROR, globerr_msg);
+					message(MESS_ERROR, "%s", globerr_msg);
 				free(globerr_msg);
 				globerr_msg = NULL;
 				if (!(newlog->flags & LOG_FLAG_MISSINGOK))
