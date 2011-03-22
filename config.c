@@ -759,7 +759,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 					if (key == NULL)
 						continue;
 
-					rc = sscanf(key, "%s %s%c", createOwner,
+					rc = sscanf(key, "%200s %200s%c", createOwner,
 								createGroup, &foo);
 					if (rc == 3) {
 						message(MESS_ERROR, "%s:%d extra arguments for "
@@ -810,7 +810,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 					if (key == NULL)
 						continue;
 
-					rc = sscanf(key, "%o %s %s%c", &createMode,
+					rc = sscanf(key, "%o %200s %200s%c", &createMode,
 							createOwner, createGroup, &foo);
 					if (rc == 4) {
 						message(MESS_ERROR, "%s:%d extra arguments for "
