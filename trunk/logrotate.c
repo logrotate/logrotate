@@ -861,6 +861,13 @@ int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 	rotNames->baseName = tempstr;
     }
 	
+    /* Adjust "now" if we want yesterday's date */
+    if (log->flags & LOG_FLAG_DATEYESTERDAY) {
+        now.tm_hour = 12; /* set hour to noon to work around DST issues */
+        now.tm_mday = now.tm_mday - 1;
+        mktime(&now);
+    }
+
 	/* Allow only %Y %d %m and create valid strftime format string
 	 * Construct the glob pattern corresponding to the date format */
 	dext_str[0] = '\0';

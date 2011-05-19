@@ -19,6 +19,7 @@
 #define LOG_FLAG_DATEEXT	(1 << 9)
 #define LOG_FLAG_SHRED		(1 << 10)
 #define LOG_FLAG_SU			(1 << 11)
+#define LOG_FLAG_DATEYESTERDAY	(1 << 12)
 
 #define NO_MODE ((mode_t) -1)
 #define NO_UID  ((uid_t) -1)
