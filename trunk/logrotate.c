@@ -199,8 +199,10 @@ static struct logState *newState(const char *fn)
 	if ((new = malloc(sizeof(*new))) == NULL)
 		return NULL;
 
-	if ((new->fn = strdup(fn)) == NULL)
+	if ((new->fn = strdup(fn)) == NULL) {
+		free(new);
 		return NULL;
+	}
 
 	new->doRotate = 0;
 
@@ -671,8 +673,12 @@ static int copyTruncate(char *currLog, char *saveLog, struct stat *sb,
     } else
 	message(MESS_DEBUG, "Not truncating %s\n", currLog);
 
-    close(fdcurr);
-    close(fdsave);
+    if (fdcurr >= 0) {
+	close(fdcurr);
+    }
+    if (fdsave >= 0) {
+	close(fdsave);
+    }
     return 0;
 }
 
@@ -1795,8 +1801,10 @@ static int readState(char *stateFilename)
 	filename = strdup(argv[0]);
 	unescape(filename);
 	
-	if ((st = findState(filename)) == NULL)
+	if ((st = findState(filename)) == NULL) {
+		fclose(f);
 		return 1;
+	}
 
 	st->lastRotated.tm_mon = month;
 	st->lastRotated.tm_mday = day;
