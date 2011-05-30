@@ -199,19 +199,22 @@ static char *readAddress(const char *configFile, int lineNum, char *key,
     char *endtag, *chptr;
     char *start = *startPtr;
     char *address;
-
+	
     if ((endtag = isolateValue(configFile, lineNum, key, startPtr, buf, length)) != NULL) {
 
 	chptr = endtag;
-	while (*chptr && isprint(*chptr) && *chptr != ' ')
+	while (*chptr && isprint(*chptr) && *chptr != ' ') {
 	    chptr++;
+	}
+
 	if (*chptr) {
 	    message(MESS_ERROR, "%s:%d bad %s address %s\n",
 		    configFile, lineNum, key, start);
 	    return NULL;
 	}
 
-	address = strdup(chptr);
+	address = strdup(endtag);
+	
 	free(endtag);
 
 	return address;
