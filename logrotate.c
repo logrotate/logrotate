@@ -1323,15 +1323,6 @@ int rotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 		    (int) sb.st_uid, (int) sb.st_gid);
 
 	    if (!debug) {
-#ifdef WITH_ACL
-			if (prev_acl == NULL && (prev_acl = acl_get_file(log->files[logNum], ACL_TYPE_ACCESS)) == NULL) {
-				if (errno != ENOTSUP) {
-					message(MESS_ERROR, "getting file ACL %s: %s\n",
-						log->files[logNum], strerror(errno));
-					hasErrors = 1;
-				}
-			}
-#endif /* WITH_ACL */
 			if (!hasErrors) {
 			fd = createOutputFile(log->files[logNum], O_CREAT | O_RDWR,
 						  &sb);
@@ -1363,10 +1354,11 @@ int rotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 #endif
 
 	if (!hasErrors
-	    && log->flags & (LOG_FLAG_COPYTRUNCATE | LOG_FLAG_COPY))
+	    && log->flags & (LOG_FLAG_COPYTRUNCATE | LOG_FLAG_COPY)) {
 	    hasErrors =
 		copyTruncate(log->files[logNum], rotNames->finalName,
 			     &state->sb, log->flags);
+	}
 
 #ifdef WITH_ACL
 	if (prev_acl) {
