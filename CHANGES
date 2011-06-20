@@ -1,7 +1,15 @@
 3.7.9 ->
-	- dateyesterday
-	- NetBSD compilation fixes
-	- new Solaris compilation fixes
+	- added "dateyesterday" option (see man page)
+	- fixed crash when config file had exactly 4096*N bytes
+	- added WITH_ACL make option to link against -lacl and preserve ACLs
+	  during rotation
+	- fixed CVE-2011-1098: race condition by creation of new files
+	- fixed possible shell injection when using "shred" directive (CVE-2011-1154)
+	- fixed escaping of file names within 'write state' action (CVE-2011-1155)
+	- better 'size' directive description
+	- fixed possible buffer-overflow when reading config files
+	- NetBSD/FreeBSD compilation fixes
+	- Solaris compilation fixes
 
 3.7.8 -> 3.7.9
 	- fix building on Solaris (patch by András Szilárd)
