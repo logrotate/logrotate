@@ -1,8 +1,11 @@
-3.7.9 ->
+3.7.9 -> 3.8.0
 	- added "dateyesterday" option (see man page)
 	- fixed crash when config file had exactly 4096*N bytes
 	- added WITH_ACL make option to link against -lacl and preserve ACLs
 	  during rotation
+	- added "su" option to define user/group for rotation. Logrotate now
+	  skips directories which are world writable or writable by group
+	  which is not "root" unless "su" directive is used.
 	- fixed CVE-2011-1098: race condition by creation of new files
 	- fixed possible shell injection when using "shred" directive (CVE-2011-1154)
 	- fixed escaping of file names within 'write state' action (CVE-2011-1155)
