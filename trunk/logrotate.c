@@ -1153,6 +1153,8 @@ int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 		    hasErrors = 1;
 		}
 	    }
+	    if (hasErrors || i - 1 < 0)
+		    free(oldName);
 	    
 	}
 	free(newName);
