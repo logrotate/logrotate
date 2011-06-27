@@ -1132,7 +1132,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 							goto error;
 						}
 					}
-					else continue;
+
 #if 0
 					if (stat(newlog->oldDir, &sb)) {
 						message(MESS_ERROR, "%s:%d error verifying olddir "
@@ -1177,7 +1177,6 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 							goto error;
 						}
 					}
-					else continue;
 
 					if (access(newlog->compress_prog, X_OK)) {
 						message(MESS_ERROR,
@@ -1208,7 +1207,6 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 							goto error;
 						}
 					}
-					else continue;
 
 					if (access(newlog->uncompress_prog, X_OK)) {
 						message(MESS_ERROR,
@@ -1244,7 +1242,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 						} else {
 							goto error;
 						}
-					} else continue;
+					}
 
 					if (poptParseArgvString(options,
 								&newlog->compress_options_count,
@@ -1277,7 +1275,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 						} else {
 							goto error;
 						}
-					} else continue;
+					}
 
 					message(MESS_DEBUG, "compress_ext is now %s\n",
 						newlog->compress_ext);
