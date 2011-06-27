@@ -74,6 +74,29 @@ int asprintf(char **string_ptr, const char *format, ...)
 
 #endif
 
+#if !defined(strndup)
+char *strndup(const char *s, size_t n)
+{
+       size_t nAvail;
+       char *p;
+
+       if(!s)
+               return NULL;
+
+       /* min() */
+       nAvail = strlen(s) + 1;
+       if ( (n + 1) < nAvail)
+               nAvail = n + 1;
+
+       p = malloc(nAvail);
+       if (!p)
+               return NULL;
+       memcpy(p, s, nAvail);
+       p[nAvail - 1] = 0;
+       return p;
+}
+#endif
+
 enum {
 	STATE_DEFAULT = 2,
 	STATE_SKIP_LINE = 4,
