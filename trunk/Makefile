@@ -41,16 +41,14 @@ endif
 
 # Solaris using gcc
 ifeq ($(OS_NAME),SunOS)
-    CFLAGS = -I/opt/baw/include -D_GNU_SOURCE -D$(OS_NAME) -DVERSION=\"$(VERSION)\" $(RPM_OPT_FLAGS) $(LFS)
+    CFLAGS = -D_GNU_SOURCE -D$(OS_NAME) -DVERSION=\"$(VERSION)\" $(RPM_OPT_FLAGS) $(LFS)
     CC ?= gcc
     CPP = $(CC) -E -M
     INSTALL = /usr/ucb/install
     ifeq ($(CC),cc)
         CPP = cc -xM
     endif
-	ifeq ($(BASEDIR),)
-	BASEDIR = /usr/local
-    endif
+    BASEDIR ?= /usr/local
 endif
 
 # Red Hat Linux
@@ -83,7 +81,7 @@ ifneq ($(STATEFILE),)
 endif
 
 BINDIR = $(BASEDIR)/sbin
-MANDIR = $(BASEDIR)/man
+MANDIR ?= $(BASEDIR)/man
 
 #--------------------------------------------------------------------------
 
@@ -94,6 +92,9 @@ ifeq ($(RPM_OPT_FLAGS),)
 CFLAGS += -g
 LDFLAGS = -g
 endif
+
+LDFLAGS += $(EXTRA_LDFLAGS) $(EXTRA_LIBS)
+CFLAGS  += $(EXTRA_CPPFLAGS) $(EXTRA_CFLAGS) 
 
 ifeq (.depend,$(wildcard .depend))
 TARGET=$(PROG)
