@@ -1,9 +1,6 @@
 #include <sys/queue.h>
-#ifdef _ALLOCA_H
 #include <alloca.h>
-#else
 #include <limits.h>
-#endif
 #include <ctype.h>
 #include <dirent.h>
 #include <errno.h>
