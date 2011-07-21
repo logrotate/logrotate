@@ -891,7 +891,6 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 							
 					if ((key = isolateValue(configFile, lineNum, opt, &start,
 							&buf, length)) != NULL) {
-						free(opt);
 						int l = strlen(key) - 1;
 						if (key[l] == 'k') {
 							key[l] = '\0';
@@ -903,6 +902,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 							key[l] = '\0';
 							multiplier = 1024 * 1024 * 1024;
 						} else if (!isdigit(key[l])) {
+							free(opt);
 							message(MESS_ERROR, "%s:%d unknown unit '%c'\n",
 								configFile, lineNum, key[l]);
 							if (newlog != defConfig) {
@@ -919,6 +919,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 						if (*chptr) {
 							message(MESS_ERROR, "%s:%d bad size '%s'\n",
 								configFile, lineNum, key);
+							free(opt);
 							if (newlog != defConfig) {
 								state = STATE_ERROR;
 								continue;
@@ -926,11 +927,13 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 								goto error;
 							}
 						}
-						if (!strncmp(key, "size", 4)) {
+						if (!strncmp(opt, "size", 4)) {
 						  newlog->criterium = ROT_SIZE;
 						  newlog->threshhold = size;
-						} else
+						} else {
 						  newlog->minsize = size;
+						}
+						free(opt);
 					}
 					else {
 						free(opt);
