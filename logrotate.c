@@ -410,13 +410,15 @@ static int compressLogFile(char *name, struct logInfo *log, struct stat *sb)
 	}
 	if (prev_acl) {
 		if (acl_set_fd(outFile, prev_acl) == -1) {
-			message(MESS_ERROR, "setting ACL for %s: %s\n",
-			compressedName, strerror(errno));
-			acl_free(prev_acl);
-			prev_acl = NULL;
-			close(inFile);
-			close(outFile);
-			return 1;
+			if (errno != ENOTSUP) {
+				message(MESS_ERROR, "setting ACL for %s: %s\n",
+				compressedName, strerror(errno));
+				acl_free(prev_acl);
+				prev_acl = NULL;
+				close(inFile);
+				close(outFile);
+				return 1;
+			}
 		}
 		acl_free(prev_acl);
 		prev_acl = NULL;
@@ -624,14 +626,16 @@ static int copyTruncate(char *currLog, char *saveLog, struct stat *sb,
 	}
 #ifdef WITH_ACL
 	if (prev_acl) {
-		if (acl_set_fd(fdsave, prev_acl) == -1) {
-			message(MESS_ERROR, "setting ACL for %s: %s\n",
-			saveLog, strerror(errno));
-			acl_free(prev_acl);
-			prev_acl = NULL;
-			close(fdsave);
-			close(fdcurr);
-			return 1;
+		if ((fdsave, prev_acl) == -1) {
+			if (errno != ENOTSUP) {
+				message(MESS_ERROR, "setting ACL for %s: %s\n",
+				saveLog, strerror(errno));
+				acl_free(prev_acl);
+				prev_acl = NULL;
+				close(fdsave);
+				close(fdcurr);
+				return 1;
+			}
 		}
 		acl_free(prev_acl);
 		prev_acl = NULL;
@@ -1331,9 +1335,11 @@ int rotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 #ifdef WITH_ACL
 				if (prev_acl) {
 					if (acl_set_fd(fd, prev_acl) == -1) {
-						message(MESS_ERROR, "setting ACL for %s: %s\n",
-						log->files[logNum], strerror(errno));
-						hasErrors = 1;
+						if (errno != ENOTSUP) {
+							message(MESS_ERROR, "setting ACL for %s: %s\n",
+							log->files[logNum], strerror(errno));
+							hasErrors = 1;
+						}
 					}
 					acl_free(prev_acl);
 					prev_acl = NULL;
