@@ -36,6 +36,7 @@ struct logInfo {
     enum { ROT_DAYS, ROT_WEEKLY, ROT_MONTHLY, ROT_YEARLY, ROT_SIZE,
 	    ROT_FORCE } criterium;
     unsigned long long threshhold;
+	unsigned long long maxsize;
     unsigned long long minsize;
     int rotateCount;
     int rotateAge;
