@@ -786,6 +786,8 @@ int findNeedRotating(struct logInfo *log, int logNum)
 	}
 	if (log->minsize && sb.st_size < log->minsize)
 	    state->doRotate = 0;
+	if (log->maxsize && sb.st_size > log->maxsize)
+	    state->doRotate = 1;
     }
 
     /* The notifempty flag overrides the normal criteria */
@@ -1464,6 +1466,9 @@ int rotateLogSet(struct logInfo *log, int force)
 
     if (log->minsize) 
 	message(MESS_DEBUG, "only log files >= %llu bytes are rotated, ",	log->minsize);
+
+    if (log->maxsize) 
+	message(MESS_DEBUG, "log files >= %llu are rotated earlier, ",	log->minsize);
 
     if (log->logAddress) {
 	message(MESS_DEBUG, "old logs mailed to %s\n", log->logAddress);

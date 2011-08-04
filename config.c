@@ -290,6 +290,7 @@ static void copyLogInfo(struct logInfo *to, struct logInfo *from)
     to->criterium = from->criterium;
     to->threshhold = from->threshhold;
     to->minsize = from->minsize;
+	to->maxsize = from->maxsize;
     to->rotateCount = from->rotateCount;
     to->rotateAge = from->rotateAge;
     to->logStart = from->logStart;
@@ -504,6 +505,7 @@ int readAllConfigPaths(const char **paths)
 		.criterium = ROT_SIZE,
 		.threshhold = 1024 * 1024,
 		.minsize = 0,
+		.maxsize = 0,
 		.rotateCount = 0,
 		.rotateAge = 0,
 		.logStart = -1,
@@ -885,7 +887,8 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 					newlog->flags |= LOG_FLAG_CREATE;
 				} else if (!strcmp(key, "nocreate")) {
 					newlog->flags &= ~LOG_FLAG_CREATE;
-				} else if (!strcmp(key, "size") || !strcmp(key, "minsize")) {
+				} else if (!strcmp(key, "size") || !strcmp(key, "minsize") ||
+							!strcmp(key, "maxsize")) {
 					unsigned long long size = 0;
 					char *opt = key;
 							
@@ -930,6 +933,8 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 						if (!strncmp(opt, "size", 4)) {
 						  newlog->criterium = ROT_SIZE;
 						  newlog->threshhold = size;
+						} else if (!strncmp(opt, "maxsize", 7)) {
+						  newlog->maxsize = size;
 						} else {
 						  newlog->minsize = size;
 						}

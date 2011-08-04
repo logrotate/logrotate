@@ -285,7 +285,17 @@ if the logfile is to be rotated. The files are mailed to the
 configured address if \fBmaillast\fR and \fBmail\fR are configured.
 
 .TP
-\fBminsize\fR \fIsize\fR
+\fBmaxsize\fR \fIsize\fR
+Log files are rotated when they grow bigger than \fIsize\fR bytes even
+before the additionally specified time interval (\fBdaily\fR, \fBweekly\fR,
+\fBmonthly\fR, or \fByearly\fR).  The related \fBsize\fR option is similar
+except that it is mutually exclusive with the time interval options, and it
+causes log files to be rotated without regard for the last rotation time.
+When \fBmaxsize\fR is used, both the size and timestamp of a log file are
+considered.
+
+.TP
+\fBminsize\fR  \fIsize\fR
 Log files are rotated when they grow bigger than \fIsize\fR bytes, but not
 before the additionally specified time interval (\fBdaily\fR, \fBweekly\fR,
 \fBmonthly\fR, or \fByearly\fR).  The related \fBsize\fR option is similar
