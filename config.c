@@ -38,6 +38,10 @@
 #endif
 #endif
 
+#ifdef __hpux
+#include "asprintf.c"
+#endif
+
 #if !defined(asprintf)
 #include <stdarg.h>
 

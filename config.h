@@ -7,7 +7,7 @@
 #ifdef __hpux
 #define DEFAULT_MAIL_COMMAND "/usr/bin/mailx"
 #define COMPRESS_COMMAND "/usr/contrib/bin/gzip"
-#define UNCOMPRESS_COMMAND " /usr/contrib/bin/gunzip"
+#define UNCOMPRESS_COMMAND "/usr/contrib/bin/gunzip"
 #define STATEFILE "/var/run/logrotate.status"
 #endif
 
