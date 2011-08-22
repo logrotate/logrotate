@@ -48,6 +48,10 @@ static acl_t prev_acl = NULL;
 #define STATEFILE_BUFFER_SIZE 4096
 #endif
 
+#ifdef __hpux
+extern int asprintf(char **str, const char *fmt, ...);
+#endif
+
 struct logState {
     char *fn;
     struct tm lastRotated;	/* only tm.mon, tm_mday, tm_year are good! */
