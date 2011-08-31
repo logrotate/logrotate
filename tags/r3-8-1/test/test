@@ -1,0 +1,430 @@
+#!/bin/bash
+
+LOGROTATE=../logrotate
+M="-m ./mailer"
+S=-"s state"
+RLR="$LOGROTATE $M $S"
+
+cleanup() {
+    rm -f test*.log* anothertest*.log* state test-config. scriptout mail-out
+    rm -f $(ls | egrep '^test-config.[0-9]+$')
+
+    [ -n "$1" ] && echo "Running test $1"
+    return 0
+}
+
+genconfig() {
+    input=test-config.$1.in
+    output=test-config.$1
+    sed "s,&DIR&,$PWD,g" < $input > $output
+    config_crc=$(md5sum $output)
+}
+
+createlog() {
+    num=$1
+    file=$2
+    cl_compressed=$3
+
+    case $num in
+	0)
+	    what=zero
+	    ;;
+	1)
+	    what=first
+	    ;;
+	2)
+	    what=second
+	    ;;
+	3)
+	    what=third
+	    ;;
+	4)
+	    what=fourth
+	    ;;
+	5)
+	    what=fifth
+	    ;;
+	6)
+	    what=sixth
+	    ;;
+	7)
+	    what=seventh
+	    ;;
+	8)
+	    what=eight
+	    ;;
+	9)
+	    what=ninth
+	    ;;
+	*)
+	    exit 1
+	    ;;
+    esac
+
+    echo $what > $file
+    [ -n "$cl_compressed" ] && gzip -9 $file
+}
+
+createlogs() {
+    base=$1
+    numlogs=$2
+    cls_compressed=$3
+
+    rm -f ${base}*
+
+    num=0
+    while [ $num != $numlogs ]; do
+	if [ $num = 0 ]; then
+	    createlog 0 $base
+	else
+	    createlog $num ${base}.$num $cls_compressed
+	fi
+
+	num=`expr $num + 1`
+    done
+}
+
+checkmail() {
+    (echo -s $PWD/$1 user@myhost.org; echo $2) | diff -u - mail-out
+}
+
+checkoutput() {
+    while read line; do
+	set $line
+	file=$1
+	co_compressed=$2
+	shift 2
+
+	fileother=`echo $line | awk '{print $1}'`
+	expected=`echo $line | cut -s -d\  -f3-`
+
+	if [ $file != $fileother ]; then
+	    echo "unexpected file $file'" >&2
+	    exit 2
+	fi
+
+	if [ ! -f $file ]; then
+	    echo "file $file does not exist"
+	fi
+
+	if [ -n "$co_compressed" -a "$co_compressed" != 0 ]; then
+		contents=`gunzip -c $file`
+	else
+		contents=`cat $file`
+	fi
+	if [ "$contents" != "$expected" ]; then
+	    echo "file $file does not contain expected results (compressed $co_compressed, args $*)" >&2
+	    echo contains: \'$contents\'
+	    echo expected: \'$expected\'
+	    exit 2
+	fi
+	echo "$config_crc" | md5sum -c - 2>&1 > /dev/null
+	if [ $? != 0 ]; then
+		echo "config file $output has been altered: MD5 sum mismatch"
+		exit 3
+	fi
+    done
+}
+
+preptest() {
+    base=$1
+    confignum=$2
+    numlogs=$3
+    pt_compressed=$4
+
+    rm -f $base*
+    rm -f state
+
+    genconfig $confignum
+    createlogs $base $numlogs $pt_compressed
+}
+
+# we don't want any stuff left from previous runs
+cleanup
+
+# ------------------------------- Test 1 -------------------------------------
+# Without a log file, no rotations should occur
+preptest test.log 1 2
+$RLR test-config.1 
+
+checkoutput <<EOF
+test.log 0 zero
+test.log.1 0 first
+EOF
+
+# Put in place a state file that will force a rotation
+cat > state <<EOF
+logrotate state -- version 1
+"$PWD/test.log" 2000-1-1
+EOF
+
+# Now force the rotation
+$RLR test-config.1
+checkoutput <<EOF
+test.log 0
+test.log.1 0 zero
+test.log.2 0 first
+EOF
+
+# rerun it to make sure nothing happens
+$RLR test-config.1 
+
+checkoutput <<EOF
+test.log
+test.log.1 0 zero
+test.log.2 0 first
+EOF
+
+cleanup 1
+
+# ------------------------------- Test 2 -------------------------------------
+preptest test.log 2 3
+$RLR test-config.2 --force
+
+checkoutput <<EOF
+test.log.1 0 zero
+test.log.2 0 first
+EOF
+
+checkmail test.log.3 second
+
+if [ -f test.log ]; then
+    echo "erroneously created test.log"
+fi
+
+cleanup 2
+
+preptest test.log 3 1
+$RLR test-config.3 --force
+
+checkoutput <<EOF
+test.log 0
+test.log.1 0 zero
+scriptout 0 foo
+EOF
+
+cleanup 3
+
+# ------------------------------- Test 3 -------------------------------------
+preptest test.log 3 1
+preptest test2.log 3 1
+$RLR test-config.3 --force
+
+checkoutput <<EOF
+test.log 0
+test.log.1 0 zero
+test2.log 0
+test2.log.1 0 zero
+scriptout 0 foo foo
+EOF
+
+cleanup 4
+
+# ------------------------------- Test 4 -------------------------------------
+preptest test.log 4 1
+preptest test2.log 4 1
+$RLR test-config.4 --force 
+
+checkoutput <<EOF
+test.log 0
+test.log.1 0 zero
+test2.log 0
+test2.log.1 0 zero
+scriptout 0 foo
+EOF
+
+cleanup 5
+
+# ------------------------------- Test 5 -------------------------------------
+preptest test.log 5 1
+preptest anothertest.log 5 1
+$RLR test-config.5 --force 
+
+checkoutput <<EOF
+test.log 0
+test.log.1 0 zero
+anothertest.log 0
+anothertest.log.1 0 zero
+scriptout 0 foo
+EOF
+
+cleanup 6
+
+# ------------------------------- Test 6 -------------------------------------
+preptest test.log 6 1
+preptest anothertest.log 6 1
+$RLR test-config.6 --force
+
+checkoutput <<EOF
+test.log 0
+test.log.0 0 zero
+anothertest.log 0
+anothertest.log.0 0 zero
+scriptout 0 foo
+EOF
+
+cleanup 7
+
+# ------------------------------- Test 7 -------------------------------------
+preptest test.log 7 1
+preptest anothertest.log 7 1
+
+$RLR test-config.7 --force
+
+checkoutput <<EOF
+test.log 0
+test.log.6 0 zero
+anothertest.log 0
+anothertest.log.6 0 zero
+scriptout 0 foo
+EOF
+
+cleanup 8
+
+# ------------------------------- Test 8 -------------------------------------
+preptest test.log 8 1 1
+$RLR test-config.8 --force
+
+checkoutput <<EOF
+test.log 0
+test.log.1.gz 1 zero
+scriptout 0 foo
+EOF
+
+checkmail test.log zero
+
+cleanup 9
+
+# ------------------------------- Test 9 -------------------------------------
+preptest test.log 9 1 1
+$RLR test-config.9 --force
+
+checkoutput <<EOF
+test.log 0
+scriptout 0 foo
+EOF
+
+checkmail test.log zero
+
+cleanup 10
+
+# ------------------------------- Test 10 ------------------------------------
+preptest test.log 10 1
+$RLR test-config.10 --force
+
+checkoutput <<EOF
+test.log 0
+test.log.1 0 zero
+EOF
+
+echo "newfile" > test.log
+
+$RLR test-config.10 --force
+checkoutput <<EOF
+test.log 0
+test.log.1 0 newfile
+test.log.2.gz 1 zero
+EOF
+
+checkmail test.log.1 newfile
+
+cleanup 11
+
+# ------------------------------- Test 11 ------------------------------------
+preptest test.log 11 2 1
+$RLR test-config.11 --force
+
+checkoutput <<EOF
+test.log 0
+scriptout 0 foo
+EOF
+
+checkmail test.log first
+
+# check rotation into a directory given as a relative pathname
+cleanup 12
+
+# ------------------------------- Test 12 ------------------------------------
+preptest test.log 12 1 0
+rm -rf testdir
+mkdir testdir
+$RLR test-config.12 --force
+
+checkoutput <<EOF
+test.log 0
+testdir/test.log.1 0 zero
+EOF
+
+rm -rf testdir
+
+# check rotation into a directory given as an absolute  pathname
+cleanup 13
+
+# ------------------------------- Test 13 ------------------------------------
+preptest test.log 13 1 0
+rm -rf testdir
+mkdir testdir
+$RLR test-config.13 --force
+
+checkoutput <<EOF
+test.log 0
+testdir/test.log.1 0 zero
+EOF
+
+rm -rf testdir
+
+# sanity rotation check using dateext and dateformat
+cleanup 14
+
+# ------------------------------- Test 14 ------------------------------------
+preptest test.log 14 1 0
+
+$RLR test-config.14 --force
+
+DATESTRING=$(/bin/date +%Y-%m-%d)
+
+checkoutput <<EOF
+test.log 0
+test.log.$DATESTRING 0 zero
+EOF
+
+rm -rf testdir
+
+# shred test
+cleanup 15
+
+# ------------------------------- Test 15 ------------------------------------
+preptest test.log 15 1 0
+$RLR test-config.15 --force
+
+# this rotation should use shred
+$RLR test-config.15 --force
+
+checkoutput <<EOF
+test.log 0
+test.log.1 0
+EOF
+
+cleanup 16
+
+# ------------------------------- Test 16 ------------------------------------
+preptest test.log 16 1 0
+# log with 1 byte should not be rotated
+echo "a" > test.log
+$RLR test-config.16
+
+if [ -f test.log.1 ]; then
+	echo "file $file does exist!"
+	exit 2
+fi
+
+# log with 4 bytes should be rotated
+echo "zero" > test.log
+$RLR test-config.16
+
+checkoutput <<EOF
+test.log 0
+test.log.1 0 zero
+EOF
+
+# cleanup

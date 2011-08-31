@@ -1,0 +1,227 @@
+3.8.0 -> 3.8.1
+	- fixed 1 memory leak in prerotateSingleLog
+	- another fixes for Solaris
+	- fixed HP-UX compilation and default config 
+	- do not redirect logrotate errors to /dev/null in cron script
+	- fixed "size" directive parsing
+	- handle situation when acl_get_fd is supported, but acl_set_fd is not
+	- added "maxsize" directive (see man page)
+
+3.7.9 -> 3.8.0
+	- added "dateyesterday" option (see man page)
+	- fixed crash when config file had exactly 4096*N bytes
+	- added WITH_ACL make option to link against -lacl and preserve ACLs
+	  during rotation
+	- added "su" option to define user/group for rotation. Logrotate now
+	  skips directories which are world writable or writable by group
+	  which is not "root" unless "su" directive is used.
+	- fixed CVE-2011-1098: race condition by creation of new files
+	- fixed possible shell injection when using "shred" directive (CVE-2011-1154)
+	- fixed escaping of file names within 'write state' action (CVE-2011-1155)
+	- better 'size' directive description
+	- fixed possible buffer-overflow when reading config files
+	- NetBSD/FreeBSD compilation fixes
+	- Solaris compilation fixes
+
+3.7.8 -> 3.7.9
+	- fix building on Solaris (patch by András Szilárd)
+	- don't copy config files on the stack -- mmap them instead
+	  (fixes segfaults with too large/invalid config files)
+	- symlinked conf file man page as requested by Fedora guidelines
+	  (thanks to Ivana Hutarova Varekova)
+	- cron script logrotate.cron redirects output to /dev/null
+	- added rotating (copying) non-writable, readable files
+	  (patch by Henrique Martins)
+	- fixed missingok problem with globs
+	  (taken from the Debian patches by Ted Percival 
+	   <ted@midg3t.net>)
+	- fixed bug when log files could be removed even there was
+	  some error in rotation process.
+	- allow setting size greater than 4.2GB in configuration file
+	- pass currently rotated file to postrotate/prerotate script
+	  in nosharedscripts mode
+	- added new TabooExts: ".disabled", ".dpkg-old", ".dpkg-dist",
+	  ".dpkg-new", ".cfsaved", ".ucf-old", ".ucf-dist", ".ucf-new"
+	  (taken from the Debian patches by Paul Martin <pm@debian.org>)
+	- Don't change utime atime/mtime when compressing files
+	  (taken from the Debian patches by Paul Martin <pm@debian.org>)
+	- Better *rotate scripts parser. (taken from the Debian patches)
+	- Allow 'include' directive in log file definitions
+
+3.7.7 -> 3.7.8
+	- do not exit on status file errors
+	- limit config file inclusion nesting
+	- use hashes for status file handling (patch by Petr Tesarik
+	  <ptesarik@suse.cz> and Leonardo Chiquitto)
+	- dateformat to allow unixtime (patch by Sami Kerola
+	  <kerolasa@iki.fi>)
+	- manual page corrections (taken from the Debian patches by
+	  Paul Martin <pm@debian.org>)
+
+3.7.6 -> 3.7.7
+	- dateformat
+	- fix possible buffer overflows in strings handling
+	- various minor bugfixes
+	- change logInfo handling (patches by Leonardo Chiquitto)
+
+3.7.5 -> 3.7.6
+	- patches from Leonardo Chiquitto that fix compile warnings
+	- examples/logrotate-default: add btmp rotation, dateext
+	- update man page
+	- tabooext honor wildcards
+	- fix selinux support with dateext
+
+3.7.1 -> 3.7.5
+	- import Fedora patches
+	- add option to use shred for deleting files, patch by
+	  Peter Eckersley <pde@eff.org>
+	- ignore .cfsaved files
+	- bugfixes
+
+3.7 -> 3.7.1:
+	- Fix sending mails and running scripts after the 
+	  system() -> execve() changes
+	- Preserve file attributes when compressing files (original patch
+	  by Daniel Himler)
+
+3.6.8 -> 3.7:
+	- always use compressext for the extension for compressed
+	  files; before compresscmd and compressext had to agree
+	- moved all compression to one code block
+	- compression, scripts don't use system() anymore
+	- compress and maillast didn't work together properly
+	- delaycompress and mailfirst didn't work properly
+	- don't use system() for mailing (or uncompressing) logs anymore
+	- use "-s" for speciying the subjected of mailed logs
+
+3.5.4 -> 3.6:
+        - See .spec file for changes
+
+3.5.3 -> 3.5.4:
+	- %defattr(-,root,root) in specfile
+
+3.5.2 -> 3.5.3:
+        - patch /tmp file race condition problem, use mkstemp;	
+	  Thanks go to Solar Designer <solar@openwall.com>
+
+3.5 -> 3.5.2:
+	- added .swp and .rpmnew to default taboo list
+
+3.5 -> 3.5.1:
+	- handle state dates in the future a bit more sanely
+
+3.4 -> 3.5:
+	- multiple file names/patterns may be given for a single entry
+	- fixed mistake in when logs were uncompressed before mailing
+
+3.3.2 -> 3.4:
+	- added sharedscripts/nosharedscripts
+	- added simple testbed
+	- quote filenames in state file to allow proper rotation of files
+	  with spaces in the name -- this changes the version number of
+	  the state file!
+	- ignore white space at end of line
+
+3.3.1 -> 3.3.2:
+	- don't rotate lastlog
+
+3.3 -> 3.3.1:
+	- support gzipped man pages
+
+3.2 -> 3.3:
+	- added "mailfirst" and "maillast" flags (based on Tim Wall's patch)
+	- documented "extension" flag
+	- "rotate 0" gives proper script and mail behavior
+
+3.1 -> 3.2:
+	- create wtmp with correct perms
+
+3.0 -> 3.1:
+	- fixed small alloca()
+	- added missingok flag
+	- use popt to display usage message
+	- handle /some/file { } in config file
+
+2.9 -> 3.0
+	- updates for glibc 2.1
+
+2.8 -> 2.9:
+	- fixed a bug parsing lines where { immediately follows the filename
+	- allow log file patterns to be placed in double quotes, which	
+	  allows spaces in names
+	- complain about missing log files (John Van Essen)
+	
+2.7 -> 2.8:
+	- changes for glibc 2.1 (Cristian Gafton)
+
+2.6 -> 2.7:
+	- updated man page to include --force (Simon Mudd)
+	- invoke scripts via /bin/sh rather then relying on /tmp execute
+	  semantics (Philip Guenther)
+	- added "extension" option for forcing a file extension after rotation
+	  (Rob Hagopian)
+
+2.5 -> 2.6:
+	- added nodelaycompress flag (from Jos Vos)
+	- added copytruncate, nocopytruncate flag (from Jos Vos)
+	- removed umask handling; explicitly use fchmod() insteadmoved umask
+	- added --force option (Simon Mudd)
+	- moved /bin/mail to MAIL_COMMAND define (Simon Mudd)
+	- fixed segv caused by overly long filenames
+	- switched from getopt_long to popt
+
+2.4 -> 2.5:
+	- set the umask of the process to 0, letting open() create processes
+	  with the proper permissions
+	- added delaycompress flag (from Jos Vos)
+	- fixed how old logs are finally removed when an olddir is specified
+	  (Jos Vos)
+	- added nomail option
+	- added mail, nomail documentation to man page
+	- added the tabooext directive
+	- fixed problem in globbing
+
+2.3 -> 2.4:
+	- glob log names in config file
+	- added ,v to taboo list
+	- fixed bug w/ create parsing
+	- use an int rather then a mode_t when parsing create entries as
+	  sscanf requires it
+
+2.2 -> 2.3:
+	- fill in all of last rotated structure (this probable isn't
+	  really necessary but it's a bit cleaner and will avoid future
+	  problems);
+	- fixed .spec file
+
+2.1 -> 2.2:
+	- If a file is rotated and we have no state information for it,
+	  right out the current time.
+	- Weekly rotation happens when the current weekday is less then
+	  the weekday of the last rotation or more then a week has
+	  elapsed between the last rotation and now
+	- Monthly rotation happens when the current month is different
+	  from the last month or the current year is different from the
+	  last year
+	- (these were contributed and suggested by Ronald Wahl)
+	- added olddir/noolddir options
+	- added ifempty/notifempty options
+	- ignore nonnormal files when reading config files from a directory
+	- (these were suggested and originally implemented by 
+	  Henning Schmiedehausen)
+	- updated the man page to reflect these changes
+	- made "make install" accept PREFIX argument
+	- added .spec file to tarball
+
+2.0.2 -> 2.1:
+	- Don't output state information for logs that have never been
+	  rotated (better then 1900-1-0)
+	- Accept 1900-1-0 as time 0
+	
+2.0.1 -> 2.0.2:
+	- I have no idea :-(
+
+2.0 -> 2.0.1:
+	- ignore files in included directories which end with ~, .rpmorig, or
+	  .rpmsave
+	  
