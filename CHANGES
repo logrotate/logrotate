@@ -1,6 +1,7 @@
-3.8.0 -> 
+3.8.0 -> 3.8.1
 	- fixed 1 memory leak in prerotateSingleLog
 	- another fixes for Solaris
+	- fixed HP-UX compilation and default config 
 	- do not redirect logrotate errors to /dev/null in cron script
 	- fixed "size" directive parsing
 	- handle situation when acl_get_fd is supported, but acl_set_fd is not

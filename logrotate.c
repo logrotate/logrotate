@@ -790,9 +790,10 @@ int findNeedRotating(struct logInfo *log, int logNum)
 	}
 	if (log->minsize && sb.st_size < log->minsize)
 	    state->doRotate = 0;
-	if (log->maxsize && sb.st_size > log->maxsize)
-	    state->doRotate = 1;
     }
+
+    if (log->maxsize && sb.st_size > log->maxsize)
+        state->doRotate = 1;
 
     /* The notifempty flag overrides the normal criteria */
     if (!(log->flags & LOG_FLAG_IFEMPTY) && !sb.st_size)
