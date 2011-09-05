@@ -190,7 +190,7 @@ static char *readPath(const char *configFile, int lineNum, char *key,
 
 	chptr = start;
 
-	while( (len = mbrtowc(&pwc, chptr, strlen(chptr), NULL)) != 0 ) {
+	while( (len = mbrtowc(&pwc, chptr, strlen(chptr), NULL)) != 0 && strlen(chptr) != 0) {
 		if( len == (size_t)(-1) || len == (size_t)(-2) || !iswprint(pwc) || iswblank(pwc) ) {
 		    message(MESS_ERROR, "%s:%d bad %s path %s\n",
 			    configFile, lineNum, key, start);
