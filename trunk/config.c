@@ -599,6 +599,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
     struct logInfo *log;
 	static unsigned recursion_depth = 0U;
 	char *globerr_msg = NULL;
+	int in_config = 0;
 	struct flock fd_lock = {
 		.l_start = 0,
 		.l_len = 0,
@@ -1300,6 +1301,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 				free(key);
 				key = NULL;
 			} else if (*start == '/' || *start == '"' || *start == '\'') {
+				in_config = 0;
 				if (newlog != defConfig) {
 					message(MESS_ERROR, "%s:%d unexpected log filename\n",
 						configFile, lineNum);
@@ -1322,10 +1324,18 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 					goto error;
 
 				endtag = start;
-				while (endtag - buf < length && *endtag != '{' && *endtag != '\0') {
+				while (endtag - buf < length && *endtag != '{' && *endtag != '}' && *endtag != '\0') {
 					endtag++;}
 				if (endtag - buf > length)
 					continue;
+				if (*endtag == '}') {
+					message(MESS_ERROR, "%s:%d unexpected } (missing previous '{')\n", configFile,
+						lineNum);
+					goto error;
+				}
+				if (*endtag == '{') {
+					in_config = 1;
+				}
 				char *key = strndup(start, endtag - start);
 				start = endtag;
 
@@ -1417,6 +1427,12 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 						lineNum);
 					goto error;
 				}
+				if (!in_config) {
+					message(MESS_ERROR, "%s:%d unexpected } (missing previous '{')\n", configFile,
+						lineNum);
+					goto error;
+				}
+				in_config = 0;
 			if (globerr_msg) {
 				if (!(newlog->flags & LOG_FLAG_MISSINGOK))
 					message(MESS_ERROR, "%s", globerr_msg);
