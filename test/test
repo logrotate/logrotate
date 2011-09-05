@@ -427,4 +427,23 @@ test.log 0
 test.log.1 0 zero
 EOF
 
-# cleanup
+cleanup 17
+
+# ------------------------------- Test 17 ------------------------------------
+preptest test.log 17 1 0
+# log with 1 byte should not be rotated
+$RLR test-config.17 2>error.log
+
+grep "unexpected } (missing previous '{')" error.log >/dev/null
+if [ $? != 0 ]; then
+	echo "No error printed, but there should be one."
+	exit 3
+fi
+
+rm error.log
+
+checkoutput <<EOF
+test.log 0 zero
+EOF
+
+cleanup
