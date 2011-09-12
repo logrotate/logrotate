@@ -6,7 +6,7 @@ S=-"s state"
 RLR="$LOGROTATE $M $S"
 
 cleanup() {
-    rm -f test*.log* anothertest*.log* state test-config. scriptout mail-out
+    rm -f test*.log* anothertest*.log* state test-config. scriptout mail-out compress-args
     rm -f $(ls | egrep '^test-config.[0-9]+$')
 
     [ -n "$1" ] && echo "Running test $1"
@@ -445,5 +445,18 @@ rm error.log
 checkoutput <<EOF
 test.log 0 zero
 EOF
+
+cleanup 18
+
+# ------------------------------- Test 18 ------------------------------------
+preptest test.log 18 1
+$RLR test-config.18 --force
+
+checkoutput <<EOF
+test.log 0
+test.log.1.gz 1 zero
+EOF
+
+(echo "gzip -f -9") | diff -u - compress-args
 
 cleanup

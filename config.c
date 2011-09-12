@@ -1245,10 +1245,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 						newlog->compress_options_count = 0;
 					}
 
-					if (!
-						(options =
-							readPath(configFile, lineNum, "compressoptions",
-								&start, &buf, length))) {
+					if (!(options = isolateLine(&start, &buf, length))) {
 						if (newlog != defConfig) {
 							state = STATE_ERROR;
 							continue;
