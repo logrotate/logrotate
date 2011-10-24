@@ -459,4 +459,26 @@ EOF
 
 (echo "gzip -f -9") | diff -u - compress-args
 
+cleanup 19
+
+# ------------------------------- Test 19 ------------------------------------
+preptest test.log 19 1
+$RLR test-config.19 --force 2>error.log
+grep "error running non-shared postrotate script for" error.log >/dev/null
+if [ $? != 0 ]; then
+	echo "No error printed, but there should be one."
+	exit 3
+fi
+
+cleanup 20
+
+# ------------------------------- Test 19 ------------------------------------
+preptest test.log 20 1
+$RLR test-config.20 --force 2>error.log
+grep "error running shared postrotate script for" error.log >/dev/null
+if [ $? != 0 ]; then
+	echo "No error printed, but there should be one."
+	exit 3
+fi
+
 cleanup
