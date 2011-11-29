@@ -526,4 +526,38 @@ if [ $? != 0 ]; then
 	exit 3
 fi
 
+cleanup 23
+
+# ------------------------------- Test 23 ------------------------------------
+# symlinks - logrotate should move the symlink but not rotate the contents
+# I'm not sure if it's good behaviour, but it's how it works now...
+preptest test.log.original 23 1
+ln -s test.log.original test.log
+$RLR test-config.23 --force 2>error.log
+
+checkoutput <<EOF
+test.log 0
+test.log.1 0 zero
+test.log.original 0 zero
+EOF
+
+rm -f test.log 2>/dev/null || true
+
+cleanup 24
+
+# ------------------------------- Test 24 ------------------------------------
+# symlinks 2 - now copytruncate is used, so original log should be truncated
+# I'm not sure if it's good behaviour, but it's how it works now...
+preptest test.log.original 24 1
+ln -s test.log.original test.log
+$RLR test-config.24 --force 2>error.log
+
+checkoutput <<EOF
+test.log 0
+test.log.1 0 zero
+test.log.original 0
+EOF
+
+rm -f test.log 2>/dev/null || true
+
 cleanup
