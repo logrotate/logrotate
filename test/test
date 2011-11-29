@@ -541,6 +541,12 @@ test.log.1 0 zero
 test.log.original 0 zero
 EOF
 
+file test.log.1 | grep "symbolic link">/dev/null
+if [ $? != 0 ]; then
+	echo "test.log.1 should be symlink, but it's not"
+fi
+
+
 rm -f test.log 2>/dev/null || true
 
 cleanup 24
@@ -551,6 +557,11 @@ cleanup 24
 preptest test.log.original 24 1
 ln -s test.log.original test.log
 $RLR test-config.24 --force 2>error.log
+
+file test.log.1 | grep "symbolic link">/dev/null
+if [ $? == 0 ]; then
+	echo "test.log.1 should not be symlink, but it is"
+fi
 
 checkoutput <<EOF
 test.log 0
