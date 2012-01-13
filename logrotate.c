@@ -630,7 +630,7 @@ static int copyTruncate(char *currLog, char *saveLog, struct stat *sb,
 	}
 #ifdef WITH_ACL
 	if (prev_acl) {
-		if ((fdsave, prev_acl) == -1) {
+		if (acl_set_fd(fdsave, prev_acl) == -1) {
 			if (errno != ENOTSUP) {
 				message(MESS_ERROR, "setting ACL for %s: %s\n",
 				saveLog, strerror(errno));
