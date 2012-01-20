@@ -1473,7 +1473,7 @@ int rotateLogSet(struct logInfo *log, int force)
 	message(MESS_DEBUG, "only log files >= %llu bytes are rotated, ",	log->minsize);
 
     if (log->maxsize) 
-	message(MESS_DEBUG, "log files >= %llu are rotated earlier, ",	log->minsize);
+	message(MESS_DEBUG, "log files >= %llu are rotated earlier, ",	log->maxsize);
 
     if (log->logAddress) {
 	message(MESS_DEBUG, "old logs mailed to %s\n", log->logAddress);
