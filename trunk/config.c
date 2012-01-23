@@ -1297,7 +1297,11 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 				}
 				free(key);
 				key = NULL;
-			} else if (*start == '/' || *start == '"' || *start == '\'') {
+			} else if (*start == '/' || *start == '"' || *start == '\''
+#ifdef GLOB_TILDE
+                                                                           || *start == '~'
+#endif
+                                                                           ) {
 				in_config = 0;
 				if (newlog != defConfig) {
 					message(MESS_ERROR, "%s:%d unexpected log filename\n",
@@ -1357,8 +1361,11 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 					globerr_msg = NULL;
 				}
 					
-				rc = glob(argv[argNum], GLOB_NOCHECK, globerr,
-					&globResult);
+				rc = glob(argv[argNum], GLOB_NOCHECK
+#ifdef GLOB_TILDE
+                                                        | GLOB_TILDE
+#endif 
+                                                    , globerr, &globResult);
 				if (rc == GLOB_ABORTED) {
 					if (newlog->flags & LOG_FLAG_MISSINGOK) {
 						continue;
