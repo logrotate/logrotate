@@ -110,6 +110,9 @@ compress
     endscript
     nocompress
 }
+
+~/log/*.log {}
+
 .fi
 
 .PP
@@ -135,10 +138,14 @@ quotes around the first filename at the beginning of this section allows
 logrotate to rotate logs with spaces in the name. Normal shell quoting rules
 apply, with ', ", and \\ characters supported.
 
-The last section defines the parameters for all of the files in
+The next section defines the parameters for all of the files in
 \fI/var/log/news\fR. Each file is rotated on a monthly basis.  This is
 considered a single rotation directive and if errors occur for more than
 one file, the log files are not compressed.
+
+The last section uses tilde expansion to rotate log files in the home
+directory of the current user. This is only available, if your glob
+library supports tilde expansion. GNU glob does support this.
 
 Please use wildcards with caution.  If you specify *, \fBlogrotate\fR will
 rotate all files, including previously rotated ones.  A way around this
