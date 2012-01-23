@@ -623,8 +623,10 @@ static int copyTruncate(char *currLog, char *saveLog, struct stat *sb,
 	if (fdsave < 0) {
 	    close(fdcurr);
 #ifdef WITH_ACL
-		if (prev_acl)
+		if (prev_acl) {
 			acl_free(prev_acl);
+			prev_acl = NULL;
+		}
 #endif /* WITH_ACL */
 	    return 1;
 	}
