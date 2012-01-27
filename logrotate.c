@@ -349,7 +349,7 @@ static int removeLogFile(char *name, struct logInfo *log)
 	int fd;
 	message(MESS_DEBUG, "removing old log %s\n", name);
 
-	if ((fd = open(name, O_RDWR)) < 0) {
+	if ((fd = open(name, O_RDWR | O_NOFOLLOW)) < 0) {
 		message(MESS_ERROR, "error opening %s: %s\n",
 			name, strerror(errno));
 		return 1;
@@ -390,7 +390,7 @@ static int compressLogFile(char *name, struct logInfo *log, struct stat *sb)
     compressedName = alloca(strlen(name) + strlen(log->compress_ext) + 2);
     sprintf(compressedName, "%s%s", name, log->compress_ext);
 
-    if ((inFile = open(name, O_RDWR)) < 0) {
+    if ((inFile = open(name, O_RDWR | O_NOFOLLOW)) < 0) {
 	message(MESS_ERROR, "unable to open %s for compression\n", name);
 	return 1;
     }
@@ -470,7 +470,7 @@ static int mailLog(char *logFile, char *mailCommand,
     char *mailArgv[] = { mailCommand, "-s", subject, address, NULL };
     int rc = 0;
 
-    if ((mailInput = open(logFile, O_RDONLY)) < 0) {
+    if ((mailInput = open(logFile, O_RDONLY | O_NOFOLLOW)) < 0) {
 	message(MESS_ERROR, "failed to open %s for mailing: %s\n", logFile,
 		strerror(errno));
 	return 1;
@@ -561,7 +561,7 @@ static int copyTruncate(char *currLog, char *saveLog, struct stat *sb,
     message(MESS_DEBUG, "copying %s to %s\n", currLog, saveLog);
 
     if (!debug) {
-	if ((fdcurr = open(currLog, (flags & LOG_FLAG_COPY) ? O_RDONLY : O_RDWR)) < 0) {
+	if ((fdcurr = open(currLog, ((flags & LOG_FLAG_COPY) ? O_RDONLY : O_RDWR) | O_NOFOLLOW)) < 0) {
 	    message(MESS_ERROR, "error opening %s: %s\n", currLog,
 		    strerror(errno));
 	    return 1;
@@ -1228,7 +1228,7 @@ int rotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 			security_context_t oldContext = NULL;
 			int fdcurr = -1;
 
-			if ((fdcurr = open(log->files[logNum], O_RDWR)) < 0) {
+			if ((fdcurr = open(log->files[logNum], O_RDWR | O_NOFOLLOW)) < 0) {
 				message(MESS_ERROR, "error opening %s: %s\n",
 						log->files[logNum],
 					strerror(errno));
