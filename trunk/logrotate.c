@@ -110,6 +110,29 @@ int switch_user_back() {
 	return switch_user(save_euid, save_egid);
 }
 
+int switch_user_permanently(const struct logInfo *log) {
+	gid_t group = getegid();
+	uid_t user = geteuid();
+	if (!(log->flags & LOG_FLAG_SU)) {
+		return 0;
+	}
+	if (getuid() == user && getgid() == group)
+		return 0;
+	// switch to full root first
+	if (setgid(getgid()) || setuid(getuid())) {
+		message(MESS_ERROR, "error getting rid of euid != uid\n");
+		return 1;
+	}
+	message(MESS_DEBUG, "switching uid to %d and gid to %d\n",
+		user, group);
+	if (setgid(group) || setuid(user)) {
+		message(MESS_ERROR, "error switching euid to %d and egid to %d: %s\n",
+			user, group, strerror(errno));
+		return 1;
+	}
+	return 0;
+}
+
 static void unescape(char *arg)
 {
 	char *p = arg;
@@ -239,7 +262,7 @@ static struct logState *findState(const char *fn)
 	return p;
 }
 
-static int runScript(char *logfn, char *script)
+static int runScript(struct logInfo *log, char *logfn, char *script)
 {
     int rc;
 
@@ -250,6 +273,11 @@ static int runScript(char *logfn, char *script)
     }
 
 	if (!fork()) {
+		if (log->flags & LOG_FLAG_SU) {
+			if (switch_user_back() != 0) {
+				exit(1);
+			}
+		}
 		execl("/bin/sh", "sh", "-c", script, "logrotate_script", logfn, NULL);
 		exit(1);
 	}
@@ -327,6 +355,12 @@ static int shred_file(int fd, char *filename, struct logInfo *log)
 	if (!fork()) {
 		dup2(fd, 1);
 		close(fd);
+
+		if (log->flags & LOG_FLAG_SU) {
+			if (switch_user_back() != 0) {
+				exit(1);
+			}
+		}
 
 		execvp(fullCommand[0], (void *) fullCommand);
 		exit(1);
@@ -435,6 +469,10 @@ static int compressLogFile(char *name, struct logInfo *log, struct stat *sb)
 	dup2(outFile, 1);
 	close(outFile);
 
+	if (switch_user_permanently(log) != 0) {
+		exit(1);
+	}
+
 	execvp(fullCommand[0], (void *) fullCommand);
 	exit(1);
     }
@@ -460,7 +498,7 @@ static int compressLogFile(char *name, struct logInfo *log, struct stat *sb)
     return 0;
 }
 
-static int mailLog(char *logFile, char *mailCommand,
+static int mailLog(struct logInfo *log, char *logFile, char *mailCommand,
 		   char *uncompressCommand, char *address, char *subject)
 {
     int mailInput;
@@ -490,6 +528,10 @@ static int mailLog(char *logFile, char *mailCommand,
 			close(uncompressPipe[0]);
 			close(uncompressPipe[1]);
 
+			if (switch_user_permanently(log) != 0) {
+				exit(1);
+			}
+
 			execlp(uncompressCommand, uncompressCommand, NULL);
 			exit(1);
 		}
@@ -503,6 +545,13 @@ static int mailLog(char *logFile, char *mailCommand,
 	dup2(mailInput, 0);
 	close(mailInput);
 	close(1);
+
+	// mail command runs as root
+	if (log->flags & LOG_FLAG_SU) {
+		if (switch_user_back() != 0) {
+			exit(1);
+		}
+	}
 
 	execvp(mailArgv[0], mailArgv);
 	exit(1);
@@ -539,12 +588,12 @@ static int mailLogWrapper(char *mailFilename, char *mailCommand,
     if ((log->flags & LOG_FLAG_COMPRESS) &&
 	!((log->flags & LOG_FLAG_DELAYCOMPRESS) &&
 	  (log->flags & LOG_FLAG_MAILFIRST))) {
-	if (mailLog(mailFilename, mailCommand,
+	if (mailLog(log, mailFilename, mailCommand,
 		    log->uncompress_prog, log->logAddress,
 		    log->files[logNum]))
 	    return 1;
     } else {
-	if (mailLog(mailFilename, mailCommand, NULL,
+	if (mailLog(log, mailFilename, mailCommand, NULL,
 		    log->logAddress, mailFilename))
 	    return 1;
     }
@@ -1504,7 +1553,7 @@ int rotateLogSet(struct logInfo *log, int force)
 		    "since no logs will be rotated\n");
 	} else {
 	    message(MESS_DEBUG, "running first action script\n");
-	    if (runScript(log->pattern, log->first)) {
+	    if (runScript(log, log->pattern, log->first)) {
 		message(MESS_ERROR, "error running first action script "
 			"for %s\n", log->pattern);
 		hasErrors = 1;
@@ -1547,7 +1596,7 @@ int rotateLogSet(struct logInfo *log, int force)
 			"since no logs will be rotated\n");
 	    } else {
 		message(MESS_DEBUG, "running prerotate script\n");
-		if (runScript(log->flags & LOG_FLAG_SHAREDSCRIPTS ? log->pattern : log->files[j], log->pre)) {
+		if (runScript(log, log->flags & LOG_FLAG_SHAREDSCRIPTS ? log->pattern : log->files[j], log->pre)) {
 		    if (log->flags & LOG_FLAG_SHAREDSCRIPTS)
 			message(MESS_ERROR,
 				"error running shared prerotate script "
@@ -1582,7 +1631,7 @@ int rotateLogSet(struct logInfo *log, int force)
 			"since no logs were rotated\n");
 	    } else {
 		message(MESS_DEBUG, "running postrotate script\n");
-		if (runScript(log->flags & LOG_FLAG_SHAREDSCRIPTS ? log->pattern : log->files[j], log->post)) {
+		if (runScript(log, log->flags & LOG_FLAG_SHAREDSCRIPTS ? log->pattern : log->files[j], log->post)) {
 		    if (log->flags & LOG_FLAG_SHAREDSCRIPTS)
 			message(MESS_ERROR,
 				"error running shared postrotate script "
@@ -1628,7 +1677,7 @@ int rotateLogSet(struct logInfo *log, int force)
 		    "since no logs will be rotated\n");
 	} else {
 	    message(MESS_DEBUG, "running last action script\n");
-	    if (runScript(log->pattern, log->last)) {
+	    if (runScript(log, log->pattern, log->last)) {
 		message(MESS_ERROR, "error running last action script "
 			"for %s\n", log->pattern);
 		hasErrors = 1;
