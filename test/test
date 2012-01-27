@@ -552,8 +552,8 @@ rm -f test.log 2>/dev/null || true
 cleanup 24
 
 # ------------------------------- Test 24 ------------------------------------
-# symlinks 2 - now copytruncate is used, so original log should be truncated
-# I'm not sure if it's good behaviour, but it's how it works now...
+# symlinks 2 - now copytruncate is used, and original log should not be truncated
+# since logrotate-3.8.2, we don't support symlinks rotation officially.
 preptest test.log.original 24 1
 ln -s test.log.original test.log
 $RLR test-config.24 --force 2>error.log
@@ -564,9 +564,8 @@ if [ $? == 0 ]; then
 fi
 
 checkoutput <<EOF
-test.log 0
-test.log.1 0 zero
-test.log.original 0
+test.log 0 zero
+test.log.original 0 zero
 EOF
 
 rm -f test.log 2>/dev/null || true
