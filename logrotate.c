@@ -356,10 +356,8 @@ static int shred_file(int fd, char *filename, struct logInfo *log)
 		dup2(fd, 1);
 		close(fd);
 
-		if (log->flags & LOG_FLAG_SU) {
-			if (switch_user_back() != 0) {
-				exit(1);
-			}
+		if (switch_user_permanently(log) != 0) {
+			exit(1);
 		}
 
 		execvp(fullCommand[0], (void *) fullCommand);
