@@ -1337,6 +1337,11 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 				if (*endtag == '{') {
 					in_config = 1;
 				}
+				else {
+					message(MESS_ERROR, "%s:%d missing '{' after log files definition\n", configFile,
+						lineNum);
+					goto error;
+				}
 				char *key = strndup(start, endtag - start);
 				start = endtag;
 
