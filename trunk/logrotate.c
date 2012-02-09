@@ -767,7 +767,7 @@ int findNeedRotating(struct logInfo *log, int logNum)
 				" config file.\n"
 				, ld);
 			free(ld);
-			return 0;
+			return 1;
 		}
 		free(ld);
 	}
