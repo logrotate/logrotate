@@ -1595,7 +1595,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 	}
 
     }
-
+ 
     if (scriptStart) {
 	message(MESS_ERROR,
 		"%s:prerotate or postrotate without endscript\n",
