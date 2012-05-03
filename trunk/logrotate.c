@@ -1,5 +1,5 @@
 #include <sys/queue.h>
-// alloca() is defined in stdlib.h in NetBSD
+/* alloca() is defined in stdlib.h in NetBSD */
 #ifndef __NetBSD__
 #include <alloca.h>
 #endif
