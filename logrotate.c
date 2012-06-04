@@ -1122,7 +1122,8 @@ int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 	}
 	/* firstRotated is most recently created/compressed rotated log */
 	sprintf(rotNames->firstRotated, "%s/%s%s%s%s",
-		rotNames->dirName, rotNames->baseName, dext_str, fileext, compext);
+		rotNames->dirName, rotNames->baseName, dext_str, fileext,
+		(log->flags & LOG_FLAG_DELAYCOMPRESS) ? "" : compext);
 	globfree(&globResult);
 	free(glob_pattern);
     } else {
