@@ -320,6 +320,7 @@ static void copyLogInfo(struct logInfo *to, struct logInfo *from)
     if (from->compress_ext)
 	to->compress_ext = strdup(from->compress_ext);
     to->flags = from->flags;
+	to->shred_cycles = from->shred_cycles;
     to->createMode = from->createMode;
     to->createUid = from->createUid;
     to->createGid = from->createGid;
