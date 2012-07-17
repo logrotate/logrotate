@@ -1,3 +1,18 @@
+3.8.1 -> 3.8.2
+	- show error and ignore config if '{' is not present after log files
+	  declaration
+	- support whitespaces in compressoptions directive
+	- support for tilde expansion in config files
+	- dixed mail sending for 'mailfirst', 'dateext' and 'delaycompress'
+	  combination
+	- do no use gzip/gunzip from /usr/local on Solaris
+	- add O_NOFOLLOW when opening files as safeguard against symlink tricks
+	- do not run external programs with uid != euid
+	- fixed potential bad-free when ACL is used
+	- Do not include alloca.h on NetBSD, since alloca() is declared in
+	  stdlib.h there
+	- 13 new tests added
+
 3.8.0 -> 3.8.1
 	- fixed 1 memory leak in prerotateSingleLog
 	- another fixes for Solaris
