@@ -529,39 +529,27 @@ fi
 cleanup 23
 
 # ------------------------------- Test 23 ------------------------------------
-# symlinks - logrotate should move the symlink but not rotate the contents
-# I'm not sure if it's good behaviour, but it's how it works now...
+# symlinks - symlinks rotation is not allowed for security reasons.
 preptest test.log.original 23 1
 ln -s test.log.original test.log
-$RLR test-config.23 --force 2>error.log
+$RLR test-config.23 --force 2>error.log 
 
 checkoutput <<EOF
-test.log 0
-test.log.1 0 zero
+test.log 0 zero
 test.log.original 0 zero
 EOF
-
-file test.log.1 | grep "symbolic link">/dev/null
-if [ $? != 0 ]; then
-	echo "test.log.1 should be symlink, but it's not"
-fi
-
 
 rm -f test.log 2>/dev/null || true
 
 cleanup 24
 
 # ------------------------------- Test 24 ------------------------------------
-# symlinks 2 - now copytruncate is used, and original log should not be truncated
+# symlinks 2 - now copytruncate is used, but symlinks rotation is not allowed for
+# security reasons.
 # since logrotate-3.8.2, we don't support symlinks rotation officially.
 preptest test.log.original 24 1
 ln -s test.log.original test.log
 $RLR test-config.24 --force 2>error.log
-
-file test.log.1 | grep "symbolic link">/dev/null
-if [ $? == 0 ]; then
-	echo "test.log.1 should not be symlink, but it is"
-fi
 
 checkoutput <<EOF
 test.log 0 zero

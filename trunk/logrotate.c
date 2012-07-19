@@ -775,7 +775,7 @@ int findNeedRotating(struct logInfo *log, int logNum)
 		free(ld);
 	}
 
-    if (stat(log->files[logNum], &sb)) {
+    if (lstat(log->files[logNum], &sb)) {
 	if ((log->flags & LOG_FLAG_MISSINGOK) && (errno == ENOENT)) {
 	    message(MESS_DEBUG, "  log %s does not exist -- skipping\n",
 		    log->files[logNum]);
@@ -789,6 +789,13 @@ int findNeedRotating(struct logInfo *log, int logNum)
     state = findState(log->files[logNum]);
     state->doRotate = 0;
     state->sb = sb;
+
+	if ((sb.st_mode & S_IFMT) == S_IFLNK) {
+	    message(MESS_DEBUG, "  log %s is symbolic link. Rotation of symbolic"
+			" links is not allowed to avoid security issues -- skipping.\n",
+		    log->files[logNum]);
+		return 0;
+	}
 
     if (log->criterium == ROT_SIZE) {
 	state->doRotate = (sb.st_size >= log->threshhold);
