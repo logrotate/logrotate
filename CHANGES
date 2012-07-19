@@ -3,6 +3,8 @@
 	  declaration
 	- support whitespaces in compressoptions directive
 	- support for tilde expansion in config files
+	- 'su' directive does not affect script execution - scripts
+	  are executed as a root if 'su' directive is present
 	- dixed mail sending for 'mailfirst', 'dateext' and 'delaycompress'
 	  combination
 	- do no use gzip/gunzip from /usr/local on Solaris
