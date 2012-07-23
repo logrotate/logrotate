@@ -292,6 +292,7 @@ static int runScript(struct logInfo *log, char *logfn, char *script)
 int createOutputFile(char *fileName, int flags, struct stat *sb)
 {
     int fd;
+	struct stat sb_create;
 
 	fd = open(fileName, (flags | O_EXCL | O_NOFOLLOW),
 		(S_IRUSR | S_IWUSR) & sb->st_mode);
@@ -307,9 +308,17 @@ int createOutputFile(char *fileName, int flags, struct stat *sb)
 	close(fd);
 	return -1;
     }
-    if (fchown(fd, sb->st_uid, sb->st_gid)) {
-	message(MESS_ERROR, "error setting owner of %s: %s\n",
-		fileName, strerror(errno));
+
+	if (fstat(fd, &sb_create)) {
+		message(MESS_ERROR, "fstat of %s failed: %s\n", fileName,
+			strerror(errno));
+		return -1;
+	}
+ 
+    if ((sb_create.st_uid != sb->st_uid || sb_create.st_gid != sb->st_gid) && 
+		fchown(fd, sb->st_uid, sb->st_gid)) {
+	message(MESS_ERROR, "error setting owner of %s to uid %d and gid %d: %s\n",
+		fileName, sb->st_uid, sb->st_gid, strerror(errno));
 	close(fd);
 	return -1;
     }
