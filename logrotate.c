@@ -771,13 +771,13 @@ int findNeedRotating(struct logInfo *log, int logNum)
 			free(ld);
 			return 0;
 		}
-		/* Don't rotate in directories owned or writeable by non root */
-		if (sb.st_uid != 0 || (sb.st_gid != 0 && sb.st_mode & S_IWGRP) || sb.st_mode & S_IWOTH) {
-			message(MESS_ERROR, "\"%s\" has insecure permissions."
-				" It must be owned and be writable by root only to avoid security issues."
-				" Please fix the directory permissions or set the \"su\" directive in the"
-				" config file.\n"
-				, ld);
+		/* Don't rotate in directories writable by others or group which is not "root"  */
+		if ((sb.st_gid != 0 && sb.st_mode & S_IWGRP) || sb.st_mode & S_IWOTH) {
+			message(MESS_ERROR, "skipping \"%s\" because parent directory has insecure permissions"
+								" (It's world writable or writable by group which is not \"root\")"
+								" Set \"su\" directive in config file to tell logrotate which user/group"
+								" should be used for rotation.\n"
+								,log->files[logNum]);
 			free(ld);
 			return 1;
 		}
