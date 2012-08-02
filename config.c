@@ -898,7 +898,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 					newlog->flags &= ~LOG_FLAG_CREATE;
 				} else if (!strcmp(key, "size") || !strcmp(key, "minsize") ||
 							!strcmp(key, "maxsize")) {
-					unsigned long long size = 0;
+					uint64_t size = 0;
 					char *opt = key;
 							
 					if ((key = isolateValue(configFile, lineNum, opt, &start,
