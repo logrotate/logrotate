@@ -1506,7 +1506,7 @@ int rotateLogSet(struct logInfo *log, int force)
     message(MESS_DEBUG, "\nrotating pattern: %s ", log->pattern);
     switch (log->criterium) {
     case ROT_DAYS:
-	message(MESS_DEBUG, "after %"PRId64" days ", log->threshhold);
+	message(MESS_DEBUG, "after %llu days ", log->threshhold);
 	break;
     case ROT_WEEKLY:
 	message(MESS_DEBUG, "weekly ");
@@ -1518,7 +1518,7 @@ int rotateLogSet(struct logInfo *log, int force)
 	message(MESS_DEBUG, "yearly ");
 	break;
     case ROT_SIZE:
-	message(MESS_DEBUG, "%"PRId64" bytes ", log->threshhold);
+	message(MESS_DEBUG, "%llu bytes ", log->threshhold);
 	break;
     case ROT_FORCE:
 	message(MESS_DEBUG, "forced from command line ");
@@ -1539,10 +1539,10 @@ int rotateLogSet(struct logInfo *log, int force)
 	message(MESS_DEBUG, "empty log files are not rotated, ");
 
     if (log->minsize) 
-	message(MESS_DEBUG, "only log files >= %"PRId64" bytes are rotated, ",	log->minsize);
+	message(MESS_DEBUG, "only log files >= %llu bytes are rotated, ",	log->minsize);
 
     if (log->maxsize) 
-	message(MESS_DEBUG, "log files >= %"PRId64" are rotated earlier, ",	log->maxsize);
+	message(MESS_DEBUG, "log files >= %llu are rotated earlier, ",	log->maxsize);
 
     if (log->logAddress) {
 	message(MESS_DEBUG, "old logs mailed to %s\n", log->logAddress);

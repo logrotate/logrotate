@@ -4,7 +4,6 @@
 #include <sys/types.h>
 #include <sys/queue.h>
 #include <glob.h>
-#include <inttypes.h>
 
 #include "config.h"
 
@@ -36,9 +35,9 @@ struct logInfo {
     char *oldDir;
     enum { ROT_DAYS, ROT_WEEKLY, ROT_MONTHLY, ROT_YEARLY, ROT_SIZE,
 	    ROT_FORCE } criterium;
-    uint64_t threshhold;
-	uint64_t maxsize;
-    uint64_t minsize;
+    unsigned long long threshhold;
+	unsigned long long maxsize;
+    unsigned long long minsize;
     int rotateCount;
     int rotateAge;
     int logStart;
