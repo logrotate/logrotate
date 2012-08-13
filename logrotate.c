@@ -94,6 +94,90 @@ static int globerr(const char *pathname, int theerr)
     return 1;
 }
 
+#ifdef WITH_ACL
+static int update_acl(acl_t *acl, struct stat sb) {
+	acl_entry_t entry;
+	acl_permset_t perms;
+	int entry_id;
+	acl_tag_t tag;
+
+	entry_id = ACL_FIRST_ENTRY;
+	while (acl_get_entry(*acl, entry_id, &entry) == 1) {
+		entry_id = ACL_NEXT_ENTRY;
+
+		if (acl_get_tag_type(entry, &tag) == -1) {
+			return 0;
+		}
+
+		switch(tag) {
+			case ACL_USER_OBJ:
+				if (acl_get_permset(entry, &perms) == -1)
+					return 0;
+				if (acl_clear_perms(perms) == -1)
+					return 0;
+
+				/* calculate user mode */
+				if (sb.st_mode & S_IRUSR) {
+					if (acl_add_perm(perms, ACL_READ) == -1)
+						return 0;
+				}
+				if (sb.st_mode & S_IWUSR) {
+					if (acl_add_perm(perms, ACL_WRITE) == -1)
+						return 0;
+				}
+				if (sb.st_mode & S_IXUSR) {
+					if (acl_add_perm(perms, ACL_EXECUTE) == -1)
+						return 0;
+				}
+				if (acl_set_permset(entry, perms) == -1)
+					return 0;
+			break;
+			case ACL_GROUP_OBJ:
+				if (acl_get_permset(entry, &perms) == -1)
+					return 0;
+				if (acl_clear_perms(perms) == -1)
+					return 0;
+
+				/* calculate group mode */
+				if (sb.st_mode & S_IRGRP)
+					if (acl_add_perm(perms, ACL_READ) == -1)
+						return 0;
+				if (sb.st_mode & S_IWGRP)
+					if (acl_add_perm(perms, ACL_WRITE) == -1)
+						return 0;
+				if (sb.st_mode & S_IXGRP)
+					if (acl_add_perm(perms, ACL_EXECUTE) == -1)
+						return 0;
+				if (acl_set_permset(entry, perms) == -1)
+					return 0;
+			break;
+			case ACL_OTHER:
+				if (acl_get_permset(entry, &perms) == -1)
+					return 0;
+				if (acl_clear_perms(perms) == -1)
+					return 0;
+
+				/* calculate other mode */
+				if (sb.st_mode & S_IROTH)
+					if (acl_add_perm(perms, ACL_READ) == -1)
+						return 0;
+				if (sb.st_mode & S_IWOTH)
+					if (acl_add_perm(perms, ACL_WRITE) == -1)
+						return 0;
+				if (sb.st_mode & S_IXOTH)
+					if (acl_add_perm(perms, ACL_EXECUTE) == -1)
+						return 0;
+				if (acl_set_permset(entry, perms) == -1)
+					return 0;
+			break;
+			default: break;
+		}
+	}
+
+	return 1;
+}
+#endif
+
 int switch_user(uid_t user, gid_t group) {
 	save_egid = getegid();
 	save_euid = geteuid();
@@ -322,6 +406,7 @@ int createOutputFile(char *fileName, int flags, struct stat *sb)
 	close(fd);
 	return -1;
     }
+
     if (fchmod(fd, sb->st_mode)) {
 	message(MESS_ERROR, "error setting mode of %s: %s\n",
 		fileName, strerror(errno));
@@ -457,7 +542,16 @@ static int compressLogFile(char *name, struct logInfo *log, struct stat *sb)
 		}
 	}
 	if (prev_acl) {
-		if (acl_set_fd(outFile, prev_acl) == -1) {
+		if (update_acl(&prev_acl, *sb) == 0) {
+				message(MESS_ERROR, "setting ACL for %s: %s\n",
+				compressedName, strerror(errno));
+				acl_free(prev_acl);
+				prev_acl = NULL;
+				close(inFile);
+				close(outFile);
+				return 1;
+		}
+		else if (acl_set_fd(outFile, prev_acl) == -1) {
 			if (errno != ENOTSUP) {
 				message(MESS_ERROR, "setting ACL for %s: %s\n",
 				compressedName, strerror(errno));
@@ -691,7 +785,16 @@ static int copyTruncate(char *currLog, char *saveLog, struct stat *sb,
 	}
 #ifdef WITH_ACL
 	if (prev_acl) {
-		if (acl_set_fd(fdsave, prev_acl) == -1) {
+		if (update_acl(&prev_acl, *sb) == 0) {
+				message(MESS_ERROR, "setting ACL for %s: %s\n",
+				saveLog, strerror(errno));
+				acl_free(prev_acl);
+				prev_acl = NULL;
+				close(fdsave);
+				close(fdcurr);
+				return 1;
+		}
+		else if (acl_set_fd(fdsave, prev_acl) == -1) {
 			if (errno != ENOTSUP) {
 				message(MESS_ERROR, "setting ACL for %s: %s\n",
 				saveLog, strerror(errno));
@@ -1410,7 +1513,12 @@ int rotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 			else {
 #ifdef WITH_ACL
 				if (prev_acl) {
-					if (acl_set_fd(fd, prev_acl) == -1) {
+					if (update_acl(&prev_acl, sb) == 0) {
+							message(MESS_ERROR, "setting ACL for %s: %s\n",
+							log->files[logNum], strerror(errno));
+							hasErrors = 1;
+					}
+					else if (acl_set_fd(fd, prev_acl) == -1) {
 						if (errno != ENOTSUP) {
 							message(MESS_ERROR, "setting ACL for %s: %s\n",
 							log->files[logNum], strerror(errno));
