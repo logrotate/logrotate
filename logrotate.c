@@ -34,8 +34,12 @@ int selinux_enforce = 0;
 
 #ifdef WITH_ACL
 #include "sys/acl.h"
-static acl_t prev_acl = NULL;
+#define acl_type acl_t
+#else
+#define acl_type void *
 #endif
+
+static acl_type prev_acl = NULL;
 
 #include "basenames.h"
 #include "log.h"
@@ -95,7 +99,7 @@ static int globerr(const char *pathname, int theerr)
 }
 
 #ifdef WITH_ACL
-static int update_acl(acl_t *acl, struct stat sb) {
+static int update_acl(acl_t *acl, struct stat *sb) {
 	acl_entry_t entry;
 	acl_permset_t perms;
 	int entry_id;
@@ -117,15 +121,15 @@ static int update_acl(acl_t *acl, struct stat sb) {
 					return 0;
 
 				/* calculate user mode */
-				if (sb.st_mode & S_IRUSR) {
+				if (sb->st_mode & S_IRUSR) {
 					if (acl_add_perm(perms, ACL_READ) == -1)
 						return 0;
 				}
-				if (sb.st_mode & S_IWUSR) {
+				if (sb->st_mode & S_IWUSR) {
 					if (acl_add_perm(perms, ACL_WRITE) == -1)
 						return 0;
 				}
-				if (sb.st_mode & S_IXUSR) {
+				if (sb->st_mode & S_IXUSR) {
 					if (acl_add_perm(perms, ACL_EXECUTE) == -1)
 						return 0;
 				}
@@ -139,13 +143,13 @@ static int update_acl(acl_t *acl, struct stat sb) {
 					return 0;
 
 				/* calculate group mode */
-				if (sb.st_mode & S_IRGRP)
+				if (sb->st_mode & S_IRGRP)
 					if (acl_add_perm(perms, ACL_READ) == -1)
 						return 0;
-				if (sb.st_mode & S_IWGRP)
+				if (sb->st_mode & S_IWGRP)
 					if (acl_add_perm(perms, ACL_WRITE) == -1)
 						return 0;
-				if (sb.st_mode & S_IXGRP)
+				if (sb->st_mode & S_IXGRP)
 					if (acl_add_perm(perms, ACL_EXECUTE) == -1)
 						return 0;
 				if (acl_set_permset(entry, perms) == -1)
@@ -158,13 +162,13 @@ static int update_acl(acl_t *acl, struct stat sb) {
 					return 0;
 
 				/* calculate other mode */
-				if (sb.st_mode & S_IROTH)
+				if (sb->st_mode & S_IROTH)
 					if (acl_add_perm(perms, ACL_READ) == -1)
 						return 0;
-				if (sb.st_mode & S_IWOTH)
+				if (sb->st_mode & S_IWOTH)
 					if (acl_add_perm(perms, ACL_WRITE) == -1)
 						return 0;
-				if (sb.st_mode & S_IXOTH)
+				if (sb->st_mode & S_IXOTH)
 					if (acl_add_perm(perms, ACL_EXECUTE) == -1)
 						return 0;
 				if (acl_set_permset(entry, perms) == -1)
@@ -373,7 +377,7 @@ static int runScript(struct logInfo *log, char *logfn, char *script)
     return rc;
 }
 
-int createOutputFile(char *fileName, int flags, struct stat *sb)
+int createOutputFile(char *fileName, int flags, struct stat *sb, acl_type acl)
 {
     int fd;
 	struct stat sb_create;
@@ -413,6 +417,26 @@ int createOutputFile(char *fileName, int flags, struct stat *sb)
 	close(fd);
 	return -1;
     }
+
+#ifdef WITH_ACL
+	if (acl) {
+		if (update_acl(&acl, sb) == 0) {
+				message(MESS_ERROR, "setting ACL for %s: %s\n",
+				fileName, strerror(errno));
+				close(fd);
+				return -1;
+		}
+		else if (acl_set_fd(fd, acl) == -1) {
+			if (errno != ENOTSUP) {
+				message(MESS_ERROR, "setting ACL for %s: %s\n",
+				fileName, strerror(errno));
+				close(fd);
+				return 1;
+			}
+		}
+	}
+#endif
+
     return fd;
 }
 
@@ -524,48 +548,29 @@ static int compressLogFile(char *name, struct logInfo *log, struct stat *sb)
 	return 1;
     }
 
-    outFile =
-	createOutputFile(compressedName, O_RDWR | O_CREAT, sb);
-    if (outFile < 0) {
-	close(inFile);
-	return 1;
-    }
-
 #ifdef WITH_ACL
 	if ((prev_acl = acl_get_fd(inFile)) == NULL) {
 		if (errno != ENOTSUP) {
 			message(MESS_ERROR, "getting file ACL %s: %s\n",
 				name, strerror(errno));
 			close(inFile);
-			close(outFile);
 			return 1;
 		}
 	}
+#endif
+
+    outFile =
+	createOutputFile(compressedName, O_RDWR | O_CREAT, sb, prev_acl);
+#ifdef WITH_ACL
 	if (prev_acl) {
-		if (update_acl(&prev_acl, *sb) == 0) {
-				message(MESS_ERROR, "setting ACL for %s: %s\n",
-				compressedName, strerror(errno));
-				acl_free(prev_acl);
-				prev_acl = NULL;
-				close(inFile);
-				close(outFile);
-				return 1;
-		}
-		else if (acl_set_fd(outFile, prev_acl) == -1) {
-			if (errno != ENOTSUP) {
-				message(MESS_ERROR, "setting ACL for %s: %s\n",
-				compressedName, strerror(errno));
-				acl_free(prev_acl);
-				prev_acl = NULL;
-				close(inFile);
-				close(outFile);
-				return 1;
-			}
-		}
 		acl_free(prev_acl);
 		prev_acl = NULL;
 	}
-#endif /* WITH_ACL */
+#endif
+    if (outFile < 0) {
+	close(inFile);
+	return 1;
+    }
 
     if (!fork()) {
 	dup2(inFile, 0);
@@ -765,7 +770,7 @@ static int copyTruncate(char *currLog, char *saveLog, struct stat *sb,
 	}
 #endif /* WITH_ACL */
 	fdsave =
-	    createOutputFile(saveLog, O_WRONLY | O_CREAT, sb);
+	    createOutputFile(saveLog, O_WRONLY | O_CREAT, sb, prev_acl);
 #ifdef WITH_SELINUX
 	if (selinux_enabled) {
 	    setfscreatecon_raw(prev_context);
@@ -773,42 +778,16 @@ static int copyTruncate(char *currLog, char *saveLog, struct stat *sb,
 		prev_context = NULL;
 	}
 #endif
-	if (fdsave < 0) {
-	    close(fdcurr);
-#ifdef WITH_ACL
-		if (prev_acl) {
-			acl_free(prev_acl);
-			prev_acl = NULL;
-		}
-#endif /* WITH_ACL */
-	    return 1;
-	}
 #ifdef WITH_ACL
 	if (prev_acl) {
-		if (update_acl(&prev_acl, *sb) == 0) {
-				message(MESS_ERROR, "setting ACL for %s: %s\n",
-				saveLog, strerror(errno));
-				acl_free(prev_acl);
-				prev_acl = NULL;
-				close(fdsave);
-				close(fdcurr);
-				return 1;
-		}
-		else if (acl_set_fd(fdsave, prev_acl) == -1) {
-			if (errno != ENOTSUP) {
-				message(MESS_ERROR, "setting ACL for %s: %s\n",
-				saveLog, strerror(errno));
-				acl_free(prev_acl);
-				prev_acl = NULL;
-				close(fdsave);
-				close(fdcurr);
-				return 1;
-			}
-		}
 		acl_free(prev_acl);
 		prev_acl = NULL;
 	}
-#endif /* WITH_ACL */
+#endif
+	if (fdsave < 0) {
+	    close(fdcurr);
+	    return 1;
+	}
 
 	while ((cnt = read(fdcurr, buf, sizeof(buf))) > 0) {
 	    if (write(fdsave, buf, cnt) != cnt) {
@@ -1507,28 +1486,16 @@ int rotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 	    if (!debug) {
 			if (!hasErrors) {
 			fd = createOutputFile(log->files[logNum], O_CREAT | O_RDWR,
-						  &sb);
+						  &sb, prev_acl);
+#ifdef WITH_ACL
+			if (prev_acl) {
+				acl_free(prev_acl);
+				prev_acl = NULL;
+			}
+#endif
 			if (fd < 0)
 				hasErrors = 1;
 			else {
-#ifdef WITH_ACL
-				if (prev_acl) {
-					if (update_acl(&prev_acl, sb) == 0) {
-							message(MESS_ERROR, "setting ACL for %s: %s\n",
-							log->files[logNum], strerror(errno));
-							hasErrors = 1;
-					}
-					else if (acl_set_fd(fd, prev_acl) == -1) {
-						if (errno != ENOTSUP) {
-							message(MESS_ERROR, "setting ACL for %s: %s\n",
-							log->files[logNum], strerror(errno));
-							hasErrors = 1;
-						}
-					}
-					acl_free(prev_acl);
-					prev_acl = NULL;
-				}
-#endif /* WITH_ACL */
 				close(fd);
 			}
 			}
