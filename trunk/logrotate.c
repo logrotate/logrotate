@@ -98,90 +98,6 @@ static int globerr(const char *pathname, int theerr)
     return 1;
 }
 
-#ifdef WITH_ACL
-static int update_acl(acl_t *acl, struct stat *sb) {
-	acl_entry_t entry;
-	acl_permset_t perms;
-	int entry_id;
-	acl_tag_t tag;
-
-	entry_id = ACL_FIRST_ENTRY;
-	while (acl_get_entry(*acl, entry_id, &entry) == 1) {
-		entry_id = ACL_NEXT_ENTRY;
-
-		if (acl_get_tag_type(entry, &tag) == -1) {
-			return 0;
-		}
-
-		switch(tag) {
-			case ACL_USER_OBJ:
-				if (acl_get_permset(entry, &perms) == -1)
-					return 0;
-				if (acl_clear_perms(perms) == -1)
-					return 0;
-
-				/* calculate user mode */
-				if (sb->st_mode & S_IRUSR) {
-					if (acl_add_perm(perms, ACL_READ) == -1)
-						return 0;
-				}
-				if (sb->st_mode & S_IWUSR) {
-					if (acl_add_perm(perms, ACL_WRITE) == -1)
-						return 0;
-				}
-				if (sb->st_mode & S_IXUSR) {
-					if (acl_add_perm(perms, ACL_EXECUTE) == -1)
-						return 0;
-				}
-				if (acl_set_permset(entry, perms) == -1)
-					return 0;
-			break;
-			case ACL_GROUP_OBJ:
-				if (acl_get_permset(entry, &perms) == -1)
-					return 0;
-				if (acl_clear_perms(perms) == -1)
-					return 0;
-
-				/* calculate group mode */
-				if (sb->st_mode & S_IRGRP)
-					if (acl_add_perm(perms, ACL_READ) == -1)
-						return 0;
-				if (sb->st_mode & S_IWGRP)
-					if (acl_add_perm(perms, ACL_WRITE) == -1)
-						return 0;
-				if (sb->st_mode & S_IXGRP)
-					if (acl_add_perm(perms, ACL_EXECUTE) == -1)
-						return 0;
-				if (acl_set_permset(entry, perms) == -1)
-					return 0;
-			break;
-			case ACL_OTHER:
-				if (acl_get_permset(entry, &perms) == -1)
-					return 0;
-				if (acl_clear_perms(perms) == -1)
-					return 0;
-
-				/* calculate other mode */
-				if (sb->st_mode & S_IROTH)
-					if (acl_add_perm(perms, ACL_READ) == -1)
-						return 0;
-				if (sb->st_mode & S_IWOTH)
-					if (acl_add_perm(perms, ACL_WRITE) == -1)
-						return 0;
-				if (sb->st_mode & S_IXOTH)
-					if (acl_add_perm(perms, ACL_EXECUTE) == -1)
-						return 0;
-				if (acl_set_permset(entry, perms) == -1)
-					return 0;
-			break;
-			default: break;
-		}
-	}
-
-	return 1;
-}
-#endif
-
 int switch_user(uid_t user, gid_t group) {
 	save_egid = getegid();
 	save_euid = geteuid();
@@ -377,7 +293,7 @@ static int runScript(struct logInfo *log, char *logfn, char *script)
     return rc;
 }
 
-int createOutputFile(char *fileName, int flags, struct stat *sb, acl_type acl)
+int createOutputFile(char *fileName, int flags, struct stat *sb, acl_type acl, int force_mode)
 {
     int fd;
 	struct stat sb_create;
@@ -419,14 +335,8 @@ int createOutputFile(char *fileName, int flags, struct stat *sb, acl_type acl)
     }
 
 #ifdef WITH_ACL
-	if (acl) {
-		if (update_acl(&acl, sb) == 0) {
-				message(MESS_ERROR, "setting ACL for %s: %s\n",
-				fileName, strerror(errno));
-				close(fd);
-				return -1;
-		}
-		else if (acl_set_fd(fd, acl) == -1) {
+	if (!force_mode && acl) {
+		if (acl_set_fd(fd, acl) == -1) {
 			if (errno != ENOTSUP) {
 				message(MESS_ERROR, "setting ACL for %s: %s\n",
 				fileName, strerror(errno));
@@ -560,7 +470,7 @@ static int compressLogFile(char *name, struct logInfo *log, struct stat *sb)
 #endif
 
     outFile =
-	createOutputFile(compressedName, O_RDWR | O_CREAT, sb, prev_acl);
+	createOutputFile(compressedName, O_RDWR | O_CREAT, sb, prev_acl, 0);
 #ifdef WITH_ACL
 	if (prev_acl) {
 		acl_free(prev_acl);
@@ -770,7 +680,7 @@ static int copyTruncate(char *currLog, char *saveLog, struct stat *sb,
 	}
 #endif /* WITH_ACL */
 	fdsave =
-	    createOutputFile(saveLog, O_WRONLY | O_CREAT, sb, prev_acl);
+	    createOutputFile(saveLog, O_WRONLY | O_CREAT, sb, prev_acl, 0);
 #ifdef WITH_SELINUX
 	if (selinux_enabled) {
 	    setfscreatecon_raw(prev_context);
@@ -1474,10 +1384,13 @@ int rotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 	    else
 		sb.st_gid = log->createGid;
 
+	    int have_create_mode = 0;
 	    if (log->createMode == NO_MODE)
 		sb.st_mode = state->sb.st_mode & 0777;
-	    else
+	    else {
 		sb.st_mode = log->createMode;
+		have_create_mode = 1;
+	    }
 
 	    message(MESS_DEBUG, "creating new %s mode = 0%o uid = %d "
 		    "gid = %d\n", log->files[logNum], (unsigned int) sb.st_mode,
@@ -1486,7 +1399,7 @@ int rotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 	    if (!debug) {
 			if (!hasErrors) {
 			fd = createOutputFile(log->files[logNum], O_CREAT | O_RDWR,
-						  &sb, prev_acl);
+						  &sb, prev_acl, have_create_mode);
 #ifdef WITH_ACL
 			if (prev_acl) {
 				acl_free(prev_acl);
