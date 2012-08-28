@@ -689,7 +689,7 @@ EOF
 cleanup 32
 
 # ------------------------------- Test 32 ------------------------------------
-# Test mode in create option
+# Without mode in 'create' directive, ACLs should be respected
 preptest test.log 32 1 0
 
 setfacl -m u:nobody:rwx test.log
@@ -699,6 +699,79 @@ $RLR test-config.32 --force
 getfacl test.log|grep "user:nobody:rwx" >/dev/null
 if [ $? != 0 ]; then
 	echo "test.log must contain user:nobody:rwx"
+	exit 3
+fi
+
+getfacl test.log.1|grep "user:nobody:rwx" >/dev/null
+if [ $? != 0 ]; then
+	echo "test.log.1 must contain user:nobody:rwx"
+	exit 3
+fi
+
+checkoutput <<EOF
+test.log 0
+test.log.1 0 zero
+EOF
+
+cleanup 33
+
+# ------------------------------- Test 33 ------------------------------------
+# With mode in 'create' directive, ACLs are overwriten by chmod
+preptest test.log 33 1 0
+
+
+setfacl -m u:nobody:rwx test.log
+$RLR test-config.33 --force
+
+getfacl test.log|grep "user:nobody:rwx" >/dev/null
+if [ $? == 0 ]; then
+	echo "test.log must not contain user:nobody:rwx"
+	exit 3
+fi
+
+getfacl test.log.1|grep "user:nobody:rwx" >/dev/null
+if [ $? != 0 ]; then
+	echo "test.log.1 must contain user:nobody:rwx"
+	exit 3
+fi
+
+checkoutput <<EOF
+test.log 0
+test.log.1 0 zero
+EOF
+
+cleanup 34
+
+# ------------------------------- Test 34 ------------------------------------
+# We support changing user/mode without setting mode in create directive now
+# We can't change user/group as normal user, so this test uses debug mode and
+# checks the logrotate -d output.
+preptest test.log 34 1 0
+
+$RLR test-config.34 -d -f 2>&1|grep "uid = 0 gid = 0" > /dev/null
+
+if [ $? != 0 ]; then
+	echo "logrotate output must contain 'uid = 0 gid = 0'"
+	exit 3
+fi
+
+checkoutput <<EOF
+test.log 0 zero
+EOF
+
+cleanup 35
+
+# ------------------------------- Test 35 ------------------------------------
+# Test 'create' directive without mode but with user/group with ACLs. ACLs should
+# be respected.
+preptest test.log 35 1 0
+
+setfacl -m u:nobody:rwx test.log
+$RLR test-config.35 --force
+
+getfacl test.log|grep "user:nobody:rwx" >/dev/null
+if [ $? != 0 ]; then
+	echo "test.log must not contain user:nobody:rwx"
 	exit 3
 fi
 

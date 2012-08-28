@@ -1,4 +1,4 @@
-create
+create 0600
 
 &DIR&/test.log {
 	daily

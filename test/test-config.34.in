@@ -1,6 +1,6 @@
-create
+create root root
 
 &DIR&/test.log {
 	daily
-	rotate 999
+	rotate 1
 }

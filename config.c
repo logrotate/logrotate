@@ -848,6 +848,17 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 
 					rc = sscanf(key, "%o %200s %200s%c", &createMode,
 							createOwner, createGroup, &foo);
+					/* We support 'create <owner> <group> notation now */
+					if (rc == 0) {
+						rc = sscanf(key, "%200s %200s%c",
+								createOwner, createGroup, &foo);
+						/* Simulate that we have read createMode and se it
+						 * to NO_MODE. */
+						if (rc > 0) {
+							createMode = NO_MODE;
+							rc += 1;
+						}
+					}
 					if (rc == 4) {
 						message(MESS_ERROR, "%s:%d extra arguments for "
 							"create\n", configFile, lineNum);
