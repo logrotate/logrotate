@@ -178,7 +178,8 @@ command.
 .TP
 \fBcompressoptions\fR
 Command line options may be passed to the compression program, if one is
-in use.  The default, for \fBgzip\fR(1), is "-9" (maximum compression).
+in use.  The default, for \fBgzip\fR(1), is "-6" (biased towards high
+compression at the expense of speed).
 
 .TP
 \fBcopy\fR
@@ -217,7 +218,7 @@ Log files are rotated every day.
 
 .TP
 \fBdateext\fR
-Archive old versions of log files adding a daily extension like YYYYMMDD
+Archive old versions of log files adding a date extension like YYYYMMDD
 instead of simply adding a number. The extension may be configured using
 the \fBdateformat\fR and \fBdateyesterday\fR options.
 
