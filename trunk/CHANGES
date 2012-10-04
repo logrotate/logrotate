@@ -1,3 +1,12 @@
+3.8.2 -> 3.8.3
+	- Fixed setting "size" bigger than 4GB on 32bit architectures
+	- Do not overwrite mode set by "create" option when using ACL. "create"
+	  directive is now not mixed up with ACLs. If you use "create" in config
+	  file and log file has some ACLs set, ACLs are not kept and are
+	  overwritten by the mode set in "create" directive.
+	- Mode argument in "create" directive can be omitted. Only owner and group
+	  is set in this case. Check man page for more info.
+
 3.8.1 -> 3.8.2
 	- show error and ignore config if '{' is not present after log files
 	  declaration
