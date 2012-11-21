@@ -1908,6 +1908,7 @@ int main(int argc, const char **argv)
 	 "Path of state file",
 	 "statefile"},
 	{"verbose", 'v', 0, 0, 'v', "Display messages during rotation"},
+	{"version", '\0', POPT_ARG_NONE, NULL, 'V', "Display version information"},
 	POPT_AUTOHELP {0, 0, 0, 0, 0}
     };
 
@@ -1926,6 +1927,10 @@ int main(int argc, const char **argv)
 	case 'v':
 	    logSetLevel(MESS_DEBUG);
 	    break;
+	case 'V':
+	    fprintf(stderr, "logrotate %s\n", VERSION);
+	    poptFreeContext(optCon);
+	    exit(0);
 	}
     }
 
