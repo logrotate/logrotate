@@ -1,9 +1,18 @@
 #!/bin/bash
 
+ACL_TESTS=1
 LOGROTATE=../logrotate
 M="-m ./mailer"
 S=-"s state"
 RLR="$LOGROTATE $M $S"
+
+echo 1 > test.x
+setfacl -m u:nobody:rwx test.x 2>/dev/null
+if [ $? != 0 ]; then
+	ACL_TESTS=0
+	echo "setfacl failed on this system. ACL tests will not be executed."
+fi
+rm -f test.x
 
 cleanup() {
     rm -f test*.log* anothertest*.log* state test-config. scriptout mail-out compress-args
@@ -686,6 +695,7 @@ test.log 0
 test.log.1 0 zero
 EOF
 
+if [ $ACL_TESTS != 0 ]; then
 cleanup 32
 
 # ------------------------------- Test 32 ------------------------------------
@@ -712,6 +722,10 @@ checkoutput <<EOF
 test.log 0
 test.log.1 0 zero
 EOF
+
+fi
+
+if [ $ACL_TESTS != 0 ]; then
 
 cleanup 33
 
@@ -740,6 +754,8 @@ test.log 0
 test.log.1 0 zero
 EOF
 
+fi
+
 cleanup 34
 
 # ------------------------------- Test 34 ------------------------------------
@@ -758,6 +774,8 @@ fi
 checkoutput <<EOF
 test.log 0 zero
 EOF
+
+if [ $ACL_TESTS != 0 ]; then
 
 cleanup 35
 
@@ -785,5 +803,7 @@ checkoutput <<EOF
 test.log 0
 test.log.1 0 zero
 EOF
+
+fi
 
 cleanup
