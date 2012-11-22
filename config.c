@@ -916,7 +916,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 					if ((key = isolateValue(configFile, lineNum, opt, &start,
 							&buf, length)) != NULL) {
 						int l = strlen(key) - 1;
-						if (key[l] == 'k') {
+						if (key[l] == 'k' || key[l] == 'K') {
 							key[l] = '\0';
 							multiplier = 1024;
 						} else if (key[l] == 'M') {
