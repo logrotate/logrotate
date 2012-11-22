@@ -381,7 +381,8 @@ static void freeTailLogs(int num)
 	message(MESS_DEBUG, "removing last %d log configs\n", num);
 
 	while (num--)
-		removeLogInfo(*(logs.tqh_last));
+		removeLogInfo(TAILQ_LAST(&logs, logInfoHead));
+
 }
 
 static int readConfigPath(const char *path, struct logInfo *defConfig)
