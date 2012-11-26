@@ -6,6 +6,8 @@ M="-m ./mailer"
 S=-"s state"
 RLR="$LOGROTATE $M $S"
 
+# -- ACL - BEGIN --------------------------------
+# We test if the ACLs tests should be done or not
 echo 1 > test.x
 setfacl -m u:nobody:rwx test.x 2>/dev/null
 if [ $? != 0 ]; then
@@ -13,6 +15,18 @@ if [ $? != 0 ]; then
 	echo "setfacl failed on this system. ACL tests will not be executed."
 fi
 rm -f test.x
+if [ $ACL_TESTS == 1 ]; then
+  # It seems we can run the ACL tests, but was logrotate compiled WITH_ACL=yes ?
+  # See the Makefile, "pretest" part, for more information
+  if [ -f ./test.ACL ]; then
+    ACL_TESTS=`cat ./test.ACL`
+    if [ $ACL_TESTS == 0 ]; then
+      echo "logrotate was NOT compiled with 'WITH_ACL=yes'. ACL tests will not be executed."
+    fi
+  fi
+fi
+# -- ACL - END ----------------------------------
+
 
 cleanup() {
     rm -f test*.log* anothertest*.log* state test-config. scriptout mail-out compress-args
@@ -151,7 +165,7 @@ preptest() {
 }
 
 # we don't want any stuff left from previous runs
-cleanup
+cleanup 1
 
 # ------------------------------- Test 1 -------------------------------------
 # Without a log file, no rotations should occur
@@ -186,7 +200,7 @@ test.log.1 0 zero
 test.log.2 0 first
 EOF
 
-cleanup 1
+cleanup 2
 
 # ------------------------------- Test 2 -------------------------------------
 preptest test.log 2 3
@@ -203,7 +217,9 @@ if [ -f test.log ]; then
     echo "erroneously created test.log"
 fi
 
-cleanup 2
+cleanup 3
+
+# ------------------------------- Test 3 -------------------------------------
 
 preptest test.log 3 1
 $RLR test-config.3 --force
@@ -214,9 +230,8 @@ test.log.1 0 zero
 scriptout 0 foo
 EOF
 
-cleanup 3
+cleanup
 
-# ------------------------------- Test 3 -------------------------------------
 preptest test.log 3 1
 preptest test2.log 3 1
 $RLR test-config.3 --force
@@ -695,7 +710,10 @@ test.log 0
 test.log.1 0 zero
 EOF
 
-if [ $ACL_TESTS != 0 ]; then
+if [ $ACL_TESTS == 0 ]; then
+  echo "Skipping test 32: no ACL support"
+else
+
 cleanup 32
 
 # ------------------------------- Test 32 ------------------------------------
@@ -725,7 +743,9 @@ EOF
 
 fi
 
-if [ $ACL_TESTS != 0 ]; then
+if [ $ACL_TESTS == 0 ]; then
+  echo "Skipping test 33: no ACL support"
+else
 
 cleanup 33
 
@@ -775,7 +795,9 @@ checkoutput <<EOF
 test.log 0 zero
 EOF
 
-if [ $ACL_TESTS != 0 ]; then
+if [ $ACL_TESTS == 0 ]; then
+  echo "Skipping test 35: no ACL support"
+else
 
 cleanup 35
 
