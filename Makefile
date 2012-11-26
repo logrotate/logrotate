@@ -18,6 +18,11 @@ endif
 ifeq ($(WITH_ACL),yes)
 CFLAGS += -DWITH_ACL
 LOADLIBES += -lacl
+# See pretest
+TEST_ACL=1
+else
+# See pretest
+TEST_ACL=0
 endif
 
 # HP-UX using GCC
@@ -97,9 +102,9 @@ LDFLAGS += $(EXTRA_LDFLAGS) $(EXTRA_LIBS)
 CFLAGS  += $(EXTRA_CPPFLAGS) $(EXTRA_CFLAGS) 
 
 ifeq (.depend,$(wildcard .depend))
-TARGET=$(PROG)
+TARGET=$(PROG) pretest
 else
-TARGET=depend $(PROG)
+TARGET=depend $(PROG) pretest
 endif
 
 RCSVERSION = $(subst .,-,$(VERSION))
@@ -110,9 +115,19 @@ $(PROG): $(OBJS)
 
 clean:
 	rm -f $(OBJS) $(PROG) core* .depend
+	rm -f ./test/test.ACL
 
 depend:
 	$(CPP) $(CFLAGS) -M $(SOURCES) > .depend
+
+# pretest create the file ./test/test.ACL with
+# 0 or 1 according to the WITH_ACL=yes presence.
+# The file will be used by ./test/test to decide
+# if to do the ACL tests or not.
+pretest:
+	@( if [ ! -f ./test/test.ACL ]; then \
+		echo "$(TEST_ACL)" > ./test/test.ACL ; \
+	fi )
 
 .PHONY : test
 test: $(TARGET)
