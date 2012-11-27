@@ -1440,12 +1440,8 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 
 				newlog->pattern = key;
 
-// 				if (!logerror)
-// 				message(MESS_DEBUG, "reading config info for %s\n", start);
-
 				free(argv);
 
-// 				start = endtag + 1;
 			} else if (*start == '}') {
 				if (newlog == defConfig) {
 					message(MESS_ERROR, "%s:%d unexpected }\n", configFile,
@@ -1589,13 +1585,29 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 				if (
 					(strcmp(key, "postrotate") == 0) ||
 					(strcmp(key, "prerotate") == 0) ||
-					(strcmp(key, "firstrotate") == 0) ||
-					(strcmp(key, "lastrotate") == 0)
+					(strcmp(key, "firstaction") == 0) ||
+					(strcmp(key, "lastaction") == 0)
 					) {
 					state = STATE_LOAD_SCRIPT | STATE_SKIP_CONFIG;
 				}
 				else {
-					state = STATE_SKIP_LINE | STATE_SKIP_CONFIG;
+					/* isolateWord moves the "start" pointer.
+					 * If we have a line like
+					 *    rotate 5 
+					 * after isolateWord "start" points to "5" and it
+					 * is OK to skip the line, but if we have a line
+					 * like the following
+					 *    nocompress
+					 * after isolateWord "start" points to "\n". In
+					 * this case if we skip a line, we skip the next 
+					 * line, not the current "nocompress" one, 
+					 * because in the for cycle the "start"
+					 * pointer is increased by one and, after this, 
+					 * "start" points to the beginning of the next line.
+					*/
+					if (*start != '\n') {
+						state = STATE_SKIP_LINE | STATE_SKIP_CONFIG;
+					}
 				}
 				free(key);
 				key = NULL;
