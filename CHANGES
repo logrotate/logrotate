@@ -1,3 +1,12 @@
+3.8.3 ->
+	- Added --version command line option
+	- Disable ACL tests if logrotate is not compiled WITH_ACL support or if 
+	  ACLs are not supported by the system running tests
+	- Fixed bug which prevented skipping particular log file config
+	  if the config contained errors.
+	- Fixed skipping of configs containing firstaction/lastaction scripts
+	  with '}' character in case of error before these scripts.
+
 3.8.2 -> 3.8.3
 	- Fixed setting "size" bigger than 4GB on 32bit architectures
 	- Do not overwrite mode set by "create" option when using ACL. "create"
