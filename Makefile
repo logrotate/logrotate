@@ -102,14 +102,14 @@ LDFLAGS += $(EXTRA_LDFLAGS) $(EXTRA_LIBS)
 CFLAGS  += $(EXTRA_CPPFLAGS) $(EXTRA_CFLAGS) 
 
 ifeq (.depend,$(wildcard .depend))
-TARGET=$(PROG) pretest
+TARGET=$(PROG)
 else
-TARGET=depend $(PROG) pretest
+TARGET=depend $(PROG)
 endif
 
 RCSVERSION = $(subst .,-,$(VERSION))
 
-all: $(TARGET)
+all: $(TARGET) pretest
 
 $(PROG): $(OBJS)
 
@@ -125,9 +125,7 @@ depend:
 # The file will be used by ./test/test to decide
 # if to do the ACL tests or not.
 pretest:
-	@( if [ ! -f ./test/test.ACL ]; then \
-		echo "$(TEST_ACL)" > ./test/test.ACL ; \
-	fi )
+	echo "$(TEST_ACL)" > ./test/test.ACL ;
 
 .PHONY : test
 test: $(TARGET)
