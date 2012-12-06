@@ -432,6 +432,13 @@ with error, just an error message is shown (as this is the last
 action). See also \fBfirstaction\fR.
 
 .TP
+\fBpreremove\fR/\fBendscript\fR
+The lines between \fBpreremove\fR and \fBendscript\fR (both of which must
+appear on lines by themselves) are executed (using \fB/bin/sh\fR) once just
+before removal of a log file.  The logrotate will pass
+the name of file which is soon to be removed. See also \fBfirstaction\fR.
+
+.TP
 \fBrotate \fIcount\fR
 Log files are rotated \fIcount\fR times before being removed or mailed to the
 address specified in a \fBmail\fR directive. If \fIcount\fR is 0, old versions
