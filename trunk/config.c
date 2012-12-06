@@ -309,6 +309,8 @@ static void copyLogInfo(struct logInfo *to, struct logInfo *from)
 	to->first = strdup(from->first);
     if (from->last)
 	to->last = strdup(from->last);
+    if (from->preremove)
+	to->preremove = strdup(from->preremove);
     if (from->logAddress)
 	to->logAddress = strdup(from->logAddress);
     if (from->extension)
@@ -343,6 +345,7 @@ static void freeLogInfo(struct logInfo *log)
 	free(log->post);
 	free(log->first);
 	free(log->last);
+	free(log->preremove);
 	free(log->logAddress);
 	free(log->extension);
 	free(log->compress_prog);
@@ -522,6 +525,7 @@ int readAllConfigPaths(const char **paths)
 		.post = NULL,
 		.first = NULL,
 		.last = NULL,
+		.preremove = NULL,
 		.logAddress = NULL,
 		.extension = NULL,
 		.compress_prog = NULL,
@@ -1085,6 +1089,11 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 					scriptStart = start;
 					scriptDest = &newlog->last;
 					state = STATE_LOAD_SCRIPT;
+				} else if (!strcmp(key, "preremove")) {
+					freeLogItem (preremove);
+					scriptStart = start;
+					scriptDest = &newlog->preremove;
+					state = STATE_LOAD_SCRIPT;
 				} else if (!strcmp(key, "tabooext")) {
 					if (newlog != defConfig) {
 						message(MESS_ERROR,
@@ -1586,7 +1595,8 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 					(strcmp(key, "postrotate") == 0) ||
 					(strcmp(key, "prerotate") == 0) ||
 					(strcmp(key, "firstaction") == 0) ||
-					(strcmp(key, "lastaction") == 0)
+					(strcmp(key, "lastaction") == 0) ||
+					(strcmp(key, "preremove") == 0)
 					) {
 					state = STATE_LOAD_SCRIPT | STATE_SKIP_CONFIG;
 				}
@@ -1626,7 +1636,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
  
     if (scriptStart) {
 	message(MESS_ERROR,
-		"%s:prerotate or postrotate without endscript\n",
+		"%s:prerotate, postrotate or preremove without endscript\n",
 		configFile);
 	goto error;
     }

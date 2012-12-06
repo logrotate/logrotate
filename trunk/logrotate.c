@@ -360,6 +360,19 @@ static int shred_file(int fd, char *filename, struct logInfo *log)
 	int id = 0;
 	int status;
 
+	if (log->preremove) {
+	    message(MESS_DEBUG, "running preremove script\n");
+	    if (runScript(log, filename, log->preremove)) {
+		    message(MESS_ERROR,
+			    "error running preremove script "
+			    "for %s of '%s'. Not removing this file.\n",
+			    filename, log->pattern);
+		    /* What ever was supposed to happen did not happen,
+		     * therefore do not unlink the file yet.  */
+		    return 1;
+	    }
+	}
+
 	if (!(log->flags & LOG_FLAG_SHRED)) {
 		return unlink(filename);
 	}

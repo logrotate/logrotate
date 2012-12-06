@@ -41,7 +41,7 @@ struct logInfo {
     int rotateCount;
     int rotateAge;
     int logStart;
-    char *pre, *post, *first, *last;
+    char *pre, *post, *first, *last, *preremove;
     char *logAddress;
     char *extension;
     char *compress_prog;
