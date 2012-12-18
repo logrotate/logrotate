@@ -629,12 +629,14 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 	if ((flags = fcntl(fd, F_GETFD)) == -1) {
 		message(MESS_ERROR, "Could not retrieve flags from file %s\n",
 				configFile);
+		close(fd);
 		return 1;
 	}
 	flags |= FD_CLOEXEC;
 	if (fcntl(fd, F_SETFD, flags) == -1) {
 		message(MESS_ERROR, "Could not set flags on file %s\n",
 				configFile);
+		close(fd);
 		return 1;
 	}
 	/* We don't want anybody to change the file while we parse it,
@@ -659,6 +661,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
     
 	if (!(pw = getpwuid(getuid()))) {
 		message(MESS_ERROR, "Logrotate UID is not in passwd file.\n");
+		close(fd);
 		return 1;
 	}
 
@@ -1469,7 +1472,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 				free(globerr_msg);
 				globerr_msg = NULL;
 				if (!(newlog->flags & LOG_FLAG_MISSINGOK))
-					return 1;
+					goto error;
 				}
 
 				if (newlog->oldDir) {

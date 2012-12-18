@@ -316,6 +316,7 @@ int createOutputFile(char *fileName, int flags, struct stat *sb, acl_type acl, i
 	if (fstat(fd, &sb_create)) {
 		message(MESS_ERROR, "fstat of %s failed: %s\n", fileName,
 			strerror(errno));
+		close(fd);
 		return -1;
 	}
  
@@ -515,6 +516,7 @@ static int compressLogFile(char *name, struct logInfo *log, struct stat *sb)
 
     if (!WIFEXITED(status) || WEXITSTATUS(status)) {
 	message(MESS_ERROR, "failed to compress log %s\n", name);
+	close(inFile);
 	return 1;
     }
 
@@ -550,6 +552,7 @@ static int mailLog(struct logInfo *log, char *logFile, char *mailCommand,
 		if (pipe(uncompressPipe) < 0) {
 			message(MESS_ERROR, "error opening pipe for uncompress: %s",
 					strerror(errno));
+			close(mailInput);
 			return 1;
 		}
 		if (!(uncompressChild = fork())) {
@@ -657,6 +660,7 @@ static int copyTruncate(char *currLog, char *saveLog, struct stat *sb,
 			    strerror(errno));
 		    if (selinux_enforce) {
 				freecon(oldContext);
+				close(fdcurr);
 				return 1;
 		    }
 		}
@@ -666,6 +670,7 @@ static int copyTruncate(char *currLog, char *saveLog, struct stat *sb,
 			    saveLog, oldContext, strerror(errno));
 			if (selinux_enforce) {
 				freecon(oldContext);
+				close(fdcurr);
 				return 1;
 		    }
 		}
