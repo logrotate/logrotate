@@ -902,4 +902,18 @@ test2.log.1 0 zero
 scriptout 0 test2.log.1
 EOF
 
+cleanup 40
+
+# ------------------------------- Test 40 ------------------------------------
+# test tabooext parsing and implementation, config.v and config.x should not be
+# loaded.
+preptest test.log 40 1
+mkdir -p testingdir
+echo 1 > ./testingdir/config.v
+echo 2 > ./testingdir/config.x
+
+$RLR test-config.40 --force
+
+rm -rf testingdir
+
 cleanup
