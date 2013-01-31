@@ -1136,8 +1136,8 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 
 							endtag = chptr;
 							if (*endtag == ',')
-								start++;
-							while (isspace(*endtag) && *endtag)
+								endtag++;
+							while (*endtag && isspace(*endtag))
 								endtag++;
 						}
 					}
