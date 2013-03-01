@@ -13,6 +13,11 @@ SVNTAG = r$(subst .,-,$(VERSION))
 ifeq ($(WITH_SELINUX),yes)
 CFLAGS += -DWITH_SELINUX
 LOADLIBES += -lselinux
+# See pretest
+TEST_SELINUX=1
+else
+# See pretest
+TEST_SELINUX=0
 endif
 
 ifeq ($(WITH_ACL),yes)
@@ -126,6 +131,7 @@ depend:
 # if to do the ACL tests or not.
 pretest:
 	echo "$(TEST_ACL)" > ./test/test.ACL ;
+	echo "$(TEST_SELINUX)" > ./test/test.SELINUX ;
 
 .PHONY : test
 test: $(TARGET)

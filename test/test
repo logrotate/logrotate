@@ -1,6 +1,7 @@
 #!/bin/bash
 
 ACL_TESTS=1
+SELINUX_TESTS=0
 LOGROTATE=../logrotate
 M="-m ./mailer"
 S=-"s state"
@@ -26,6 +27,26 @@ if [ $ACL_TESTS == 1 ]; then
   fi
 fi
 # -- ACL - END ----------------------------------
+
+# -- SELINUX - BEGIN --------------------------------
+# We test if the ACLs tests should be done or not
+if type "selinuxenabled" > /dev/null && selinuxenabled; then
+	SELINUX_TESTS=1
+else
+	echo "SELinux disabled. SELinux tests will not be executed."
+fi
+
+if [ $SELINUX_TESTS == 1 ]; then
+  # It seems we can run the ACL tests, but was logrotate compiled WITH_ACL=yes ?
+  # See the Makefile, "pretest" part, for more information
+  if [ -f ./test.SELINUX ]; then
+    SELINUX_TESTS=`cat ./test.SELINUX`
+    if [ $SELINUX_TESTS == 0 ]; then
+      echo "logrotate was NOT compiled with 'WITH_SELINUX=yes'. SELINUX tests will not be executed."
+    fi
+  fi
+fi
+# -- SELINUX - END ----------------------------------
 
 
 cleanup() {
@@ -279,7 +300,26 @@ cleanup 6
 # ------------------------------- Test 6 -------------------------------------
 preptest test.log 6 1
 preptest anothertest.log 6 1
+if [ $SELINUX_TESTS == 1 ]; then
+	chcon --type=httpd_sys_content_t test.log
+else
+	echo "Skipping SELinux part of test 6"
+fi
 $RLR test-config.6 --force
+
+if [ $SELINUX_TESTS == 1 ]; then
+	ls -Z test.log.0|grep httpd_sys_content_t >/dev/null
+	if [ $? != 0 ]; then
+		echo "test.log.0 should have selinux context httpd_sys_content_t."
+		exit 3
+	fi
+
+	ls -Z anothertest.log.0|grep httpd_sys_content_t >/dev/null
+	if [ $? == 0 ]; then
+		echo "anothertest.log.0 should not have selinux context httpd_sys_content_t."
+		exit 3
+	fi
+fi
 
 checkoutput <<EOF
 test.log 0
@@ -336,6 +376,13 @@ cleanup 10
 
 # ------------------------------- Test 10 ------------------------------------
 preptest test.log 10 1
+
+if [ $SELINUX_TESTS == 1 ]; then
+	chcon --type=httpd_sys_content_t test.log
+else
+	echo "Skipping SELinux part of test 10"
+fi
+
 $RLR test-config.10 --force
 
 checkoutput <<EOF
@@ -346,6 +393,23 @@ EOF
 echo "newfile" > test.log
 
 $RLR test-config.10 --force
+
+if [ $SELINUX_TESTS == 1 ]; then
+	ls -Z test.log.2.gz|grep httpd_sys_content_t >/dev/null
+	if [ $? != 0 ]; then
+		echo "test.log.2.gz should have selinux context httpd_sys_content_t."
+		ls -Z test.log.2.gz
+		exit 3
+	fi
+
+	ls -Z test.log.1|grep httpd_sys_content_t >/dev/null
+	if [ $? != 0 ]; then
+		echo "test.log.1 should have selinux context httpd_sys_content_t."
+		ls -Z test.log.1
+		exit 3
+	fi
+fi
+
 checkoutput <<EOF
 test.log 0
 test.log.1 0 newfile
