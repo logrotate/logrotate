@@ -1038,6 +1038,42 @@ int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 	message(MESS_DEBUG, "dateext suffix '%s'\n", dext_str);
 	message(MESS_DEBUG, "glob pattern '%s'\n", dext_pattern);
 
+#ifdef WITH_SELINUX
+	if (selinux_enabled) {
+	    security_context_t oldContext = NULL;
+	    if (getfilecon_raw(log->files[logNum], &oldContext) > 0) {
+			if (getfscreatecon_raw(&prev_context) < 0) {
+				message(MESS_ERROR,
+					"getting default context: %s\n",
+					strerror(errno));
+				if (selinux_enforce) {
+					freecon(oldContext);
+					return 1;
+				}
+			}
+			if (setfscreatecon_raw(oldContext) < 0) {
+				message(MESS_ERROR,
+					"setting file context %s to %s: %s\n",
+					log->files[logNum], oldContext,
+					strerror(errno));
+				if (selinux_enforce) {
+					freecon(oldContext);
+					return 1;
+				}
+			}
+			freecon(oldContext);
+	    } else {
+		if (errno != ENOENT && errno != ENOTSUP) {
+			message(MESS_ERROR, "getting file context %s: %s\n",
+				log->files[logNum], strerror(errno));
+			if (selinux_enforce) {
+				return 1;
+			}
+		}
+	    }
+	}
+#endif
+
     /* First compress the previous log when necessary */
     if (log->flags & LOG_FLAG_COMPRESS &&
 	log->flags & LOG_FLAG_DELAYCOMPRESS) {
@@ -1183,42 +1219,6 @@ int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 	sprintf(rotNames->firstRotated, "%s/%s.%d%s%s", rotNames->dirName,
 		rotNames->baseName, logStart, fileext,
 		(log->flags & LOG_FLAG_DELAYCOMPRESS) ? "" : compext);
-
-#ifdef WITH_SELINUX
-	if (selinux_enabled) {
-	    security_context_t oldContext = NULL;
-	    if (getfilecon_raw(log->files[logNum], &oldContext) > 0) {
-			if (getfscreatecon_raw(&prev_context) < 0) {
-				message(MESS_ERROR,
-					"getting default context: %s\n",
-					strerror(errno));
-				if (selinux_enforce) {
-					freecon(oldContext);
-					return 1;
-				}
-			}
-			if (setfscreatecon_raw(oldContext) < 0) {
-				message(MESS_ERROR,
-					"setting file context %s to %s: %s\n",
-					log->files[logNum], oldContext,
-					strerror(errno));
-				if (selinux_enforce) {
-					freecon(oldContext);
-					return 1;
-				}
-			}
-			freecon(oldContext);
-	    } else {
-		if (errno != ENOENT && errno != ENOTSUP) {
-			message(MESS_ERROR, "getting file context %s: %s\n",
-				log->files[logNum], strerror(errno));
-			if (selinux_enforce) {
-				return 1;
-			}
-		}
-	    }
-	}
-#endif
 
 	for (i = rotateCount + logStart - 1; (i >= 0) && !hasErrors; i--) {
 		free(newName);
