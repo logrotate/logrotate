@@ -980,4 +980,103 @@ $RLR test-config.40 --force
 
 rm -rf testingdir
 
+cleanup 41
+
+# ------------------------------- Test 41 ------------------------------------
+# Test that prerotate and postrotate scripts are called only when the log files
+# are actually rotated
+preptest test.log 41 1
+echo x > test2.log
+
+$RLR test-config.41
+
+checkoutput <<EOF
+test.log 0
+test.log.1 0 zero
+test2.log 0 x
+scriptout 0 test.log;test.log;
+EOF
+
+cleanup 42
+
+# ------------------------------- Test 42 ------------------------------------
+# Test that script is called only once when sharedscripts is defined
+preptest test.log 42 1
+echo number2 > test2.log
+
+$RLR test-config.42
+
+checkoutput <<EOF
+test.log 0
+test.log.1 0 zero
+test2.log 0
+test2.log.1 0 number2
+scriptout 0 "test*.log ;test*.log ;"
+EOF
+
+cleanup 43
+
+# ------------------------------- Test 43 ------------------------------------
+# Test that prerotate and postrotate scripts are called twice for two files
+# when sharedscripts defined
+preptest test.log 43 1
+echo number2 > test2.log
+
+$RLR test-config.43
+
+checkoutput <<EOF
+test.log 0
+test.log.1 0 zero
+test2.log 0
+test2.log.1 0 number2
+scriptout 0 test2.log;test2.log;test.log;test.log;
+EOF
+
+cleanup 44
+
+# ------------------------------- Test 44 ------------------------------------
+# Test that prerotate and postrotate scripts are called once when nosharedscripts
+# is defined and one rotation fails
+preptest test.log 44 1
+
+$RLR test-config.44 2>error.log
+
+grep "error: stat of" error.log >/dev/null
+if [ $? != 0 ]; then
+	echo "No error printed, but there should be one."
+	exit 3
+fi
+
+rm -f error.log
+
+checkoutput <<EOF
+test.log 0
+test.log.1 0 zero
+scriptout 0 "test.log;test.log;"
+EOF
+
+cleanup 45
+
+# ------------------------------- Test 44 ------------------------------------
+# Test that prerotate and postrotate scripts are not called when sharedscripts
+# is defined and one rotation fails
+preptest test.log 45 1
+
+touch scriptout
+$RLR test-config.45 2>error.log
+
+grep "error: stat of" error.log >/dev/null
+if [ $? != 0 ]; then
+	echo "No error printed, but there should be one."
+	exit 3
+fi
+
+rm -f error.log
+
+checkoutput <<EOF
+test.log 0 zero
+scriptout 0 
+EOF
+
+
 cleanup
