@@ -1612,9 +1612,10 @@ int rotateLogSet(struct logInfo *log, int force)
 	    hasErrors |= logHasErrors[i];
 	}
 
+	/* (nemam chyby nebo shared) a (nemam chyby nebo nonshared) */
 	if (log->pre
-	    && (! ( (logHasErrors[j] && !(log->flags & LOG_FLAG_SHAREDSCRIPTS))
-		   || (hasErrors && (log->flags & LOG_FLAG_SHAREDSCRIPTS)) ) )) {
+	    && (!logHasErrors[j] || log->flags & LOG_FLAG_SHAREDSCRIPTS) &&
+		   ((!hasErrors && state[j]->doRotate) || (!(log->flags & LOG_FLAG_SHAREDSCRIPTS) && state[j]->doRotate) ) ) {
 	    if (!numRotated) {
 		message(MESS_DEBUG, "not running prerotate script, "
 			"since no logs will be rotated\n");
@@ -1648,8 +1649,8 @@ int rotateLogSet(struct logInfo *log, int force)
 	}
 
 	if (log->post
-	    && (! ( (logHasErrors[j] && !(log->flags & LOG_FLAG_SHAREDSCRIPTS))
-		   || (hasErrors && (log->flags & LOG_FLAG_SHAREDSCRIPTS)) ) )) {
+	    && (!logHasErrors[j] || log->flags & LOG_FLAG_SHAREDSCRIPTS) &&
+		   ((!hasErrors && state[j]->doRotate) || (!(log->flags & LOG_FLAG_SHAREDSCRIPTS) && state[j]->doRotate) ) ) {
 	    if (!numRotated) {
 		message(MESS_DEBUG, "not running postrotate script, "
 			"since no logs were rotated\n");
