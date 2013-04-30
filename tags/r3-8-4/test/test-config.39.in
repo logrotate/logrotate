@@ -1,0 +1,15 @@
+create
+
+&DIR&/test*.log {
+    monthly
+    rotate 0
+    mail user@myhost.org
+    maillast
+    sharedscripts
+
+    preremove
+	touch scriptout
+	echo -n $(basename $*) >> scriptout
+	this should trigger an error
+    endscript
+}

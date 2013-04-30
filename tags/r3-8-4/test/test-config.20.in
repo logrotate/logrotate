@@ -1,0 +1,10 @@
+create
+
+&DIR&/test*.log {
+    daily
+    rotate 1
+    sharedscripts
+    postrotate
+	exit 1
+    endscript
+}

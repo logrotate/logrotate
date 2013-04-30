@@ -1,0 +1,5 @@
+create
+tabooext .v,.sample,.unused,~
+tabooext + .x, .y, .z
+
+include &DIR&/testingdir

@@ -1,0 +1,7 @@
+create
+
+# missing { is OK, we're testing parsing here
+&DIR&/test.log
+    weekly
+    maxsize 4
+    rotate 1

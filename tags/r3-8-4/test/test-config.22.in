@@ -1,0 +1,6 @@
+create
+
+&DIR&/test*.log {
+    daily
+    rotate 1
+}

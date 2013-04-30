@@ -1,0 +1,17 @@
+create
+
+&DIR&/test*.log {
+    size 5
+    rotate 1
+    nosharedscripts
+    prerotate
+		touch scriptout
+		echo -n $(basename $1) >> scriptout
+		echo -n ";" >> scriptout
+    endscript
+    postrotate
+		touch scriptout
+		echo -n $(basename $1) >>  scriptout
+		echo -n ";" >> scriptout
+    endscript
+}
