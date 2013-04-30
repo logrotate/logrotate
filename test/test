@@ -938,10 +938,21 @@ preptest test.log 38 1
 preptest test2.log 38 1
 $RLR test-config.38 --force 
 
+# Check both possible orders
+grep "test2.log.1test.log.1" scriptout >/dev/null
+if [ $? != 0 ]; then
+	grep "test.log.1test2.log.1" scriptout >/dev/null
+	if [ $? != 0 ]; then
+		echo "ERROR: scriptout should contain 'test2.log.1test.log.1' or 'test.log.1test2.log.1'"
+		exit 3
+	fi
+fi
+
+rm -f scriptout
+
 checkoutput <<EOF
 test.log 0
 test2.log 0
-scriptout 0 test2.log.1test.log.1
 EOF
 
 cleanup 39
@@ -1024,12 +1035,23 @@ echo number2 > test2.log
 
 $RLR test-config.43
 
+# Check both possible orders
+grep "test2.log;test2.log;test.log;test.log;" scriptout >/dev/null
+if [ $? != 0 ]; then
+	grep "test.log;test.log;test2.log;test2.log;" scriptout >/dev/null
+	if [ $? != 0 ]; then
+		echo "ERROR: scriptout should contain 'test2.log;test2.log;test.log;test.log;' or 'test.log;test.log;test2.log;test2.log;'"
+		exit 3
+	fi
+fi
+
+rm -f scriptout
+
 checkoutput <<EOF
 test.log 0
 test.log.1 0 zero
 test2.log 0
 test2.log.1 0 number2
-scriptout 0 test2.log;test2.log;test.log;test.log;
 EOF
 
 cleanup 44
