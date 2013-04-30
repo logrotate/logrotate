@@ -1,11 +1,21 @@
-3.8.3 ->
+3.8.3 -> 3.8.4
 	- Added --version command line option
 	- Disable ACL tests if logrotate is not compiled WITH_ACL support or if 
 	  ACLs are not supported by the system running tests
+	- Disable SELinux tests if logrotate is not compiled WITH_SELINUX support
+	  or if SELinux is not supported by the system running tests
 	- Fixed bug which prevented skipping particular log file config
 	  if the config contained errors.
 	- Fixed skipping of configs containing firstaction/lastaction scripts
 	  with '}' character in case of error before these scripts.
+	- Support also 'K' unit for *size directives.
+	- Added preremove option to let admin to do something with the old logs
+	  before they are removed by logrotate.
+	- Fixed possible loop in tabooext parsing.
+	- Move code to set SELinux context before compressLogFile calls to create
+	  compressed log files with the proper context.
+	- Call prerotate/postrotate script only for really rotated files in
+	  nosharedscripts mode (as stated in man page).
 
 3.8.2 -> 3.8.3
 	- Fixed setting "size" bigger than 4GB on 32bit architectures
