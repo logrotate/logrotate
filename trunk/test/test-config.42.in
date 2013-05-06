@@ -6,7 +6,7 @@ create
     sharedscripts
     prerotate
 		touch scriptout
-		IFS=$(echo -en "\n\b")
+		IFS=$(/bin/echo -en "\n\b")
 		echo -n "\"" >> scriptout 
 		for f in "$1"
 		do
@@ -16,7 +16,7 @@ create
     endscript
     postrotate
 		touch scriptout
-		IFS=$(echo -en "\n\b") 
+		IFS=$(/bin/echo -en "\n\b")
 		for f in "$1"
 		do
 			echo -n $(basename $f) >>  scriptout
