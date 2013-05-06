@@ -1090,7 +1090,7 @@ EOF
 
 cleanup 45
 
-# ------------------------------- Test 44 ------------------------------------
+# ------------------------------- Test 45 ------------------------------------
 # Test that prerotate and postrotate scripts are not called when sharedscripts
 # is defined and one rotation fails
 preptest test.log 45 1
