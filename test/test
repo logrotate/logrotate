@@ -1140,4 +1140,73 @@ test.log 0 zero
 EOF
 
 
+if [ $SELINUX_TESTS == 1 ]; then
+	chcon --type=httpd_sys_content_t test.log
+else
+	echo "Skipping SELinux part of test 6"
+fi
+
+cleanup 47
+
+if [ $SELINUX_TESTS == 1 ]; then
+
+# ------------------------------- Test 47 ------------------------------------
+# test that newly created state file has the same SELinux context as the
+# previous one
+preptest test.log 47 1
+
+cat > state << EOF
+logrotate state -- version 2
+EOF
+
+chcon --type=httpd_sys_content_t state
+
+$RLR test-config.47
+
+ls -Z state|grep httpd_sys_content_t >/dev/null
+if [ $? != 0 ]; then
+	echo "state file should have selinux context httpd_sys_content_t."
+	exit 3
+fi
+
+
+checkoutput <<EOF
+test.log 0 zero
+EOF
+
+else
+	echo "Skipping SELinux test 47"
+fi
+
+cleanup 48
+
+if [ $ACL_TESTS == 0 ]; then
+  echo "Skipping test 48: no ACL support"
+else
+
+# ------------------------------- Test 48 ------------------------------------
+# Test that state file keeps the set ACLs
+preptest test.log 48 1 0
+
+cat > state << EOF
+logrotate state -- version 2
+EOF
+
+setfacl -m u:nobody:rwx state
+
+$RLR test-config.48
+
+getfacl state|grep "user:nobody:rwx" >/dev/null
+if [ $? != 0 ]; then
+	echo "state file must have acls user:nobody:rwx"
+	exit 3
+fi
+
+checkoutput <<EOF
+test.log 0
+test.log.1 0 zero
+EOF
+
+fi
+
 cleanup

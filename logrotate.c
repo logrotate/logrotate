@@ -1721,49 +1721,184 @@ int rotateLogSet(struct logInfo *log, int force)
 
 static int writeState(char *stateFilename)
 {
-    struct logState *p;
-    FILE *f;
-    char *chptr;
-    int i;
+	struct logState *p;
+	FILE *f;
+	char *chptr;
+	int i;
+	int error = 0;
+	int bytes = 0;
+	int fdcurr;
+	int fdsave;
+	struct stat sb;
+	char *tmpFilename = NULL;
 
-    f = fopen(stateFilename, "w");
-    if (!f) {
-	message(MESS_ERROR, "error creating state file %s: %s\n",
-		stateFilename, strerror(errno));
-	return 1;
-    }
+	tmpFilename = malloc(strlen(stateFilename) + 5 );
+	if (tmpFilename == NULL) {
+		message(MESS_ERROR, "could not allocate memory for "
+			"tmp state filename\n");
+		return 1;
+	}
+	strcpy(tmpFilename, stateFilename);
+	strcat(tmpFilename, ".tmp");
+	/* Remove possible tmp state file from previous run */
+	unlink(tmpFilename);
 
-    fprintf(f, "logrotate state -- version 2\n");
 
-	for (i = 0; i < hashSize; i++) {
-		for (p = states[i]->head.lh_first; p != NULL;
+	if ((fdcurr = open(stateFilename, O_RDONLY)) < 0) {
+	    message(MESS_ERROR, "error opening %s: %s\n", stateFilename,
+		    strerror(errno));
+		free(tmpFilename);
+	    return 1;
+	}
+
+#ifdef WITH_SELINUX
+	if (selinux_enabled) {
+	    security_context_t oldContext;
+	    if (fgetfilecon_raw(fdcurr, &oldContext) >= 0) {
+		if (getfscreatecon_raw(&prev_context) < 0) {
+		    message(MESS_ERROR,
+			    "getting default context: %s\n",
+			    strerror(errno));
+		    if (selinux_enforce) {
+				freecon(oldContext);
+				free(tmpFilename);
+				return 1;
+		    }
+		}
+		if (setfscreatecon_raw(oldContext) < 0) {
+		    message(MESS_ERROR,
+			    "setting file context %s to %s: %s\n",
+			    tmpFilename, oldContext, strerror(errno));
+			if (selinux_enforce) {
+				freecon(oldContext);
+				free(tmpFilename);
+				return 1;
+		    }
+		}
+		message(MESS_DEBUG, "set default create context\n");
+		freecon(oldContext);
+	    } else {
+		    if (errno != ENOTSUP) {
+			    message(MESS_ERROR, "getting file context %s: %s\n",
+				    tmpFilename, strerror(errno));
+			    if (selinux_enforce) {
+					free(tmpFilename);
+				    return 1;
+			    }
+		    }
+	    }
+	}
+#endif
+#ifdef WITH_ACL
+	if ((prev_acl = acl_get_fd(fdcurr)) == NULL) {
+		if (errno != ENOTSUP) {
+			message(MESS_ERROR, "getting file ACL %s: %s\n",
+				stateFilename, strerror(errno));
+			close(fdcurr);
+			return 1;
+		}
+	}
+#endif
+
+	close(fdcurr);
+	stat(stateFilename, &sb);
+
+	fdsave = createOutputFile(tmpFilename, O_RDWR | O_CREAT | O_TRUNC, &sb, prev_acl, 0);
+#ifdef WITH_ACL
+	if (prev_acl) {
+		acl_free(prev_acl);
+		prev_acl = NULL;
+	}
+#endif
+#ifdef WITH_SELINUX
+	if (selinux_enabled) {
+	    setfscreatecon_raw(prev_context);
+		freecon(prev_context);
+		prev_context = NULL;
+	}
+#endif
+
+	if (fdsave < 0) {
+	    free(tmpFilename);
+	    return 1;
+	}
+
+	f = fdopen(fdsave, "w");
+	if (!f) {
+		message(MESS_ERROR, "error creating temp state file %s: %s\n",
+			tmpFilename, strerror(errno));
+		free(tmpFilename);
+		return 1;
+	}
+
+	bytes =  fprintf(f, "logrotate state -- version 2\n");
+	if (bytes < 0)
+		error = bytes;
+
+	for (i = 0; i < hashSize && error == 0; i++) {
+		for (p = states[i]->head.lh_first; p != NULL && error == 0;
 				p = p->list.le_next) {
-			fputc('"', f);
-			for (chptr = p->fn; *chptr; chptr++) {
+			error = fputc('"', f) == EOF;
+			for (chptr = p->fn; *chptr && error == 0; chptr++) {
 				switch (*chptr) {
 				case '"':
 				case '\\':
-					fputc('\\', f);
+					error = fputc('\\', f) == EOF;
 					break;
 				case '\n':
-					fputc('\\', f);
-					fputc('n', f);
+					error = fputc('\\', f) == EOF;
+					if (error == 0) {
+						error = fputc('n', f) == EOF;
+					}
 					continue;
 				}
-
-				fputc(*chptr, f);
+				if (error == 0 && fputc(*chptr, f) == EOF) {
+					error = 1;
+				}
 			}
 
-			fputc('"', f);
-			fprintf(f, " %d-%d-%d\n",
-			p->lastRotated.tm_year + 1900,
-			p->lastRotated.tm_mon + 1,
-			p->lastRotated.tm_mday);
+			if (error == 0 && fputc('"', f) == EOF)
+				error = 1;
+			
+			if (error == 0) {
+				bytes = fprintf(f, " %d-%d-%d\n",
+				p->lastRotated.tm_year + 1900,
+				p->lastRotated.tm_mon + 1,
+				p->lastRotated.tm_mday);
+				if (bytes < 0)
+					error = bytes;
+			}
 		}
 	}
 
-	fclose(f);
-	return 0;
+	if (error == 0)
+		error = fsync(fdsave);
+
+	if (error == 0)
+		error = fclose(f);
+	else
+		fclose(f);
+
+	if (error == 0) {
+		if (rename(tmpFilename, stateFilename)) {
+			unlink(tmpFilename);
+			error = 1;
+			message(MESS_ERROR, "error renaming temp state file %s\n",
+				tmpFilename);
+		}
+	}
+	else {
+		unlink(tmpFilename);
+		if (errno)
+			message(MESS_ERROR, "error creating temp state file %s: %s\n",
+			tmpFilename, strerror(errno));
+		else
+			message(MESS_ERROR, "error creating temp state file %s%s\n",
+				tmpFilename, error == ENOMEM ?
+				": Insufficient storage space is available." : "" );
+	}
+	free(tmpFilename);
+	return error;
 }
 
 static int readState(char *stateFilename)
