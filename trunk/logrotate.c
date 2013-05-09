@@ -510,9 +510,10 @@ static int compressLogFile(char *name, struct logInfo *log, struct stat *sb)
 	exit(1);
     }
 
-    close(outFile);
-
     wait(&status);
+
+    fsync(outFile);
+    close(outFile);
 
     if (!WIFEXITED(status) || WEXITSTATUS(status)) {
 	message(MESS_ERROR, "failed to compress log %s\n", name);
@@ -738,7 +739,8 @@ static int copyTruncate(char *currLog, char *saveLog, struct stat *sb,
     if (flags & LOG_FLAG_COPYTRUNCATE) {
 	message(MESS_DEBUG, "truncating %s\n", currLog);
 
-	if (!debug)
+	if (!debug) {
+	    fsync(fdsave);
 	    if (ftruncate(fdcurr, 0)) {
 		message(MESS_ERROR, "error truncating %s: %s\n", currLog,
 			strerror(errno));
@@ -746,6 +748,7 @@ static int copyTruncate(char *currLog, char *saveLog, struct stat *sb,
 		close(fdsave);
 		return 1;
 	    }
+	}
     } else
 	message(MESS_DEBUG, "Not truncating %s\n", currLog);
 
