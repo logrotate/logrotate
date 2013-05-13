@@ -256,6 +256,12 @@ appears after \fIext\fR. For example you have a logfile named mylog.foo
 and want to rotate it to mylog.1.foo.gz instead of mylog.foo.1.gz.
 
 .TP
+\fBhourly\fR
+Log files are rotated every hour. Note that usually \fIlogrotate\fR is
+configured to be run by cron daily. You have to change this configuration
+and run \fIlogrotate\fR hourly to be able to really rotate logs hourly.
+
+.TP
 \fBifempty\fR
 Rotate the log file even if it is empty, overriding the \fBnotifempty\fR
 option (\fBifempty\fR is the default).

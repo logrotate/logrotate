@@ -984,6 +984,8 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 						}
 					}
 					else continue;
+				} else if (!strcmp(key, "hourly")) {
+					newlog->criterium = ROT_HOURLY;
 				} else if (!strcmp(key, "daily")) {
 					newlog->criterium = ROT_DAYS;
 					newlog->threshhold = 1;

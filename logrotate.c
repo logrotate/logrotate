@@ -61,7 +61,7 @@ extern int asprintf(char **str, const char *fmt, ...);
 
 struct logState {
     char *fn;
-    struct tm lastRotated;	/* only tm.mon, tm_mday, tm_year are good! */
+    struct tm lastRotated;	/* only tm_hour, tm_mday, tm_mon, tm_year are good! */
     struct stat sb;
     int doRotate;
     LIST_ENTRY(logState) list;
@@ -238,8 +238,9 @@ static struct logState *newState(const char *fn)
 	new->doRotate = 0;
 
 	memset(&new->lastRotated, 0, sizeof(new->lastRotated));
-	new->lastRotated.tm_mon = now.tm_mon;
+	new->lastRotated.tm_hour = now.tm_hour;
 	new->lastRotated.tm_mday = now.tm_mday;
+	new->lastRotated.tm_mon = now.tm_mon;
 	new->lastRotated.tm_year = now.tm_year;
 
 	/* fill in the rest of the new->lastRotated fields */
@@ -835,7 +836,8 @@ int findNeedRotating(struct logInfo *log, int logNum)
 	state->doRotate = 1;
     } else if (state->lastRotated.tm_year != now.tm_year ||
 	       state->lastRotated.tm_mon != now.tm_mon ||
-	       state->lastRotated.tm_mday != now.tm_mday) {
+	       state->lastRotated.tm_mday != now.tm_mday ||
+	       state->lastRotated.tm_hour != now.tm_hour) {
 	switch (log->criterium) {
 	case ROT_WEEKLY:
 	    /* rotate if:
@@ -849,16 +851,23 @@ int findNeedRotating(struct logInfo *log, int logNum)
 				 mktime(&state->lastRotated)) >
 				(7 * 24 * 3600)));
 	    break;
+	case ROT_HOURLY:
+	    state->doRotate = ((now.tm_hour != state->lastRotated.tm_hour) ||
+			    (now.tm_mday != state->lastRotated.tm_mday) ||
+			    (now.tm_mon != state->lastRotated.tm_mon) ||
+			    (now.tm_year != state->lastRotated.tm_year));
+	    break;
+	case ROT_DAYS:
+	    /* FIXME: only days=1 is implemented!! */
+	    state->doRotate = ((now.tm_mday != state->lastRotated.tm_mday) ||
+			    (now.tm_mon != state->lastRotated.tm_mon) ||
+			    (now.tm_year != state->lastRotated.tm_year));
+	    break;
 	case ROT_MONTHLY:
 	    /* rotate if the logs haven't been rotated this month or
 	       this year */
 	    state->doRotate = ((now.tm_mon != state->lastRotated.tm_mon) ||
-			       (now.tm_year !=
-				state->lastRotated.tm_year));
-	    break;
-	case ROT_DAYS:
-	    /* FIXME: only days=1 is implemented!! */
-	    state->doRotate = 1;
+			    (now.tm_year != state->lastRotated.tm_year));
 	    break;
 	case ROT_YEARLY:
 	    /* rotate if the logs haven't been rotated this year */
@@ -1032,10 +1041,17 @@ int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 		message(MESS_DEBUG, "Converted '%s' -> '%s'\n", log->dateformat, dformat);
 		strftime(dext_str, sizeof(dext_str), dformat, &now);
 	} else {
-		/* The default dateformat and glob pattern */
-		strftime(dext_str, sizeof(dext_str), "-%Y%m%d", &now);
-		strncpy(dext_pattern, "-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]",
-				sizeof(dext_pattern));
+		if (log->criterium == ROT_HOURLY) {
+			/* hourly adds another two digits */
+			strftime(dext_str, sizeof(dext_str), "-%Y%m%d%H", &now);
+			strncpy(dext_pattern, "-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]",
+					sizeof(dext_pattern));
+		} else {
+			/* The default dateformat and glob pattern */
+			strftime(dext_str, sizeof(dext_str), "-%Y%m%d", &now);
+			strncpy(dext_pattern, "-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]",
+					sizeof(dext_pattern));
+		}
 		dext_pattern[PATTERN_LEN - 1] = '\0';
 	}
 	message(MESS_DEBUG, "dateext suffix '%s'\n", dext_str);
@@ -1514,6 +1530,9 @@ int rotateLogSet(struct logInfo *log, int force)
 
     message(MESS_DEBUG, "\nrotating pattern: %s ", log->pattern);
     switch (log->criterium) {
+    case ROT_HOURLY:
+	message(MESS_DEBUG, "hourly ");
+	break;
     case ROT_DAYS:
 	message(MESS_DEBUG, "after %llu days ", log->threshhold);
 	break;
@@ -1862,12 +1881,15 @@ static int writeState(char *stateFilename)
 
 			if (error == 0 && fputc('"', f) == EOF)
 				error = 1;
-			
+
 			if (error == 0) {
-				bytes = fprintf(f, " %d-%d-%d\n",
-				p->lastRotated.tm_year + 1900,
-				p->lastRotated.tm_mon + 1,
-				p->lastRotated.tm_mday);
+				bytes = fprintf(f, " %d-%d-%d-%d:%d:%d\n",
+					p->lastRotated.tm_year + 1900,
+					p->lastRotated.tm_mon + 1,
+					p->lastRotated.tm_mday,
+					p->lastRotated.tm_hour,
+					p->lastRotated.tm_min,
+					p->lastRotated.tm_sec);
 				if (bytes < 0)
 					error = bytes;
 			}
@@ -1911,7 +1933,7 @@ static int readState(char *stateFilename)
 	char *filename;
     const char **argv;
     int argc;
-    int year, month, day;
+    int year, month, day, hour, minute, second;
     int i;
     int line = 0;
     int error;
@@ -1979,8 +2001,9 @@ static int readState(char *stateFilename)
 	if (i == 1)
 	    continue;
 
+	year = month = day = hour = minute = second = 0;
 	if (poptParseArgvString(buf, &argc, &argv) || (argc != 2) ||
-	    (sscanf(argv[1], "%d-%d-%d", &year, &month, &day) != 3)) {
+	    (sscanf(argv[1], "%d-%d-%d-%d:%d:%d", &year, &month, &day, &hour, &minute, &second) < 3)) {
 	    message(MESS_ERROR, "bad line %d in state file %s\n",
 		    line, stateFilename);
 		free(argv);
@@ -2017,6 +2040,33 @@ static int readState(char *stateFilename)
 	    return 1;
 	}
 
+	if (hour < 0 || hour > 23) {
+	    message(MESS_ERROR,
+		    "bad hour %d for file %s in state file %s\n", hour,
+		    argv[0], stateFilename);
+	    free(argv);
+	    fclose(f);
+	    return 1;
+	}
+
+	if (minute < 0 || minute > 59) {
+	    message(MESS_ERROR,
+		    "bad minute %d for file %s in state file %s\n", minute,
+		    argv[0], stateFilename);
+	    free(argv);
+	    fclose(f);
+	    return 1;
+	}
+
+	if (second < 0 || second > 59) {
+	    message(MESS_ERROR,
+		    "bad second %d for file %s in state file %s\n", second,
+		    argv[0], stateFilename);
+	    free(argv);
+	    fclose(f);
+	    return 1;
+	}
+
 	year -= 1900, month -= 1;
 
 	filename = strdup(argv[0]);
@@ -2027,9 +2077,12 @@ static int readState(char *stateFilename)
 		return 1;
 	}
 
+	st->lastRotated.tm_year = year;
 	st->lastRotated.tm_mon = month;
 	st->lastRotated.tm_mday = day;
-	st->lastRotated.tm_year = year;
+	st->lastRotated.tm_hour = hour;
+	st->lastRotated.tm_min = minute;
+	st->lastRotated.tm_sec = second;
 
 	/* fill in the rest of the st->lastRotated fields */
 	lr_time = mktime(&st->lastRotated);
