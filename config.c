@@ -695,6 +695,13 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 
 	length = sb.st_size;
 
+	if (length > 0xffffff) {
+		message(MESS_ERROR, "file %s too large, probably not a config file.\n",
+				configFile);
+		close(fd);
+		return 1;
+	}   
+
 	/* We can't mmap empty file... */
 	if (length == 0) {
 		message(MESS_DEBUG,
