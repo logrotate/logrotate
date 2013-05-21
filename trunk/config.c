@@ -955,7 +955,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 							multiplier = 1;
 						}
 
-						size = multiplier * strtoul(key, &chptr, 0);
+						size = multiplier * strtoull(key, &chptr, 0);
 						if (*chptr) {
 							message(MESS_ERROR, "%s:%d bad size '%s'\n",
 								configFile, lineNum, key);
