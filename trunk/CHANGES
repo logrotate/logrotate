@@ -1,3 +1,15 @@
+3.8.4 ->
+	- Improved rotation during daylight saving time and between timezone
+	  changes.
+	- Fixed ACL setting problem caused by ext3 erroneously reporting ENOSYS
+	  instead of ENOSUP.
+	- Do not continue with rotation if state file is corrupted.
+	- Make logrotate.status creation atomic.
+	- Allow "hourly" rotation. See manpage for more information.
+	- Use "/bin/echo" in tests. Fixes tests execution in Dash.
+	- Do no try to parse config files bigger than 16MB.
+	- Improved manpage consistency and formatting.
+
 3.8.3 -> 3.8.4
 	- Added --version command line option
 	- Disable ACL tests if logrotate is not compiled WITH_ACL support or if 
