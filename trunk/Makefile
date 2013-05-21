@@ -120,7 +120,7 @@ $(PROG): $(OBJS)
 
 clean:
 	rm -f $(OBJS) $(PROG) core* .depend
-	rm -f ./test/test.ACL
+	rm -f ./test/test.ACL ./test/test.SELINUX ./test/error.log
 
 depend:
 	$(CPP) $(CFLAGS) -M $(SOURCES) > .depend
