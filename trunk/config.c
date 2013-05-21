@@ -45,7 +45,7 @@
 #include "asprintf.c"
 #endif
 
-#if !defined(asprintf)
+#if !defined(asprintf) && !defined(_FORTIFY_SOURCE)
 #include <stdarg.h>
 
 int asprintf(char **string_ptr, const char *format, ...)
@@ -260,7 +260,9 @@ static int checkFile(const char *fname)
 
 	/* Check if fname is ending in a taboo-extension; if so, return false */
 	for (i = 0; i < tabooCount; i++) {
-		asprintf(&pattern, "*%s", tabooExts[i]);
+		if (asprintf(&pattern, "*%s", tabooExts[i]) < 0) {
+			message(MESS_FATAL, "failed to allocate taboo pattern memory\n");
+		}
 		if (!fnmatch(pattern, fname, 0))
 		{
 			free(pattern);
