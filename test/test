@@ -1238,7 +1238,8 @@ NOW=$(/bin/date "+%Y-%-m-%-d-%-H" 2>/dev/null)
 HOURAGO=$(/bin/date "+%Y-%-m-%-d-%-H" --date "1 hour ago" 2>/dev/null)
 GNUDATE=$?
 
-$RLR test-config.50
+# --force to trigger rotation
+$RLR test-config.50 --force
 checkoutput <<EOF
 test.log 0
 test.log-$DATESTRING 0 zero
