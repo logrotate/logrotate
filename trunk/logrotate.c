@@ -828,11 +828,8 @@ int findNeedRotating(struct logInfo *log, int logNum, int force)
     } else if (force) {
 	/* user forced rotation of logs from command line */
 	state->doRotate = 1;
-    } else if (state->lastRotated.tm_year > now.tm_year ||
-	       (state->lastRotated.tm_year == now.tm_year &&
-		(state->lastRotated.tm_mon > now.tm_mon ||
-		 (state->lastRotated.tm_mon == now.tm_mon &&
-		  state->lastRotated.tm_mday > now.tm_mday)))) {
+    } else if (mktime(&state->lastRotated) - mktime(&now) > (25 * 3600)) {
+        /* 25 hours allows for DST changes as well as geographical moves */
 	message(MESS_ERROR,
 		"log %s last rotated in the future -- rotation forced\n",
 		log->files[logNum]);
