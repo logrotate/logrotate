@@ -50,7 +50,7 @@ fi
 
 
 cleanup() {
-    rm -f test*.log* anothertest*.log* state test-config. scriptout mail-out compress-args
+    rm -f test*.log* anothertest*.log* state test-config. scriptout mail-out compress-args different*.log*
     rm -f $(ls | egrep '^test-config.[0-9]+$')
 
     [ -n "$1" ] && echo "Running test $1"
