@@ -242,6 +242,7 @@ static struct logState *newState(const char *fn)
 	new->lastRotated.tm_mday = now.tm_mday;
 	new->lastRotated.tm_mon = now.tm_mon;
 	new->lastRotated.tm_year = now.tm_year;
+	new->lastRotated.tm_isdst = now.tm_isdst;
 
 	/* fill in the rest of the new->lastRotated fields */
 	lr_time = mktime(&new->lastRotated);
@@ -762,7 +763,7 @@ static int copyTruncate(char *currLog, char *saveLog, struct stat *sb,
     return 0;
 }
 
-int findNeedRotating(struct logInfo *log, int logNum)
+int findNeedRotating(struct logInfo *log, int logNum, int force)
 {
     struct stat sb;
     struct logState *state = NULL;
@@ -822,7 +823,7 @@ int findNeedRotating(struct logInfo *log, int logNum)
 
     if (log->criterium == ROT_SIZE) {
 	state->doRotate = (sb.st_size >= log->threshhold);
-    } else if (log->criterium == ROT_FORCE) {
+    } else if (force) {
 	/* user forced rotation of logs from command line */
 	state->doRotate = 1;
     } else if (state->lastRotated.tm_year > now.tm_year ||
@@ -1525,32 +1526,32 @@ int rotateLogSet(struct logInfo *log, int force)
     struct logState **state;
     struct logNames **rotNames;
 
-    if (force)
-	log->criterium = ROT_FORCE;
 
     message(MESS_DEBUG, "\nrotating pattern: %s ", log->pattern);
-    switch (log->criterium) {
-    case ROT_HOURLY:
-	message(MESS_DEBUG, "hourly ");
-	break;
-    case ROT_DAYS:
-	message(MESS_DEBUG, "after %llu days ", log->threshhold);
-	break;
-    case ROT_WEEKLY:
-	message(MESS_DEBUG, "weekly ");
-	break;
-    case ROT_MONTHLY:
-	message(MESS_DEBUG, "monthly ");
-	break;
-    case ROT_YEARLY:
-	message(MESS_DEBUG, "yearly ");
-	break;
-    case ROT_SIZE:
-	message(MESS_DEBUG, "%llu bytes ", log->threshhold);
-	break;
-    case ROT_FORCE:
-	message(MESS_DEBUG, "forced from command line ");
-	break;
+    if (force) {
+        message(MESS_DEBUG, "forced from command line ");
+    }
+    else {
+        switch (log->criterium) {
+        case ROT_HOURLY:
+        message(MESS_DEBUG, "hourly ");
+        break;
+        case ROT_DAYS:
+        message(MESS_DEBUG, "after %llu days ", log->threshhold);
+        break;
+        case ROT_WEEKLY:
+        message(MESS_DEBUG, "weekly ");
+        break;
+        case ROT_MONTHLY:
+        message(MESS_DEBUG, "monthly ");
+        break;
+        case ROT_YEARLY:
+        message(MESS_DEBUG, "yearly ");
+        break;
+        case ROT_SIZE:
+        message(MESS_DEBUG, "%llu bytes ", log->threshhold);
+        break;
+        }
     }
 
     if (log->rotateCount)
@@ -1585,7 +1586,7 @@ int rotateLogSet(struct logInfo *log, int force)
 	}
 
     for (i = 0; i < log->numFiles; i++) {
-	logHasErrors[i] = findNeedRotating(log, i);
+	logHasErrors[i] = findNeedRotating(log, i, force);
 	hasErrors |= logHasErrors[i];
 
 	/* sure is a lot of findStating going on .. */
