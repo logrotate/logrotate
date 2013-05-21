@@ -1101,14 +1101,16 @@ int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 		/* glob for uncompressed files with our pattern */
 		if (asprintf(&glob_pattern, "%s/%s%s%s", rotNames->dirName,
 					rotNames->baseName, dext_pattern, fileext) < 0) {
-			message(MESS_ERROR, "could not allocate glob pattern memory\n");
+			message(MESS_FATAL, "could not allocate glob pattern memory\n");
 		}
 	    rc = glob(glob_pattern, 0, globerr, &globResult);
 	    if (!rc && globResult.gl_pathc > 0) {
 		for (i = 0; i < globResult.gl_pathc && !hasErrors; i++) {
 		    struct stat sbprev;
 
-			asprintf(&oldName, "%s", (globResult.gl_pathv)[i]);
+			if (asprintf(&oldName, "%s", (globResult.gl_pathv)[i]) < 0) {
+				message(MESS_FATAL, "could not allocate glob result memory\n");
+			}
 			if (stat(oldName, &sbprev)) {
 			message(MESS_DEBUG,
 				"previous log %s does not exist\n",
@@ -1122,16 +1124,20 @@ int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 		message(MESS_DEBUG,
 			"glob finding logs to compress failed\n");
 		/* fallback to old behaviour */
-		asprintf(&oldName, "%s/%s.%d%s", rotNames->dirName,
-			rotNames->baseName, logStart, fileext);
+		if (asprintf(&oldName, "%s/%s.%d%s", rotNames->dirName,
+			rotNames->baseName, logStart, fileext) < 0) {
+				message(MESS_FATAL, "could not allocate oldName memory\n");
+			}
 		free(oldName);
 	    }
 	    globfree(&globResult);
 	    free(glob_pattern);
 	} else {
 	    struct stat sbprev;
-	    asprintf(&oldName, "%s/%s.%d%s", rotNames->dirName,
-		    rotNames->baseName, logStart, fileext);
+	    if (asprintf(&oldName, "%s/%s.%d%s", rotNames->dirName,
+		    rotNames->baseName, logStart, fileext) < 0) {
+			message(MESS_FATAL, "could not allocate oldName memory\n");
+	    }
 	    if (stat(oldName, &sbprev)) {
 		message(MESS_DEBUG, "previous log %s does not exist\n",
 			oldName);
@@ -1189,7 +1195,9 @@ int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 	    }
 	    if (mail_out != -1) {
 		/* oldName is oldest Backup found (for unlink later) */
-		asprintf(&oldName, "%s", (globResult.gl_pathv)[mail_out]);
+		if (asprintf(&oldName, "%s", (globResult.gl_pathv)[mail_out]) < 0) {
+		    message(MESS_FATAL, "could not allocate mailout memory\n");
+		}
 		rotNames->disposeName = malloc(strlen(oldName)+1);
 		strcpy(rotNames->disposeName, oldName);
 		free(oldName);
@@ -1212,8 +1220,10 @@ int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 	if (log->rotateAge) {
 	    struct stat fst_buf;
 	    for (i = 1; i <= rotateCount + 1; i++) {
-		asprintf(&oldName, "%s/%s.%d%s%s", rotNames->dirName,
-			rotNames->baseName, i, fileext, compext);
+		if (asprintf(&oldName, "%s/%s.%d%s%s", rotNames->dirName,
+			rotNames->baseName, i, fileext, compext) < 0) {
+		    message(MESS_FATAL, "could not allocate mailFilename memory\n");
+		}
 		if (!stat(oldName, &fst_buf)
 		    && (((nowSecs - fst_buf.st_mtime) / 60 / 60 / 24)
 			> log->rotateAge)) {
@@ -1229,9 +1239,11 @@ int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 	    }
 	}
 
-	asprintf(&oldName, "%s/%s.%d%s%s", rotNames->dirName,
+	if (asprintf(&oldName, "%s/%s.%d%s%s", rotNames->dirName,
 		rotNames->baseName, logStart + rotateCount, fileext,
-		compext);
+		compext) < 0) {
+	    message(MESS_FATAL, "could not allocate disposeName memory\n");
+	}
 	newName = strdup(oldName);
 
 	rotNames->disposeName = strdup(oldName);
@@ -1243,8 +1255,10 @@ int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 	for (i = rotateCount + logStart - 1; (i >= 0) && !hasErrors; i--) {
 		free(newName);
 		newName = oldName;
-		asprintf(&oldName, "%s/%s.%d%s%s", rotNames->dirName,
-		    rotNames->baseName, i, fileext, compext);
+		if (asprintf(&oldName, "%s/%s.%d%s%s", rotNames->dirName,
+		    rotNames->baseName, i, fileext, compext) < 0) {
+		    message(MESS_FATAL, "could not allocate oldName memory\n");
+		}
 
 	    message(MESS_DEBUG,
 		    "renaming %s to %s (rotatecount %d, logstart %d, i %d), \n",
@@ -1273,9 +1287,11 @@ int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 
 		if (asprintf(&(rotNames->finalName), "%s/%s%s%s", rotNames->dirName,
 					rotNames->baseName, dext_str, fileext) < 0) {
-			message(MESS_ERROR, "could not allocate finalName memory\n");
+			message(MESS_FATAL, "could not allocate finalName memory\n");
 		}
-		asprintf(&destFile, "%s%s", rotNames->finalName, compext);
+		if (asprintf(&destFile, "%s%s", rotNames->finalName, compext) < 0) {
+			message(MESS_FATAL, "could not allocate destFile memory\n");
+		}
 		if (!stat(destFile, &fst_buf)) {
 			message(MESS_DEBUG,
 					"destination %s already exists, skipping rotation\n",
@@ -1403,8 +1419,8 @@ int rotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 			    strlen(log->files[logNum]) + 10);
 		sprintf(rotNames->disposeName, "%s%s", rotNames->finalName,
 			(log->compress_ext
-			 && (log->flags & LOG_FLAG_COMPRESS)) ? log->
-			compress_ext : "");
+			 && (log->flags & LOG_FLAG_COMPRESS)) ?
+			log->compress_ext : "");
 		message(MESS_DEBUG, "disposeName will be %s\n",
 			rotNames->disposeName);
 	    }

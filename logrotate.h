@@ -67,7 +67,7 @@ extern int numLogs;
 extern int debug;
 
 int readAllConfigPaths(const char **paths);
-#if !defined(asprintf)
+#if !defined(asprintf) && !defined(_FORTIFY_SOURCE)
 int asprintf(char **string_ptr, const char *format, ...);
 #endif
 
