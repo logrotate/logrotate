@@ -35,6 +35,8 @@ int selinux_enforce = 0;
 #ifdef WITH_ACL
 #include "sys/acl.h"
 #define acl_type acl_t
+#define ACL_NOT_WELL_SUPPORTED(Err) \
+     ((Err) == ENOTSUP || (Err) == ENOSYS || (Err) == EINVAL || (Err) == EBUSY)
 #else
 #define acl_type void *
 #endif
@@ -340,7 +342,7 @@ int createOutputFile(char *fileName, int flags, struct stat *sb, acl_type acl, i
 #ifdef WITH_ACL
 	if (!force_mode && acl) {
 		if (acl_set_fd(fd, acl) == -1) {
-			if (errno != ENOTSUP) {
+			if (!ACL_NOT_WELL_SUPPORTED(errno)) {
 				message(MESS_ERROR, "setting ACL for %s: %s\n",
 				fileName, strerror(errno));
 				close(fd);
@@ -476,7 +478,7 @@ static int compressLogFile(char *name, struct logInfo *log, struct stat *sb)
 
 #ifdef WITH_ACL
 	if ((prev_acl = acl_get_fd(inFile)) == NULL) {
-		if (errno != ENOTSUP) {
+		if (!ACL_NOT_WELL_SUPPORTED(errno)) {
 			message(MESS_ERROR, "getting file ACL %s: %s\n",
 				name, strerror(errno));
 			close(inFile);
@@ -692,7 +694,7 @@ static int copyTruncate(char *currLog, char *saveLog, struct stat *sb,
 #endif
 #ifdef WITH_ACL
 	if ((prev_acl = acl_get_fd(fdcurr)) == NULL) {
-		if (errno != ENOTSUP) {
+		if (!ACL_NOT_WELL_SUPPORTED(errno)) {
 			message(MESS_ERROR, "getting file ACL %s: %s\n",
 				currLog, strerror(errno));
 			close(fdcurr);
@@ -1394,7 +1396,7 @@ int rotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 #endif
 #ifdef WITH_ACL
 		if ((prev_acl = acl_get_file(log->files[logNum], ACL_TYPE_ACCESS)) == NULL) {
-			if (errno != ENOTSUP) {
+			if (!ACL_NOT_WELL_SUPPORTED(errno)) {
 				message(MESS_ERROR, "getting file ACL %s: %s\n",
 					log->files[logNum], strerror(errno));
 				hasErrors = 1;
@@ -1830,7 +1832,7 @@ static int writeState(char *stateFilename)
 #endif
 #ifdef WITH_ACL
 	if ((prev_acl = acl_get_fd(fdcurr)) == NULL) {
-		if (errno != ENOTSUP) {
+		if (!ACL_NOT_WELL_SUPPORTED(errno)) {
 			message(MESS_ERROR, "getting file ACL %s: %s\n",
 				stateFilename, strerror(errno));
 			close(fdcurr);
