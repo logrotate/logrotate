@@ -781,22 +781,35 @@ else
 cleanup 32
 
 # ------------------------------- Test 32 ------------------------------------
-# Without mode in 'create' directive, ACLs should be respected
+# Without mode in 'create' directive, ACLs should be respected.
+# Also check that chmod is respected when setting ACLs
 preptest test.log 32 1 0
 
+chmod 600 test.log
 setfacl -m u:nobody:rwx test.log
 
 $RLR test-config.32 --force
-
 getfacl test.log|grep "user:nobody:rwx" >/dev/null
 if [ $? != 0 ]; then
-	echo "test.log must contain user:nobody:rwx"
+	echo "test.log must have user:nobody:rwx ACL"
+	exit 3
+fi
+
+getfacl test.log|grep "group::---" >/dev/null
+if [ $? != 0 ]; then
+	echo "test.log must have group::--- ACL"
 	exit 3
 fi
 
 getfacl test.log.1|grep "user:nobody:rwx" >/dev/null
 if [ $? != 0 ]; then
-	echo "test.log.1 must contain user:nobody:rwx"
+	echo "test.log.1 must have user:nobody:rwx ACL"
+	exit 3
+fi
+
+getfacl test.log.1|grep "group::---" >/dev/null
+if [ $? != 0 ]; then
+	echo "test.log.1 must have group::--- ACL"
 	exit 3
 fi
 

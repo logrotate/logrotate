@@ -301,6 +301,7 @@ int createOutputFile(char *fileName, int flags, struct stat *sb, acl_type acl, i
 {
     int fd;
 	struct stat sb_create;
+	int acl_set = 0;
 
 	fd = open(fileName, (flags | O_EXCL | O_NOFOLLOW),
 		(S_IRUSR | S_IWUSR) & sb->st_mode);
@@ -332,13 +333,6 @@ int createOutputFile(char *fileName, int flags, struct stat *sb, acl_type acl, i
 	return -1;
     }
 
-    if (fchmod(fd, sb->st_mode)) {
-	message(MESS_ERROR, "error setting mode of %s: %s\n",
-		fileName, strerror(errno));
-	close(fd);
-	return -1;
-    }
-
 #ifdef WITH_ACL
 	if (!force_mode && acl) {
 		if (acl_set_fd(fd, acl) == -1) {
@@ -346,11 +340,24 @@ int createOutputFile(char *fileName, int flags, struct stat *sb, acl_type acl, i
 				message(MESS_ERROR, "setting ACL for %s: %s\n",
 				fileName, strerror(errno));
 				close(fd);
-				return 1;
+				return -1;
 			}
+			acl_set = 0;
+		}
+		else {
+			acl_set = 1;
 		}
 	}
 #endif
+
+	if (!acl_set || force_mode) {
+		if (fchmod(fd, sb->st_mode)) {
+		message(MESS_ERROR, "error setting mode of %s: %s\n",
+			fileName, strerror(errno));
+		close(fd);
+		return -1;
+		}
+	}
 
     return fd;
 }
