@@ -9,6 +9,7 @@
 	- Use "/bin/echo" in tests. Fixes tests execution in Dash.
 	- Do no try to parse config files bigger than 16MB.
 	- Improved manpage consistency and formatting.
+	- Fix race condition between acl_set_fd() and fchmod().
 
 3.8.3 -> 3.8.4
 	- Added --version command line option
