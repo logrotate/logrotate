@@ -1,4 +1,4 @@
-3.8.4 ->
+3.8.4 -> 3.8.5
 	- Improved rotation during daylight saving time and between timezone
 	  changes.
 	- Fixed ACL setting problem caused by ext3 erroneously reporting ENOSYS
