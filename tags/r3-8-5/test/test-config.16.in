@@ -1,0 +1,7 @@
+create
+
+&DIR&/test.log {
+    weekly
+    maxsize 4
+    rotate 1
+}
