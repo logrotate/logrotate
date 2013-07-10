@@ -1601,6 +1601,11 @@ int rotateLogSet(struct logInfo *log, int force)
 	message(MESS_DEBUG, "old logs are removed\n");
     }
 
+	if (log->numFiles == 0) {
+		message(MESS_DEBUG, "No logs found. Rotation not needed.\n");
+		return 0;
+	}
+
 	if (log->flags & LOG_FLAG_SU) {
 		if (switch_user(log->suUid, log->suGid) != 0) {
 			return 1;
@@ -1657,7 +1662,6 @@ int rotateLogSet(struct logInfo *log, int force)
 	    hasErrors |= logHasErrors[i];
 	}
 
-	/* (nemam chyby nebo shared) a (nemam chyby nebo nonshared) */
 	if (log->pre
 	    && (!logHasErrors[j] || log->flags & LOG_FLAG_SHAREDSCRIPTS) &&
 		   ((!hasErrors && state[j]->doRotate) || (!(log->flags & LOG_FLAG_SHAREDSCRIPTS) && state[j]->doRotate) ) ) {

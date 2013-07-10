@@ -1,0 +1,8 @@
+/var/log/this_dir_does_not_exist/*log {
+    size 1
+    missingok
+    sharedscripts
+    prerotate
+    /usr/bin/some-program
+    endscript
+}
