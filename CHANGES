@@ -1,6 +1,7 @@
 3.8.5 -> 
 	- Fixed memory corruption caused by rotation directory which does not
 	  exist with "sharedscripts" together with "prerotate" script.
+
 3.8.4 -> 3.8.5
 	- Improved rotation during daylight saving time and between timezone
 	  changes.
