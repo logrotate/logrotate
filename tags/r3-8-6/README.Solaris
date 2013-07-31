@@ -1,0 +1,19 @@
+Steps to build and install logrotate on Solaris 2.6 
+ 
+1.  Obtain and install the following GNU packages from http://Sunfreeware.com:
+        gcc 2.95.2
+        make 3.80
+	popt-1.6.3
+
+2.  Build and install logrotate:
+	gmake
+	gmake install
+ 
+OBS.: If you want to use the test script on Solaris 2.6, you'll need to have
+      bash installed, adjust the path after the sha-bang (#!) properly and
+      substitute the sintax $(...) for backticks `...` in all
+      "test-config.?.in" files.
+
+-- 
+Fidelis Assis <fidelis@embratel.net.br>
+

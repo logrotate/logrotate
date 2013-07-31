@@ -1,0 +1,27 @@
+create
+
+&DIR&/test.log &DIR&/test2.log {
+    size 5
+    rotate 1
+    nosharedscripts
+    prerotate
+		touch scriptout
+		IFS=$(/bin/echo -en "\n\b")
+		echo -n "\"" >> scriptout 
+		for f in "$1"
+		do
+			echo -n $(basename $f) >>  scriptout
+			echo -n ";" >> scriptout
+		done
+    endscript
+    postrotate
+		touch scriptout
+		IFS=$(/bin/echo -en "\n\b")
+		for f in "$1"
+		do
+			echo -n $(basename $f) >>  scriptout
+			echo -n ";" >> scriptout
+		done
+		echo -n "\"" >> scriptout
+    endscript
+}
