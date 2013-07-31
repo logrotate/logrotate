@@ -1,4 +1,4 @@
-3.8.5 -> 
+3.8.5 -> 3.8.6
 	- Fixed memory corruption caused by rotation directory which does not
 	  exist with "sharedscripts" together with "prerotate" script.
 
