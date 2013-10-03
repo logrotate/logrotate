@@ -830,11 +830,12 @@ int findNeedRotating(struct logInfo *log, int logNum, int force)
 		return 0;
 	}
 
-    if (log->criterium == ROT_SIZE) {
-	state->doRotate = (sb.st_size >= log->threshhold);
-    } else if (force) {
+    if (force) {
 	/* user forced rotation of logs from command line */
-	state->doRotate = 1;
+	state->doRotate = 1;   
+    }
+    else if (log->criterium == ROT_SIZE) {
+	state->doRotate = (sb.st_size >= log->threshhold);
     } else if (mktime(&state->lastRotated) - mktime(&now) > (25 * 3600)) {
         /* 25 hours allows for DST changes as well as geographical moves */
 	message(MESS_ERROR,
