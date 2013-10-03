@@ -1,6 +1,6 @@
 3.8.6 -> 3.8.7
 	- Fixed --force/-f option handling together with "size" directive
-      (3.8.5 regression).
+	  (3.8.5 regression).
 	- Use "logrotate_tmp_t" context for SELinux tests and if this context does
 	  not exist, skip SELinux related tests.
 
