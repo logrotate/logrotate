@@ -1,0 +1,7 @@
+# bad unit 'x'
+
+&DIR&/test.log {
+	daily
+	size 300x
+	rotate 1
+}

@@ -1,0 +1,6 @@
+create &USER& &GROUP&
+
+&DIR&/test.log {
+	daily
+	rotate 1
+}

@@ -1,0 +1,26 @@
+The simplest way to compile this package is:
+
+  1. `cd' to the directory containing the package's source code
+
+  2. Type `make' to compile the package.
+
+  3. Optionally, type `make test' to run any self-tests that come with
+     the package.
+
+  4. Type `make install' to install the programs and any data files and
+     documentation.
+
+  5. You can remove the program binaries and object files from the
+     source code directory by typing `make clean'.
+
+
+If you want to add the Access Control List (ACL) support to the program
+use `make WITH_ACL=yes' at the point 2 and `make test WITH_ACL=yes' at 
+the point 3.
+
+If you want to add the NSA Security-Enhanced Linux (SELinux) support to 
+the program use `make WITH_SELINUX=yes' at the point 2.
+
+If you want to add both the ACL and SELinux supports to the program use
+`make WITH_ACL=yes WITH_SELINUX=yes' at the point 2 and 
+`make test WITH_ACL=yes' at the point 3.
