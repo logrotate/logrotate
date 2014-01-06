@@ -1514,7 +1514,8 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 					goto error;
 					}
 
-					if (sb.st_dev != sb2.st_dev) {
+					if (sb.st_dev != sb2.st_dev
+						&& !(log->flags & (LOG_FLAG_COPYTRUNCATE | LOG_FLAG_COPY))) {
 					message(MESS_ERROR,
 						"%s:%d olddir %s and log file %s "
 						"are on different devices\n", configFile,
