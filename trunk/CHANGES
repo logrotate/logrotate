@@ -1,3 +1,8 @@
+3.8.7 ->
+	- Do not expect that the name of root account is 'root'.
+	- Do not stop rotation with an error when olddir and log file
+	  are on different devices but copy or copytruncate is used.
+
 3.8.6 -> 3.8.7
 	- Fixed --force/-f option handling together with "size" directive
 	  (3.8.5 regression).
