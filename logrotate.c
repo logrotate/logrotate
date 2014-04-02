@@ -785,8 +785,9 @@ int findNeedRotating(struct logInfo *log, int logNum, int force)
 		char *ld = ourDirName(log->files[logNum]);
 		if (stat(ld, &sb)) {
 			/* If parent directory doesn't exist, it's not real error
+			  (unless nomissingok is specified)
 			  and rotation is not needed */
-			if (errno != ENOENT) {
+			if (errno != ENOENT || (errno == ENOENT && (log->flags & LOG_FLAG_MISSINGOK) == 0)) {
 				message(MESS_ERROR, "stat of %s failed: %s\n", ld,
 					strerror(errno));
 				free(ld);
