@@ -2,6 +2,9 @@
 	- Do not expect that the name of root account is 'root'.
 	- Do not stop rotation with an error when olddir and log file
 	  are on different devices but copy or copytruncate is used.
+	- Return an error code when parent directory of log does not exist,
+	  "su" directive is not used, logrotate is running as root and missingok
+	  is not specified. [vcizek]
 
 3.8.6 -> 3.8.7
 	- Fixed --force/-f option handling together with "size" directive
