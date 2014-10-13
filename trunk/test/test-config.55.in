@@ -1,0 +1,21 @@
+create
+
+# continue and throw no error message when log file is not present
+missingok
+
+# truncate the original log file in place after creating a copy
+copytruncate
+
+# compress the file
+compress
+
+# do only rotate when not empty
+notifempty
+
+&DIR&/test.log {
+    hourly
+	dateext
+	dateformat -%s
+    rotate 60
+    nosharedscripts
+}

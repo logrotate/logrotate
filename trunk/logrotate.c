@@ -77,6 +77,11 @@ struct logNames {
     char *baseName;
 };
 
+struct compData {
+	int prefix_len;
+	const char *dformat;
+};
+
 struct logStates {
 	LIST_HEAD(stateSet, logState) head;
 } **states;
@@ -98,6 +103,33 @@ static int globerr(const char *pathname, int theerr)
 
     /* We want the glob operation to continue, so return 0 */
     return 1;
+}
+
+static int compGlobResult(const void *result1, const void *result2, void *data)  {
+	struct tm time;
+	time_t t1, t2;
+	struct compData *d = (struct compData *) data;
+	const char *r1 = *(const char **)(result1);
+	const char *r2 = *(const char **)(result2);
+
+	memset(&time, 0, sizeof(struct tm));
+	strptime(r1 + d->prefix_len, d->dformat, &time);
+	t1 = mktime(&time);
+
+	memset(&time, 0, sizeof(struct tm));
+	strptime(r2 + d->prefix_len, d->dformat, &time);
+	t2 = mktime(&time);
+
+	if (t1 < t2) return -1;
+	if (t1 > t2) return  1;
+	return 0;
+}
+
+static void sortGlobResult(glob_t *result, int prefix_len, const char *dformat) {
+	struct compData d;
+	d.prefix_len = prefix_len;
+	d.dformat = dformat;
+	qsort_r(result->gl_pathv, result->gl_pathc, sizeof(char *), compGlobResult, &d);
 }
 
 int switch_user(uid_t user, gid_t group) {
@@ -1113,6 +1145,7 @@ int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 		}
 	    rc = glob(glob_pattern, 0, globerr, &globResult);
 	    if (!rc && globResult.gl_pathc > 0) {
+		sortGlobResult(&globResult, strlen(rotNames->dirName) + 1 + strlen(rotNames->baseName), dformat);
 		for (i = 0; i < globResult.gl_pathc && !hasErrors; i++) {
 		    struct stat sbprev;
 
@@ -1177,6 +1210,7 @@ int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 	    /* remove the first (n - rotateCount) matches
 	     * no real rotation needed, since the files have
 	     * the date in their name */
+		sortGlobResult(&globResult, strlen(rotNames->dirName) + 1 + strlen(rotNames->baseName), dformat);
 	    for (i = 0; i < globResult.gl_pathc; i++) {
 		if (!stat((globResult.gl_pathv)[i], &fst_buf)) {
 		    if ((i <= ((int) globResult.gl_pathc - rotateCount))
