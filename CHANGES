@@ -1,4 +1,12 @@
 3.8.7 ->
+	- Add support for building using autotools/automake. Using "./autogen.sh",
+	  "./configure" and "make" is now preferred way how to build logrotate.
+	  Old Makefile remains available, but it is deprecated and will be removed
+	  in the future. Please report any problem related to new build system.
+	- Add support for systems which do not support fork (use vfork instead)
+	  and madvise.
+	- Fix bug when wrong log file has been removed in case of dateext and
+	  dateformat %d-%m-%Y.
 	- Do not expect that the name of root account is 'root'.
 	- Do not stop rotation with an error when olddir and log file
 	  are on different devices but copy or copytruncate is used.
