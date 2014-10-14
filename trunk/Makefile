@@ -114,7 +114,14 @@ endif
 
 RCSVERSION = $(subst .,-,$(VERSION))
 
-all: $(TARGET) pretest
+all: show_warning $(TARGET) pretest
+
+show_warning:
+	@echo ""
+	@echo "Building using this Makefile is DEPRECATED."
+	@echo "Use './autogen.sh', './configure' and 'make' instead."
+	@echo "Some new features will not be enabled when building using this Makefile."
+	@echo ""
 
 $(PROG): $(OBJS)
 
