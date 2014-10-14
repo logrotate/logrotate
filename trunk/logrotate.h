@@ -28,6 +28,14 @@
 #define NO_FORCE_ROTATE 0
 #define FORCE_ROTATE    1
 
+#ifdef HAVE_LIBSELINUX
+#define WITH_SELINUX 1
+#endif
+
+#ifdef HAVE_LIBACL
+#define WITH_ACL 1
+#endif
+
 struct logInfo {
     char *pattern;
     char **files;

@@ -728,6 +728,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 		return 1;
 	}
 
+#ifdef HAVE_MADVISE
 #ifdef MADV_DONTFORK
 	madvise(buf, (size_t)(length + 2),
 			MADV_SEQUENTIAL | MADV_WILLNEED | MADV_DONTFORK);
@@ -735,6 +736,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 	madvise(buf, (size_t)(length + 2),
 			MADV_SEQUENTIAL | MADV_WILLNEED);
 #endif /* MADV_DONTFORK */
+#endif /* HAVE_MADVISE */
 
     message(MESS_DEBUG, "reading config file %s\n", configFile);
 
