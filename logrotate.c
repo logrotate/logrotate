@@ -25,6 +25,10 @@
 #include <limits.h>
 #endif
 
+#include "basenames.h"
+#include "log.h"
+#include "logrotate.h"
+
 #ifdef WITH_SELINUX
 #include <selinux/selinux.h>
 static security_context_t prev_context = NULL;
@@ -43,10 +47,6 @@ int selinux_enforce = 0;
 
 static acl_type prev_acl = NULL;
 
-#include "basenames.h"
-#include "log.h"
-#include "logrotate.h"
-
 #if !defined(GLOB_ABORTED) && defined(GLOB_ABEND)
 #define GLOB_ABORTED GLOB_ABEND
 #endif
@@ -60,6 +60,18 @@ static acl_type prev_acl = NULL;
 #ifdef __hpux
 extern int asprintf(char **str, const char *fmt, ...);
 #endif
+
+#if defined(HAVE_FORK)
+#define FORK_OR_VFORK fork
+#define DOEXIT exit
+#elif defined(HAVE_VFORK)
+#define FORK_OR_VFORK vfork
+#define DOEXIT _exit
+#else
+#define FORK_OR_VFORK fork
+#define DOEXIT exit
+#endif
+
 
 struct logState {
     char *fn;
@@ -105,6 +117,7 @@ static int globerr(const char *pathname, int theerr)
     return 1;
 }
 
+#if defined(HAVE_STRPTIME) && defined(HAVE_QSORT_R)
 static int compGlobResult(const void *result1, const void *result2, void *data)  {
 	struct tm time;
 	time_t t1, t2;
@@ -131,6 +144,11 @@ static void sortGlobResult(glob_t *result, int prefix_len, const char *dformat) 
 	d.dformat = dformat;
 	qsort_r(result->gl_pathv, result->gl_pathc, sizeof(char *), compGlobResult, &d);
 }
+#else
+static void sortGlobResult(glob_t *result, int prefix_len, const char *dformat) {
+	/* TODO */
+}
+#endif
 
 int switch_user(uid_t user, gid_t group) {
 	save_egid = getegid();
@@ -145,10 +163,6 @@ int switch_user(uid_t user, gid_t group) {
 		return 1;
 	}
 	return 0;
-}
-
-int switch_user_back() {
-	return switch_user(save_euid, save_egid);
 }
 
 int switch_user_permanently(const struct logInfo *log) {
@@ -172,6 +186,19 @@ int switch_user_permanently(const struct logInfo *log) {
 		return 1;
 	}
 	return 0;
+}
+
+int switch_user_back() {
+	return switch_user(save_euid, save_egid);
+}
+
+int switch_user_back_permanently() {
+	gid_t tmp_egid = save_egid;
+	uid_t tmp_euid = save_euid;
+	int ret = switch_user(save_euid, save_egid);
+	save_euid = tmp_euid;
+	save_egid = tmp_egid;
+	return ret;
 }
 
 static void unescape(char *arg)
@@ -307,26 +334,26 @@ static struct logState *findState(const char *fn)
 
 static int runScript(struct logInfo *log, char *logfn, char *script)
 {
-    int rc;
+	int rc;
 
-    if (debug) {
-	message(MESS_DEBUG, "running script with arg %s: \"%s\"\n",
-		logfn, script);
-	return 0;
-    }
+	if (debug) {
+		message(MESS_DEBUG, "running script with arg %s: \"%s\"\n",
+			logfn, script);
+		return 0;
+	}
 
-	if (!fork()) {
+	if (!FORK_OR_VFORK()) {
 		if (log->flags & LOG_FLAG_SU) {
-			if (switch_user_back() != 0) {
-				exit(1);
+			if (switch_user_back_permanently() != 0) {
+				DOEXIT(1);
 			}
 		}
 		execl("/bin/sh", "sh", "-c", script, "logrotate_script", logfn, NULL);
-		exit(1);
+		DOEXIT(1);
 	}
 
-    wait(&rc);
-    return rc;
+	wait(&rc);
+	return rc;
 }
 
 int createOutputFile(char *fileName, int flags, struct stat *sb, acl_type acl, int force_mode)
@@ -440,16 +467,16 @@ static int shred_file(int fd, char *filename, struct logInfo *log)
 	fullCommand[id++] = "-";
 	fullCommand[id++] = NULL;
 
-	if (!fork()) {
+	if (!FORK_OR_VFORK()) {
 		dup2(fd, 1);
 		close(fd);
 
 		if (switch_user_permanently(log) != 0) {
-			exit(1);
+			DOEXIT(1);
 		}
 
 		execvp(fullCommand[0], (void *) fullCommand);
-		exit(1);
+		DOEXIT(1);
 	}
 	
 	wait(&status);
@@ -539,18 +566,18 @@ static int compressLogFile(char *name, struct logInfo *log, struct stat *sb)
 	return 1;
     }
 
-    if (!fork()) {
+    if (!FORK_OR_VFORK()) {
 	dup2(inFile, 0);
 	close(inFile);
 	dup2(outFile, 1);
 	close(outFile);
 
 	if (switch_user_permanently(log) != 0) {
-		exit(1);
+		DOEXIT(1);
 	}
 
 	execvp(fullCommand[0], (void *) fullCommand);
-	exit(1);
+	DOEXIT(1);
     }
 
     wait(&status);
@@ -599,7 +626,7 @@ static int mailLog(struct logInfo *log, char *logFile, char *mailCommand,
 			close(mailInput);
 			return 1;
 		}
-		if (!(uncompressChild = fork())) {
+		if (!(uncompressChild = FORK_OR_VFORK())) {
 			/* uncompress child */
 			dup2(mailInput, 0);
 			close(mailInput);
@@ -608,11 +635,11 @@ static int mailLog(struct logInfo *log, char *logFile, char *mailCommand,
 			close(uncompressPipe[1]);
 
 			if (switch_user_permanently(log) != 0) {
-				exit(1);
+				DOEXIT(1);
 			}
 
 			execlp(uncompressCommand, uncompressCommand, NULL);
-			exit(1);
+			DOEXIT(1);
 		}
 
 		close(mailInput);
@@ -620,20 +647,20 @@ static int mailLog(struct logInfo *log, char *logFile, char *mailCommand,
 		close(uncompressPipe[1]);
     }
 
-    if (!(mailChild = fork())) {
+    if (!(mailChild = FORK_OR_VFORK())) {
 	dup2(mailInput, 0);
 	close(mailInput);
 	close(1);
 
 	// mail command runs as root
 	if (log->flags & LOG_FLAG_SU) {
-		if (switch_user_back() != 0) {
-			exit(1);
+		if (switch_user_back_permanently() != 0) {
+			DOEXIT(1);
 		}
 	}
 
 	execvp(mailArgv[0], mailArgv);
-	exit(1);
+	DOEXIT(1);
     }
 
     close(mailInput);
