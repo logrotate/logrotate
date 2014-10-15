@@ -2198,12 +2198,14 @@ static int readState(char *stateFilename)
 		return 1;
 	}
 
+	memset(&st->lastRotated, 0, sizeof(st->lastRotated));
 	st->lastRotated.tm_year = year;
 	st->lastRotated.tm_mon = month;
 	st->lastRotated.tm_mday = day;
 	st->lastRotated.tm_hour = hour;
 	st->lastRotated.tm_min = minute;
 	st->lastRotated.tm_sec = second;
+	st->lastRotated.tm_isdst = -1;
 
 	/* fill in the rest of the st->lastRotated fields */
 	lr_time = mktime(&st->lastRotated);
