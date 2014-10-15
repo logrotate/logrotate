@@ -522,6 +522,9 @@ static int compressLogFile(char *name, struct logInfo *log, struct stat *sb)
     int outFile;
     int i;
     int status;
+	int compressPipe[2];
+	char buff[4092];
+	int error_printed = 0;
 
     message(MESS_DEBUG, "compressing log with: %s\n", log->compress_prog);
     if (debug)
@@ -566,11 +569,22 @@ static int compressLogFile(char *name, struct logInfo *log, struct stat *sb)
 	return 1;
     }
 
+	if (pipe(compressPipe) < 0) {
+		message(MESS_ERROR, "error opening pipe for compress: %s",
+				strerror(errno));
+		close(inFile);
+		close(outFile);
+		return 1;
+	}
+
     if (!FORK_OR_VFORK()) {
 	dup2(inFile, 0);
 	close(inFile);
 	dup2(outFile, 1);
 	close(outFile);
+	dup2(compressPipe[1], 2);
+	close(compressPipe[0]);
+	close(compressPipe[1]);
 
 	if (switch_user_permanently(log) != 0) {
 		DOEXIT(1);
@@ -580,6 +594,17 @@ static int compressLogFile(char *name, struct logInfo *log, struct stat *sb)
 	DOEXIT(1);
     }
 
+    close(compressPipe[1]);
+	while ((i = read(compressPipe[0], buff, sizeof(buff) - 1)) > 0) {
+		if (!error_printed) {
+			error_printed = 1;
+			message(MESS_ERROR, "Compressing program wrote following message "
+					"to stderr when compressing log %s:\n", name);
+		}
+		buff[i] = '\0';
+		fprintf(stderr, "%s", buff);
+	}
+	close(compressPipe[0]);
     wait(&status);
 
     fsync(outFile);
