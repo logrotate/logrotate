@@ -13,6 +13,8 @@
 	- Return an error code when parent directory of log does not exist,
 	  "su" directive is not used, logrotate is running as root and missingok
 	  is not specified. [vcizek]
+	- Prepend error printed by compression program with the log name even when
+	  the compression program exits with zero exit code.
 
 3.8.6 -> 3.8.7
 	- Fixed --force/-f option handling together with "size" directive
