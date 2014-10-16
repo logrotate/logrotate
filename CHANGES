@@ -1,4 +1,4 @@
-3.8.7 ->
+3.8.7 -> 3.8.8
 	- Add support for building using autotools/automake. Using "./autogen.sh",
 	  "./configure" and "make" is now preferred way how to build logrotate.
 	  Old Makefile remains available, but it is deprecated and will be removed
@@ -9,7 +9,7 @@
 	  dateformat %d-%m-%Y.
 	- Do not expect that the name of root account is 'root'.
 	- Do not stop rotation with an error when olddir and log file
-	  are on different devices but copy or copytruncate is used.
+	  are on different devices and copy or copytruncate is used.
 	- Return an error code when parent directory of log does not exist,
 	  "su" directive is not used, logrotate is running as root and missingok
 	  is not specified. [vcizek]
