@@ -1,0 +1,13 @@
+create
+
+&DIR&/test.log {
+	daily
+	rotate 999
+	compress
+	dateext
+	ifempty
+	delaycompress
+
+	mailfirst
+	mail user@myhost.org
+}
