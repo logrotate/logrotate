@@ -217,6 +217,16 @@ file for the omitted attributes. This option can be disabled using the
 \fBnocreate\fR option.
 
 .TP
+\fBcreateolddir \fImode\fR \fIowner\fR \fIgroup\fR
+If the directory specified by \fBolddir\fR directive does not exist, it is
+created. \fImode\fR specifies the mode for the \fBolddir\fR directory
+in octal (the same as \fBchmod\fR(2)), \fIowner\fR specifies the user name
+who will own the \fBolddir\fR directory, and \fIgroup\fR specifies the group
+the \fBolddir\fR directory will belong to. This option can be disabled using the
+\fBnocreateolddir\fR option.
+
+
+.TP
 \fBdaily\fR
 Log files are rotated every day.
 
@@ -349,6 +359,10 @@ Do not truncate the original log file in place after creating a copy
 .TP
 \fBnocreate\fR
 New log files are not created (this overrides the \fBcreate\fR option).
+
+.TP
+\fBnocreateolddir\fR
+\fBolddir\fR directory is not created by logrotate when it does not exist.
 
 .TP
 \fBnodelaycompress\fR

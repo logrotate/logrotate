@@ -20,6 +20,7 @@
 #define LOG_FLAG_SHRED		(1 << 10)
 #define LOG_FLAG_SU			(1 << 11)
 #define LOG_FLAG_DATEYESTERDAY	(1 << 12)
+#define LOG_FLAG_OLDDIRCREATE	(1 << 13)
 
 #define NO_MODE ((mode_t) -1)
 #define NO_UID  ((uid_t) -1)
@@ -63,6 +64,9 @@ struct logInfo {
     gid_t createGid;
     uid_t suUid;			/* switch user to this uid and group to this gid */
     gid_t suGid;
+    mode_t olddirMode;
+    uid_t olddirUid;
+    uid_t olddirGid;
     /* these are at the end so they end up nil */
     const char **compress_options_list;
     int compress_options_count;
