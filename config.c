@@ -785,8 +785,8 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 
 	if (getuid() == ROOT_UID) {
 		if ((sb.st_mode & 07533) != 0400) {
-			message(MESS_DEBUG,
-				"Ignoring %s because of bad file mode (cannot be writable by group or others).\n",
+			message(MESS_ERROR,
+				"Ignoring %s because of bad file mode - must be 0644 or 0444.\n",
 				configFile);
 			close(fd);
 			return 0;
