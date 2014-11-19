@@ -469,6 +469,14 @@ address specified in a \fBmail\fR directive. If \fIcount\fR is 0, old versions
 are removed rather than rotated.
 
 .TP
+\fBrenamecopy\fR
+Log file is renamed to temporary filename in the same directory by adding
+".tmp" extension to it. After that, \fBpostrotate\fR script is run
+and log file is copied from temporary filename to final filename. This allows
+storing rotated log files on the different devices using \fBolddir\fR
+directive. In the end, temporary filename is removed.
+
+.TP
 \fBsize \fIsize\fR
 Log files are rotated only if they grow bigger then \fIsize\fR bytes. If
 \fIsize\fR is followed by \fIk\fR, the size is assumed to be in kilobytes.
