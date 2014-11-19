@@ -1423,6 +1423,7 @@ int rotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 #ifdef WITH_SELINUX
 	security_context_t savedContext = NULL;
 #endif
+	char *tmpFilename = NULL;
 
     if (!state->doRotate)
 	return 0;
@@ -1495,14 +1496,31 @@ int rotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 			}
 		}
 #endif /* WITH_ACL */
-		message(MESS_DEBUG, "renaming %s to %s\n", log->files[logNum],
-		    rotNames->finalName);
-	    if (!debug && !hasErrors &&
-		rename(log->files[logNum], rotNames->finalName)) {
-		message(MESS_ERROR, "failed to rename %s to %s: %s\n",
-			log->files[logNum], rotNames->finalName,
-			strerror(errno));
-			hasErrors = 1;
+		if (log->flags & LOG_FLAG_TMPFILENAME) {
+			if (asprintf(&tmpFilename, "%s%s", log->files[logNum], ".tmp") < 0) {
+				message(MESS_FATAL, "could not allocate tmpFilename memory\n");
+				return 1;
+			}
+
+			message(MESS_DEBUG, "renaming %s to %s\n", log->files[logNum],
+				tmpFilename);
+			if (rename(log->files[logNum], tmpFilename)) {
+			message(MESS_ERROR, "failed to rename %s to %s: %s\n",
+				log->files[logNum], tmpFilename,
+				strerror(errno));
+				hasErrors = 1;
+			}
+		}
+		else {
+			message(MESS_DEBUG, "renaming %s to %s\n", log->files[logNum],
+				rotNames->finalName);
+			if (!debug && !hasErrors &&
+			rename(log->files[logNum], rotNames->finalName)) {
+				message(MESS_ERROR, "failed to rename %s to %s: %s\n",
+					log->files[logNum], tmpFilename,
+					strerror(errno));
+					hasErrors = 1;
+			}
 	    }
 
 	    if (!log->rotateCount) {
@@ -1571,7 +1589,8 @@ int rotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 #endif
 
 	if (!hasErrors
-	    && log->flags & (LOG_FLAG_COPYTRUNCATE | LOG_FLAG_COPY)) {
+	    && log->flags & (LOG_FLAG_COPYTRUNCATE | LOG_FLAG_COPY)
+		&& !(log->flags & LOG_FLAG_TMPFILENAME)) {
 	    hasErrors =
 		copyTruncate(log->files[logNum], rotNames->finalName,
 			     &state->sb, log->flags);
@@ -1596,7 +1615,21 @@ int postrotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
     if (!state->doRotate)
 	return 0;
 
-    if ((log->flags & LOG_FLAG_COMPRESS) &&
+	if (!hasErrors && log->flags & LOG_FLAG_TMPFILENAME) {
+		char *tmpFilename = NULL;
+		if (asprintf(&tmpFilename, "%s%s", log->files[logNum], ".tmp") < 0) {
+			message(MESS_FATAL, "could not allocate tmpFilename memory\n");
+			return 1;
+		}
+	    hasErrors =
+		copyTruncate(tmpFilename, rotNames->finalName,
+			     &state->sb, LOG_FLAG_COPY);
+		if (!hasErrors) {
+			unlink(tmpFilename);
+		}
+	}
+
+    if (!hasErrors && (log->flags & LOG_FLAG_COMPRESS) &&
 	!(log->flags & LOG_FLAG_DELAYCOMPRESS)) {
 	hasErrors = compressLogFile(rotNames->finalName, log, &state->sb);
     }

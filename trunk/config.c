@@ -899,6 +899,10 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 					newlog->flags |= LOG_FLAG_COPYTRUNCATE;
 				} else if (!strcmp(key, "nocopytruncate")) {
 					newlog->flags &= ~LOG_FLAG_COPYTRUNCATE;
+				} else if (!strcmp(key, "renamecopy")) {
+					newlog->flags |= LOG_FLAG_TMPFILENAME;
+				} else if (!strcmp(key, "norenamecopy")) {
+					newlog->flags &= ~LOG_FLAG_TMPFILENAME;
 				} else if (!strcmp(key, "copy")) {
 					newlog->flags |= LOG_FLAG_COPY;
 				} else if (!strcmp(key, "nocopy")) {
@@ -1491,7 +1495,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 					}
 
 					if (sb.st_dev != sb2.st_dev
-						&& !(newlog->flags & (LOG_FLAG_COPYTRUNCATE | LOG_FLAG_COPY))) {
+						&& !(newlog->flags & (LOG_FLAG_COPYTRUNCATE | LOG_FLAG_COPY | LOG_FLAG_TMPFILENAME))) {
 						message(MESS_ERROR,
 							"%s:%d olddir %s and log file %s "
 							"are on different devices\n", configFile,
