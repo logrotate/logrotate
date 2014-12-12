@@ -1504,7 +1504,7 @@ int rotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 
 			message(MESS_DEBUG, "renaming %s to %s\n", log->files[logNum],
 				tmpFilename);
-			if (rename(log->files[logNum], tmpFilename)) {
+			if (!debug && !hasErrors && rename(log->files[logNum], tmpFilename)) {
 			message(MESS_ERROR, "failed to rename %s to %s: %s\n",
 				log->files[logNum], tmpFilename,
 				strerror(errno));
@@ -1624,7 +1624,8 @@ int postrotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 	    hasErrors =
 		copyTruncate(tmpFilename, rotNames->finalName,
 			     &state->sb, LOG_FLAG_COPY);
-		if (!hasErrors) {
+		message(MESS_DEBUG, "removing tmp log %s \n", tmpFilename);
+		if (!debug && !hasErrors) {
 			unlink(tmpFilename);
 		}
 	}
