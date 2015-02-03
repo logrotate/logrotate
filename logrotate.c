@@ -72,6 +72,8 @@ extern int asprintf(char **str, const char *fmt, ...);
 #define DOEXIT exit
 #endif
 
+#define ERROR_STOP_ROTATION 1
+#define ERROR_CONTINUE_ROTATION 2
 
 struct logState {
     char *fn;
@@ -744,7 +746,7 @@ static int copyTruncate(char *currLog, char *saveLog, struct stat *sb,
 	if ((fdcurr = open(currLog, ((flags & LOG_FLAG_COPY) ? O_RDONLY : O_RDWR) | O_NOFOLLOW)) < 0) {
 	    message(MESS_ERROR, "error opening %s: %s\n", currLog,
 		    strerror(errno));
-	    return 1;
+	    return ERROR_CONTINUE_ROTATION;
 	}
 #ifdef WITH_SELINUX
 	if (selinux_enabled) {
@@ -1492,7 +1494,7 @@ int rotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 			if (!ACL_NOT_WELL_SUPPORTED(errno)) {
 				message(MESS_ERROR, "getting file ACL %s: %s\n",
 					log->files[logNum], strerror(errno));
-				hasErrors = 1;
+				hasErrors |= 1;
 			}
 		}
 #endif /* WITH_ACL */
@@ -1508,7 +1510,12 @@ int rotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 			message(MESS_ERROR, "failed to rename %s to %s: %s\n",
 				log->files[logNum], tmpFilename,
 				strerror(errno));
-				hasErrors = 1;
+				if (errno == ENOENT) {
+					hasErrors |= ERROR_CONTINUE_ROTATION;
+				}
+				else {
+					hasErrors |= 1;
+				}
 			}
 		}
 		else {
@@ -1519,7 +1526,7 @@ int rotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 				message(MESS_ERROR, "failed to rename %s to %s: %s\n",
 					log->files[logNum], tmpFilename,
 					strerror(errno));
-					hasErrors = 1;
+					hasErrors |= 1;
 			}
 	    }
 
@@ -1573,7 +1580,7 @@ int rotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 			}
 #endif
 			if (fd < 0)
-				hasErrors = 1;
+				hasErrors |= 1;
 			else {
 				close(fd);
 			}
@@ -1591,7 +1598,7 @@ int rotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 	if (!hasErrors
 	    && log->flags & (LOG_FLAG_COPYTRUNCATE | LOG_FLAG_COPY)
 		&& !(log->flags & LOG_FLAG_TMPFILENAME)) {
-	    hasErrors =
+	    hasErrors |=
 		copyTruncate(log->files[logNum], rotNames->finalName,
 			     &state->sb, log->flags);
 	}
@@ -1666,6 +1673,7 @@ int rotateLogSet(struct logInfo *log, int force)
     int i, j;
     int hasErrors = 0;
     int logHasErrors[log->numFiles];
+	int logHasScriptErrors[log->numFiles];
     int numRotated = 0;
     struct logState **state;
     struct logNames **rotNames;
@@ -1737,6 +1745,7 @@ int rotateLogSet(struct logInfo *log, int force)
     for (i = 0; i < log->numFiles; i++) {
 	logHasErrors[i] = findNeedRotating(log, i, force);
 	hasErrors |= logHasErrors[i];
+	logHasScriptErrors[i] = 0;
 
 	/* sure is a lot of findStating going on .. */
 	if ((findState(log->files[i]))->doRotate)
@@ -1805,7 +1814,8 @@ int rotateLogSet(struct logInfo *log, int force)
 				"error running non-shared prerotate script "
 				"for %s of '%s'\n", log->files[j], log->pattern);
 		    }
-		    logHasErrors[j] = 1;
+		    logHasScriptErrors[j] = 1;
+			logHasErrors[j] = 1;
 		    hasErrors = 1;
 		}
 	    }
@@ -1814,8 +1824,7 @@ int rotateLogSet(struct logInfo *log, int force)
 	for (i = j;
 	     ((log->flags & LOG_FLAG_SHAREDSCRIPTS) && i < log->numFiles)
 	     || (!(log->flags & LOG_FLAG_SHAREDSCRIPTS) && i == j); i++) {
-	    if (! ( (logHasErrors[i] && !(log->flags & LOG_FLAG_SHAREDSCRIPTS))
-		   || (hasErrors && (log->flags & LOG_FLAG_SHAREDSCRIPTS)) ) ) {
+	    if (!logHasScriptErrors[i] && !(logHasErrors[i] & ERROR_STOP_ROTATION)) {
 		logHasErrors[i] |=
 		    rotateSingleLog(log, i, state[i], rotNames[i]);
 		hasErrors |= logHasErrors[i];
@@ -1824,7 +1833,7 @@ int rotateLogSet(struct logInfo *log, int force)
 
 	if (log->post
 		&& (!(
-			((logHasErrors[j] || !state[j]->doRotate) && !(log->flags & LOG_FLAG_SHAREDSCRIPTS))
+			(((logHasErrors[j] & ERROR_STOP_ROTATION) || !state[j]->doRotate) && !(log->flags & LOG_FLAG_SHAREDSCRIPTS))
 			|| (hasErrors && (log->flags & LOG_FLAG_SHAREDSCRIPTS))
 		))
 	) {
@@ -1843,7 +1852,8 @@ int rotateLogSet(struct logInfo *log, int force)
 				"error running non-shared postrotate script "
 				"for %s of '%s'\n", log->files[j], log->pattern);
 		    }
-		    logHasErrors[j] = 1;
+		    logHasScriptErrors[j] = 1;
+			logHasErrors[j] = 1;
 		    hasErrors = 1;
 		}
 	    }
@@ -1852,8 +1862,7 @@ int rotateLogSet(struct logInfo *log, int force)
 	for (i = j;
 	     ((log->flags & LOG_FLAG_SHAREDSCRIPTS) && i < log->numFiles)
 	     || (!(log->flags & LOG_FLAG_SHAREDSCRIPTS) && i == j); i++) {
-	    if (! ( (logHasErrors[i] && !(log->flags & LOG_FLAG_SHAREDSCRIPTS))
-		   || (hasErrors && (log->flags & LOG_FLAG_SHAREDSCRIPTS)) ) ) {
+		if (!logHasScriptErrors[i] && !(logHasErrors[i] & ERROR_STOP_ROTATION)) {
 		logHasErrors[i] |=
 		    postrotateSingleLog(log, i, state[i], rotNames[i]);
 		hasErrors |= logHasErrors[i];
