@@ -142,6 +142,10 @@ static int compGlobResult(const void *result1, const void *result2, void *data) 
 
 static void sortGlobResult(glob_t *result, int prefix_len, const char *dformat) {
 	struct compData d;
+	if (!dformat || *dformat == '\0') {
+		return;
+	}
+
 	d.prefix_len = prefix_len;
 	d.dformat = dformat;
 	qsort_r(result->gl_pathv, result->gl_pathc, sizeof(char *), compGlobResult, &d);
@@ -1010,7 +1014,7 @@ int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 #define DATEEXT_LEN 64
 #define PATTERN_LEN (DATEEXT_LEN * 2)
 	char dext_str[DATEEXT_LEN];
-	char dformat[DATEEXT_LEN];
+	char dformat[DATEEXT_LEN] = "";
 	char dext_pattern[PATTERN_LEN];
 	char *dext;
 
