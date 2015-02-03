@@ -119,20 +119,24 @@ static int globerr(const char *pathname, int theerr)
     return 1;
 }
 
-#if defined(HAVE_STRPTIME) && defined(HAVE_QSORT_R)
-static int compGlobResult(const void *result1, const void *result2, void *data)  {
+#if defined(HAVE_STRPTIME) && defined(HAVE_QSORT)
+
+/* We could switch to qsort_r to get rid of this global variable,
+ * but qsort_r is not portable enough (Linux vs. *BSD vs ...)... */
+static struct compData _compData;
+
+static int compGlobResult(const void *result1, const void *result2)  {
 	struct tm time;
 	time_t t1, t2;
-	struct compData *d = (struct compData *) data;
 	const char *r1 = *(const char **)(result1);
 	const char *r2 = *(const char **)(result2);
 
 	memset(&time, 0, sizeof(struct tm));
-	strptime(r1 + d->prefix_len, d->dformat, &time);
+	strptime(r1 + _compData.prefix_len, _compData.dformat, &time);
 	t1 = mktime(&time);
 
 	memset(&time, 0, sizeof(struct tm));
-	strptime(r2 + d->prefix_len, d->dformat, &time);
+	strptime(r2 + _compData.prefix_len, _compData.dformat, &time);
 	t2 = mktime(&time);
 
 	if (t1 < t2) return -1;
@@ -141,14 +145,13 @@ static int compGlobResult(const void *result1, const void *result2, void *data) 
 }
 
 static void sortGlobResult(glob_t *result, int prefix_len, const char *dformat) {
-	struct compData d;
 	if (!dformat || *dformat == '\0') {
 		return;
 	}
 
-	d.prefix_len = prefix_len;
-	d.dformat = dformat;
-	qsort_r(result->gl_pathv, result->gl_pathc, sizeof(char *), compGlobResult, &d);
+	_compData.prefix_len = prefix_len;
+	_compData.dformat = dformat;
+	qsort(result->gl_pathv, result->gl_pathc, sizeof(char *), compGlobResult);
 }
 #else
 static void sortGlobResult(glob_t *result, int prefix_len, const char *dformat) {
