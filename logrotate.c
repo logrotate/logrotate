@@ -1095,12 +1095,12 @@ int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 				switch (*(dext + 1)) {
 					case 'Y':
 						strncat(dext_pattern, "[0-9][0-9]",
-								sizeof(dext_pattern) - strlen(dext_pattern));
+								sizeof(dext_pattern) - strlen(dext_pattern) - 1);
 						j += 10; /* strlen("[0-9][0-9]") */
 					case 'm':
 					case 'd':
 						strncat(dext_pattern, "[0-9][0-9]",
-								sizeof(dext_pattern) - strlen(dext_pattern));
+								sizeof(dext_pattern) - strlen(dext_pattern) - 1);
 						j += 10;
 						if (j >= (sizeof(dext_pattern) - 1)) {
 							message(MESS_ERROR, "Date format %s is too long\n",
@@ -1115,7 +1115,7 @@ int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 						/* End of year 2293 this pattern does not work. */
 						strncat(dext_pattern,
 								"[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]",
-								sizeof(dext_pattern) - strlen(dext_pattern));
+								sizeof(dext_pattern) - strlen(dext_pattern) - 1);
 						j += 50;
 						if (j >= (sizeof(dext_pattern) - 1)) {
 							message(MESS_ERROR, "Date format %s is too long\n",
