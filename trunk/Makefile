@@ -1,7 +1,7 @@
 VERSION = $(shell awk '/Version:/ { print $$2 }' logrotate.spec)
 OS_NAME = $(shell uname -s)
 LFS = $(shell echo `getconf LFS_CFLAGS 2>/dev/null`)
-CFLAGS = -Wall -D_GNU_SOURCE -D$(OS_NAME) -DVERSION=\"$(VERSION)\" -DHAVE_STRPTIME=1 -DHAVE_QSORT_R $(RPM_OPT_FLAGS) $(LFS)
+CFLAGS = -Wall -D_GNU_SOURCE -D$(OS_NAME) -DVERSION=\"$(VERSION)\" -DHAVE_STRPTIME=1 -DHAVE_QSORT $(RPM_OPT_FLAGS) $(LFS)
 PROG = logrotate
 MAN = logrotate.8
 MAN5 = logrotate.conf.5
