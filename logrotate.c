@@ -1,4 +1,4 @@
-#include <sys/queue.h>
+#include "queue.h"
 /* alloca() is defined in stdlib.h in NetBSD */
 #ifndef __NetBSD__
 #include <alloca.h>

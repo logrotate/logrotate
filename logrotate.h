@@ -2,7 +2,7 @@
 #define H_LOGROTATE
 
 #include <sys/types.h>
-#include <sys/queue.h>
+#include "queue.h"
 #include <glob.h>
 
 #include "config.h"
