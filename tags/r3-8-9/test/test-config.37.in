@@ -1,0 +1,23 @@
+&DIR&/test.log {
+	size 300x
+	daily
+    firstaction
+		touch scriptout
+		# put some } here, so we check if parser won't break on it.
+}
+		echo $(cat scriptout) foo > foo }
+		mv foo scriptout
+	endscript
+	rotate 1
+}
+
+&DIR&/test.log {
+	create
+	daily
+    firstaction
+		touch scriptout
+		echo $(cat scriptout) second > foo
+		mv foo scriptout
+	endscript
+	rotate 1
+}

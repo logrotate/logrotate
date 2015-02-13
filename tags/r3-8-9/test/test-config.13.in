@@ -1,0 +1,8 @@
+create
+
+&DIR&/test.log {
+    monthly
+    rotate 1
+    olddir &DIR&/testdir
+    createolddir 700 &USER& &GROUP&
+}
