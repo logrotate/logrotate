@@ -1250,9 +1250,10 @@ int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 	}
     }
 
+    /* adding 2 due to / and \0 being added by snprintf */
     rotNames->firstRotated =
 	malloc(strlen(rotNames->dirName) + strlen(rotNames->baseName) +
-	       strlen(fileext) + strlen(compext) + 30);
+	       strlen(fileext) + strlen(compext) + DATEEXT_LEN + 2 );
 
     if (log->flags & LOG_FLAG_DATEEXT) {
 	/* glob for compressed files with our pattern
