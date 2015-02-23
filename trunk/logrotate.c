@@ -1099,6 +1099,7 @@ int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 						j += 10; /* strlen("[0-9][0-9]") */
 					case 'm':
 					case 'd':
+					case 'H':
 						strncat(dext_pattern, "[0-9][0-9]",
 								sizeof(dext_pattern) - strlen(dext_pattern) - 1);
 						j += 10;
