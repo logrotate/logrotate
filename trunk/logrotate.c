@@ -926,6 +926,9 @@ int findNeedRotating(struct logInfo *log, int logNum, int force)
 	/* user forced rotation of logs from command line */
 	state->doRotate = 1;   
     }
+    else if (log->maxsize && sb.st_size > log->maxsize) {
+        state->doRotate = 1;
+    }
     else if (log->criterium == ROT_SIZE) {
 	state->doRotate = (sb.st_size >= log->threshhold);
 	if (!state->doRotate) {
@@ -1024,13 +1027,17 @@ int findNeedRotating(struct logInfo *log, int logNum, int force)
 		    "size is smaller than the minsize value");
 	}
     }
-
-    if (log->maxsize && sb.st_size > log->maxsize)
-        state->doRotate = 1;
+    else if (!state->doRotate) {
+	message(MESS_DEBUG, "  log does not need rotating "
+		"(log has been already rotated)");
+    }
 
     /* The notifempty flag overrides the normal criteria */
-    if (!(log->flags & LOG_FLAG_IFEMPTY) && !sb.st_size)
+    if (state->doRotate && !(log->flags & LOG_FLAG_IFEMPTY) && !sb.st_size) {
 	state->doRotate = 0;
+	message(MESS_DEBUG, "  log does not need rotating "
+		"(log is empty)");
+    }
 
     if (state->doRotate) {
 	message(MESS_DEBUG, "  log needs rotating\n");
