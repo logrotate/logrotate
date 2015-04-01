@@ -1411,10 +1411,9 @@ int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 	}
 
     /* if the last rotation doesn't exist, that's okay */
-    if (!debug && rotNames->disposeName
-	&& access(rotNames->disposeName, F_OK)) {
+    if (rotNames->disposeName && access(rotNames->disposeName, F_OK)) {
 	message(MESS_DEBUG,
-		"log %s doesn't exist -- won't try to " "dispose of it\n",
+		"log %s doesn't exist -- won't try to dispose of it\n",
 		rotNames->disposeName);
 	free(rotNames->disposeName);
 	rotNames->disposeName = NULL;
