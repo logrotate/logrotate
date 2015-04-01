@@ -1124,7 +1124,7 @@ cleanup 45
 
 # ------------------------------- Test 45 ------------------------------------
 # Test that prerotate and postrotate scripts are not called when sharedscripts
-# is defined and one rotation fails. File test.log should still be rotated.
+# is defined and one rotation fails
 preptest test.log 45 1
 
 touch scriptout
@@ -1139,8 +1139,7 @@ fi
 rm -f error.log
 
 checkoutput <<EOF
-test.log 0
-test.log.1 0 zero
+test.log 0 zero
 scriptout 0 
 EOF
 
@@ -1490,26 +1489,6 @@ EOF
 
 rm -f test.log.1
 rm -f test.log.2
-
-cleanup 60
-
-# ------------------------------- Test 60 ------------------------------------
-# Rotation should continue even when first log is removed during rotation
-preptest test.log 60 1
-echo test2 > test2.log
-
-$RLR test-config.60 2>error.log
-
-grep "error opening" error.log >/dev/null
-if [ $? != 0 ]; then
-	echo "No error printed, but there should be one."
-	exit 3
-fi
-
-checkoutput <<EOF
-test2.log 0
-test2.log.1 0 test2
-EOF
 
 cleanup 61
 
