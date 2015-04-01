@@ -928,6 +928,10 @@ int findNeedRotating(struct logInfo *log, int logNum, int force)
     }
     else if (log->criterium == ROT_SIZE) {
 	state->doRotate = (sb.st_size >= log->threshhold);
+	if (!state->doRotate) {
+	message(MESS_DEBUG, "  log does not need rotating "
+		"(log size is below the 'size' threshold)\n");
+	}
     } else if (mktime(&state->lastRotated) - mktime(&now) > (25 * 3600)) {
         /* 25 hours allows for DST changes as well as geographical moves */
 	message(MESS_ERROR,
@@ -950,36 +954,75 @@ int findNeedRotating(struct logInfo *log, int logNum, int force)
 			       ((mktime(&now) -
 				 mktime(&state->lastRotated)) >
 				(7 * 24 * 3600)));
+	    if (!state->doRotate) {
+	    message(MESS_DEBUG, "  log does not need rotating "
+		    "(log has been rotated at %d-%d-%d %d:%d, "
+		    "that is not week ago yet)\n", state->lastRotated.tm_year,
+		    state->lastRotated.tm_mon, state->lastRotated.tm_mday,
+		    state->lastRotated.tm_hour, state->lastRotated.tm_min);
+	    }
 	    break;
 	case ROT_HOURLY:
 	    state->doRotate = ((now.tm_hour != state->lastRotated.tm_hour) ||
 			    (now.tm_mday != state->lastRotated.tm_mday) ||
 			    (now.tm_mon != state->lastRotated.tm_mon) ||
 			    (now.tm_year != state->lastRotated.tm_year));
+	    if (!state->doRotate) {
+	    message(MESS_DEBUG, "  log does not need rotating "
+		    "(log has been rotated at %d-%d-%d %d:%d, "
+		    "that is not hour ago yet)\n", state->lastRotated.tm_year,
+		    state->lastRotated.tm_mon, state->lastRotated.tm_mday,
+		    state->lastRotated.tm_hour, state->lastRotated.tm_min);
+	    }
 	    break;
 	case ROT_DAYS:
 	    /* FIXME: only days=1 is implemented!! */
 	    state->doRotate = ((now.tm_mday != state->lastRotated.tm_mday) ||
 			    (now.tm_mon != state->lastRotated.tm_mon) ||
 			    (now.tm_year != state->lastRotated.tm_year));
+	    if (!state->doRotate) {
+	    message(MESS_DEBUG, "  log does not need rotating "
+		    "(log has been rotated at %d-%d-%d %d:%d, "
+		    "that is not day ago yet)\n", state->lastRotated.tm_year,
+		    state->lastRotated.tm_mon, state->lastRotated.tm_mday,
+		    state->lastRotated.tm_hour, state->lastRotated.tm_min);
+	    }
 	    break;
 	case ROT_MONTHLY:
 	    /* rotate if the logs haven't been rotated this month or
 	       this year */
 	    state->doRotate = ((now.tm_mon != state->lastRotated.tm_mon) ||
 			    (now.tm_year != state->lastRotated.tm_year));
+	    if (!state->doRotate) {
+	    message(MESS_DEBUG, "  log does not need rotating "
+		    "(log has been rotated at %d-%d-%d %d:%d, "
+		    "that is not month ago yet)\n", state->lastRotated.tm_year,
+		    state->lastRotated.tm_mon, state->lastRotated.tm_mday,
+		    state->lastRotated.tm_hour, state->lastRotated.tm_min);
+	    }
 	    break;
 	case ROT_YEARLY:
 	    /* rotate if the logs haven't been rotated this year */
 	    state->doRotate = (now.tm_year != state->lastRotated.tm_year);
+	    if (!state->doRotate) {
+	    message(MESS_DEBUG, "  log does not need rotating "
+		    "(log has been rotated at %d-%d-%d %d:%d, "
+		    "that is not year ago yet)\n", state->lastRotated.tm_year,
+		    state->lastRotated.tm_mon, state->lastRotated.tm_mday,
+		    state->lastRotated.tm_hour, state->lastRotated.tm_min);
+	    }
 	    break;
 	default:
 	    /* ack! */
 	    state->doRotate = 0;
 	    break;
 	}
-	if (log->minsize && sb.st_size < log->minsize)
+	if (log->minsize && sb.st_size < log->minsize) {
 	    state->doRotate = 0;
+	    message(MESS_DEBUG, "  log does not need rotating "
+		    "('misinze' directive is used and the log "
+		    "size is smaller than the minsize value");
+	}
     }
 
     if (log->maxsize && sb.st_size > log->maxsize)
@@ -991,8 +1034,6 @@ int findNeedRotating(struct logInfo *log, int logNum, int force)
 
     if (state->doRotate) {
 	message(MESS_DEBUG, "  log needs rotating\n");
-    } else {
-	message(MESS_DEBUG, "  log does not need rotating\n");
     }
 
     return 0;
