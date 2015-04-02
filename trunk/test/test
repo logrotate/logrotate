@@ -539,7 +539,7 @@ cleanup 17
 # ------------------------------- Test 17 ------------------------------------
 preptest test.log 17 1 0
 # log with 1 byte should not be rotated
-$RLR test-config.17 2>error.log
+$RLR test-config.17 -l logrotate.log 2>error.log
 
 grep "unexpected } (missing previous '{')" error.log >/dev/null
 if [ $? != 0 ]; then
@@ -548,6 +548,14 @@ if [ $? != 0 ]; then
 fi
 
 rm error.log
+
+grep "reading config file test-config.17" logrotate.log >/dev/null
+if [ $? != 0 ]; then
+	echo "There is no log output in logrotate.log"
+	exit 3
+fi
+
+rm -f logrotate.log
 
 checkoutput <<EOF
 test.log 0 zero
@@ -809,24 +817,28 @@ $RLR test-config.32 --force
 getfacl test.log|grep "user:nobody:rwx" >/dev/null
 if [ $? != 0 ]; then
 	echo "test.log must have user:nobody:rwx ACL"
+	getfacl test.log
 	exit 3
 fi
 
 getfacl test.log|grep "group::---" >/dev/null
 if [ $? != 0 ]; then
 	echo "test.log must have group::--- ACL"
+	getfacl test.log
 	exit 3
 fi
 
 getfacl test.log.1|grep "user:nobody:rwx" >/dev/null
 if [ $? != 0 ]; then
 	echo "test.log.1 must have user:nobody:rwx ACL"
+	getfacl test.log.1
 	exit 3
 fi
 
 getfacl test.log.1|grep "group::---" >/dev/null
 if [ $? != 0 ]; then
 	echo "test.log.1 must have group::--- ACL"
+	getfacl test.log.1
 	exit 3
 fi
 
@@ -1489,6 +1501,29 @@ EOF
 
 rm -f test.log.1
 rm -f test.log.2
+
+cleanup 60
+
+# ------------------------------- Test 60 ------------------------------------
+# Test we log debug output using -l option when passed.
+preptest test.log 61 1 0
+
+$RLR test-config.61 --force -l ./logrotate.log
+
+DATESTRING=$(/bin/date +%Y-%m-%d-%H)
+
+grep "reading config file test-config.61" logrotate.log >/dev/null
+if [ $? != 0 ]; then
+	echo "There is no log output in logrotate.log"
+	exit 3
+fi
+
+rm -f logrotate.log
+
+checkoutput <<EOF
+test.log 0
+test.log.$DATESTRING 0 zero
+EOF
 
 cleanup 61
 
