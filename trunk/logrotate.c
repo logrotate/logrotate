@@ -20,6 +20,7 @@
 #include <locale.h>
 #include <sys/types.h>
 #include <utime.h>
+#include <stdint.h>
 
 #if defined(SunOS)
 #include <limits.h>
@@ -738,12 +739,140 @@ static int mailLogWrapper(char *mailFilename, char *mailCommand,
     return 0;
 }
 
+/* Use a heuristic to determine whether stat buffer SB comes from a file
+   with sparse blocks.  If the file has fewer blocks than would normally
+   be needed for a file of its size, then at least one of the blocks in
+   the file is a hole.  In that case, return true.  */
+static int is_probably_sparse(struct stat const *sb)
+{
+#if defined(HAVE_STRUCT_STAT_ST_BLOCKS) && defined(HAVE_STRUCT_STAT_ST_BLKSIZE)
+	return (S_ISREG (sb->st_mode)
+          && sb->st_blocks < sb->st_size / sb->st_blksize);
+#else
+	return 0;
+#endif
+}
+
+#define MIN(a,b) ((a) < (b) ? (a) : (b))
+
+/* Return whether the buffer consists entirely of NULs.
+   Note the word after the buffer must be non NUL. */
+
+static inline int is_nul (void const *buf, size_t bufsize)
+{
+  void const *vp;
+  char const *cbuf = buf;
+  unsigned int const *wp = buf;
+
+  /* Find first nonzero *word*, or the word with the sentinel.  */
+  while (*wp++ == 0)
+    continue;
+
+  /* Find the first nonzero *byte*, or the sentinel.  */
+  vp = wp - 1;
+  char const *cp = vp;
+  while (*cp++ == 0)
+    continue;
+
+  return cbuf + bufsize < cp;
+}
+
+static size_t full_write(int fd, const void *buf, size_t count)
+{
+  size_t total = 0;
+  const char *ptr = (const char *) buf;
+
+  while (count > 0)
+    {
+      size_t n_rw;
+	for (;;)
+	{
+		n_rw = write (fd, buf, count);
+		if (errno == EINTR)
+			continue;
+		else
+			break;
+	}
+	if (n_rw == (size_t) -1)
+		break;
+	if (n_rw == 0)
+		break;
+	total += n_rw;
+	ptr += n_rw;
+	count -= n_rw;
+    }
+
+  return total;
+}
+
+static int sparse_copy(int src_fd, int dest_fd, struct stat *sb,
+		       const char *saveLog, const char *currLog)
+{
+	int make_holes = is_probably_sparse(sb);
+	size_t max_n_read = SIZE_MAX;
+	int last_write_made_hole = 0;
+	off_t total_n_read = 0;
+	char buf[BUFSIZ];
+
+	while (max_n_read) {
+		int make_hole = 0;
+
+		ssize_t n_read = read (src_fd, buf, MIN (max_n_read, BUFSIZ));
+		if (n_read < 0) {
+			if (errno == EINTR) {
+				continue;
+			}
+			message(MESS_ERROR, "error reading %s: %s\n",
+				currLog, strerror(errno));
+			return 0;
+		}
+
+		if (n_read == 0)
+			break;
+
+		max_n_read -= n_read;
+		total_n_read += n_read;
+
+		if (make_holes) {
+			/* Sentinel required by is_nul().  */
+			buf[n_read] = '\1';
+
+			if ((make_hole = is_nul(buf, n_read))) {
+				if (lseek (dest_fd, n_read, SEEK_CUR) < 0) {
+					message(MESS_ERROR, "error seeking %s: %s\n",
+						saveLog, strerror(errno));
+					return 0;
+				}
+			}
+		}
+
+		if (!make_hole) {
+			size_t n = n_read;
+			if (full_write (dest_fd, buf, n) != n) {
+				message(MESS_ERROR, "error writing to %s: %s\n",
+					saveLog, strerror(errno));
+				return 0;
+			}
+		}
+
+		last_write_made_hole = make_hole;
+	}
+
+	if (last_write_made_hole) {
+		if (ftruncate(dest_fd, total_n_read) < 0) {
+			message(MESS_ERROR, "error ftruncate %s: %s\n",
+			saveLog, strerror(errno));
+			return 0;
+		}
+	}
+
+	return 1;
+}
+
 static int copyTruncate(char *currLog, char *saveLog, struct stat *sb,
 			int flags)
 {
-    char buf[BUFSIZ];
     int fdcurr = -1, fdsave = -1;
-    ssize_t cnt;
 
     message(MESS_DEBUG, "copying %s to %s\n", currLog, saveLog);
 
@@ -820,21 +949,10 @@ static int copyTruncate(char *currLog, char *saveLog, struct stat *sb,
 	    return 1;
 	}
 
-	while ((cnt = read(fdcurr, buf, sizeof(buf))) > 0) {
-	    if (write(fdsave, buf, cnt) != cnt) {
-		message(MESS_ERROR, "error writing to %s: %s\n",
-			saveLog, strerror(errno));
+	if (sparse_copy(fdcurr, fdsave, sb, saveLog, currLog) != 1) {
 		close(fdcurr);
 		close(fdsave);
 		return 1;
-	    }
-	}
-	if (cnt != 0) {
-	    message(MESS_ERROR, "error reading %s: %s\n",
-		    currLog, strerror(errno));
-	    close(fdcurr);
-	    close(fdsave);
-	    return 1;
 	}
     }
 
