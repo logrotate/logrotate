@@ -18,9 +18,6 @@ void message(int level, char *format, ...)
 #else
 ;
 #endif
-#if 0
-void log(int fd, char *format, ...);
-#endif
 void logSetErrorFile(FILE * f);
 void logSetMessageFile(FILE * f);
 void logSetFlags(int flags);
