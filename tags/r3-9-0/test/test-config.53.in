@@ -1,0 +1,7 @@
+create
+
+&DIR&/test.log {
+	rotate 14
+	size 4096
+	missingok
+}
