@@ -1,3 +1,5 @@
+3.9.0 -> 3.9.1
+	- Fix off-by-one error which can lead to crash when copytruncate is used.
 3.8.9 -> 3.9.0
 	- Fix crash when using long dateformat. [nmerdan]
 	- Add support for %H dateformat. [czchen]
