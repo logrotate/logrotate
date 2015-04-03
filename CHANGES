@@ -1,3 +1,15 @@
+3.8.9 -> 3.9.0
+	- Fix crash when using long dateformat. [nmerdan]
+	- Add support for %H dateformat. [czchen]
+	- Fix regression introduced in 3.8.9 when when rotating multiple
+	  logs when one of them is missing.
+	- In the debug mode, do not skip the code-path which handles the case when
+	  the last rotation does not exist. [Sergey Vidishev]
+	- Show more precise description when "log does not need rotating".\
+	- Add new -l option to log verbose output to file. The file is overwritten
+	  on every logrotate execution.
+	- Allow rotation of sparse files with copytruncate.
+
 3.8.8 -> 3.8.9
 	- Add new directive "createolddir" and "nocreateolddir". These directives
 	  can be used to create the directory specified by olddir with particular
