@@ -1,0 +1,13 @@
+create
+
+/var/log/does_not_exist.log &DIR&/test.log {
+	rotate 14
+	size 2
+	missingok
+	sharedscripts
+	postrotate
+		touch scriptout
+		echo $(cat scriptout) foo > foo
+		mv foo scriptout
+	endscript
+}

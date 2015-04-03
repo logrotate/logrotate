@@ -1,0 +1,1615 @@
+#!/bin/bash
+
+ACL_TESTS=1
+SELINUX_TESTS=0
+LOGROTATE=../logrotate
+M="-m ./mailer"
+S="-s state"
+RLR="$LOGROTATE $M $S"
+
+# -- ACL - BEGIN --------------------------------
+# We test if the ACLs tests should be done or not
+echo 1 > test.x
+setfacl -m u:nobody:rwx test.x 2>/dev/null
+if [ $? != 0 ]; then
+	ACL_TESTS=0
+	echo "setfacl failed on this system. ACL tests will not be executed."
+fi
+rm -f test.x
+if [ $ACL_TESTS == 1 ]; then
+  # It seems we can run the ACL tests, but was logrotate compiled WITH_ACL=yes ?
+  # See the Makefile, "pretest" part, for more information
+  if [ -f ./test.ACL ]; then
+    ACL_TESTS=`cat ./test.ACL`
+    if [ $ACL_TESTS == 0 ]; then
+      echo "logrotate was NOT compiled with 'WITH_ACL=yes'. ACL tests will not be executed."
+    fi
+  fi
+fi
+# -- ACL - END ----------------------------------
+
+# -- SELINUX - BEGIN --------------------------------
+# We test if the ACLs tests should be done or not
+if type "selinuxenabled" > /dev/null && selinuxenabled; then
+	SELINUX_TESTS=1
+else
+	echo "SELinux disabled. SELinux tests will not be executed."
+fi
+
+if [ $SELINUX_TESTS == 1 ]; then
+  # It seems we can run the ACL tests, but was logrotate compiled WITH_ACL=yes ?
+  # See the Makefile, "pretest" part, for more information
+  if [ -f ./test.SELINUX ]; then
+    SELINUX_TESTS=`cat ./test.SELINUX`
+    if [ $SELINUX_TESTS == 0 ]; then
+      echo "logrotate was NOT compiled with 'WITH_SELINUX=yes'. SELINUX tests will not be executed."
+    fi
+  fi
+fi
+
+if [ $SELINUX_TESTS == 1 ]; then
+  # if logrotate_tmp_t, we can't continue with SELinux tests...
+  touch .selinuxtest
+  chcon --type=logrotate_tmp_t .selinuxtest 2>/dev/null
+  if [ $? != 0 ]; then
+    SELINUX_TESTS=0
+    echo "SELinux context 'logrotate_tmp_t' does not exist. SELinux tests will not be executed."
+  fi
+  rm -f .selinuxtest
+fi
+# -- SELINUX - END ----------------------------------
+
+
+cleanup() {
+    rm -f test*.log* anothertest*.log* state test-config. scriptout mail-out compress-args different*.log*
+    rm -f $(ls | egrep '^test-config.[0-9]+$')
+
+    [ -n "$1" ] && echo "Running test $1"
+    return 0
+}
+
+genconfig() {
+    input=test-config.$1.in
+    output=test-config.$1
+    user=$(id -u -n)
+    group=$(id -g -n)
+    sed "s,&DIR&,$PWD,g" < $input | sed "s,&USER&,$user,g" | sed "s,&GROUP&,$group,g" > $output
+    config_crc=$(md5sum $output)
+}
+
+createlog() {
+    num=$1
+    file=$2
+    cl_compressed=$3
+
+    case $num in
+	0)
+	    what=zero
+	    ;;
+	1)
+	    what=first
+	    ;;
+	2)
+	    what=second
+	    ;;
+	3)
+	    what=third
+	    ;;
+	4)
+	    what=fourth
+	    ;;
+	5)
+	    what=fifth
+	    ;;
+	6)
+	    what=sixth
+	    ;;
+	7)
+	    what=seventh
+	    ;;
+	8)
+	    what=eight
+	    ;;
+	9)
+	    what=ninth
+	    ;;
+	*)
+	    exit 1
+	    ;;
+    esac
+
+    echo $what > $file
+    [ -n "$cl_compressed" ] && gzip -9 $file
+}
+
+createlogs() {
+    base=$1
+    numlogs=$2
+    cls_compressed=$3
+
+    rm -f ${base}*
+
+    num=0
+    while [ $num != $numlogs ]; do
+	if [ $num = 0 ]; then
+	    createlog 0 $base
+	else
+	    createlog $num ${base}.$num $cls_compressed
+	fi
+
+	num=`expr $num + 1`
+    done
+}
+
+checkmail() {
+    (echo -s $PWD/$1 user@myhost.org; echo $2) | diff -u - mail-out
+}
+
+checkoutput() {
+    while read line; do
+	set $line
+	file=$1
+	co_compressed=$2
+	shift 2
+
+	fileother=`echo $line | awk '{print $1}'`
+	expected=`echo $line | cut -s -d\  -f3-`
+
+	if [ $file != $fileother ]; then
+	    echo "unexpected file $file'" >&2
+	    exit 2
+	fi
+
+	if [ ! -f $file ]; then
+	    echo "file $file does not exist"
+	fi
+
+	if [ -n "$co_compressed" -a "$co_compressed" != 0 ]; then
+		contents=`gunzip -c $file`
+	else
+		contents=`cat $file`
+	fi
+	if [ "$contents" != "$expected" ]; then
+	    echo "file $file does not contain expected results (compressed $co_compressed, args $*)" >&2
+	    echo contains: \'$contents\'
+	    echo expected: \'$expected\'
+	    exit 2
+	fi
+	echo "$config_crc" | md5sum -c - 2>&1 > /dev/null
+	if [ $? != 0 ]; then
+		echo "config file $output has been altered: MD5 sum mismatch"
+		exit 3
+	fi
+    done
+}
+
+preptest() {
+    base=$1
+    confignum=$2
+    numlogs=$3
+    pt_compressed=$4
+
+    rm -f $base*
+    rm -f state
+
+    genconfig $confignum
+    createlogs $base $numlogs $pt_compressed
+}
+
+# we don't want any stuff left from previous runs
+cleanup 1
+
+# ------------------------------- Test 1 -------------------------------------
+# Without a log file, no rotations should occur
+preptest test.log 1 2
+$RLR test-config.1 
+
+checkoutput <<EOF
+test.log 0 zero
+test.log.1 0 first
+EOF
+
+# Put in place a state file that will force a rotation
+cat > state <<EOF
+logrotate state -- version 1
+"$PWD/test.log" 2000-1-1
+EOF
+
+# Now force the rotation
+$RLR test-config.1
+checkoutput <<EOF
+test.log 0
+test.log.1 0 zero
+test.log.2 0 first
+EOF
+
+# rerun it to make sure nothing happens
+$RLR test-config.1 
+
+checkoutput <<EOF
+test.log
+test.log.1 0 zero
+test.log.2 0 first
+EOF
+
+cleanup 2
+
+# ------------------------------- Test 2 -------------------------------------
+preptest test.log 2 3
+$RLR test-config.2 --force
+
+checkoutput <<EOF
+test.log.1 0 zero
+test.log.2 0 first
+EOF
+
+checkmail test.log.3 second
+
+if [ -f test.log ]; then
+    echo "erroneously created test.log"
+fi
+
+cleanup 3
+
+# ------------------------------- Test 3 -------------------------------------
+
+preptest test.log 3 1
+$RLR test-config.3 --force
+
+checkoutput <<EOF
+test.log 0
+test.log.1 0 zero
+scriptout 0 foo
+EOF
+
+cleanup
+
+preptest test.log 3 1
+preptest test2.log 3 1
+$RLR test-config.3 --force
+
+checkoutput <<EOF
+test.log 0
+test.log.1 0 zero
+test2.log 0
+test2.log.1 0 zero
+scriptout 0 foo foo
+EOF
+
+cleanup 4
+
+# ------------------------------- Test 4 -------------------------------------
+preptest test.log 4 1
+preptest test2.log 4 1
+$RLR test-config.4 --force 
+
+checkoutput <<EOF
+test.log 0
+test.log.1 0 zero
+test2.log 0
+test2.log.1 0 zero
+scriptout 0 foo
+EOF
+
+cleanup 5
+
+# ------------------------------- Test 5 -------------------------------------
+preptest test.log 5 1
+preptest anothertest.log 5 1
+$RLR test-config.5 --force 
+
+checkoutput <<EOF
+test.log 0
+test.log.1 0 zero
+anothertest.log 0
+anothertest.log.1 0 zero
+scriptout 0 foo
+EOF
+
+cleanup 6
+
+# ------------------------------- Test 6 -------------------------------------
+preptest test.log 6 1
+preptest anothertest.log 6 1
+if [ $SELINUX_TESTS == 1 ]; then
+	chcon --type=logrotate_tmp_t test.log
+else
+	echo "Skipping SELinux part of test 6"
+fi
+$RLR test-config.6 --force
+
+if [ $SELINUX_TESTS == 1 ]; then
+	ls -Z test.log.0|grep logrotate_tmp_t >/dev/null
+	if [ $? != 0 ]; then
+		echo "test.log.0 should have selinux context logrotate_tmp_t."
+		exit 3
+	fi
+
+	ls -Z anothertest.log.0|grep logrotate_tmp_t >/dev/null
+	if [ $? == 0 ]; then
+		echo "anothertest.log.0 should not have selinux context logrotate_tmp_t."
+		exit 3
+	fi
+fi
+
+checkoutput <<EOF
+test.log 0
+test.log.0 0 zero
+anothertest.log 0
+anothertest.log.0 0 zero
+scriptout 0 foo
+EOF
+
+cleanup 7
+
+# ------------------------------- Test 7 -------------------------------------
+preptest test.log 7 1
+preptest anothertest.log 7 1
+
+$RLR test-config.7 --force
+
+checkoutput <<EOF
+test.log 0
+test.log.6 0 zero
+anothertest.log 0
+anothertest.log.6 0 zero
+scriptout 0 foo
+EOF
+
+cleanup 8
+
+# ------------------------------- Test 8 -------------------------------------
+preptest test.log 8 1 1
+$RLR test-config.8 --force
+
+checkoutput <<EOF
+test.log 0
+test.log.1.gz 1 zero
+scriptout 0 foo
+EOF
+
+checkmail test.log zero
+
+cleanup 9
+
+# ------------------------------- Test 9 -------------------------------------
+preptest test.log 9 1 1
+$RLR test-config.9 --force
+
+checkoutput <<EOF
+test.log 0
+scriptout 0 foo
+EOF
+
+checkmail test.log zero
+
+cleanup 10
+
+# ------------------------------- Test 10 ------------------------------------
+preptest test.log 10 1
+
+if [ $SELINUX_TESTS == 1 ]; then
+	chcon --type=logrotate_tmp_t test.log
+else
+	echo "Skipping SELinux part of test 10"
+fi
+
+$RLR test-config.10 --force
+
+checkoutput <<EOF
+test.log 0
+test.log.1 0 zero
+EOF
+
+echo "newfile" > test.log
+
+$RLR test-config.10 --force
+
+if [ $SELINUX_TESTS == 1 ]; then
+	ls -Z test.log.2.gz|grep logrotate_tmp_t >/dev/null
+	if [ $? != 0 ]; then
+		echo "test.log.2.gz should have selinux context logrotate_tmp_t."
+		ls -Z test.log.2.gz
+		exit 3
+	fi
+
+	ls -Z test.log.1|grep logrotate_tmp_t >/dev/null
+	if [ $? != 0 ]; then
+		echo "test.log.1 should have selinux context logrotate_tmp_t."
+		ls -Z test.log.1
+		exit 3
+	fi
+fi
+
+checkoutput <<EOF
+test.log 0
+test.log.1 0 newfile
+test.log.2.gz 1 zero
+EOF
+
+checkmail test.log.1 newfile
+
+cleanup 11
+
+# ------------------------------- Test 11 ------------------------------------
+preptest test.log 11 2 1
+$RLR test-config.11 --force
+
+checkoutput <<EOF
+test.log 0
+scriptout 0 foo
+EOF
+
+checkmail test.log first
+
+# check rotation into a directory given as a relative pathname
+cleanup 12
+
+# ------------------------------- Test 12 ------------------------------------
+preptest test.log 12 1 0
+rm -rf testdir
+mkdir testdir
+$RLR test-config.12 --force
+
+checkoutput <<EOF
+test.log 0
+testdir/test.log.1 0 zero
+EOF
+
+rm -rf testdir
+
+# check rotation into a directory given as an absolute  pathname
+cleanup 13
+
+# ------------------------------- Test 13 ------------------------------------
+preptest test.log 13 1 0
+rm -rf testdir
+$RLR test-config.13 --force
+
+ls -l|grep testdir|grep "drwx------." 2>/dev/null >/dev/null
+if [ $? != 0 ]; then
+	echo "testdir should have mode 2700, but it has:"
+	ls -l|grep testdir
+	exit 3
+fi
+
+checkoutput <<EOF
+test.log 0
+testdir/test.log.1 0 zero
+EOF
+
+rm -rf testdir
+
+# sanity rotation check using dateext and dateformat
+cleanup 14
+
+# ------------------------------- Test 14 ------------------------------------
+preptest test.log 14 1 0
+
+$RLR test-config.14 --force
+
+DATESTRING=$(/bin/date +%Y-%m-%d)
+
+checkoutput <<EOF
+test.log 0
+test.log.$DATESTRING 0 zero
+EOF
+
+rm -rf testdir
+
+# shred test
+cleanup 15
+
+# ------------------------------- Test 15 ------------------------------------
+preptest test.log 15 1 0
+$RLR test-config.15 --force
+
+# this rotation should use shred
+$RLR test-config.15 --force
+
+checkoutput <<EOF
+test.log 0
+test.log.1 0
+EOF
+
+cleanup 16
+
+# ------------------------------- Test 16 ------------------------------------
+preptest test.log 16 1 0
+# log with 1 byte should not be rotated
+echo "a" > test.log
+$RLR test-config.16
+
+if [ -f test.log.1 ]; then
+	echo "file $file does exist!"
+	exit 2
+fi
+
+# log with 4 bytes should be rotated
+echo "zero" > test.log
+$RLR test-config.16
+
+checkoutput <<EOF
+test.log 0
+test.log.1 0 zero
+EOF
+
+cleanup 17
+
+# ------------------------------- Test 17 ------------------------------------
+preptest test.log 17 1 0
+# log with 1 byte should not be rotated
+$RLR test-config.17 -l logrotate.log 2>error.log
+
+grep "unexpected } (missing previous '{')" error.log >/dev/null
+if [ $? != 0 ]; then
+	echo "No error printed, but there should be one."
+	exit 3
+fi
+
+rm error.log
+
+grep "reading config file test-config.17" logrotate.log >/dev/null
+if [ $? != 0 ]; then
+	echo "There is no log output in logrotate.log"
+	exit 3
+fi
+
+rm -f logrotate.log
+
+checkoutput <<EOF
+test.log 0 zero
+EOF
+
+cleanup 18
+
+# ------------------------------- Test 18 ------------------------------------
+preptest test.log 18 1
+$RLR test-config.18 --force
+
+checkoutput <<EOF
+test.log 0
+test.log.1.gz 1 zero
+EOF
+
+(echo "gzip -f -9") | diff -u - compress-args
+
+cleanup 19
+
+# ------------------------------- Test 19 ------------------------------------
+preptest test.log 19 1
+$RLR test-config.19 --force 2>error.log
+if [ $? == 0 ]; then
+	echo "Logrotate exited with 0 exit code, but it should not"
+fi
+
+grep "error running non-shared postrotate script for" error.log >/dev/null
+if [ $? != 0 ]; then
+	echo "No error printed, but there should be one."
+	exit 3
+fi
+
+cleanup 20
+
+# ------------------------------- Test 20 ------------------------------------
+preptest test.log 20 1
+$RLR test-config.20 --force 2>error.log
+
+if [ $? == 0 ]; then
+	echo "Logrotate exited with 0 exit code, but it should not"
+fi
+
+grep "error running shared postrotate script for" error.log >/dev/null
+if [ $? != 0 ]; then
+	echo "No error printed, but there should be one."
+	exit 3
+fi
+
+cleanup 21
+
+# ------------------------------- Test 21 ------------------------------------
+# different base name, so it should not find the file
+preptest differenttest.log 21 1
+$RLR test-config.21 --force 2>error.log
+
+if [ $? != 0 ]; then
+	echo "Logrotate exited with non-zero exit code, but it should not"
+fi
+
+cat error.log
+
+# grep "error running shared postrotate script for" error.log >/dev/null
+# if [ $? != 0 ]; then
+# 	echo "No error printed, but there should be one."
+# 	exit 3
+# fi
+
+cleanup 22
+
+# ------------------------------- Test 22 ------------------------------------
+# different base name, so it should not find the file
+preptest differenttest.log 22 1
+$RLR test-config.22 --force 2>error.log
+
+if [ $? == 0 ]; then
+	echo "Logrotate exited with zero exit code, but it should not"
+fi
+
+grep "error: stat of" error.log >/dev/null
+if [ $? != 0 ]; then
+	echo "No error printed, but there should be one."
+	exit 3
+fi
+
+cleanup 23
+
+# ------------------------------- Test 23 ------------------------------------
+# symlinks - symlinks rotation is not allowed for security reasons.
+preptest test.log.original 23 1
+ln -s test.log.original test.log
+$RLR test-config.23 --force 2>error.log 
+
+checkoutput <<EOF
+test.log 0 zero
+test.log.original 0 zero
+EOF
+
+rm -f test.log 2>/dev/null || true
+
+cleanup 24
+
+# ------------------------------- Test 24 ------------------------------------
+# symlinks 2 - now copytruncate is used, but symlinks rotation is not allowed for
+# security reasons.
+# since logrotate-3.8.2, we don't support symlinks rotation officially.
+preptest test.log.original 24 1
+ln -s test.log.original test.log
+$RLR test-config.24 --force 2>error.log
+
+checkoutput <<EOF
+test.log 0 zero
+test.log.original 0 zero
+EOF
+
+rm -f test.log 2>/dev/null || true
+
+cleanup 25
+
+# ------------------------------- Test 25 ------------------------------------
+# If there is no '{' character after log files definition, error should be printed
+# and config file should be skipped
+
+preptest test.log 25 1 0
+# log with 1 byte should not be rotated
+$RLR test-config.25 2>error.log
+
+grep "missing '{' after log files definition" error.log >/dev/null
+if [ $? != 0 ]; then
+	echo "No error printed, but there should be one."
+	exit 3
+fi
+
+rm error.log
+
+checkoutput <<EOF
+test.log 0 zero
+EOF
+
+cleanup 26
+
+# ------------------------------- Test 26 ------------------------------------
+# If there is error in config file, log should not be rotated and original log
+# should be untouched
+
+preptest test.log 26 1 0
+# log with 1 byte should not be rotated
+$RLR test-config.26 2>error.log
+
+grep "unknown option" error.log >/dev/null
+if [ $? != 0 ]; then
+	echo "No error printed, but there should be one."
+	exit 3
+fi
+
+rm error.log
+
+checkoutput <<EOF
+test.log 0
+test.log.1 0 zero
+EOF
+
+cleanup 27
+
+# ------------------------------- Test 27 ------------------------------------
+# logrotate fails to find the correct file to mail, when using "mailfirst" in
+# combination with "delaycompress" and "dateext" option.
+preptest test.log 27 1 0
+
+DATESTRING=$(/bin/date +%Y%m%d)
+
+$RLR test-config.27 --force
+checkoutput <<EOF
+test.log 0
+test.log-$DATESTRING 0 zero
+EOF
+
+checkmail test.log-$DATESTRING zero
+
+
+cleanup 28
+
+# ------------------------------- Test 28 ------------------------------------
+# { on new line
+
+preptest test.log 28 1 0
+# log with 1 byte should not be rotated
+$RLR test-config.28
+
+checkoutput <<EOF
+test.log 0
+test.log.1 0 zero
+EOF
+
+cleanup 29
+
+# ------------------------------- Test 29 ------------------------------------
+# { } on the same line
+
+preptest test.log 29 1 0
+# log with 1 byte should not be rotated
+$RLR test-config.29 --force
+
+checkoutput <<EOF
+test.log 0
+test.log.1 0 zero
+EOF
+
+cleanup 30
+
+# ------------------------------- Test 30 ------------------------------------
+# the file with the same date already exists, so it should not be overwritten
+# and log should not be rotated
+preptest test.log 30 1 0
+
+DATESTRING=$(/bin/date +%Y%m%d)
+echo "one" > test.log-$DATESTRING
+
+$RLR test-config.30 --force
+checkoutput <<EOF
+test.log 0 zero
+test.log-$DATESTRING 0 one
+EOF
+
+cleanup 31
+
+# ------------------------------- Test 31 ------------------------------------
+# Test mode in create option
+preptest test.log 31 1 0
+
+$RLR test-config.31 --force
+
+stat -c %f test.log|grep 8180 >/dev/null
+if [ $? != 0 ]; then
+	echo "Bad mode of test.log, should be 0600"
+	exit 3
+fi
+
+checkoutput <<EOF
+test.log 0
+test.log.1 0 zero
+EOF
+
+if [ $ACL_TESTS == 0 ]; then
+  echo "Skipping test 32: no ACL support"
+else
+
+cleanup 32
+
+# ------------------------------- Test 32 ------------------------------------
+# Without mode in 'create' directive, ACLs should be respected.
+# Also check that chmod is respected when setting ACLs
+preptest test.log 32 1 0
+
+chmod 600 test.log
+setfacl -m u:nobody:rwx test.log
+
+$RLR test-config.32 --force
+getfacl test.log|grep "user:nobody:rwx" >/dev/null
+if [ $? != 0 ]; then
+	echo "test.log must have user:nobody:rwx ACL"
+	getfacl test.log
+	exit 3
+fi
+
+getfacl test.log|grep "group::---" >/dev/null
+if [ $? != 0 ]; then
+	echo "test.log must have group::--- ACL"
+	getfacl test.log
+	exit 3
+fi
+
+getfacl test.log.1|grep "user:nobody:rwx" >/dev/null
+if [ $? != 0 ]; then
+	echo "test.log.1 must have user:nobody:rwx ACL"
+	getfacl test.log.1
+	exit 3
+fi
+
+getfacl test.log.1|grep "group::---" >/dev/null
+if [ $? != 0 ]; then
+	echo "test.log.1 must have group::--- ACL"
+	getfacl test.log.1
+	exit 3
+fi
+
+checkoutput <<EOF
+test.log 0
+test.log.1 0 zero
+EOF
+
+fi
+
+if [ $ACL_TESTS == 0 ]; then
+  echo "Skipping test 33: no ACL support"
+else
+
+cleanup 33
+
+# ------------------------------- Test 33 ------------------------------------
+# With mode in 'create' directive, ACLs are overwriten by chmod
+preptest test.log 33 1 0
+
+
+setfacl -m u:nobody:rwx test.log
+$RLR test-config.33 --force
+
+getfacl test.log|grep "user:nobody:rwx" >/dev/null
+if [ $? == 0 ]; then
+	echo "test.log must not contain user:nobody:rwx"
+	exit 3
+fi
+
+getfacl test.log.1|grep "user:nobody:rwx" >/dev/null
+if [ $? != 0 ]; then
+	echo "test.log.1 must contain user:nobody:rwx"
+	exit 3
+fi
+
+checkoutput <<EOF
+test.log 0
+test.log.1 0 zero
+EOF
+
+fi
+
+cleanup 34
+
+# ------------------------------- Test 34 ------------------------------------
+# We support changing user/mode without setting mode in create directive now
+# We can't change user/group as normal user, so this test uses debug mode and
+# checks the logrotate -d output.
+preptest test.log 34 1 0
+
+$RLR test-config.34 -d -f 2>&1|grep "uid = 0 gid = 0" > /dev/null
+
+if [ $? != 0 ]; then
+	echo "logrotate output must contain 'uid = 0 gid = 0'"
+	exit 3
+fi
+
+checkoutput <<EOF
+test.log 0 zero
+EOF
+
+if [ $ACL_TESTS == 0 ]; then
+  echo "Skipping test 35: no ACL support"
+else
+
+cleanup 35
+
+# ------------------------------- Test 35 ------------------------------------
+# Test 'create' directive without mode but with user/group with ACLs. ACLs should
+# be respected.
+preptest test.log 35 1 0
+
+setfacl -m u:nobody:rwx test.log
+$RLR test-config.35 --force
+
+getfacl test.log|grep "user:nobody:rwx" >/dev/null
+if [ $? != 0 ]; then
+	echo "test.log must contain user:nobody:rwx"
+	getfacl test.log
+	exit 3
+fi
+
+getfacl test.log.1|grep "user:nobody:rwx" >/dev/null
+if [ $? != 0 ]; then
+	echo "test.log.1 must contain user:nobody:rwx"
+	getfacl test.log.1
+	exit 3
+fi
+
+checkoutput <<EOF
+test.log 0
+test.log.1 0 zero
+EOF
+
+fi
+
+cleanup 36
+
+# ------------------------------- Test 36 ------------------------------------
+# size 1x - 'x' is unknown unit, config should be skipped
+preptest test.log 36 1 0
+
+$RLR test-config.36 --force 2>error.log
+
+grep "unknown unit" error.log >/dev/null
+if [ $? != 0 ]; then
+	echo "No error 'unknown unit' printed, but there should be one."
+	exit 3
+fi
+
+checkoutput <<EOF
+test.log 0 zero
+EOF
+
+cleanup 37
+
+# ------------------------------- Test 37 ------------------------------------
+# skip config with firstaction script
+preptest test.log 37 1 0
+
+$RLR test-config.37 --force 2>error.log
+
+grep "skipping" error.log >/dev/null
+if [ $? != 0 ]; then
+	echo "No error 'skipping' printed, but there should be one."
+	exit 3
+fi
+
+checkoutput <<EOF
+test.log 0
+test.log.1 0 zero
+scriptout 0 second
+EOF
+
+cleanup 38
+
+# ------------------------------- Test 38 ------------------------------------
+# preremove script
+preptest test.log 38 1
+preptest test2.log 38 1
+$RLR test-config.38 --force 
+
+# Check both possible orders
+grep "test2.log.1test.log.1" scriptout >/dev/null
+if [ $? != 0 ]; then
+	grep "test.log.1test2.log.1" scriptout >/dev/null
+	if [ $? != 0 ]; then
+		echo "ERROR: scriptout should contain 'test2.log.1test.log.1' or 'test.log.1test2.log.1'"
+		exit 3
+	fi
+fi
+
+rm -f scriptout
+
+checkoutput <<EOF
+test.log 0
+test2.log 0
+EOF
+
+cleanup 39
+
+# ------------------------------- Test 39 ------------------------------------
+# preremove script error - do not remove log file
+preptest test.log 39 1
+preptest test2.log 39 1
+$RLR test-config.39 --force 2>error.log
+
+grep "error running preremove script" error.log >/dev/null
+if [ $? != 0 ]; then
+	echo "No error 'error running preremove script' printed, but there should be one."
+	exit 3
+fi
+
+# Check both possible orders
+grep "test2.log.1" scriptout >/dev/null
+if [ $? != 0 ]; then
+	grep "test.log.1" scriptout >/dev/null
+	if [ $? != 0 ]; then
+		echo "ERROR: scriptout should contain 'test2.log.1' or 'test.log.1'"
+		exit 3
+	fi
+fi
+
+rm -f scriptout
+
+checkoutput <<EOF
+test.log 0
+test.log.1 0 zero
+test2.log 0
+test2.log.1 0 zero
+EOF
+
+cleanup 40
+
+# ------------------------------- Test 40 ------------------------------------
+# test tabooext parsing and implementation, config.v and config.x should not be
+# loaded.
+preptest test.log 40 1
+mkdir -p testingdir
+echo 1 > ./testingdir/config.v
+echo 2 > ./testingdir/config.x
+
+$RLR test-config.40 --force
+
+rm -rf testingdir
+
+cleanup 41
+
+# ------------------------------- Test 41 ------------------------------------
+# Test that prerotate and postrotate scripts are called only when the log files
+# are actually rotated
+preptest test.log 41 1
+echo x > test2.log
+
+$RLR test-config.41
+
+checkoutput <<EOF
+test.log 0
+test.log.1 0 zero
+test2.log 0 x
+scriptout 0 test.log;test.log;
+EOF
+
+cleanup 42
+
+# ------------------------------- Test 42 ------------------------------------
+# Test that script is called only once when sharedscripts is defined
+preptest test.log 42 1
+echo number2 > test2.log
+
+$RLR test-config.42
+
+checkoutput <<EOF
+test.log 0
+test.log.1 0 zero
+test2.log 0
+test2.log.1 0 number2
+scriptout 0 "test*.log ;test*.log ;"
+EOF
+
+cleanup 43
+
+# ------------------------------- Test 43 ------------------------------------
+# Test that prerotate and postrotate scripts are called twice for two files
+# when sharedscripts defined
+preptest test.log 43 1
+echo number2 > test2.log
+
+$RLR test-config.43
+
+# Check both possible orders
+grep "test2.log;test2.log;test.log;test.log;" scriptout >/dev/null
+if [ $? != 0 ]; then
+	grep "test.log;test.log;test2.log;test2.log;" scriptout >/dev/null
+	if [ $? != 0 ]; then
+		echo "ERROR: scriptout should contain 'test2.log;test2.log;test.log;test.log;' or 'test.log;test.log;test2.log;test2.log;'"
+		exit 3
+	fi
+fi
+
+rm -f scriptout
+
+checkoutput <<EOF
+test.log 0
+test.log.1 0 zero
+test2.log 0
+test2.log.1 0 number2
+EOF
+
+cleanup 44
+
+# ------------------------------- Test 44 ------------------------------------
+# Test that prerotate and postrotate scripts are called once when nosharedscripts
+# is defined and one rotation fails
+preptest test.log 44 1
+
+$RLR test-config.44 2>error.log
+
+grep "error: stat of" error.log >/dev/null
+if [ $? != 0 ]; then
+	echo "No error printed, but there should be one."
+	exit 3
+fi
+
+rm -f error.log
+
+checkoutput <<EOF
+test.log 0
+test.log.1 0 zero
+scriptout 0 "test.log;test.log;"
+EOF
+
+cleanup 45
+
+# ------------------------------- Test 45 ------------------------------------
+# Test that prerotate and postrotate scripts are not called when sharedscripts
+# is defined and one rotation fails
+preptest test.log 45 1
+
+touch scriptout
+$RLR test-config.45 2>error.log
+
+grep "error: stat of" error.log >/dev/null
+if [ $? != 0 ]; then
+	echo "No error printed, but there should be one."
+	exit 3
+fi
+
+rm -f error.log
+
+checkoutput <<EOF
+test.log 0 zero
+scriptout 0 
+EOF
+
+cleanup 46
+
+# ------------------------------- Test 46 ------------------------------------
+# the state file is truncated and obviously corrupt, so no rotation should
+# happen
+preptest test.log 46 1
+
+cat > state << EOF
+logrotate state -- version 1
+"$PWD/test.log" 2000-1-1
+"$PWD/test2.l
+EOF
+
+DATESTRING=$(/bin/date +%Y%m%d)
+$RLR test-config.46 2>error.log
+
+grep "error: bad line 3 in state file state" error.log >/dev/null
+if [ $? != 0 ]; then
+	echo "No error printed, but there should be one."
+	exit 3
+fi
+
+rm -f error.log
+
+checkoutput <<EOF
+test.log 0 zero
+EOF
+
+
+if [ $SELINUX_TESTS == 1 ]; then
+	chcon --type=logrotate_tmp_t test.log
+else
+	echo "Skipping SELinux part of test 6"
+fi
+
+cleanup 47
+
+if [ $SELINUX_TESTS == 1 ]; then
+
+# ------------------------------- Test 47 ------------------------------------
+# test that newly created state file has the same SELinux context as the
+# previous one
+preptest test.log 47 1
+
+cat > state << EOF
+logrotate state -- version 2
+EOF
+
+chcon --type=logrotate_tmp_t state
+
+$RLR test-config.47
+
+ls -Z state|grep logrotate_tmp_t >/dev/null
+if [ $? != 0 ]; then
+	echo "state file should have selinux context logrotate_tmp_t."
+	exit 3
+fi
+
+
+checkoutput <<EOF
+test.log 0 zero
+EOF
+
+else
+	echo "Skipping SELinux test 47"
+fi
+
+cleanup 48
+
+if [ $ACL_TESTS == 0 ]; then
+  echo "Skipping test 48: no ACL support"
+else
+
+# ------------------------------- Test 48 ------------------------------------
+# Test that state file keeps the set ACLs
+preptest test.log 48 1 0
+
+cat > state << EOF
+logrotate state -- version 2
+EOF
+
+setfacl -m u:nobody:rwx state
+
+$RLR test-config.48
+
+getfacl state|grep "user:nobody:rwx" >/dev/null
+if [ $? != 0 ]; then
+	echo "state file must have acls user:nobody:rwx"
+	exit 3
+fi
+
+checkoutput <<EOF
+test.log 0
+test.log.1 0 zero
+EOF
+
+fi
+
+cleanup 49
+
+# ------------------------------- Test 49 ------------------------------------
+# Test that state files without hours/minutes/seconds still works properly
+preptest test.log 49 1 0
+
+cat > state << EOF
+logrotate state -- version 2
+"test.log" 2012-8-19
+EOF
+
+$RLR test-config.49
+
+checkoutput <<EOF
+test.log 0
+test.log.1 0 zero
+EOF
+
+cleanup 50
+
+# ------------------------------- Test 50 ------------------------------------
+# test that hourly rotation works properly
+preptest test.log 50 1 0
+
+DATESTRING=$(/bin/date +%Y%m%d%H)
+NOW=$(/bin/date "+%Y-%-m-%-d-%-H" 2>/dev/null)
+HOURAGO=$(/bin/date "+%Y-%-m-%-d-%-H" --date "1 hour ago" 2>/dev/null)
+GNUDATE=$?
+
+# --force to trigger rotation
+$RLR test-config.50 --force
+checkoutput <<EOF
+test.log 0
+test.log-$DATESTRING 0 zero
+EOF
+
+# It should not rotate this hour again
+echo second > test.log
+rm -f test.log-$DATESTRING
+$RLR test-config.50
+checkoutput <<EOF
+test.log 0 second
+EOF
+
+if [ -f test.log.1 ]; then
+    echo "file $file does exist!"
+    exit 2
+fi
+
+if [ $GNUDATE == 0 ]; then
+# Simulate previous rotation by editing state file. This should overwrite
+# our previously rotated log
+sed -i "s,$NOW,$HOURAGO,g" state
+$RLR test-config.50
+checkoutput <<EOF
+test.log 0
+test.log-$DATESTRING 0 second
+EOF
+else
+echo "Does not have GNU Date, skipping part of this test"
+fi
+
+cleanup 51
+
+# ------------------------------- Test 51 ------------------------------------
+# regression in 3.8.4, logrotate crashes with sharedscripts when 0 logs rotated
+preptest test.log 51 1 0
+
+# It's memory corruption and without something in state file, it won't crash
+# reliably. It would be better to run valgrind here and check the errors, but
+# I don't want the test-suite to depend on valgrind...
+cat > state << EOF
+logrotate state -- version 2
+"/var/log/httpd/backend_error_log" 2013-6-16
+"/var/log/tokyotyrant/*.log" 2011-5-30
+"/var/log/mailman/digest" 2011-5-30
+"/var/log/piranha/piranha-gui-access" 2011-5-30
+"/var/log/boincerr.log" 2011-5-30
+"/var/log/btmp" 2013-7-9
+"/var/log/httpd/a_log" 2011-11-15
+"/var/log/cups/*_log" 2012-7-19
+"/var/log/rabbitmq/*.log" 2011-5-30
+"/var/log/func/func.log" 2011-11-17
+"/var/log/wtmp" 2013-7-9
+"/var/log/glusterfs/*glusterd.vol.log" 2011-11-17
+"/var/log/imapd.log" 2011-5-30
+"/var/log/cobbler/cobbler.log" 2011-11-6
+"/var/log/httpd/ssl_access_log" 2013-3-27
+"/var/log/mrepo.log" 2011-5-30
+EOF
+
+$RLR test-config.51
+
+if [ $? != 0 ]; then
+	echo "logrotate ended with non-zero exit code (probably crashed)"
+	exit 3
+fi
+
+cleanup 52
+
+# ------------------------------- Test 52 ------------------------------------
+# sharedscripts are not run if the first log file does not exist
+preptest test.log 52 1 0
+
+$RLR test-config.52
+
+checkoutput <<EOF
+test.log 0
+test.log.1 0 zero
+scriptout 0 foo
+EOF
+
+cleanup 53
+
+# ------------------------------- Test 53 ------------------------------------
+# test if --force works
+preptest test.log 53 1 0
+
+$RLR test-config.53 --force
+
+checkoutput <<EOF
+test.log 0
+test.log.1 0 zero
+EOF
+
+cleanup 54
+
+# ------------------------------- Test 54 ------------------------------------
+# removing last log file when using %Y-%m-%d
+rm -f *test.log*
+preptest test.log 54 1 0
+
+DATE=""
+for i in {1..60}
+do
+    DATE=$(/bin/date "+%Y-%m-%d" --date "$i day ago" 2>/dev/null)   
+    echo "x" > test.log-$DATE
+done
+
+$RLR test-config.54 --force
+
+if [ -e test.log-$DATE ]; then
+    echo "File test.log-$DATE should not exist (it should be deleted)"
+    exit 3
+fi
+
+rm -f *test.log*
+
+cleanup 55
+
+# ------------------------------- Test 55 ------------------------------------
+# removing last log file when using %s and hourly
+rm -f *test.log*
+preptest test.log 55 1 0
+
+DATE=""
+for i in {1..60}
+do
+    DATE=$(/bin/date "+%s" --date "$i hour ago" 2>/dev/null)   
+    echo "x" > test.log-$DATE.gz
+done
+
+$RLR test-config.55 --force
+
+if [ -e test.log-$DATE.gz ]; then
+    echo "File test.log-$DATE.gz should not exist (it should be deleted)"
+    exit 3
+fi
+
+rm -f *test.log*
+
+cleanup 56
+
+# ------------------------------- Test 56 ------------------------------------
+# removing last log file when using %d-%m-%Y
+rm -f *test.log*
+preptest test.log 56 1 0
+
+DATE=""
+for i in {1..60}
+do
+    DATE=$(/bin/date "+%d-%m-%Y" --date "$i day ago" 2>/dev/null)   
+    echo "x" > test.log-$DATE
+done
+
+$RLR test-config.56 --force
+
+if [ -e test.log-$DATE ]; then
+    echo "File test.log-$DATE should not exist (it should be deleted)"
+    exit 3
+fi
+
+rm -f *test.log*
+
+cleanup 57
+
+# ------------------------------- Test 57 ------------------------------------
+# When compressing program prints something to stderr, we should prepend it
+# with the log name.
+preptest test.log 57 1
+$RLR test-config.57 --force 2>error.log
+
+grep "error: Compressing" error.log >/dev/null
+if [ $? != 0 ]; then
+	echo "No error printed, but there should be one."
+	exit 3
+fi
+
+grep "compression error" error.log >/dev/null
+if [ $? != 0 ]; then
+	echo "No error printed, but there should be one."
+	exit 3
+fi
+
+rm -f error.log
+
+checkoutput <<EOF
+test.log 0
+test.log.1.gz 1 zero
+EOF
+
+cleanup 58
+
+# ------------------------------- Test 58 ------------------------------------
+# Test renamecopy
+preptest test.log 58 1 0
+$RLR test-config.58 --force
+
+checkoutput <<EOF
+test.log 0
+test.log.1 0 zero
+EOF
+
+cleanup 59
+
+# ------------------------------- Test 59 ------------------------------------
+# Test renamecopy in debug mode, nothing should happen
+preptest test.log 58 1 0
+touch test.log.1
+touch test.log.2
+$RLR test-config.58 --force -d 2>/dev/null
+
+checkoutput <<EOF
+test.log 0 zero
+EOF
+
+rm -f test.log.1
+rm -f test.log.2
+
+cleanup 60
+
+# ------------------------------- Test 60 ------------------------------------
+# Test we log debug output using -l option when passed.
+preptest test.log 61 1 0
+
+$RLR test-config.61 --force -l ./logrotate.log
+
+DATESTRING=$(/bin/date +%Y-%m-%d-%H)
+
+grep "reading config file test-config.61" logrotate.log >/dev/null
+if [ $? != 0 ]; then
+	echo "There is no log output in logrotate.log"
+	exit 3
+fi
+
+rm -f logrotate.log
+
+checkoutput <<EOF
+test.log 0
+test.log.$DATESTRING 0 zero
+EOF
+
+cleanup 61
+
+# ------------------------------- Test 61 ------------------------------------
+preptest test.log 61 1 0
+
+$RLR test-config.61 --force
+
+DATESTRING=$(/bin/date +%Y-%m-%d-%H)
+
+checkoutput <<EOF
+test.log 0
+test.log.$DATESTRING 0 zero
+EOF
+
+cleanup 62
+
+# ------------------------------- Test 62 ------------------------------------
+# Rotate sparse file
+preptest test.log 24 1 0
+
+echo -n zero > test.log
+truncate -s 10M test.log
+echo x >> test.log
+
+cp test.log test.example
+
+SIZE_SPARSE_OLD=$(du test.log|awk '{print $1}')
+SIZE_OLD=$(du --apparent-size test.log|awk '{print $1}')
+$RLR test-config.24 --force
+SIZE_NEW=$(du --apparent-size test.log.1|awk '{print $1}')
+SIZE_SPARSE_NEW=$(du test.log.1|awk '{print $1}')
+
+if [ $SIZE_OLD != $SIZE_NEW ]; then
+	echo "Bad apparent size of sparse logs"
+	echo "test.log: $SIZE_OLD"
+	echo "test.log.1: $SIZE_NEW"
+	exit 3
+fi
+
+if [ $SIZE_SPARSE_OLD -gt 100 ] || [ $SIZE_SPARSE_NEW -gt 100 ]; then
+	echo "Bad size of sparse logs"
+	echo "test.log: $SIZE_SPARSE_OLD"
+	echo "test.log.1: $SIZE_SPARSE_NEW"
+	exit 3
+fi
+
+checkoutput <<EOF
+test.log 0
+test.log.1 0 zerox
+EOF
+
+cleanup 63
+
+# ------------------------------- Test 63 ------------------------------------
+# Rotate sparse file, no data should be lost when hole is in the end of file
+preptest test.log 24 1 0
+
+echo -n zero > test.log
+truncate -s 10M test.log
+
+cp test.log test.example
+
+SIZE_SPARSE_OLD=$(du test.log|awk '{print $1}')
+SIZE_OLD=$(du --apparent-size test.log|awk '{print $1}')
+$RLR test-config.24 --force
+SIZE_NEW=$(du --apparent-size test.log.1|awk '{print $1}')
+SIZE_SPARSE_NEW=$(du test.log.1|awk '{print $1}')
+
+if [ $SIZE_OLD != $SIZE_NEW ]; then
+    echo "Bad apparent size of sparse logs"
+    echo "test.log: $SIZE_OLD"
+    echo "test.log.1: $SIZE_NEW"
+    exit 3
+fi
+
+if [ $SIZE_SPARSE_OLD -gt 100 ] || [ $SIZE_SPARSE_NEW -gt 100 ]; then
+    echo "Bad size of sparse logs"
+    echo "test.log: $SIZE_SPARSE_OLD"
+    echo "test.log.1: $SIZE_SPARSE_NEW"
+    exit 3
+fi
+
+checkoutput <<EOF
+test.log 0
+test.log.1 0 zero
+EOF
+
+cleanup

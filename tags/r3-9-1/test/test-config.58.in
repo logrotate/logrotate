@@ -1,0 +1,7 @@
+create
+
+&DIR&/test.log {
+    renamecopy
+    weekly
+    rotate 1
+}

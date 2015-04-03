@@ -1,0 +1,7 @@
+create
+
+&DIR&/test.log {
+	hourly
+	dateext
+	rotate 4
+}
