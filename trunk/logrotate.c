@@ -760,17 +760,10 @@ static int is_probably_sparse(struct stat const *sb)
 
 static inline int is_nul (void const *buf, size_t bufsize)
 {
-  void const *vp;
   char const *cbuf = buf;
-  unsigned int const *wp = buf;
-
-  /* Find first nonzero *word*, or the word with the sentinel.  */
-  while (*wp++ == 0)
-    continue;
+  char const *cp = buf;
 
   /* Find the first nonzero *byte*, or the sentinel.  */
-  vp = wp - 1;
-  char const *cp = vp;
   while (*cp++ == 0)
     continue;
 
@@ -812,7 +805,7 @@ static int sparse_copy(int src_fd, int dest_fd, struct stat *sb,
 	size_t max_n_read = SIZE_MAX;
 	int last_write_made_hole = 0;
 	off_t total_n_read = 0;
-	char buf[BUFSIZ];
+	char buf[BUFSIZ + 1];
 
 	while (max_n_read) {
 		int make_hole = 0;

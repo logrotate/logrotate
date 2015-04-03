@@ -1539,6 +1539,8 @@ test.log 0
 test.log.$DATESTRING 0 zero
 EOF
 
+cleanup 62
+
 # ------------------------------- Test 62 ------------------------------------
 # Rotate sparse file
 preptest test.log 24 1 0
