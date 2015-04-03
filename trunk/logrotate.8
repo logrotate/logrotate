@@ -48,6 +48,12 @@ by hand, as the new files will be created, and logging will continue
 correctly.
 
 .TP
+\fB\-l <log_file>\fR
+Tells \fBlogrotate\fR to log verbose output into the log_file. The verbose
+output logged to that file is the same as when running \fBlogrotate\fR with
+\fB-v\fR switch. The log file is overwritten on every logrotate execution.
+
+.TP
 \fB\-m\fR, \fB\-\-mail <command>\fR
 Tells \fBlogrotate\fR which command to use when mailing logs. This
 command should accept two arguments: 1) the subject of the message, and
