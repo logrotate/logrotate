@@ -1,0 +1,21 @@
+language: cpp
+compiler:
+  - gcc
+  - clang
+install:
+  - sudo apt-get -qq update
+  - sudo apt-get -qq install libpopt-dev libselinux1-dev libacl1-dev
+script:
+  - ./autogen.sh
+  - ./configure
+  - make
+  - make tests
+branches:
+  only:
+    - master
+#notifications:
+  #email:
+    #recipients:
+      #- hanzz.k@gmail.com
+    #on_success: always
+    #on_failure: always
