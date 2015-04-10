@@ -6,9 +6,7 @@ install:
   - sudo apt-get -qq update
   - sudo apt-get -qq install libpopt-dev libselinux1-dev libacl1-dev
 script:
-  - ./autogen.sh
-  - ./configure
-  - make
+  - make WITH_SELINUX=yes WITH_ACL=yes
   - make test
 branches:
   only:
