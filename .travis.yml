@@ -9,7 +9,7 @@ script:
   - ./autogen.sh
   - ./configure
   - make
-  - make tests
+  - make test
 branches:
   only:
     - master
