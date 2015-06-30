@@ -3,8 +3,9 @@ compiler:
   - gcc
   - clang
 install:
+  - sudo add-apt-repository ppa:dns/gnu
   - sudo apt-get -qq update
-  - sudo apt-get -qq install libpopt-dev libselinux1-dev libacl1-dev
+  - sudo apt-get -qq install libpopt-dev libselinux1-dev libacl1-dev automake
 script:
   - ./autogen.sh
   - ./configure
