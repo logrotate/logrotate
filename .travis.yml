@@ -11,9 +11,9 @@ script:
 branches:
   only:
     - master
-#notifications:
-  #email:
-    #recipients:
-      #- hanzz.k@gmail.com
-    #on_success: always
-    #on_failure: always
+notifications:
+  email:
+    recipients:
+      - logrotate-owner@fedoraproject.org
+    on_success: always
+    on_failure: always
