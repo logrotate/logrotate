@@ -524,6 +524,7 @@ static int removeLogFile(char *name, struct logInfo *log)
 static int compressLogFile(char *name, struct logInfo *log, struct stat *sb)
 {
     char *compressedName;
+    char *envInFilename;
     const char **fullCommand;
     struct utimbuf utim;
     int inFile;
@@ -598,6 +599,9 @@ static int compressLogFile(char *name, struct logInfo *log, struct stat *sb)
 		DOEXIT(1);
 	}
 
+	envInFilename = alloca(strlen("LOGROTATE_COMPRESSED_FILENAME=") + strlen(name) + 2);
+	sprintf(envInFilename, "LOGROTATE_COMPRESSED_FILENAME=%s", name);
+	putenv(envInFilename);
 	execvp(fullCommand[0], (void *) fullCommand);
 	DOEXIT(1);
     }
