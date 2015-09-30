@@ -143,6 +143,9 @@ createlogs() {
 
 checkmail() {
     (echo -s $PWD/$1 user@myhost.org; echo $2) | diff -u - mail-out
+    if [ $? != 0 ]; then
+        exit 5
+    fi
 }
 
 checkoutput() {
@@ -440,7 +443,7 @@ test.log 0
 scriptout 0 foo
 EOF
 
-checkmail test.log first
+checkmail test.log.2.gz first
 
 # check rotation into a directory given as a relative pathname
 cleanup 12
@@ -1457,12 +1460,14 @@ $RLR test-config.57 --force 2>error.log
 
 grep "error: Compressing" error.log >/dev/null
 if [ $? != 0 ]; then
+	cat error.log
 	echo "No error printed, but there should be one."
 	exit 3
 fi
 
 grep "compression error" error.log >/dev/null
 if [ $? != 0 ]; then
+	cat error.log
 	echo "No error printed, but there should be one."
 	exit 3
 fi
@@ -1611,5 +1616,38 @@ checkoutput <<EOF
 test.log 0
 test.log.1 0 zero
 EOF
+
+cleanup 64
+
+# ------------------------------- Test 64 ------------------------------------
+# filename in mail's subject with compress directive and maillast directive
+# should be the name of the removed log
+preptest test.log 64 1 0
+
+DATESTRING=$(/bin/date +%Y%m%d)
+
+$RLR test-config.64 --force
+checkoutput <<EOF
+test.log 0
+EOF
+
+checkmail test.log-$DATESTRING.gz zero
+
+cleanup 65
+
+# ------------------------------- Test 65 ------------------------------------
+# filename in mail's subject without compress directive and maillast directive
+# should be the name of the removed log
+preptest test.log 65 1 0
+
+DATESTRING=$(/bin/date +%Y%m%d)
+
+$RLR test-config.65 --force
+checkoutput <<EOF
+test.log 0
+EOF
+
+checkmail test.log-$DATESTRING zero
+
 
 cleanup

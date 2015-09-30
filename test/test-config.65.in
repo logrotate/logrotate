@@ -1,0 +1,12 @@
+create
+
+&DIR&/test.log {
+    daily
+    dateext
+    dateformat -%Y%m%d
+    rotate 0
+    nosharedscripts
+    dateext
+    mail user@myhost.org
+    maillast
+}
