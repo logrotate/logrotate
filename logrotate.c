@@ -2335,7 +2335,7 @@ static int readState(char *stateFilename)
 	}
 
 	/* Hack to hide earlier bug */
-	if ((year != 1900) && (year < 1996 || year > 2100)) {
+	if ((year != 1900) && (year < 1970 || year > 2100)) {
 	    message(MESS_ERROR,
 		    "bad year %d for file %s in state file %s\n", year,
 		    argv[0], stateFilename);
