@@ -61,7 +61,7 @@ fi
 
 
 cleanup() {
-    rm -f test*.log* anothertest*.log* state test-config. scriptout mail-out compress-args different*.log*
+    rm -f test*.log* anothertest*.log* state test-config. scriptout mail-out compress-* different*.log*
     rm -f $(ls | egrep '^test-config.[0-9]+$')
 
     [ -n "$1" ] && echo "Running test $1"
@@ -576,6 +576,11 @@ test.log.1.gz 1 zero
 EOF
 
 (echo "gzip -f -9") | diff -u - compress-args
+egrep -q '^LOGROTATE_COMPRESSED_FILENAME=.+/test/test.log.1$' compress-env
+if [ $? != 0 ]; then
+      echo "LOGROTATE_COMPRESSED_FILENAME environment variable not found."
+      cat compress-env++      exit 3
+fi
 
 cleanup 19
 
