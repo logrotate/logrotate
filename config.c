@@ -134,7 +134,7 @@ static char *isolateLine(char **strt, char **buf, size_t length) {
 	if (endtag - *buf > length)
 		return NULL;
 	tmp = endtag - 1;
-	while (isspace(*endtag))
+	while (isspace((unsigned char)*endtag))
 		endtag--;
 	char *key = strndup(start, endtag - start + 1);
 	*strt = tmp;
@@ -170,7 +170,7 @@ static char *isolateWord(char **strt, char **buf, size_t length) {
 	while (start - *buf < length && isblank(*start))
 		start++;
 	endtag = start;
-	while (endtag - *buf < length && isalpha(*endtag)) {
+	while (endtag - *buf < length && isalpha((unsigned char)*endtag)) {
 		endtag++;}
 	if (endtag - *buf > length)
 		return NULL;
@@ -203,7 +203,7 @@ static char *readPath(const char *configFile, int lineNum, char *key,
 	}
 
 /*
-	while (*chptr && isprint(*chptr) && *chptr != ' ')
+	while (*chptr && isprint((unsigned char)*chptr) && *chptr != ' ')
 	    chptr++;
 	if (*chptr) {
 	    message(MESS_ERROR, "%s:%d bad %s path %s\n",
@@ -285,7 +285,7 @@ static char *readAddress(const char *configFile, int lineNum, char *key,
     if ((endtag = isolateValue(configFile, lineNum, key, startPtr, buf, length)) != NULL) {
 
 	chptr = endtag;
-	while (*chptr && isprint(*chptr) && *chptr != ' ') {
+	while (*chptr && isprint((unsigned char)*chptr) && *chptr != ' ') {
 	    chptr++;
 	}
 
@@ -872,7 +872,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 				continue;
 			}
 			
-			if (isalpha(*start)) {
+			if (isalpha((unsigned char)*start)) {
 				if ((key = isolateWord(&start, &buf, length)) == NULL)
 					continue;
 				if (!strcmp(key, "compress")) {
@@ -997,7 +997,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 						} else if (key[l] == 'G') {
 							key[l] = '\0';
 							multiplier = 1024 * 1024 * 1024;
-						} else if (!isdigit(key[l])) {
+						} else if (!isdigit((unsigned char)key[l])) {
 							free(opt);
 							message(MESS_ERROR, "%s:%d unknown unit '%c'\n",
 								configFile, lineNum, key[l]);
@@ -1149,7 +1149,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 						endtag = key;
 						if (*endtag == '+') {
 							endtag++;
-							while (isspace(*endtag) && *endtag)
+							while (isspace((unsigned char)*endtag) && *endtag)
 								endtag++;
 						} else {
 							free_2d_array(tabooExts, tabooCount);
@@ -1160,7 +1160,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 
 						while (*endtag) {
 							chptr = endtag;
-							while (!isspace(*chptr) && *chptr != ',' && *chptr)
+							while (!isspace((unsigned char)*chptr) && *chptr != ',' && *chptr)
 								chptr++;
 
 							tabooExts = realloc(tabooExts, sizeof(*tabooExts) *
@@ -1174,7 +1174,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 							endtag = chptr;
 							if (*endtag == ',')
 								endtag++;
-							while (*endtag && isspace(*endtag))
+							while (*endtag && isspace((unsigned char)*endtag))
 								endtag++;
 						}
 					}
