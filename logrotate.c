@@ -1073,8 +1073,8 @@ int findNeedRotating(struct logInfo *log, int logNum, int force)
 	    if (!state->doRotate) {
 	    message(MESS_DEBUG, "  log does not need rotating "
 		    "(log has been rotated at %d-%d-%d %d:%d, "
-		    "that is not week ago yet)\n", state->lastRotated.tm_year,
-		    state->lastRotated.tm_mon, state->lastRotated.tm_mday,
+		    "that is not week ago yet)\n", 1900 + state->lastRotated.tm_year,
+		    1 + state->lastRotated.tm_mon, state->lastRotated.tm_mday,
 		    state->lastRotated.tm_hour, state->lastRotated.tm_min);
 	    }
 	    break;
@@ -1086,8 +1086,8 @@ int findNeedRotating(struct logInfo *log, int logNum, int force)
 	    if (!state->doRotate) {
 	    message(MESS_DEBUG, "  log does not need rotating "
 		    "(log has been rotated at %d-%d-%d %d:%d, "
-		    "that is not hour ago yet)\n", state->lastRotated.tm_year,
-		    state->lastRotated.tm_mon, state->lastRotated.tm_mday,
+		    "that is not hour ago yet)\n", 1900 + state->lastRotated.tm_year,
+		    1 + state->lastRotated.tm_mon, state->lastRotated.tm_mday,
 		    state->lastRotated.tm_hour, state->lastRotated.tm_min);
 	    }
 	    break;
@@ -1099,8 +1099,8 @@ int findNeedRotating(struct logInfo *log, int logNum, int force)
 	    if (!state->doRotate) {
 	    message(MESS_DEBUG, "  log does not need rotating "
 		    "(log has been rotated at %d-%d-%d %d:%d, "
-		    "that is not day ago yet)\n", state->lastRotated.tm_year,
-		    state->lastRotated.tm_mon, state->lastRotated.tm_mday,
+		    "that is not day ago yet)\n", 1900 + state->lastRotated.tm_year,
+		    1 + state->lastRotated.tm_mon, state->lastRotated.tm_mday,
 		    state->lastRotated.tm_hour, state->lastRotated.tm_min);
 	    }
 	    break;
@@ -1112,8 +1112,8 @@ int findNeedRotating(struct logInfo *log, int logNum, int force)
 	    if (!state->doRotate) {
 	    message(MESS_DEBUG, "  log does not need rotating "
 		    "(log has been rotated at %d-%d-%d %d:%d, "
-		    "that is not month ago yet)\n", state->lastRotated.tm_year,
-		    state->lastRotated.tm_mon, state->lastRotated.tm_mday,
+		    "that is not month ago yet)\n", 1900 + state->lastRotated.tm_year,
+		    1 + state->lastRotated.tm_mon, state->lastRotated.tm_mday,
 		    state->lastRotated.tm_hour, state->lastRotated.tm_min);
 	    }
 	    break;
@@ -1123,8 +1123,8 @@ int findNeedRotating(struct logInfo *log, int logNum, int force)
 	    if (!state->doRotate) {
 	    message(MESS_DEBUG, "  log does not need rotating "
 		    "(log has been rotated at %d-%d-%d %d:%d, "
-		    "that is not year ago yet)\n", state->lastRotated.tm_year,
-		    state->lastRotated.tm_mon, state->lastRotated.tm_mday,
+		    "that is not year ago yet)\n", 1900 + state->lastRotated.tm_year,
+		    1 + state->lastRotated.tm_mon, state->lastRotated.tm_mday,
 		    state->lastRotated.tm_hour, state->lastRotated.tm_min);
 	    }
 	    break;
