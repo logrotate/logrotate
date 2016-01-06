@@ -75,11 +75,12 @@ extern int asprintf(char **str, const char *fmt, ...);
 
 
 struct logState {
-    char *fn;
-    struct tm lastRotated;	/* only tm_hour, tm_mday, tm_mon, tm_year are good! */
-    struct stat sb;
-    int doRotate;
-    LIST_ENTRY(logState) list;
+	char *fn;
+	struct tm lastRotated;	/* only tm_hour, tm_mday, tm_mon, tm_year are good! */
+	struct stat sb;
+	int doRotate;
+	int isUsed;	/* True if there is real log file in system for this state. */
+	LIST_ENTRY(logState) list;
 };
 
 struct logNames {
@@ -305,6 +306,7 @@ static struct logState *newState(const char *fn)
 	}
 
 	new->doRotate = 0;
+	new->isUsed = 0;
 
 	memset(&new->lastRotated, 0, sizeof(new->lastRotated));
 	new->lastRotated.tm_hour = now.tm_hour;
@@ -1024,9 +1026,10 @@ int findNeedRotating(struct logInfo *log, int logNum, int force)
 	return 1;
     }
 
-    state = findState(log->files[logNum]);
-    state->doRotate = 0;
-    state->sb = sb;
+	state = findState(log->files[logNum]);
+	state->doRotate = 0;
+	state->sb = sb;
+	state->isUsed = 1;
 
 	if ((sb.st_mode & S_IFMT) == S_IFLNK) {
 	    message(MESS_DEBUG, "  log %s is symbolic link. Rotation of symbolic"
@@ -2080,6 +2083,8 @@ static int writeState(char *stateFilename)
 	int fdsave;
 	struct stat sb;
 	char *tmpFilename = NULL;
+	struct tm now = *localtime(&nowSecs);
+	time_t now_time, last_time;
 
 	tmpFilename = malloc(strlen(stateFilename) + 5 );
 	if (tmpFilename == NULL) {
@@ -2184,9 +2189,22 @@ static int writeState(char *stateFilename)
 	if (bytes < 0)
 		error = bytes;
 
+#define SECONDS_IN_YEAR 31556926
+
 	for (i = 0; i < hashSize && error == 0; i++) {
 		for (p = states[i]->head.lh_first; p != NULL && error == 0;
 				p = p->list.le_next) {
+
+			/* Skip states which are not used for more than a year. */
+			now_time = mktime(&now);
+			last_time = mktime(&p->lastRotated);
+			if (!p->isUsed && difftime(now_time, last_time) > SECONDS_IN_YEAR) {
+				message(MESS_DEBUG, "Removing %s from state file, "
+					"because it does not exist and has not been rotated for one year\n",
+					p->fn);
+				continue;
+			}
+
 			error = fputc('"', f) == EOF;
 			for (chptr = p->fn; *chptr && error == 0; chptr++) {
 				switch (*chptr) {

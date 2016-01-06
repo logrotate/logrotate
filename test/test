@@ -1675,4 +1675,55 @@ if [ -f test.log$DAYAGO ]; then
 	exit 2
 fi
 
+cleanup 67
+
+# ------------------------------- Test 67 ------------------------------------
+# firstaction and lastaction scripts should be called if no file is rotated
+preptest test.log 67 1 0
+
+DATESTRING=$(/bin/date +%Y%m%d)
+TODAY=$(/bin/date "+%Y-%m-%d" 2>/dev/null)
+
+echo removed > "test.log$TODAY"
+
+$RLR test-config.67 --force
+
+cat scriptout|grep firstaction >/dev/null
+if [ $? != 0 ]; then
+	echo "scriptout should contain 'firstaction'"
+	exit 3
+fi
+
+cat scriptout|grep lastaction >/dev/null
+if [ $? != 0 ]; then
+	echo "scriptout should contain 'lastaction'"
+	exit 3
+fi
+
+cleanup 68
+
+# ------------------------------- Test 68 ------------------------------------
+# Old state file entries should be removed when not used
+preptest test.log 68 1 0
+
+cat > state << EOF
+logrotate state -- version 1
+"$PWD/test.log" 2000-1-1
+"$PWD/removed.log" 2000-1-1
+EOF
+
+$RLR test-config.68 --force
+
+cat state|grep test.log >/dev/null
+if [ $? != 0 ]; then
+	echo "state file should contain 'test.log'"
+	exit 3
+fi
+
+cat state|grep removed.log >/dev/null
+if [ $? == 0 ]; then
+	echo "state file should not contain 'removed.log'"
+	exit 3
+fi
+
 cleanup
