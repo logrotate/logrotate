@@ -1703,14 +1703,20 @@ fi
 cleanup 68
 
 # ------------------------------- Test 68 ------------------------------------
-# Old state file entries should be removed when not used
+# Old state file entries should be removed when not used. Logrotate should
+# not freeze on big state file.
 preptest test.log 68 1 0
 
 cat > state << EOF
 logrotate state -- version 1
 "$PWD/test.log" 2000-1-1
-"$PWD/removed.log" 2000-1-1
 EOF
+
+for i in {1..200000}
+do
+   echo "\"$PWD/removed.log$i\" 2000-1-1" >> state
+done
+
 
 $RLR test-config.68 --force
 

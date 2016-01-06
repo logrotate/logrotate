@@ -239,22 +239,16 @@ static void unescape(char *arg)
 }
 
 #define HASH_SIZE_MIN 64
-static int allocateHash(void)
+static int allocateHash(unsigned int hs)
 {
-	struct logInfo *log;
-	unsigned int hs;
 	int i;
-
-	hs = 0;
-
-	for (log = logs.tqh_first; log != NULL; log = log->list.tqe_next)
-		hs += log->numFiles;
-
-	hs *= 2;
 
 	/* Enforce some reasonable minimum hash size */
 	if (hs < HASH_SIZE_MIN)
 		hs = HASH_SIZE_MIN;
+
+	message(MESS_DEBUG, "Allocating hash table for state file, size %lu B\n",
+			hs * (sizeof(struct logStates *) + sizeof(struct logState) ) );
 
 	states = calloc(hs, sizeof(struct logStates *));
 	if (states == NULL) {
@@ -2288,23 +2282,27 @@ static int readState(char *stateFilename)
 
     error = stat(stateFilename, &f_stat);
 
-    if ((error && errno == ENOENT) || (!error && f_stat.st_size == 0)) {
-	/* create the file before continuing to ensure we have write
-	   access to the file */
-	f = fopen(stateFilename, "w");
-	if (!f) {
-	    message(MESS_ERROR, "error creating state file %s: %s\n",
-		    stateFilename, strerror(errno));
-	    return 1;
+	if ((error && errno == ENOENT) || (!error && f_stat.st_size == 0)) {
+		/* create the file before continuing to ensure we have write
+		access to the file */
+		f = fopen(stateFilename, "w");
+		if (!f) {
+			message(MESS_ERROR, "error creating state file %s: %s\n",
+				stateFilename, strerror(errno));
+			return 1;
+		}
+		fprintf(f, "logrotate state -- version 2\n");
+		fclose(f);
+
+		if (allocateHash(64) != 0)
+			return 1;
+
+		return 0;
+	} else if (error) {
+		message(MESS_ERROR, "error stat()ing state file %s: %s\n",
+			stateFilename, strerror(errno));
+		return 1;
 	}
-	fprintf(f, "logrotate state -- version 2\n");
-	fclose(f);
-	return 0;
-    } else if (error) {
-	message(MESS_ERROR, "error stat()ing state file %s: %s\n",
-		stateFilename, strerror(errno));
-	return 1;
-    }
 
     f = fopen(stateFilename, "r");
     if (!f) {
@@ -2327,6 +2325,13 @@ static int readState(char *stateFilename)
 		stateFilename);
 	return 1;
     }
+
+	/* Try to estimate how many state entries we have in the state file.
+	 * We expect single entry to have around 80 characters (Of course this is
+	 * just an estimation). During the testing I've found out that 200 entries
+	 * per single hash entry gives good mem/performance ratio. */
+	if (allocateHash(f_stat.st_size / 80 / 200) != 0)
+		return 1;
 
     line++;
 
@@ -2535,9 +2540,6 @@ int main(int argc, const char **argv)
 
     poptFreeContext(optCon);
     nowSecs = time(NULL);
-
-	if (allocateHash() != 0)
-		return 1;
 
 	if (readState(stateFile))
 		exit(1);
