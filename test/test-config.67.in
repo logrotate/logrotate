@@ -1,0 +1,16 @@
+create
+
+&DIR&/test.log {
+    daily
+    dateext
+    dateformat %Y-%m-%d
+    rotate 1
+
+	firstaction
+		echo "firstaction" > scriptout
+	endscript
+
+	lastaction
+		echo "lastaction" >> scriptout
+	endscript
+}
