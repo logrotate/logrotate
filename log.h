@@ -20,6 +20,7 @@ void message(int level, char *format, ...)
 #endif
 void logSetErrorFile(FILE * f);
 void logSetMessageFile(FILE * f);
+void logToSyslog(int enable);
 void logSetFlags(int flags);
 void logClearFlags(int flags);
 void logSetLevel(int level);

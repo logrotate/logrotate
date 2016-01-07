@@ -2471,7 +2471,7 @@ int main(int argc, const char **argv)
 	 "Path of state file",
 	 "statefile"},
 	{"verbose", 'v', 0, 0, 'v', "Display messages during rotation"},
-	{"log", 'l', POPT_ARG_STRING, &logFile, 'l', "Log file"},
+	{"log", 'l', POPT_ARG_STRING, &logFile, 'l', "Log file or 'syslog' to log to syslog"},
 	{"version", '\0', POPT_ARG_NONE, NULL, 'V', "Display version information"},
 	POPT_AUTOHELP {0, 0, 0, 0, 0}
     };
@@ -2492,14 +2492,19 @@ int main(int argc, const char **argv)
 	    logSetLevel(MESS_DEBUG);
 	    break;
 	case 'l':
-	    logFd = fopen(logFile, "w");
-	    if (!logFd) {
-		message(MESS_ERROR, "error opening log file %s: %s\n",
-			logFile, strerror(errno));
+		if (strcmp(logFile, "syslog") == 0) {
+			logToSyslog(1);
+		}
+		else {
+			logFd = fopen(logFile, "w");
+			if (!logFd) {
+				message(MESS_ERROR, "error opening log file %s: %s\n",
+					logFile, strerror(errno));
+				break;
+			}
+			logSetMessageFile(logFd);
+		}
 		break;
-	    }
-	    logSetMessageFile(logFd);
-	    break;
 	case 'V':
 	    fprintf(stderr, "logrotate %s\n", VERSION);
 	    poptFreeContext(optCon);

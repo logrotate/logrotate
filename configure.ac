@@ -38,7 +38,7 @@ AS_IF([test "$ac_cv_lib_acl_acl_get_file" = yes],
   echo "1" > ./test/test.ACL;, echo "0" > ./test/test.ACL;)
 
 
-AC_CHECK_FUNCS([strptime qsort fork vfork madvise])
+AC_CHECK_FUNCS([strptime qsort fork vfork madvise vsyslog])
 
 AC_CONFIG_FILES([Makefile test/Makefile])
 AC_OUTPUT

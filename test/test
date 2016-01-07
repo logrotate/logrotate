@@ -2,6 +2,7 @@
 
 ACL_TESTS=1
 SELINUX_TESTS=0
+SYSLOG_TESTS=0
 LOGROTATE=../logrotate
 M="-m ./mailer"
 S="-s state"
@@ -59,6 +60,15 @@ if [ $SELINUX_TESTS == 1 ]; then
 fi
 # -- SELINUX - END ----------------------------------
 
+# -- SYSLOG - BEGIN
+logger syslog_test 2>/dev/null
+if [ $? == 0 ]; then
+	journalctl -n 50|grep syslog_test 2>/dev/null >/dev/null
+	if [ $? != 0 ]; then
+		SYSLOG_TESTS=1
+	fi
+fi
+# -- SYSLOG - END
 
 cleanup() {
     rm -f test*.log* anothertest*.log* state test-config. scriptout mail-out compress-args compress-env different*.log*
@@ -568,7 +578,7 @@ cleanup 18
 
 # ------------------------------- Test 18 ------------------------------------
 preptest test.log 18 1
-$RLR test-config.18 --force
+$RLR test-config.18 -l syslog --force
 
 checkoutput <<EOF
 test.log 0
@@ -580,6 +590,14 @@ egrep -q '^LOGROTATE_COMPRESSED_FILENAME=.+/test/test.log.1$' compress-env
 if [ $? != 0 ]; then
       echo "LOGROTATE_COMPRESSED_FILENAME environment variable not found."
       cat compress-env++      exit 3
+fi
+
+if [ $SYSLOG_TESTS == 0 ]; then
+	journalctl -n 50 2>/dev/null|grep $PWD/test.log.1 2>/dev/null >/dev/null
+	if [ $? != 0 ]; then
+		echo "syslog message not found"
+		exit 1
+	fi
 fi
 
 cleanup 19
