@@ -247,8 +247,8 @@ static int allocateHash(unsigned int hs)
 	if (hs < HASH_SIZE_MIN)
 		hs = HASH_SIZE_MIN;
 
-	message(MESS_DEBUG, "Allocating hash table for state file, size %lu B\n",
-			hs * (sizeof(struct logStates *) + sizeof(struct logState) ) );
+	message(MESS_DEBUG, "Allocating hash table for state file, size %d entries\n",
+			hs);
 
 	states = calloc(hs, sizeof(struct logStates *));
 	if (states == NULL) {
