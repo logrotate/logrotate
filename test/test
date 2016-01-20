@@ -1,4 +1,4 @@
-#!/bin/dash
+#!/bin/bash
 
 ACL_TESTS=1
 SELINUX_TESTS=0
