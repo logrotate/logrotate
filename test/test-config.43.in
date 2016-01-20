@@ -6,12 +6,12 @@ create
     nosharedscripts
     prerotate
 		touch scriptout
-		echo -n $(basename $1) >> scriptout
-		echo -n ";" >> scriptout
+		printf '%s' "$(basename $1)" >> scriptout
+		printf ";" >> scriptout
     endscript
     postrotate
 		touch scriptout
-		echo -n $(basename $1) >>  scriptout
-		echo -n ";" >> scriptout
+		printf '%s' "$(basename $1)" >>  scriptout
+		printf ";" >> scriptout
     endscript
 }

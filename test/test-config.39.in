@@ -9,7 +9,7 @@ create
 
     preremove
 	touch scriptout
-	echo -n $(basename $*) >> scriptout
+	printf '%s' "$(basename $*)" >> scriptout
 	this should trigger an error
     endscript
 }

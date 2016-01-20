@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/dash
 
 ACL_TESTS=1
 SELINUX_TESTS=0
@@ -17,12 +17,12 @@ if [ $? != 0 ]; then
 	echo "setfacl failed on this system. ACL tests will not be executed."
 fi
 rm -f test.x
-if [ $ACL_TESTS == 1 ]; then
+if [ $ACL_TESTS = 1 ]; then
   # It seems we can run the ACL tests, but was logrotate compiled WITH_ACL=yes ?
   # See the Makefile, "pretest" part, for more information
   if [ -f ./test.ACL ]; then
     ACL_TESTS=`cat ./test.ACL`
-    if [ $ACL_TESTS == 0 ]; then
+    if [ $ACL_TESTS = 0 ]; then
       echo "logrotate was NOT compiled with 'WITH_ACL=yes'. ACL tests will not be executed."
     fi
   fi
@@ -37,18 +37,18 @@ else
 	echo "SELinux disabled. SELinux tests will not be executed."
 fi
 
-if [ $SELINUX_TESTS == 1 ]; then
+if [ $SELINUX_TESTS = 1 ]; then
   # It seems we can run the ACL tests, but was logrotate compiled WITH_ACL=yes ?
   # See the Makefile, "pretest" part, for more information
   if [ -f ./test.SELINUX ]; then
     SELINUX_TESTS=`cat ./test.SELINUX`
-    if [ $SELINUX_TESTS == 0 ]; then
+    if [ $SELINUX_TESTS = 0 ]; then
       echo "logrotate was NOT compiled with 'WITH_SELINUX=yes'. SELINUX tests will not be executed."
     fi
   fi
 fi
 
-if [ $SELINUX_TESTS == 1 ]; then
+if [ $SELINUX_TESTS = 1 ]; then
   # if logrotate_tmp_t, we can't continue with SELinux tests...
   touch .selinuxtest
   chcon --type=logrotate_tmp_t .selinuxtest 2>/dev/null
@@ -62,9 +62,9 @@ fi
 
 # -- SYSLOG - BEGIN
 logger syslog_test 2>/dev/null
-if [ $? == 0 ]; then
+if [ $? = 0 ]; then
 	journalctl -n 50|grep syslog_test 2>/dev/null >/dev/null
-	if [ $? != 0 ]; then
+	if [ $? = 0 ]; then
 		SYSLOG_TESTS=1
 	fi
 fi
@@ -163,7 +163,11 @@ checkoutput() {
 	set $line
 	file=$1
 	co_compressed=$2
-	shift 2
+	if [ "$#" -le 2 ]; then
+		shift $#
+	else
+		shift 2
+	fi
 
 	fileother=`echo $line | awk '{print $1}'`
 	expected=`echo $line | cut -s -d\  -f3-`
@@ -177,7 +181,7 @@ checkoutput() {
 	    echo "file $file does not exist"
 	fi
 
-	if [ -n "$co_compressed" -a "$co_compressed" != 0 ]; then
+	if [ -n "$co_compressed" ] && [ "$co_compressed" != 0 ]; then
 		contents=`gunzip -c $file`
 	else
 		contents=`cat $file`
@@ -324,14 +328,14 @@ cleanup 6
 # ------------------------------- Test 6 -------------------------------------
 preptest test.log 6 1
 preptest anothertest.log 6 1
-if [ $SELINUX_TESTS == 1 ]; then
+if [ $SELINUX_TESTS = 1 ]; then
 	chcon --type=logrotate_tmp_t test.log
 else
 	echo "Skipping SELinux part of test 6"
 fi
 $RLR test-config.6 --force
 
-if [ $SELINUX_TESTS == 1 ]; then
+if [ $SELINUX_TESTS = 1 ]; then
 	ls -Z test.log.0|grep logrotate_tmp_t >/dev/null
 	if [ $? != 0 ]; then
 		echo "test.log.0 should have selinux context logrotate_tmp_t."
@@ -339,7 +343,7 @@ if [ $SELINUX_TESTS == 1 ]; then
 	fi
 
 	ls -Z anothertest.log.0|grep logrotate_tmp_t >/dev/null
-	if [ $? == 0 ]; then
+	if [ $? = 0 ]; then
 		echo "anothertest.log.0 should not have selinux context logrotate_tmp_t."
 		exit 3
 	fi
@@ -401,7 +405,7 @@ cleanup 10
 # ------------------------------- Test 10 ------------------------------------
 preptest test.log 10 1
 
-if [ $SELINUX_TESTS == 1 ]; then
+if [ $SELINUX_TESTS = 1 ]; then
 	chcon --type=logrotate_tmp_t test.log
 else
 	echo "Skipping SELinux part of test 10"
@@ -418,7 +422,7 @@ echo "newfile" > test.log
 
 $RLR test-config.10 --force
 
-if [ $SELINUX_TESTS == 1 ]; then
+if [ $SELINUX_TESTS = 1 ]; then
 	ls -Z test.log.2.gz|grep logrotate_tmp_t >/dev/null
 	if [ $? != 0 ]; then
 		echo "test.log.2.gz should have selinux context logrotate_tmp_t."
@@ -592,7 +596,7 @@ if [ $? != 0 ]; then
       cat compress-env++      exit 3
 fi
 
-if [ $SYSLOG_TESTS == 0 ]; then
+if [ $SYSLOG_TESTS = 1 ]; then
 	journalctl -n 50 2>/dev/null|grep $PWD/test.log.1 2>/dev/null >/dev/null
 	if [ $? != 0 ]; then
 		echo "syslog message not found"
@@ -605,7 +609,7 @@ cleanup 19
 # ------------------------------- Test 19 ------------------------------------
 preptest test.log 19 1
 $RLR test-config.19 --force 2>error.log
-if [ $? == 0 ]; then
+if [ $? = 0 ]; then
 	echo "Logrotate exited with 0 exit code, but it should not"
 fi
 
@@ -621,7 +625,7 @@ cleanup 20
 preptest test.log 20 1
 $RLR test-config.20 --force 2>error.log
 
-if [ $? == 0 ]; then
+if [ $? = 0 ]; then
 	echo "Logrotate exited with 0 exit code, but it should not"
 fi
 
@@ -657,7 +661,7 @@ cleanup 22
 preptest differenttest.log 22 1
 $RLR test-config.22 --force 2>error.log
 
-if [ $? == 0 ]; then
+if [ $? = 0 ]; then
 	echo "Logrotate exited with zero exit code, but it should not"
 fi
 
@@ -825,7 +829,7 @@ test.log 0
 test.log.1 0 zero
 EOF
 
-if [ $ACL_TESTS == 0 ]; then
+if [ $ACL_TESTS = 0 ]; then
   echo "Skipping test 32: no ACL support"
 else
 
@@ -875,7 +879,7 @@ EOF
 
 fi
 
-if [ $ACL_TESTS == 0 ]; then
+if [ $ACL_TESTS = 0 ]; then
   echo "Skipping test 33: no ACL support"
 else
 
@@ -890,7 +894,7 @@ setfacl -m u:nobody:rwx test.log
 $RLR test-config.33 --force
 
 getfacl test.log|grep "user:nobody:rwx" >/dev/null
-if [ $? == 0 ]; then
+if [ $? = 0 ]; then
 	echo "test.log must not contain user:nobody:rwx"
 	exit 3
 fi
@@ -927,7 +931,7 @@ checkoutput <<EOF
 test.log 0 zero
 EOF
 
-if [ $ACL_TESTS == 0 ]; then
+if [ $ACL_TESTS = 0 ]; then
   echo "Skipping test 35: no ACL support"
 else
 
@@ -1210,7 +1214,7 @@ test.log 0 zero
 EOF
 
 
-if [ $SELINUX_TESTS == 1 ]; then
+if [ $SELINUX_TESTS = 1 ]; then
 	chcon --type=logrotate_tmp_t test.log
 else
 	echo "Skipping SELinux part of test 6"
@@ -1218,7 +1222,7 @@ fi
 
 cleanup 47
 
-if [ $SELINUX_TESTS == 1 ]; then
+if [ $SELINUX_TESTS = 1 ]; then
 
 # ------------------------------- Test 47 ------------------------------------
 # test that newly created state file has the same SELinux context as the
@@ -1250,7 +1254,7 @@ fi
 
 cleanup 48
 
-if [ $ACL_TESTS == 0 ]; then
+if [ $ACL_TESTS = 0 ]; then
   echo "Skipping test 48: no ACL support"
 else
 
@@ -1328,7 +1332,7 @@ if [ -f test.log.1 ]; then
     exit 2
 fi
 
-if [ $GNUDATE == 0 ]; then
+if [ $GNUDATE = 0 ]; then
 # Simulate previous rotation by editing state file. This should overwrite
 # our previously rotated log
 sed -i "s,$NOW,$HOURAGO,g" state
@@ -1412,7 +1416,7 @@ rm -f *test.log*
 preptest test.log 54 1 0
 
 DATE=""
-for i in {1..60}
+for i in $(seq 1 60)
 do
     DATE=$(/bin/date "+%Y-%m-%d" --date "$i day ago" 2>/dev/null)   
     echo "x" > test.log-$DATE
@@ -1435,7 +1439,7 @@ rm -f *test.log*
 preptest test.log 55 1 0
 
 DATE=""
-for i in {1..60}
+for i in $(seq 1 60)
 do
     DATE=$(/bin/date "+%s" --date "$i hour ago" 2>/dev/null)   
     echo "x" > test.log-$DATE.gz
@@ -1458,7 +1462,7 @@ rm -f *test.log*
 preptest test.log 56 1 0
 
 DATE=""
-for i in {1..60}
+for i in $(seq 1 60)
 do
     DATE=$(/bin/date "+%d-%m-%Y" --date "$i day ago" 2>/dev/null)   
     echo "x" > test.log-$DATE
@@ -1573,7 +1577,7 @@ cleanup 62
 # Rotate sparse file
 preptest test.log 24 1 0
 
-echo -n zero > test.log
+printf zero > test.log
 truncate -s 10M test.log
 echo x >> test.log
 
@@ -1610,7 +1614,7 @@ cleanup 63
 # Rotate sparse file, no data should be lost when hole is in the end of file
 preptest test.log 24 1 0
 
-echo -n zero > test.log
+printf zero > test.log
 truncate -s 10M test.log
 
 cp test.log test.example
@@ -1730,11 +1734,10 @@ logrotate state -- version 1
 "$PWD/test.log" 2000-1-1
 EOF
 
-for i in {1..200000}
+for i in $(seq 1 200000)
 do
    echo "\"$PWD/removed.log$i\" 2000-1-1" >> state
 done
-
 
 $RLR test-config.68 --force
 
@@ -1745,7 +1748,7 @@ if [ $? != 0 ]; then
 fi
 
 cat state|grep removed.log >/dev/null
-if [ $? == 0 ]; then
+if [ $? = 0 ]; then
 	echo "state file should not contain 'removed.log'"
 	exit 3
 fi

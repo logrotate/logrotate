@@ -6,22 +6,22 @@ create
     nosharedscripts
     prerotate
 		touch scriptout
-		IFS=$(/bin/echo -en "\n\b")
-		echo -n "\"" >> scriptout 
+		IFS=$(/usr/bin/printf "\n\b")
+		printf "\"" >> scriptout 
 		for f in "$1"
 		do
-			echo -n $(basename $f) >>  scriptout
-			echo -n ";" >> scriptout
+			printf '%s' "$(basename $f)" >>  scriptout
+			printf ";" >> scriptout
 		done
     endscript
     postrotate
 		touch scriptout
-		IFS=$(/bin/echo -en "\n\b")
+		IFS=$(/usr/bin/printf "\n\b")
 		for f in "$1"
 		do
-			echo -n $(basename $f) >>  scriptout
-			echo -n ";" >> scriptout
+			printf '%s' "$(basename $f)" >>  scriptout
+			printf ";" >> scriptout
 		done
-		echo -n "\"" >> scriptout
+		printf "\"" >> scriptout
     endscript
 }

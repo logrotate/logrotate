@@ -5,12 +5,13 @@ compiler:
 install:
   - sudo add-apt-repository ppa:dns/gnu -y
   - sudo apt-get -qq update
-  - sudo apt-get -qq install libpopt-dev libselinux1-dev libacl1-dev automake
+  - sudo apt-get -qq install libpopt-dev libselinux1-dev libacl1-dev automake dash
 script:
   - ./autogen.sh
   - ./configure
   - make
   - make test
+  - cd test && /bin/dash test && cd ..
 branches:
   only:
     - master
