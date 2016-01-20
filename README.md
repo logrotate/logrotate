@@ -6,10 +6,11 @@ The logrotate utility is designed to simplify the administration of log files on
 
 The latest release is:
 
-* ​[logrotate-3.9.1](https://fedorahosted.org/releases/l/o/logrotate/logrotate-3.9.1.tar.gz) ([Changelog](https://fedorahosted.org/logrotate/browser/tags/r3-9-1/CHANGES)).
+* [logrotate-3.9.2](https://github.com/logrotate/logrotate/archive/3.9.2.tar.gz) ([Changelog](https://github.com/logrotate/logrotate/releases/tag/3.9.2)).
 
 Previous releases:
 
+* [​logrotate-3.9.1](https://fedorahosted.org/releases/l/o/logrotate/logrotate-3.9.1.tar.gz)
 * [​logrotate-3.9.0](https://fedorahosted.org/releases/l/o/logrotate/logrotate-3.9.0.tar.gz)
 * [​logrotate-3.8.9](https://fedorahosted.org/releases/l/o/logrotate/logrotate-3.8.9.tar.gz)
 * [​logrotate-3.8.8](https://fedorahosted.org/releases/l/o/logrotate/logrotate-3.8.8.tar.gz)
