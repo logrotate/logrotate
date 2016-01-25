@@ -621,6 +621,7 @@ static int compressLogFile(char *name, struct logInfo *log, struct stat *sb)
     if (!WIFEXITED(status) || WEXITSTATUS(status)) {
 	message(MESS_ERROR, "failed to compress log %s\n", name);
 	close(inFile);
+	unlink(compressedName);
 	return 1;
     }
 
@@ -943,6 +944,9 @@ static int copyTruncate(char *currLog, char *saveLog, struct stat *sb,
 	if (sparse_copy(fdcurr, fdsave, sb, saveLog, currLog) != 1) {
 		close(fdcurr);
 		close(fdsave);
+		message(MESS_ERROR, "error copying %s to %s: %s\n", currLog,
+				saveLog, strerror(errno));
+		unlink(saveLog);
 		return 1;
 	}
     }
