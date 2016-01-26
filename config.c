@@ -1464,12 +1464,24 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 					int rv;
 					dirName = ourDirName(newlog->files[i]);
 					if (stat(dirName, &sb2)) {
-						message(MESS_ERROR,
-							"%s:%d error verifying log file "
-							"path %s: %s\n", configFile, lineNum,
-							dirName, strerror(errno));
-						free(dirName);
-						goto error;
+						if (!(newlog->flags & LOG_FLAG_MISSINGOK)) {
+							message(MESS_ERROR,
+								"%s:%d error verifying log file "
+								"path %s: %s\n", configFile, lineNum,
+								dirName, strerror(errno));
+							free(dirName);
+							goto error;
+						}
+						else {
+							message(MESS_DEBUG,
+								"%s:%d verifying log file "
+								"path failed %s: %s, log is probably missing, "
+								"but missingok is set, so this is not an error.\n",
+								configFile, lineNum,
+								dirName, strerror(errno));
+							free(dirName);
+							continue;
+						}
 					}
 					ld = alloca(strlen(dirName) + strlen(newlog->oldDir) + 2);
 					sprintf(ld, "%s/%s", dirName, newlog->oldDir);
