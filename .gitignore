@@ -1,2 +1,16 @@
 .deps
 .*.swp
+*.o
+*.m4
+.depend
+autom4te.cache/
+Makefile.in
+configure
+depcomp
+install-sh
+missing
+cscope.out
+logrotate
+test/test.ACL
+test/test.SELINUX
+
