@@ -1561,7 +1561,7 @@ int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 			message(MESS_FATAL, "could not allocate destFile memory\n");
 		}
 		if (!stat(destFile, &fst_buf)) {
-			message(MESS_DEBUG,
+			message(MESS_ERROR,
 					"destination %s already exists, skipping rotation\n",
 					rotNames->firstRotated);
 			hasErrors = 1;
