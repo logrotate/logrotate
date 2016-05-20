@@ -23,7 +23,7 @@
 #include <stdint.h>
 
 #if defined(SunOS)
-#include <limits.h>
+    #include <limits.h>
 #endif
 
 #include "basenames.h"
@@ -31,31 +31,31 @@
 #include "logrotate.h"
 
 #ifdef WITH_SELINUX
-#include <selinux/selinux.h>
-static security_context_t prev_context = NULL;
-int selinux_enabled = 0;
-int selinux_enforce = 0;
+    #include <selinux/selinux.h>
+    static security_context_t prev_context = NULL;
+    int selinux_enabled = 0;
+    int selinux_enforce = 0;
 #endif
 
 #ifdef WITH_ACL
-#include "sys/acl.h"
-#define acl_type acl_t
-#define ACL_NOT_WELL_SUPPORTED(Err) \
-     ((Err) == ENOTSUP || (Err) == ENOSYS || (Err) == EINVAL || (Err) == EBUSY)
+    #include "sys/acl.h"
+    #define acl_type acl_t
+    #define ACL_NOT_WELL_SUPPORTED(Err) \
+         ((Err) == ENOTSUP || (Err) == ENOSYS || (Err) == EINVAL || (Err) == EBUSY)
 #else
-#define acl_type void *
+    #define acl_type void *
 #endif
 
 static acl_type prev_acl = NULL;
 
 #if !defined(GLOB_ABORTED) && defined(GLOB_ABEND)
-#define GLOB_ABORTED GLOB_ABEND
+    #define GLOB_ABORTED GLOB_ABEND
 #endif
 
 #ifdef PATH_MAX
-#define STATEFILE_BUFFER_SIZE 2 * PATH_MAX + 16
+    #define STATEFILE_BUFFER_SIZE 2 * PATH_MAX + 16
 #else
-#define STATEFILE_BUFFER_SIZE 4096
+    #define STATEFILE_BUFFER_SIZE 4096
 #endif
 
 #ifdef __hpux
@@ -63,14 +63,14 @@ extern int asprintf(char **str, const char *fmt, ...);
 #endif
 
 #if defined(HAVE_FORK)
-#define FORK_OR_VFORK fork
-#define DOEXIT exit
+    #define FORK_OR_VFORK fork
+    #define DOEXIT exit
 #elif defined(HAVE_VFORK)
-#define FORK_OR_VFORK vfork
-#define DOEXIT _exit
+    #define FORK_OR_VFORK vfork
+    #define DOEXIT _exit
 #else
-#define FORK_OR_VFORK fork
-#define DOEXIT exit
+    #define FORK_OR_VFORK fork
+    #define DOEXIT exit
 #endif
 
 struct logState {
