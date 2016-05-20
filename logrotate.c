@@ -23,7 +23,7 @@
 #include <stdint.h>
 
 #if defined(SunOS)
-    #include <limits.h>
+#include <limits.h>
 #endif
 
 #include "basenames.h"
@@ -31,31 +31,31 @@
 #include "logrotate.h"
 
 #ifdef WITH_SELINUX
-    #include <selinux/selinux.h>
-    static security_context_t prev_context = NULL;
-    int selinux_enabled = 0;
-    int selinux_enforce = 0;
+#include <selinux/selinux.h>
+static security_context_t prev_context = NULL;
+int selinux_enabled = 0;
+int selinux_enforce = 0;
 #endif
 
 #ifdef WITH_ACL
-    #include "sys/acl.h"
-    #define acl_type acl_t
-    #define ACL_NOT_WELL_SUPPORTED(Err) \
-         ((Err) == ENOTSUP || (Err) == ENOSYS || (Err) == EINVAL || (Err) == EBUSY)
+#include "sys/acl.h"
+#define acl_type acl_t
+#define ACL_NOT_WELL_SUPPORTED(Err) \
+    ((Err) == ENOTSUP || (Err) == ENOSYS || (Err) == EINVAL || (Err) == EBUSY)
 #else
-    #define acl_type void *
+#define acl_type void *
 #endif
 
 static acl_type prev_acl = NULL;
 
 #if !defined(GLOB_ABORTED) && defined(GLOB_ABEND)
-    #define GLOB_ABORTED GLOB_ABEND
+#define GLOB_ABORTED GLOB_ABEND
 #endif
 
 #ifdef PATH_MAX
-    #define STATEFILE_BUFFER_SIZE 2 * PATH_MAX + 16
+#define STATEFILE_BUFFER_SIZE 2 * PATH_MAX + 16
 #else
-    #define STATEFILE_BUFFER_SIZE 4096
+#define STATEFILE_BUFFER_SIZE 4096
 #endif
 
 #ifdef __hpux
@@ -63,14 +63,14 @@ extern int asprintf(char **str, const char *fmt, ...);
 #endif
 
 #if defined(HAVE_FORK)
-    #define FORK_OR_VFORK fork
-    #define DOEXIT exit
+#define FORK_OR_VFORK fork
+#define DOEXIT exit
 #elif defined(HAVE_VFORK)
-    #define FORK_OR_VFORK vfork
-    #define DOEXIT _exit
+#define FORK_OR_VFORK vfork
+#define DOEXIT _exit
 #else
-    #define FORK_OR_VFORK fork
-    #define DOEXIT exit
+#define FORK_OR_VFORK fork
+#define DOEXIT exit
 #endif
 
 struct logState {
@@ -119,46 +119,46 @@ static int globerr(const char *pathname, int theerr) {
 
 #if defined(HAVE_STRPTIME) && defined(HAVE_QSORT)
 
-    /* We could switch to qsort_r to get rid of this global variable,
-     * but qsort_r is not portable enough (Linux vs. *BSD vs ...)... */
-    static struct compData _compData;
+/* We could switch to qsort_r to get rid of this global variable,
+ * but qsort_r is not portable enough (Linux vs. *BSD vs ...)... */
+static struct compData _compData;
 
-    static int compGlobResult(const void *result1, const void *result2)  {
-        struct tm time;
-        time_t t1, t2;
-        const char *r1 = *(const char **)(result1);
-        const char *r2 = *(const char **)(result2);
+static int compGlobResult(const void *result1, const void *result2)  {
+    struct tm time;
+    time_t t1, t2;
+    const char *r1 = *(const char **)(result1);
+    const char *r2 = *(const char **)(result2);
 
-        memset(&time, 0, sizeof(struct tm));
-        strptime(r1 + _compData.prefix_len, _compData.dformat, &time);
-        t1 = mktime(&time);
+    memset(&time, 0, sizeof(struct tm));
+    strptime(r1 + _compData.prefix_len, _compData.dformat, &time);
+    t1 = mktime(&time);
 
-        memset(&time, 0, sizeof(struct tm));
-        strptime(r2 + _compData.prefix_len, _compData.dformat, &time);
-        t2 = mktime(&time);
+    memset(&time, 0, sizeof(struct tm));
+    strptime(r2 + _compData.prefix_len, _compData.dformat, &time);
+    t2 = mktime(&time);
 
-        if (t1 < t2) {
-            return -1;
-        }
-        if (t1 > t2) {
-            return  1;
-        }
-        return 0;
+    if (t1 < t2) {
+        return -1;
+    }
+    if (t1 > t2) {
+        return  1;
+    }
+    return 0;
+}
+
+static void sortGlobResult(glob_t *result, int prefix_len, const char *dformat) {
+    if (!dformat || *dformat == '\0') {
+        return;
     }
 
-    static void sortGlobResult(glob_t *result, int prefix_len, const char *dformat) {
-        if (!dformat || *dformat == '\0') {
-            return;
-        }
-
-        _compData.prefix_len = prefix_len;
-        _compData.dformat = dformat;
-        qsort(result->gl_pathv, result->gl_pathc, sizeof(char *), compGlobResult);
-    }
+    _compData.prefix_len = prefix_len;
+    _compData.dformat = dformat;
+    qsort(result->gl_pathv, result->gl_pathc, sizeof(char *), compGlobResult);
+}
 #else
-    static void sortGlobResult(glob_t *result, int prefix_len, const char *dformat) {
-        /* TODO */
-    }
+static void sortGlobResult(glob_t *result, int prefix_len, const char *dformat) {
+    /* TODO */
+}
 #endif
 
 int switch_user(uid_t user, gid_t group) {
@@ -392,22 +392,22 @@ int createOutputFile(char *fileName, int flags, struct stat *sb, acl_type acl, i
         return -1;
     }
 
-    #ifdef WITH_ACL
-        if (!force_mode && acl) {
-            if (acl_set_fd(fd, acl) == -1) {
-                if (!ACL_NOT_WELL_SUPPORTED(errno)) {
-                    message(MESS_ERROR, "setting ACL for %s: %s\n",
-                    fileName, strerror(errno));
-                    close(fd);
-                    return -1;
-                }
-                acl_set = 0;
+#ifdef WITH_ACL
+    if (!force_mode && acl) {
+        if (acl_set_fd(fd, acl) == -1) {
+            if (!ACL_NOT_WELL_SUPPORTED(errno)) {
+                message(MESS_ERROR, "setting ACL for %s: %s\n",
+                fileName, strerror(errno));
+                close(fd);
+                return -1;
             }
-            else {
-                acl_set = 1;
-            }
+            acl_set = 0;
         }
-    #endif
+        else {
+            acl_set = 1;
+        }
+    }
+#endif
 
     if (!acl_set || force_mode) {
         if (fchmod(fd, sb->st_mode)) {
@@ -545,25 +545,25 @@ static int compressLogFile(char *name, struct logInfo *log, struct stat *sb)
         return 1;
     }
 
-    #ifdef WITH_ACL
-        if ((prev_acl = acl_get_fd(inFile)) == NULL) {
-            if (!ACL_NOT_WELL_SUPPORTED(errno)) {
-                message(MESS_ERROR, "getting file ACL %s: %s\n",
-                    name, strerror(errno));
-                close(inFile);
-                return 1;
-            }
+#ifdef WITH_ACL
+    if ((prev_acl = acl_get_fd(inFile)) == NULL) {
+        if (!ACL_NOT_WELL_SUPPORTED(errno)) {
+            message(MESS_ERROR, "getting file ACL %s: %s\n",
+                name, strerror(errno));
+            close(inFile);
+            return 1;
         }
-    #endif
+    }
+#endif
 
     outFile = createOutputFile(compressedName, O_RDWR | O_CREAT, sb, prev_acl, 0);
 
-    #ifdef WITH_ACL
-        if (prev_acl) {
-            acl_free(prev_acl);
-            prev_acl = NULL;
-        }
-    #endif
+#ifdef WITH_ACL
+    if (prev_acl) {
+        acl_free(prev_acl);
+        prev_acl = NULL;
+    }
+#endif
 
     if (outFile < 0) {
         close(inFile);
@@ -735,11 +735,11 @@ static int mailLogWrapper(char *mailFilename, char *mailCommand, int logNum, str
    be needed for a file of its size, then at least one of the blocks in
    the file is a hole.  In that case, return true.  */
 static int is_probably_sparse(struct stat const *sb) {
-    #if defined(HAVE_STRUCT_STAT_ST_BLOCKS) && defined(HAVE_STRUCT_STAT_ST_BLKSIZE)
-        return (S_ISREG (sb->st_mode) && sb->st_blocks < sb->st_size / sb->st_blksize);
-    #else
-        return 0;
-    #endif
+#if defined(HAVE_STRUCT_STAT_ST_BLOCKS) && defined(HAVE_STRUCT_STAT_ST_BLKSIZE)
+    return (S_ISREG (sb->st_mode) && sb->st_blocks < sb->st_size / sb->st_blksize);
+#else
+    return 0;
+#endif
 }
 
 #define MIN(a,b) ((a) < (b) ? (a) : (b))
@@ -860,70 +860,70 @@ static int copyTruncate(char *currLog, char *saveLog, struct stat *sb, int flags
                 strerror(errno));
             return 1;
         }
-        #ifdef WITH_SELINUX
-            if (selinux_enabled) {
-                security_context_t oldContext;
-                if (fgetfilecon_raw(fdcurr, &oldContext) >= 0) {
-                    if (getfscreatecon_raw(&prev_context) < 0) {
-                        message(MESS_ERROR,
-                            "getting default context: %s\n",
-                            strerror(errno));
-                        if (selinux_enforce) {
-                            freecon(oldContext);
-                            close(fdcurr);
-                            return 1;
-                        }
+#ifdef WITH_SELINUX
+        if (selinux_enabled) {
+            security_context_t oldContext;
+            if (fgetfilecon_raw(fdcurr, &oldContext) >= 0) {
+                if (getfscreatecon_raw(&prev_context) < 0) {
+                    message(MESS_ERROR,
+                        "getting default context: %s\n",
+                        strerror(errno));
+                    if (selinux_enforce) {
+                        freecon(oldContext);
+                        close(fdcurr);
+                        return 1;
                     }
-                    if (setfscreatecon_raw(oldContext) < 0) {
-                        message(MESS_ERROR,
-                            "setting file context %s to %s: %s\n",
-                            saveLog, oldContext, strerror(errno));
-                        if (selinux_enforce) {
-                            freecon(oldContext);
-                            close(fdcurr);
-                            return 1;
-                        }
-                    }
-                    message(MESS_DEBUG, "set default create context\n");
-                    freecon(oldContext);
                 }
-                else {
-                    if (errno != ENOTSUP) {
-                        message(MESS_ERROR, "getting file context %s: %s\n", currLog, strerror(errno));
-                        if (selinux_enforce) {
-                            return 1;
-                        }
+                if (setfscreatecon_raw(oldContext) < 0) {
+                    message(MESS_ERROR,
+                        "setting file context %s to %s: %s\n",
+                        saveLog, oldContext, strerror(errno));
+                    if (selinux_enforce) {
+                        freecon(oldContext);
+                        close(fdcurr);
+                        return 1;
+                    }
+                }
+                message(MESS_DEBUG, "set default create context\n");
+                freecon(oldContext);
+            }
+            else {
+                if (errno != ENOTSUP) {
+                    message(MESS_ERROR, "getting file context %s: %s\n", currLog, strerror(errno));
+                    if (selinux_enforce) {
+                        return 1;
                     }
                 }
             }
-        #endif
-        #ifdef WITH_ACL
-            if ((prev_acl = acl_get_fd(fdcurr)) == NULL) {
-                if (!ACL_NOT_WELL_SUPPORTED(errno)) {
-                    message(MESS_ERROR, "getting file ACL %s: %s\n",
-                        currLog, strerror(errno));
-                    close(fdcurr);
-                    return 1;
-                }
+        }
+#endif
+#ifdef WITH_ACL
+        if ((prev_acl = acl_get_fd(fdcurr)) == NULL) {
+            if (!ACL_NOT_WELL_SUPPORTED(errno)) {
+                message(MESS_ERROR, "getting file ACL %s: %s\n",
+                    currLog, strerror(errno));
+                close(fdcurr);
+                return 1;
             }
-        #endif /* WITH_ACL */
+        }
+#endif /* WITH_ACL */
 
         fdsave = createOutputFile(saveLog, O_WRONLY | O_CREAT, sb, prev_acl, 0);
 
-        #ifdef WITH_SELINUX
-            if (selinux_enabled) {
-                setfscreatecon_raw(prev_context);
-                freecon(prev_context);
-                prev_context = NULL;
-            }
-        #endif
+#ifdef WITH_SELINUX
+        if (selinux_enabled) {
+            setfscreatecon_raw(prev_context);
+            freecon(prev_context);
+            prev_context = NULL;
+        }
+#endif
 
-        #ifdef WITH_ACL
-            if (prev_acl) {
-                acl_free(prev_acl);
-                prev_acl = NULL;
-            }
-        #endif
+#ifdef WITH_ACL
+        if (prev_acl) {
+            acl_free(prev_acl);
+            prev_acl = NULL;
+        }
+#endif
 
         if (fdsave < 0) {
             close(fdcurr);
@@ -1160,8 +1160,8 @@ int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state, 
     int rc;
     int rotateCount = log->rotateCount ? log->rotateCount : 1;
     int logStart = (log->logStart == -1) ? 1 : log->logStart;
-    #define DATEEXT_LEN 64
-    #define PATTERN_LEN (DATEEXT_LEN * 2)
+#define DATEEXT_LEN 64
+#define PATTERN_LEN (DATEEXT_LEN * 2)
     char dext_str[DATEEXT_LEN];
     char dformat[DATEEXT_LEN] = "";
     char dext_pattern[PATTERN_LEN];
@@ -1312,42 +1312,42 @@ int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state, 
     message(MESS_DEBUG, "dateext suffix '%s'\n", dext_str);
     message(MESS_DEBUG, "glob pattern '%s'\n", dext_pattern);
 
-    #ifdef WITH_SELINUX
-        if (selinux_enabled) {
-            security_context_t oldContext = NULL;
-            if (getfilecon_raw(log->files[logNum], &oldContext) > 0) {
-                if (getfscreatecon_raw(&prev_context) < 0) {
-                    message(MESS_ERROR,
-                        "getting default context: %s\n",
-                        strerror(errno));
-                    if (selinux_enforce) {
-                        freecon(oldContext);
-                        return 1;
-                    }
+#ifdef WITH_SELINUX
+    if (selinux_enabled) {
+        security_context_t oldContext = NULL;
+        if (getfilecon_raw(log->files[logNum], &oldContext) > 0) {
+            if (getfscreatecon_raw(&prev_context) < 0) {
+                message(MESS_ERROR,
+                    "getting default context: %s\n",
+                    strerror(errno));
+                if (selinux_enforce) {
+                    freecon(oldContext);
+                    return 1;
                 }
-                if (setfscreatecon_raw(oldContext) < 0) {
-                    message(MESS_ERROR,
-                        "setting file context %s to %s: %s\n",
-                        log->files[logNum], oldContext,
-                        strerror(errno));
-                    if (selinux_enforce) {
-                        freecon(oldContext);
-                        return 1;
-                    }
-                }
-                freecon(oldContext);
             }
-            else {
-                if (errno != ENOENT && errno != ENOTSUP) {
-                    message(MESS_ERROR, "getting file context %s: %s\n",
-                        log->files[logNum], strerror(errno));
-                    if (selinux_enforce) {
-                        return 1;
-                    }
+            if (setfscreatecon_raw(oldContext) < 0) {
+                message(MESS_ERROR,
+                    "setting file context %s to %s: %s\n",
+                    log->files[logNum], oldContext,
+                    strerror(errno));
+                if (selinux_enforce) {
+                    freecon(oldContext);
+                    return 1;
+                }
+            }
+            freecon(oldContext);
+        }
+        else {
+            if (errno != ENOENT && errno != ENOTSUP) {
+                message(MESS_ERROR, "getting file context %s: %s\n",
+                    log->files[logNum], strerror(errno));
+                if (selinux_enforce) {
+                    return 1;
                 }
             }
         }
-    #endif
+    }
+#endif
 
     /* First compress the previous log when necessary */
     if (log->flags & LOG_FLAG_COMPRESS && log->flags & LOG_FLAG_DELAYCOMPRESS) {
@@ -1581,9 +1581,9 @@ int rotateSingleLog(struct logInfo *log, int logNum, struct logState *state, str
     int hasErrors = 0;
     struct stat sb;
     int fd;
-    #ifdef WITH_SELINUX
-        security_context_t savedContext = NULL;
-    #endif
+#ifdef WITH_SELINUX
+    security_context_t savedContext = NULL;
+#endif
     char *tmpFilename = NULL;
 
     if (!state->doRotate) {
@@ -1593,70 +1593,70 @@ int rotateSingleLog(struct logInfo *log, int logNum, struct logState *state, str
     if (!hasErrors) {
 
         if (!(log->flags & (LOG_FLAG_COPYTRUNCATE | LOG_FLAG_COPY))) {
-            #ifdef WITH_SELINUX
-                if (selinux_enabled) {
-                    security_context_t oldContext = NULL;
-                    int fdcurr = -1;
+#ifdef WITH_SELINUX
+            if (selinux_enabled) {
+                security_context_t oldContext = NULL;
+                int fdcurr = -1;
 
-                    if ((fdcurr = open(log->files[logNum], O_RDWR | O_NOFOLLOW)) < 0) {
-                        message(MESS_ERROR, "error opening %s: %s\n", log->files[logNum],
-                            strerror(errno));
-                        return 1;
-                    }
-                    if (fgetfilecon_raw(fdcurr, &oldContext) >= 0) {
-                        if (getfscreatecon_raw(&savedContext) < 0) {
-                            message(MESS_ERROR,
-                                "getting default context: %s\n",
-                                strerror(errno));
-                            if (selinux_enforce) {
-                                freecon(oldContext);
-                                if (close(fdcurr) < 0) {
-                                    message(MESS_ERROR, "error closing file %s", log->files[logNum]);
-                                }
-                                return 1;
-                            }
-                        }
-                        if (setfscreatecon_raw(oldContext) < 0) {
-                            message(MESS_ERROR,
-                                "setting file context %s to %s: %s\n",
-                                log->files[logNum], oldContext, strerror(errno));
-                            if (selinux_enforce) {
-                                freecon(oldContext);
-                                if (close(fdcurr) < 0) {
-                                    message(MESS_ERROR, "error closing file %s",
-                                    log->files[logNum]);
-                                }
-                                return 1;
-                            }
-                        }
-                        message(MESS_DEBUG, "fscreate context set to %s\n", oldContext);
-                        freecon(oldContext);
-                    }
-                    else {
-                        if (errno != ENOTSUP) {
-                            message(MESS_ERROR, "getting file context %s: %s\n",
-                                log->files[logNum], strerror(errno));
-                            if (selinux_enforce) {
-                                if (close(fdcurr) < 0)
-                                    message(MESS_ERROR, "error closing file %s",
-                                            log->files[logNum]);
-                                return 1;
-                            }
-                        }
-                    }
-                    if (close(fdcurr) < 0) {
-                        message(MESS_ERROR, "error closing file %s", log->files[logNum]);
+                if ((fdcurr = open(log->files[logNum], O_RDWR | O_NOFOLLOW)) < 0) {
+                    message(MESS_ERROR, "error opening %s: %s\n", log->files[logNum],
+                        strerror(errno));
+                    return 1;
                 }
-            #endif
-            #ifdef WITH_ACL
-                    if ((prev_acl = acl_get_file(log->files[logNum], ACL_TYPE_ACCESS)) == NULL) {
-                        if (!ACL_NOT_WELL_SUPPORTED(errno)) {
-                            message(MESS_ERROR, "getting file ACL %s: %s\n",
-                                log->files[logNum], strerror(errno));
-                            hasErrors = 1;
+                if (fgetfilecon_raw(fdcurr, &oldContext) >= 0) {
+                    if (getfscreatecon_raw(&savedContext) < 0) {
+                        message(MESS_ERROR,
+                            "getting default context: %s\n",
+                            strerror(errno));
+                        if (selinux_enforce) {
+                            freecon(oldContext);
+                            if (close(fdcurr) < 0) {
+                                message(MESS_ERROR, "error closing file %s", log->files[logNum]);
+                            }
+                            return 1;
                         }
                     }
-            #endif /* WITH_ACL */
+                    if (setfscreatecon_raw(oldContext) < 0) {
+                        message(MESS_ERROR,
+                            "setting file context %s to %s: %s\n",
+                            log->files[logNum], oldContext, strerror(errno));
+                        if (selinux_enforce) {
+                            freecon(oldContext);
+                            if (close(fdcurr) < 0) {
+                                message(MESS_ERROR, "error closing file %s",
+                                log->files[logNum]);
+                            }
+                            return 1;
+                        }
+                    }
+                    message(MESS_DEBUG, "fscreate context set to %s\n", oldContext);
+                    freecon(oldContext);
+                }
+                else {
+                    if (errno != ENOTSUP) {
+                        message(MESS_ERROR, "getting file context %s: %s\n",
+                            log->files[logNum], strerror(errno));
+                        if (selinux_enforce) {
+                            if (close(fdcurr) < 0)
+                                message(MESS_ERROR, "error closing file %s",
+                                        log->files[logNum]);
+                            return 1;
+                        }
+                    }
+                }
+                if (close(fdcurr) < 0) {
+                    message(MESS_ERROR, "error closing file %s", log->files[logNum]);
+            }
+#endif
+#ifdef WITH_ACL
+            if ((prev_acl = acl_get_file(log->files[logNum], ACL_TYPE_ACCESS)) == NULL) {
+                if (!ACL_NOT_WELL_SUPPORTED(errno)) {
+                    message(MESS_ERROR, "getting file ACL %s: %s\n",
+                        log->files[logNum], strerror(errno));
+                    hasErrors = 1;
+                }
+            }
+#endif /* WITH_ACL */
             if (log->flags & LOG_FLAG_TMPFILENAME) {
                 if (asprintf(&tmpFilename, "%s%s", log->files[logNum], ".tmp") < 0) {
                     message(MESS_FATAL, "could not allocate tmpFilename memory\n");
@@ -1728,12 +1728,12 @@ int rotateSingleLog(struct logInfo *log, int logNum, struct logState *state, str
                 if (!hasErrors) {
                     fd = createOutputFile(log->files[logNum], O_CREAT | O_RDWR,
                         &sb, prev_acl, have_create_mode);
-                    #ifdef WITH_ACL
-                        if (prev_acl) {
-                            acl_free(prev_acl);
-                            prev_acl = NULL;
-                        }
-                    #endif
+#ifdef WITH_ACL
+                    if (prev_acl) {
+                        acl_free(prev_acl);
+                        prev_acl = NULL;
+                    }
+#endif
                     if (fd < 0) {
                         hasErrors = 1;
                     }
@@ -1743,24 +1743,24 @@ int rotateSingleLog(struct logInfo *log, int logNum, struct logState *state, str
                 }
             }
         }
-        #ifdef WITH_SELINUX
-            if (selinux_enabled) {
-                setfscreatecon_raw(savedContext);
-                freecon(savedContext);
-                savedContext = NULL;
-            }
-        #endif
+#ifdef WITH_SELINUX
+        if (selinux_enabled) {
+            setfscreatecon_raw(savedContext);
+            freecon(savedContext);
+            savedContext = NULL;
+        }
+#endif
 
         if (!hasErrors && log->flags & (LOG_FLAG_COPYTRUNCATE | LOG_FLAG_COPY) && !(log->flags & LOG_FLAG_TMPFILENAME)) {
             hasErrors = copyTruncate(log->files[logNum], rotNames->finalName, &state->sb, log->flags);
         }
 
-        #ifdef WITH_ACL
-            if (prev_acl) {
-                acl_free(prev_acl);
-                prev_acl = NULL;
-            }
-        #endif /* WITH_ACL */
+#ifdef WITH_ACL
+    if (prev_acl) {
+        acl_free(prev_acl);
+        prev_acl = NULL;
+    }
+#endif /* WITH_ACL */
 
     }
     return hasErrors;
@@ -1809,13 +1809,13 @@ int postrotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
         hasErrors = removeLogFile(rotNames->disposeName, log);
     }
 
-    #ifdef WITH_SELINUX
-        if (selinux_enabled) {
-            setfscreatecon_raw(prev_context);
-            freecon(prev_context);
-            prev_context = NULL;
-        }
-    #endif
+#ifdef WITH_SELINUX
+    if (selinux_enabled) {
+        setfscreatecon_raw(prev_context);
+        freecon(prev_context);
+        prev_context = NULL;
+    }
+#endif
     return hasErrors;
 }
 
@@ -2095,73 +2095,73 @@ static int writeState(char *stateFilename) {
         return 1;
     }
 
-    #ifdef WITH_SELINUX
-        if (selinux_enabled) {
-            security_context_t oldContext;
-            if (fgetfilecon_raw(fdcurr, &oldContext) >= 0) {
-                if (getfscreatecon_raw(&prev_context) < 0) {
-                    message(MESS_ERROR,
-                        "getting default context: %s\n",
-                        strerror(errno));
-                    if (selinux_enforce) {
-                        freecon(oldContext);
-                        free(tmpFilename);
-                        return 1;
-                    }
+#ifdef WITH_SELINUX
+    if (selinux_enabled) {
+        security_context_t oldContext;
+        if (fgetfilecon_raw(fdcurr, &oldContext) >= 0) {
+            if (getfscreatecon_raw(&prev_context) < 0) {
+                message(MESS_ERROR,
+                    "getting default context: %s\n",
+                    strerror(errno));
+                if (selinux_enforce) {
+                    freecon(oldContext);
+                    free(tmpFilename);
+                    return 1;
                 }
-                if (setfscreatecon_raw(oldContext) < 0) {
-                    message(MESS_ERROR,
-                        "setting file context %s to %s: %s\n",
-                        tmpFilename, oldContext, strerror(errno));
-                    if (selinux_enforce) {
-                        freecon(oldContext);
-                        free(tmpFilename);
-                        return 1;
-                    }
-                }
-                message(MESS_DEBUG, "set default create context\n");
-                freecon(oldContext);
             }
-            else {
-                if (errno != ENOTSUP) {
-                    message(MESS_ERROR, "getting file context %s: %s\n",
-                        tmpFilename, strerror(errno));
-                    if (selinux_enforce) {
-                        free(tmpFilename);
-                        return 1;
-                    }
+            if (setfscreatecon_raw(oldContext) < 0) {
+                message(MESS_ERROR,
+                    "setting file context %s to %s: %s\n",
+                    tmpFilename, oldContext, strerror(errno));
+                if (selinux_enforce) {
+                    freecon(oldContext);
+                    free(tmpFilename);
+                    return 1;
+                }
+            }
+            message(MESS_DEBUG, "set default create context\n");
+            freecon(oldContext);
+        }
+        else {
+            if (errno != ENOTSUP) {
+                message(MESS_ERROR, "getting file context %s: %s\n",
+                    tmpFilename, strerror(errno));
+                if (selinux_enforce) {
+                    free(tmpFilename);
+                    return 1;
                 }
             }
         }
-    #endif
-    #ifdef WITH_ACL
-        if ((prev_acl = acl_get_fd(fdcurr)) == NULL) {
-            if (!ACL_NOT_WELL_SUPPORTED(errno)) {
-                message(MESS_ERROR, "getting file ACL %s: %s\n",
-                    stateFilename, strerror(errno));
-                close(fdcurr);
-                return 1;
-            }
+    }
+#endif
+#ifdef WITH_ACL
+    if ((prev_acl = acl_get_fd(fdcurr)) == NULL) {
+        if (!ACL_NOT_WELL_SUPPORTED(errno)) {
+            message(MESS_ERROR, "getting file ACL %s: %s\n",
+                stateFilename, strerror(errno));
+            close(fdcurr);
+            return 1;
         }
-    #endif
+    }
+#endif
 
     close(fdcurr);
     stat(stateFilename, &sb);
 
     fdsave = createOutputFile(tmpFilename, O_RDWR | O_CREAT | O_TRUNC, &sb, prev_acl, 0);
-    #ifdef WITH_ACL
-        if (prev_acl) {
-            acl_free(prev_acl);
-            prev_acl = NULL;
-        }
-    #endif
-    #ifdef WITH_SELINUX
-        if (selinux_enabled) {
-            setfscreatecon_raw(prev_context);
-            freecon(prev_context);
-            prev_context = NULL;
-        }
-    #endif
+#ifdef WITH_ACL
+    if (prev_acl) {
+        acl_free(prev_acl);
+        prev_acl = NULL;
+    }
+#endif
+#ifdef WITH_SELINUX
+    if (selinux_enabled) {
+        setfscreatecon_raw(prev_context);
+        freecon(prev_context);
+        prev_context = NULL;
+    }
+#endif
 
     if (fdsave < 0) {
         free(tmpFilename);
@@ -2181,7 +2181,7 @@ static int writeState(char *stateFilename) {
         error = bytes;
     }
 
-    #define SECONDS_IN_YEAR 31556926
+#define SECONDS_IN_YEAR 31556926
 
     for (i = 0; i < hashSize && error == 0; i++) {
         for (p = states[i]->head.lh_first; p != NULL && error == 0; p = p->list.le_next) {
@@ -2537,10 +2537,10 @@ int main(int argc, const char **argv) {
         poptFreeContext(optCon);
         exit(1);
     }
-    #ifdef WITH_SELINUX
-        selinux_enabled = (is_selinux_enabled() > 0);
-        selinux_enforce = security_getenforce();
-    #endif
+#ifdef WITH_SELINUX
+    selinux_enabled = (is_selinux_enabled() > 0);
+    selinux_enforce = security_getenforce();
+#endif
 
     TAILQ_INIT(&logs);
 
