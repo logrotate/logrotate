@@ -1646,6 +1646,7 @@ int rotateSingleLog(struct logInfo *log, int logNum, struct logState *state, str
                 }
                 if (close(fdcurr) < 0) {
                     message(MESS_ERROR, "error closing file %s", log->files[logNum]);
+                }
             }
 #endif
 #ifdef WITH_ACL
@@ -1756,10 +1757,10 @@ int rotateSingleLog(struct logInfo *log, int logNum, struct logState *state, str
         }
 
 #ifdef WITH_ACL
-    if (prev_acl) {
-        acl_free(prev_acl);
-        prev_acl = NULL;
-    }
+        if (prev_acl) {
+            acl_free(prev_acl);
+            prev_acl = NULL;
+        }
 #endif /* WITH_ACL */
 
     }
