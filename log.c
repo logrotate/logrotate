@@ -16,19 +16,16 @@ static FILE *messageFile = NULL;
 static int _logToSyslog = 0;
 int flags = 0;
 
-void logSetLevel(int level)
-{
-    logLevel = level;
+void logSetLevel(int level) {
+	logLevel = level;
 }
 
-void logSetErrorFile(FILE * f)
-{
-    errorFile = f;
+void logSetErrorFile(FILE * f) {
+	errorFile = f;
 }
 
-void logSetMessageFile(FILE * f)
-{
-    messageFile = f;
+void logSetMessageFile(FILE * f) {
+	messageFile = f;
 }
 
 void logToSyslog(int enable) {
@@ -44,32 +41,29 @@ void logToSyslog(int enable) {
 #endif
 }
 
-void logSetFlags(int newFlags)
-{
-    flags |= newFlags;
+void logSetFlags(int newFlags) {
+	flags |= newFlags;
 }
 
-void logClearFlags(int newFlags)
-{
-    flags &= ~newFlags;
+void logClearFlags(int newFlags) {
+	flags &= ~newFlags;
 }
 
-static void log_once(FILE *where, int level, char *format, va_list args)
-{
+static void log_once(FILE *where, int level, char *format, va_list args) {
 	int showTime = 0;
 
 	switch (level) {
-	case MESS_DEBUG:
-		showTime = 1;
-		break;
-	case MESS_NORMAL:
-	case MESS_VERBOSE:
-		break;
-	default:
-		if (flags & LOG_TIMES)
-		fprintf(where, "%ld: ", (long) time(NULL));
-		fprintf(where, "error: ");
-		break;
+		case MESS_DEBUG:
+			showTime = 1;
+			break;
+		case MESS_NORMAL:
+		case MESS_VERBOSE:
+			break;
+		default:
+			if (flags & LOG_TIMES)
+			fprintf(where, "%ld: ", (long) time(NULL));
+			fprintf(where, "error: ");
+			break;
 	}
 
 	if (showTime && (flags & LOG_TIMES)) {
@@ -80,16 +74,15 @@ static void log_once(FILE *where, int level, char *format, va_list args)
 	fflush(where);
 }
 
-void message(int level, char *format, ...)
-{
+void message(int level, char *format, ...) {
 	va_list args;
-    
+
 	if (level >= logLevel) {
 		va_start(args, format);
 		log_once(stderr, level, format, args);
 		va_end(args);
 	}
-    
+
 	if (messageFile != NULL) {
 		va_start(args, format);
 		log_once(messageFile, level, format, args);
@@ -126,6 +119,7 @@ void message(int level, char *format, ...)
 	}
 #endif
 
-	if (level == MESS_FATAL)
+	if (level == MESS_FATAL) {
 		exit(1);
+	}
 }

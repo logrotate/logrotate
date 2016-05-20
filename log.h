@@ -14,7 +14,7 @@
 
 void message(int level, char *format, ...)
 #ifdef __GNUC__
-    __attribute__ ((format(printf, 2, 3)));
+	__attribute__ ((format(printf, 2, 3)));
 #else
 ;
 #endif
