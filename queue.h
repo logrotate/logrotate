@@ -105,7 +105,7 @@ struct {								\
 #define	LIST_INSERT_AFTER(listelm, elm, field) do {			\
 	if (((elm)->field.le_next = (listelm)->field.le_next) != NULL)	\
 		(listelm)->field.le_next->field.le_prev =		\
-		    &(elm)->field.le_next;				\
+			&(elm)->field.le_next;				\
 	(listelm)->field.le_next = (elm);				\
 	(elm)->field.le_prev = &(listelm)->field.le_next;		\
 } while (/*CONSTCOND*/0)
@@ -127,7 +127,7 @@ struct {								\
 #define	LIST_REMOVE(elm, field) do {					\
 	if ((elm)->field.le_next != NULL)				\
 		(elm)->field.le_next->field.le_prev = 			\
-		    (elm)->field.le_prev;				\
+			(elm)->field.le_prev;				\
 	*(elm)->field.le_prev = (elm)->field.le_next;			\
 } while (/*CONSTCOND*/0)
 
@@ -190,7 +190,7 @@ struct {								\
 		while(curelm->field.sle_next != (elm))			\
 			curelm = curelm->field.sle_next;		\
 		curelm->field.sle_next =				\
-		    curelm->field.sle_next->field.sle_next;		\
+			curelm->field.sle_next->field.sle_next;		\
 	}								\
 } while (/*CONSTCOND*/0)
 
@@ -262,7 +262,7 @@ struct {								\
 			curelm = curelm->field.stqe_next;		\
 		if ((curelm->field.stqe_next =				\
 			curelm->field.stqe_next->field.stqe_next) == NULL) \
-			    (head)->stqh_last = &(curelm)->field.stqe_next; \
+				(head)->stqh_last = &(curelm)->field.stqe_next; \
 	}								\
 } while (/*CONSTCOND*/0)
 
@@ -344,7 +344,7 @@ struct {								\
 			curelm = curelm->field.sqe_next;		\
 		if ((curelm->field.sqe_next =				\
 			curelm->field.sqe_next->field.sqe_next) == NULL) \
-			    (head)->sqh_last = &(curelm)->field.sqe_next; \
+				(head)->sqh_last = &(curelm)->field.sqe_next; \
 	}								\
 } while (/*CONSTCOND*/0)
 
@@ -392,7 +392,7 @@ struct {								\
 #define	TAILQ_INSERT_HEAD(head, elm, field) do {			\
 	if (((elm)->field.tqe_next = (head)->tqh_first) != NULL)	\
 		(head)->tqh_first->field.tqe_prev =			\
-		    &(elm)->field.tqe_next;				\
+			&(elm)->field.tqe_next;				\
 	else								\
 		(head)->tqh_last = &(elm)->field.tqe_next;		\
 	(head)->tqh_first = (elm);					\
@@ -409,7 +409,7 @@ struct {								\
 #define	TAILQ_INSERT_AFTER(head, listelm, elm, field) do {		\
 	if (((elm)->field.tqe_next = (listelm)->field.tqe_next) != NULL)\
 		(elm)->field.tqe_next->field.tqe_prev = 		\
-		    &(elm)->field.tqe_next;				\
+			&(elm)->field.tqe_next;				\
 	else								\
 		(head)->tqh_last = &(elm)->field.tqe_next;		\
 	(listelm)->field.tqe_next = (elm);				\
@@ -426,7 +426,7 @@ struct {								\
 #define	TAILQ_REMOVE(head, elm, field) do {				\
 	if (((elm)->field.tqe_next) != NULL)				\
 		(elm)->field.tqe_next->field.tqe_prev = 		\
-		    (elm)->field.tqe_prev;				\
+			(elm)->field.tqe_prev;				\
 	else								\
 		(head)->tqh_last = (elm)->field.tqe_prev;		\
 	*(elm)->field.tqe_prev = (elm)->field.tqe_next;			\
@@ -535,12 +535,12 @@ struct {								\
 		(head)->cqh_last = (elm)->field.cqe_prev;		\
 	else								\
 		(elm)->field.cqe_next->field.cqe_prev =			\
-		    (elm)->field.cqe_prev;				\
+			(elm)->field.cqe_prev;				\
 	if ((elm)->field.cqe_prev == (void *)(head))			\
 		(head)->cqh_first = (elm)->field.cqe_next;		\
 	else								\
 		(elm)->field.cqe_prev->field.cqe_next =			\
-		    (elm)->field.cqe_next;				\
+			(elm)->field.cqe_next;				\
 } while (/*CONSTCOND*/0)
 
 #define	CIRCLEQ_FOREACH(var, head, field)				\
@@ -564,11 +564,11 @@ struct {								\
 
 #define CIRCLEQ_LOOP_NEXT(head, elm, field)				\
 	(((elm)->field.cqe_next == (void *)(head))			\
-	    ? ((head)->cqh_first)					\
-	    : (elm->field.cqe_next))
+		? ((head)->cqh_first)					\
+		: (elm->field.cqe_next))
 #define CIRCLEQ_LOOP_PREV(head, elm, field)				\
 	(((elm)->field.cqe_prev == (void *)(head))			\
-	    ? ((head)->cqh_last)					\
-	    : (elm->field.cqe_prev))
+		? ((head)->cqh_last)					\
+		: (elm->field.cqe_prev))
 
 #endif	/* sys/queue.h */
