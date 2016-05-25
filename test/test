@@ -1544,7 +1544,7 @@ $RLR test-config.61 --force -l ./logrotate.log
 
 DATESTRING=$(/bin/date +%Y-%m-%d-%H)
 
-grep "reading config file test-config.61" logrotate.log >/dev/null
+grep "Reading config file test-config.61" logrotate.log >/dev/null
 if [ $? != 0 ]; then
 	echo "There is no log output in logrotate.log"
 	exit 3
