@@ -315,6 +315,10 @@ When using the \fBmail\fR command, mail the about-to-expire file,
 instead of the just-rotated file (this is the default).
 
 .TP
+\fBminage\fR \fIcount\fR
+Do not rotate logs which are less than <count> days old.
+
+.TP
 \fBmaxage\fR \fIcount\fR
 Remove rotated logs older than <count> days. The age is only checked
 if the logfile is to be rotated. The files are mailed to the
