@@ -566,7 +566,7 @@ fi
 
 rm error.log
 
-grep "reading config file test-config.17" logrotate.log >/dev/null
+grep "Reading config file test-config.17" logrotate.log >/dev/null
 if [ $? != 0 ]; then
 	echo "There is no log output in logrotate.log"
 	exit 3
