@@ -73,6 +73,8 @@ extern int asprintf(char **str, const char *fmt, ...);
 #define DOEXIT exit
 #endif
 
+// Number of seconds in a day
+#define DAY_SECONDS 86400
 
 struct logState {
 	char *fn;
@@ -290,6 +292,8 @@ static struct logState *newState(const char *fn)
 	struct tm now = *localtime(&nowSecs);
 	struct logState *new;
 	time_t lr_time;
+
+	message(MESS_DEBUG, "Creating new state\n");
 
 	if ((new = malloc(sizeof(*new))) == NULL)
 		return NULL;
@@ -1036,6 +1040,14 @@ int findNeedRotating(struct logInfo *log, int logNum, int force)
 		return 0;
 	}
 
+    message(MESS_DEBUG, "  Now: %d-%02d-%02d %02d:%02d\n", 1900 + now.tm_year,
+	    1 + now.tm_mon, now.tm_mday,
+	    now.tm_hour, now.tm_min);
+
+    message(MESS_DEBUG, "  Last rotated at %d-%02d-%02d %02d:%02d\n", 1900 + state->lastRotated.tm_year,
+	    1 + state->lastRotated.tm_mon, state->lastRotated.tm_mday,
+	    state->lastRotated.tm_hour, state->lastRotated.tm_min);
+
     if (force) {
 	/* user forced rotation of logs from command line */
 	state->doRotate = 1;   
@@ -1138,19 +1150,19 @@ int findNeedRotating(struct logInfo *log, int logNum, int force)
 	    state->doRotate = 0;
 	    message(MESS_DEBUG, "  log does not need rotating "
 		    "('minsize' directive is used and the log "
-		    "size is smaller than the minsize value)");
+		    "size is smaller than the minsize value)\n");
 	}
     }
     else if (!state->doRotate) {
 	message(MESS_DEBUG, "  log does not need rotating "
-		"(log has been already rotated)");
+		"(log has been already rotated)\n");
     }
 
     /* The notifempty flag overrides the normal criteria */
     if (state->doRotate && !(log->flags & LOG_FLAG_IFEMPTY) && !sb.st_size) {
 	state->doRotate = 0;
 	message(MESS_DEBUG, "  log does not need rotating "
-		"(log is empty)");
+		"(log is empty)\n");
     }
 
     if (state->doRotate) {
@@ -1442,7 +1454,7 @@ int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 		    if ((i <= ((int) globResult.gl_pathc - rotateCount))
 			|| ((log->rotateAge > 0)
 			    &&
-			    (((nowSecs - fst_buf.st_mtime) / 60 / 60 / 24)
+			    (((nowSecs - fst_buf.st_mtime) / DAY_SECONDS)
 			     > log->rotateAge))) {
 			if (mail_out != -1) {
 			    char *mailFilename =
@@ -1493,7 +1505,7 @@ int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 		    message(MESS_FATAL, "could not allocate mailFilename memory\n");
 		}
 		if (!stat(oldName, &fst_buf)
-		    && (((nowSecs - fst_buf.st_mtime) / 60 / 60 / 24)
+		    && (((nowSecs - fst_buf.st_mtime) / DAY_SECONDS)
 			> log->rotateAge)) {
 		    char *mailFilename = oldName;
 		    if (!hasErrors && log->logAddress)
@@ -2284,6 +2296,8 @@ static int readState(char *stateFilename)
     struct logState *st;
     time_t lr_time;
     struct stat f_stat;
+
+    message(MESS_DEBUG, "Reading state from file: %s\n", stateFilename);
 
     error = stat(stateFilename, &f_stat);
 

@@ -408,7 +408,7 @@ static void copyLogInfo(struct logInfo *to, struct logInfo *from)
     to->criterium = from->criterium;
     to->threshhold = from->threshhold;
     to->minsize = from->minsize;
-	to->maxsize = from->maxsize;
+    to->maxsize = from->maxsize;
     to->rotateCount = from->rotateCount;
     to->rotateAge = from->rotateAge;
     to->logStart = from->logStart;
