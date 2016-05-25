@@ -1152,6 +1152,12 @@ int findNeedRotating(struct logInfo *log, int logNum, int force)
 		    "('minsize' directive is used and the log "
 		    "size is smaller than the minsize value)\n");
 	}
+	if (log->rotateMinAge && log->rotateMinAge >= (nowSecs - sb.st_mtime) / DAY_SECONDS) {
+	    state->doRotate = 0;
+	    message(MESS_DEBUG, "  log does not need rotating "
+		    "('minage' directive is used and the log "
+		    "age is smaller than the minage days)\n");
+	}
     }
     else if (!state->doRotate) {
 	message(MESS_DEBUG, "  log does not need rotating "
@@ -1902,6 +1908,9 @@ int rotateLogSet(struct logInfo *log, int force)
 
     if (log->maxsize) 
 	message(MESS_DEBUG, "log files >= %llu are rotated earlier, ",	log->maxsize);
+
+    if (log->rotateMinAge)
+        message(MESS_DEBUG, "only log files older than %d days are rotated, ", log->rotateMinAge);
 
     if (log->logAddress) {
 	message(MESS_DEBUG, "old logs mailed to %s\n", log->logAddress);

@@ -410,6 +410,7 @@ static void copyLogInfo(struct logInfo *to, struct logInfo *from)
     to->minsize = from->minsize;
     to->maxsize = from->maxsize;
     to->rotateCount = from->rotateCount;
+    to->rotateMinAge = from->rotateMinAge;
     to->rotateAge = from->rotateAge;
     to->logStart = from->logStart;
     if (from->pre)
@@ -633,6 +634,7 @@ int readAllConfigPaths(const char **paths)
 		.minsize = 0,
 		.maxsize = 0,
 		.rotateCount = 0,
+		.rotateMinAge = 0,
 		.rotateAge = 0,
 		.logStart = -1,
 		.pre = NULL,
@@ -1088,6 +1090,19 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 						}
 					}
 					else continue;
+				} else if (!strcmp(key, "minage")) {
+					free(key);
+					if ((key = isolateValue
+						(configFile, lineNum, "minage count", &start,
+						&buf, length)) != NULL) {
+						newlog->rotateMinAge = strtoul(key, &chptr, 0);
+						if (*chptr || newlog->rotateMinAge < 0) {
+							message(MESS_ERROR, "%s:%d bad minimum age '%s'\n",
+								configFile, lineNum, start);
+							RAISE_ERROR();
+						}
+					}
+					else continue; 
 				} else if (!strcmp(key, "maxage")) {
 					free(key);
 					if ((key = isolateValue

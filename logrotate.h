@@ -49,6 +49,7 @@ struct logInfo {
     unsigned long long maxsize;
     unsigned long long minsize;
     int rotateCount;
+    int rotateMinAge;
     int rotateAge;
     int logStart;
     char *pre, *post, *first, *last, *preremove;
