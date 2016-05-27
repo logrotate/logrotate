@@ -23,6 +23,11 @@
 #define STATEFILE "/var/log/logrotate.status"
 #endif
 
+#if defined(__APPLE__) && defined(__MACH__)
+#define COMPRESS_COMMAND "/usr/bin/gzip"
+#define UNCOMPRESS_COMMAND "/usr/bin/gunzip"
+#endif
+
 /*
  * Default settings for Linux - leave these last.
  */
