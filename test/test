@@ -3,6 +3,7 @@
 ACL_TESTS=1
 SELINUX_TESTS=0
 SYSLOG_TESTS=0
+AGE_TESTS=1
 LOGROTATE=../logrotate
 M="-m ./mailer"
 S="-s state"
@@ -69,6 +70,19 @@ if [ $? = 0 ]; then
 	fi
 fi
 # -- SYSLOG - END
+
+# -- AGE - BEGIN --------------------------------
+# We test if we have GNU touch and date, which has some
+# extensions we rely on with maxage testing
+if ! touch --version 2>&1 | grep "GNU coreutils" > /dev/null ; then
+	AGE_TESTS=0
+	echo "GNU touch not found on this system. maxage tests will not be executed."
+fi
+if ! date --version 2>&1 | grep "GNU coreutils" > /dev/null ; then
+	AGE_TESTS=0
+	echo "GNU date not found on this system. maxage tests will not be executed."
+fi
+# -- AGE - END ----------------------------------
 
 cleanup() {
     rm -f test*.log* anothertest*.log* state test-config. scriptout mail-out compress-args compress-env different*.log*
@@ -211,6 +225,12 @@ preptest() {
 
     genconfig $confignum
     createlogs $base $numlogs $pt_compressed
+}
+
+setfileage() {
+    file=$1
+    age=$2
+    touch --date="$age hours ago" $file
 }
 
 # we don't want any stuff left from previous runs
@@ -1772,6 +1792,56 @@ EOF
 
 rm -rf testdir adir
 rm -rf testdir bdir
+
+if [ $AGE_TESTS = 1 ]; then
+
+cleanup 70
+
+# ------------------------------- Test 70 -------------------------------------
+preptest test.log 70 2
+setfileage test.log.1 25
+$RLR test-config.70 --force
+
+checkoutput <<EOF
+test.log.1 0 zero
+EOF
+
+if [ -f test.log.2 ]; then
+    echo "aged log file not deleted"
+    exit 3
+fi
+
+else
+	echo "Skipping age test 70"
+fi
+
+if [ $AGE_TESTS = 1 ]; then
+
+cleanup 71
+
+# ------------------------------- Test 71 ------------------------------------
+preptest test.log 71 1 0
+OLDFNAME=test.log.$(/bin/date +%Y-%m-%d --date="25 hours ago")
+echo "old data" > $OLDFNAME
+setfileage $OLDFNAME 25
+
+$RLR test-config.71 --force
+
+DATESTRING=$(/bin/date +%Y-%m-%d)
+
+checkoutput <<EOF
+test.log 0
+test.log.$DATESTRING 0 zero
+EOF
+
+if [ -f $OLDFNAME ]; then
+    echo "aged log file not deleted"
+    exit 3
+fi
+
+else
+	echo "Skipping age test 71"
+fi
 
 cleanup
 

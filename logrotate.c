@@ -1439,11 +1439,10 @@ int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 		sortGlobResult(&globResult, strlen(rotNames->dirName) + 1 + strlen(rotNames->baseName), dformat);
 	    for (i = 0; i < globResult.gl_pathc; i++) {
 		if (!stat((globResult.gl_pathv)[i], &fst_buf)) {
-		    if ((i <= ((int) globResult.gl_pathc - rotateCount))
-			|| ((log->rotateAge > 0)
-			    &&
-			    (((nowSecs - fst_buf.st_mtime) / 60 / 60 / 24)
-			     > log->rotateAge))) {
+		    if ((i <= ((int)globResult.gl_pathc - rotateCount)) ||
+			    ((log->rotateAge > 0) &&
+			     (((nowSecs - fst_buf.st_mtime + 60 * 60 * 24 - 1) /
+			       60 / 60 / 24) > log->rotateAge))) {
 			if (mail_out != -1) {
 			    char *mailFilename =
 				(globResult.gl_pathv)[mail_out];
@@ -1492,9 +1491,9 @@ int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 			rotNames->baseName, i, fileext, compext) < 0) {
 		    message(MESS_FATAL, "could not allocate mailFilename memory\n");
 		}
-		if (!stat(oldName, &fst_buf)
-		    && (((nowSecs - fst_buf.st_mtime) / 60 / 60 / 24)
-			> log->rotateAge)) {
+		if (!stat(oldName, &fst_buf) &&
+		    (((nowSecs - fst_buf.st_mtime + 60 * 60 * 24 - 1) / 60 /
+		      60 / 24) > log->rotateAge)) {
 		    char *mailFilename = oldName;
 		    if (!hasErrors && log->logAddress)
 			hasErrors =
