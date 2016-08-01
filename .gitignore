@@ -5,7 +5,12 @@
 *.o
 Makefile.in
 cscope.out
+/AUTHORS
+/ChangeLog
+/NEWS
+/README
 /autom4te.cache/
+/compile
 /configure
 /depcomp
 /install-sh
