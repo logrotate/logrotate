@@ -7,4 +7,11 @@ dist_man_MANS = logrotate.8 logrotate.conf.5
 
 EXTRA_DIST = CHANGES autogen.sh examples
 
-SUBDIRS = test
+# the dot ensures that logrotate is built before it is tested
+SUBDIRS = . test
+
+# needed for 'make dist' and 'make distcheck' to work out of the box
+dist: all
+
+# for compatibility with older releases of logrotate
+test: check

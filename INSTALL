@@ -2,11 +2,11 @@ The simplest way to compile this package is:
 
   1. `cd' to the directory containing the package's source code
 
-  2. Configure logrotate using `./autogen.sh' and `./configure'.
+  2. Configure logrotate using `./configure'.
 
   3. Type `make' to compile the package.
 
-  4. Optionally, type `make test' to run any self-tests that come with
+  4. Optionally, type `make check' to run any self-tests that come with
      the package.
 
   5. Type `make install' to install the programs and any data files and
@@ -19,5 +19,5 @@ The simplest way to compile this package is:
 If you want to add the Access Control List (ACL) support to the program
 use `./configure --with-acl=yes' at the point 2.
 
-If you want to add the NSA Security-Enhanced Linux (SELinux) support to 
+If you want to add the NSA Security-Enhanced Linux (SELinux) support to
 the program use `./configure --with-selinux=yes' at the point 2.

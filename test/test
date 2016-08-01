@@ -3,7 +3,6 @@
 ACL_TESTS=1
 SELINUX_TESTS=0
 SYSLOG_TESTS=0
-LOGROTATE=../logrotate
 M="-m ./mailer"
 S="-s state"
 RLR="$LOGROTATE $M $S"
