@@ -1,4 +1,4 @@
-AC_INIT([logrotate],[3.9.2])
+AC_INIT([logrotate],[3.10.0])
 
 AM_INIT_AUTOMAKE
 AC_DEFINE(_GNU_SOURCE)
