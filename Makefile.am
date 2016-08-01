@@ -3,7 +3,8 @@ MAN5 = logrotate.conf.5
 
 AM_CFLAGS = -Wall -Werror
 sbin_PROGRAMS = logrotate
-logrotate_SOURCES = logrotate.c log.c config.c basenames.c
+logrotate_SOURCES = basenames.c config.c log.c logrotate.c \
+		    basenames.h config.h log.h logrotate.h queue.h
 
 install-data-local:
 	$(AM_V_at)$(INSTALL) -d $(DESTDIR)$(mandir)/man8
