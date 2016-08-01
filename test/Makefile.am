@@ -3,7 +3,13 @@ EXTRA_DIST = \
 	compress-error \
 	mailer \
 	test \
-	test-config.*.in
+	$(top_srcdir)/test/test-config.*.in
 
-test:
-	(./test)
+DISTCLEANFILES = \
+	test.ACL \
+	test.SELINUX \
+	test.example
+
+check:
+	test $(top_srcdir) = $(top_builddir) || ln -fs $(top_srcdir)/test/* .
+	LOGROTATE=$(top_builddir)/logrotate ./test

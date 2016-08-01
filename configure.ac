@@ -13,6 +13,9 @@ AC_STRUCT_ST_BLOCKS
 AC_CHECK_LIB([popt],[poptParseArgvString],,
   AC_MSG_ERROR([libpopt required but not found]))
 
+dnl Needed for out-of-source builds
+mkdir -p test
+
 AC_ARG_WITH([selinux],
   [AS_HELP_STRING([--with-selinux],
     [support handling SELinux contexts (yes,no,check) @<:@default=check@:>@])],
