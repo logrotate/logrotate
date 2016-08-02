@@ -10,11 +10,11 @@ The latest release is:
 
 Previous releases:
 
-* [​logrotate-3.9.1](https://fedorahosted.org/releases/l/o/logrotate/logrotate-3.9.1.tar.gz)
-* [​logrotate-3.9.0](https://fedorahosted.org/releases/l/o/logrotate/logrotate-3.9.0.tar.gz)
-* [​logrotate-3.8.9](https://fedorahosted.org/releases/l/o/logrotate/logrotate-3.8.9.tar.gz)
-* [​logrotate-3.8.8](https://fedorahosted.org/releases/l/o/logrotate/logrotate-3.8.8.tar.gz)
-* [​logrotate-3.8.7](https://fedorahosted.org/releases/l/o/logrotate/logrotate-3.8.7.tar.gz)
+* [logrotate-3.9.1](https://fedorahosted.org/releases/l/o/logrotate/logrotate-3.9.1.tar.gz)
+* [logrotate-3.9.0](https://fedorahosted.org/releases/l/o/logrotate/logrotate-3.9.0.tar.gz)
+* [logrotate-3.8.9](https://fedorahosted.org/releases/l/o/logrotate/logrotate-3.8.9.tar.gz)
+* [logrotate-3.8.8](https://fedorahosted.org/releases/l/o/logrotate/logrotate-3.8.8.tar.gz)
+* [logrotate-3.8.7](https://fedorahosted.org/releases/l/o/logrotate/logrotate-3.8.7.tar.gz)
 
 # Patches and questions
 
