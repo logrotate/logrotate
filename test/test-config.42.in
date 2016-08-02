@@ -6,7 +6,7 @@ create
     sharedscripts
     prerotate
 		touch scriptout
-		IFS=$(/usr/bin/printf "\n\b")
+		IFS=$(printf "\n\b")
 		printf "\"" >> scriptout
 		for f in "$1"
 		do
