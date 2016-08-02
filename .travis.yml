@@ -11,7 +11,7 @@ script:
   - ./configure
   - make
   - make test
-  - cd test && /bin/dash test && cd ..
+  - cd test && LOGROTATE=../logrotate /bin/dash test && cd ..
   - make distcheck
 branches:
   only:
