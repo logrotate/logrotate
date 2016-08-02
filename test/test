@@ -30,7 +30,7 @@ fi
 
 # -- SELINUX - BEGIN --------------------------------
 # We test if the ACLs tests should be done or not
-if type "selinuxenabled" > /dev/null && selinuxenabled; then
+if type "selinuxenabled" >/dev/null 2>&1 && selinuxenabled; then
 	SELINUX_TESTS=1
 else
 	echo "SELinux disabled. SELinux tests will not be executed."
@@ -62,7 +62,7 @@ fi
 # -- SYSLOG - BEGIN
 logger syslog_test 2>/dev/null
 if [ $? = 0 ]; then
-	journalctl -n 50|grep syslog_test 2>/dev/null >/dev/null
+	journalctl -n 50 2>/dev/null | grep syslog_test 2>/dev/null >/dev/null
 	if [ $? = 0 ]; then
 		SYSLOG_TESTS=1
 	fi
