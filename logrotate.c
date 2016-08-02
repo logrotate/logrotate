@@ -1785,8 +1785,9 @@ int postrotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 {
     int hasErrors = 0;
 
-    if (!state->doRotate)
+    if (!state->doRotate) {
 	return 0;
+    }
 
 	if (!hasErrors && log->flags & LOG_FLAG_TMPFILENAME) {
 		char *tmpFilename = NULL;
