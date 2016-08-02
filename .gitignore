@@ -3,6 +3,7 @@
 .*.swp
 *.m4
 *.o
+Makefile
 Makefile.in
 cscope.out
 /AUTHORS

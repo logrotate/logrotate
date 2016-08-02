@@ -5,6 +5,9 @@ logrotate_SOURCES = basenames.c config.c log.c logrotate.c \
 
 dist_man_MANS = logrotate.8 logrotate.conf.5
 
+# deprecated hard-wired Makefile, will be removed eventually
+EXTRA_DIST = Makefile.legacy
+
 # the dot ensures that logrotate is built before it is tested
 SUBDIRS = . test
 
