@@ -16,7 +16,7 @@ create
     endscript
     postrotate
 		touch scriptout
-		IFS=$(/usr/bin/printf "\n\b")
+		IFS=$(printf "\n\b")
 		for f in "$1"
 		do
 			printf '%s' "$(basename $f)" >>  scriptout
