@@ -15,6 +15,7 @@ cscope.out
 /depcomp
 /install-sh
 /logrotate
+/logrotate.spec
 /missing
 /test/test.ACL
 /test/test.SELINUX

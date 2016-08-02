@@ -43,5 +43,5 @@ AS_IF([test "$ac_cv_lib_acl_acl_get_file" = yes],
 
 AC_CHECK_FUNCS([strptime qsort fork vfork madvise vsyslog])
 
-AC_CONFIG_FILES([Makefile test/Makefile])
+AC_CONFIG_FILES([Makefile test/Makefile logrotate.spec])
 AC_OUTPUT
