@@ -1,3 +1,11 @@
+3.9.2 -> 3.10.0
+    - Legacy Makefile renamed to Makefile.legacy, will be removed eventually.
+    - Fix 'make dist' and 'make distcheck' to produce a usable release tarball.
+    - Fix 'olddir' usage with wildcard in the middle of path in the pattern
+      definition when the pattern did not match any log file.
+    - Remove half-rotated files when rotation of particular log file is skipped
+      because of an error during copy or compression.
+
 3.9.1 -> 3.9.2
 	- Upstream moved to GitHub: <https://github.com/logrotate/logrotate>.
 	- Add support for %M, %S and %V in "dateext" directive.
