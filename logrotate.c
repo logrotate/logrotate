@@ -1789,7 +1789,7 @@ int postrotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 	return 0;
     }
 
-	if (!hasErrors && log->flags & LOG_FLAG_TMPFILENAME) {
+    if (!hasErrors && log->flags & LOG_FLAG_TMPFILENAME) {
 		char *tmpFilename = NULL;
 		if (asprintf(&tmpFilename, "%s%s", log->files[logNum], ".tmp") < 0) {
 			message(MESS_FATAL, "could not allocate tmpFilename memory\n");
@@ -1826,7 +1826,7 @@ int postrotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 	hasErrors = removeLogFile(rotNames->disposeName, log);
 
 #ifdef WITH_SELINUX
-	if (selinux_enabled) {
+    if (selinux_enabled) {
 		setfscreatecon_raw(prev_context);
 		freecon(prev_context);
 		prev_context = NULL;
