@@ -10,6 +10,8 @@ AC_PROG_CC_STDC
 AC_STRUCT_ST_BLKSIZE
 AC_STRUCT_ST_BLOCKS
 
+AC_SYS_LARGEFILE
+
 AC_CHECK_LIB([popt],[poptParseArgvString],,
   AC_MSG_ERROR([libpopt required but not found]))
 
