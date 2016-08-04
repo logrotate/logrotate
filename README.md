@@ -6,7 +6,7 @@ The logrotate utility is designed to simplify the administration of log files on
 
 The latest release is:
 
-* [logrotate-3.10.0](https://github.com/logrotate/logrotate/releases/download/3.9.2/logrotate-3.9.2.tar.gz) ([Changelog](https://github.com/logrotate/logrotate/commit/028f1cb4))
+* [logrotate-3.10.0](https://github.com/logrotate/logrotate/releases/download/3.10.0/logrotate-3.10.0.tar.gz) ([Changelog](https://github.com/logrotate/logrotate/commit/028f1cb4))
 
 Previous releases:
 
