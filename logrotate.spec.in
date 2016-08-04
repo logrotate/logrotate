@@ -4,7 +4,7 @@ Version: @VERSION@
 Release: 1
 License: GPL+
 Group: System Environment/Base
-Source: https://fedorahosted.org/releases/l/o/logrotate/logrotate-%{version}.tar.gz
+Source: https://github.com/logrotate/logrotate/releases/download/%{version}/logrotate-%{version}.tar.gz
 Requires: coreutils >= 5.92 libsepol libselinux popt
 BuildRequires: libselinux-devel popt-devel
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
