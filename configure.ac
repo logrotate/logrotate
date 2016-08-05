@@ -3,7 +3,6 @@ AC_INIT([logrotate],[3.10.0])
 dnl Do not require AUTHORS, ChangeLog, NEWS, and README to exist
 AM_INIT_AUTOMAKE([foreign])
 
-AM_INIT_AUTOMAKE
 AC_DEFINE(_GNU_SOURCE)
 
 AM_EXTRA_RECURSIVE_TARGETS([test])
