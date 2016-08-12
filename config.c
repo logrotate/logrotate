@@ -231,6 +231,11 @@ static int readModeUidGid(const char *configFile, int lineNum, char *key,
 	struct passwd *pw = NULL;
 
 	rc = sscanf(key, "%o %199s %199s%c", &m, u, g, &tmp);
+	
+	if(strcmp("su",directive) == 0) {
+		rc = 0;
+	}
+	
 	/* We support 'key <owner> <group> notation now */
 	if (rc == 0) {
 		rc = sscanf(key, "%199s %199s%c", u, g, &tmp);
