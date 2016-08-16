@@ -1216,7 +1216,7 @@ EOF
 if [ $SELINUX_TESTS = 1 ]; then
 	chcon --type=logrotate_tmp_t test.log
 else
-	echo "Skipping SELinux part of test 6"
+	echo "Skipping SELinux part of test 46"
 fi
 
 cleanup 47
