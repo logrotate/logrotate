@@ -45,7 +45,7 @@
 #include "asprintf.c"
 #endif
 
-#if !defined(asprintf) && !defined(_FORTIFY_SOURCE)
+#if !defined(HAVE_ASPRINTF) && !defined(_FORTIFY_SOURCE)
 #include <stdarg.h>
 
 int asprintf(char **string_ptr, const char *format, ...)
@@ -78,7 +78,7 @@ int asprintf(char **string_ptr, const char *format, ...)
 
 #endif
 
-#if !defined(strndup)
+#if !defined(HAVE_STRNDUP)
 char *strndup(const char *s, size_t n)
 {
        size_t nAvail;
