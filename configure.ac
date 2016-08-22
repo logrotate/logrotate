@@ -18,8 +18,6 @@ AC_SYS_LARGEFILE
 AC_CHECK_LIB([popt],[poptParseArgvString],,
   AC_MSG_ERROR([libpopt required but not found]))
 
-AC_CHECK_FUNCS([strndup asprintf])
-
 dnl Needed for out-of-source builds
 mkdir -p test
 
@@ -47,8 +45,7 @@ AS_CASE(["$with_acl"],
 AS_IF([test "$ac_cv_lib_acl_acl_get_file" = yes],
   echo "1" > ./test/test.ACL;, echo "0" > ./test/test.ACL;)
 
-
-AC_CHECK_FUNCS([strptime qsort fork vfork madvise vsyslog])
+AC_CHECK_FUNCS([asprintf fork madvise qsort strndup strptime vfork vsyslog])
 
 AC_CONFIG_FILES([Makefile test/Makefile logrotate.spec])
 AC_OUTPUT
