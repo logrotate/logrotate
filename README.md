@@ -17,6 +17,6 @@ Previous releases:
 * [logrotate-3.8.8](https://fedorahosted.org/releases/l/o/logrotate/logrotate-3.8.8.tar.gz)
 * [logrotate-3.8.7](https://fedorahosted.org/releases/l/o/logrotate/logrotate-3.8.7.tar.gz)
 
-# Patches and questions
+# Patches and Questions
 
-Send patches to logrotate-owner[at]fedoraproject[dot]org, add new tickets on GitHub or create pull requests.
+Open issues or pull requests on GitHub.
