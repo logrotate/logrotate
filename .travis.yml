@@ -1,11 +1,14 @@
 language: c
+
 compiler:
   - gcc
   - clang
+
 install:
   - sudo add-apt-repository ppa:dns/gnu -y
   - sudo apt-get -qq update
   - sudo apt-get -qq install libpopt-dev libselinux1-dev libacl1-dev automake dash
+
 script:
   - ./autogen.sh
   - ./configure
@@ -13,12 +16,12 @@ script:
   - make test
   - cd test && LOGROTATE=../logrotate /bin/dash test && cd ..
   - make distcheck
-branches:
-  only:
-    - master
+
 notifications:
   email:
     recipients:
       - logrotate-owner@fedoraproject.org
     on_success: always
     on_failure: always
+
+# vim:et:ts=2:sw=2
