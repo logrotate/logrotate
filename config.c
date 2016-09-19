@@ -318,8 +318,7 @@ static int do_mkdir(const char *path, mode_t mode, uid_t uid, gid_t gid) {
 				path, strerror(errno));
 			return -1;
 		}
-		if ((uid != sb.st_uid || gid != sb.st_gid) && 
-			chown(path, uid, gid)) {
+		if (chown(path, uid, gid)) {
 			message(MESS_ERROR, "error setting owner of %s to uid %d and gid %d: %s\n",
 				path, uid, gid, strerror(errno));
 			return -1;
