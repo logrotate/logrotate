@@ -323,7 +323,12 @@ static int do_mkdir(const char *path, mode_t mode, uid_t uid, gid_t gid) {
 				path, uid, gid, strerror(errno));
 			return -1;
 		}
-    }
+		if (chmod(path, mode) != 0) {
+			message(MESS_ERROR, "error setting permissions of %s to 0%o: %s\n",
+				path, mode, strerror(errno));
+			return -1;
+		}
+	}
 	else if (!S_ISDIR(sb.st_mode)) {
 		message(MESS_ERROR, "path %s already exists, but it is not a directory\n",
 			path);
