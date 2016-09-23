@@ -100,7 +100,7 @@ All notable changes to this project will be documented in this file.
 
 ## [3.8.4] - 2013-04-30
   - Added --version command line option
-  - Disable ACL tests if logrotate is not compiled WITH_ACL support or if 
+  - Disable ACL tests if logrotate is not compiled WITH_ACL support or if
     ACLs are not supported by the system running tests
   - Disable SELinux tests if logrotate is not compiled WITH_SELINUX support
     or if SELinux is not supported by the system running tests
@@ -148,7 +148,7 @@ All notable changes to this project will be documented in this file.
 ## [3.8.1] - 2011-08-31
   - fixed 1 memory leak in prerotateSingleLog
   - another fixes for Solaris
-  - fixed HP-UX compilation and default config 
+  - fixed HP-UX compilation and default config
   - do not redirect logrotate errors to /dev/null in cron script
   - fixed "size" directive parsing
   - handle situation when acl_get_fd is supported, but acl_set_fd is not
@@ -180,7 +180,7 @@ All notable changes to this project will be documented in this file.
   - added rotating (copying) non-writable, readable files
     (patch by Henrique Martins)
   - fixed missingok problem with globs
-    (taken from the Debian patches by Ted Percival 
+    (taken from the Debian patches by Ted Percival
      <ted@midg3t.net>)
   - fixed bug when log files could be removed even there was
     some error in rotation process.
@@ -226,7 +226,7 @@ All notable changes to this project will be documented in this file.
   - bugfixes
 
 ## [3.7.1] - 2004-10-20
-  - Fix sending mails and running scripts after the 
+  - Fix sending mails and running scripts after the
     system() -> execve() changes
   - Preserve file attributes when compressing files (original patch
     by Daniel Himler)
@@ -354,7 +354,7 @@ All notable changes to this project will be documented in this file.
   - added olddir/noolddir options
   - added ifempty/notifempty options
   - ignore nonnormal files when reading config files from a directory
-  - (these were suggested and originally implemented by 
+  - (these were suggested and originally implemented by
     Henning Schmiedehausen)
   - updated the man page to reflect these changes
   - made "make install" accept PREFIX argument
@@ -417,7 +417,7 @@ All notable changes to this project will be documented in this file.
    [2.1]: https://github.com/logrotate/logrotate/compare/2-0-2...2-1
  [2.0.2]: https://github.com/logrotate/logrotate/compare/2-0-1...2-0-2
  [2.0.1]: https://github.com/logrotate/logrotate/commits/2-0-1
-  
+
 <!--
 vim:et:sw=2:ts=2
 -->
