@@ -396,7 +396,7 @@ All notable changes to this project will be documented in this file.
  [3.5.4]: https://github.com/logrotate/logrotate/compare/r3-5-3...r3-5-4
  [3.5.3]: https://github.com/logrotate/logrotate/compare/r3-5-2...r3-5-3
  [3.5.2]: https://github.com/logrotate/logrotate/compare/r3-5-1...r3-5-2
- [3.5.1]: https://github.com/logrotate/logrotate/compare/r3-5..r3-5-1
+ [3.5.1]: https://github.com/logrotate/logrotate/compare/r3-5...r3-5-1
    [3.5]: https://github.com/logrotate/logrotate/compare/r3-4...r3-5
    [3.4]: https://github.com/logrotate/logrotate/compare/r3-3-2...r3-4
  [3.3.2]: https://github.com/logrotate/logrotate/compare/r3-3-1...r3-3-2
