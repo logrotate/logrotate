@@ -39,7 +39,7 @@ All notable changes to this project will be documented in this file.
     logs when one of them is missing.
   - In the debug mode, do not skip the code-path which handles the case when
     the last rotation does not exist. [Sergey Vidishev]
-  - Show more precise description when "log does not need rotating".\
+  - Show more precise description when "log does not need rotating".
   - Add new -l option to log verbose output to file. The file is overwritten
     on every logrotate execution.
   - Allow rotation of sparse files with copytruncate.
