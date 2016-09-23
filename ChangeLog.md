@@ -2,7 +2,8 @@
 
 All notable changes to this project will be documented in this file.
 
-## [3.10.0]
+## [3.10.0] - 2016-08-03
+
   - Legacy Makefile renamed to Makefile.legacy, will be removed eventually.
   - Fix 'make dist' and 'make distcheck' to produce a usable release tarball.
   - Fix 'olddir' usage with wildcard in the middle of path in the pattern
@@ -10,7 +11,7 @@ All notable changes to this project will be documented in this file.
   - Remove half-rotated files when rotation of particular log file is skipped
     because of an error during copy or compression.
 
-## [3.9.2]
+## [3.9.2] - 2016-01-20
   - Upstream moved to GitHub: <https://github.com/logrotate/logrotate>.
   - Add support for %M, %S and %V in "dateext" directive.
   - Fix bad filename in subject of email when "compress" and "maillast" is
@@ -28,10 +29,10 @@ All notable changes to this project will be documented in this file.
   - Support logging to syslog by using '-l syslog'.
   - Allow running test-suite using dash.
 
-## [3.9.1]
+## [3.9.1] - 2015-04-03
   - Fix off-by-one error which can lead to crash when copytruncate is used.
 
-## [3.9.0]
+## [3.9.0] - 2015-04-03
   - Fix crash when using long dateformat. [nmerdan]
   - Add support for %H dateformat. [czchen]
   - Fix regression introduced in 3.8.9 when when rotating multiple
@@ -43,7 +44,7 @@ All notable changes to this project will be documented in this file.
     on every logrotate execution.
   - Allow rotation of sparse files with copytruncate.
 
-## [3.8.9]
+## [3.8.9] - 2015-02-13
   - Add new directive "createolddir" and "nocreateolddir". These directives
     can be used to create the directory specified by olddir with particular
     "mode", "owner" and "group".
@@ -56,7 +57,7 @@ All notable changes to this project will be documented in this file.
   - Add experimental 'renamecopy' directive to allow 'olddir' on different
     physical device. See the "man logrotate" for more information.
 
-## [3.8.8]
+## [3.8.8] - 2014-10-16
   - Add support for building using autotools/automake. Using "./autogen.sh",
     "./configure" and "make" is now preferred way how to build logrotate.
     Old Makefile remains available, but it is deprecated and will be removed
@@ -74,17 +75,17 @@ All notable changes to this project will be documented in this file.
   - Prepend error printed by compression program with the log name even when
     the compression program exits with zero exit code.
 
-## [3.8.7]
+## [3.8.7] - 2013-10-10
   - Fixed --force/-f option handling together with "size" directive
     (3.8.5 regression).
   - Use "logrotate_tmp_t" context for SELinux tests and if this context does
     not exist, skip SELinux related tests.
 
-## [3.8.6]
+## [3.8.6] - 2013-07-31
   - Fixed memory corruption caused by rotation directory which does not
     exist with "sharedscripts" together with "prerotate" script.
 
-## [3.8.5]
+## [3.8.5] - 2013-06-10
   - Improved rotation during daylight saving time and between timezone
     changes.
   - Fixed ACL setting problem caused by ext3 erroneously reporting ENOSYS
@@ -97,7 +98,7 @@ All notable changes to this project will be documented in this file.
   - Improved manpage consistency and formatting.
   - Fix race condition between acl_set_fd() and fchmod().
 
-## [3.8.4]
+## [3.8.4] - 2013-04-30
   - Added --version command line option
   - Disable ACL tests if logrotate is not compiled WITH_ACL support or if 
     ACLs are not supported by the system running tests
@@ -116,7 +117,7 @@ All notable changes to this project will be documented in this file.
   - Call prerotate/postrotate script only for really rotated files in
     nosharedscripts mode (as stated in man page).
 
-## [3.8.3]
+## [3.8.3] - 2012-10-04
   - Fixed setting "size" bigger than 4GB on 32bit architectures
   - Do not overwrite mode set by "create" option when using ACL. "create"
     directive is now not mixed up with ACLs. If you use "create" in config
@@ -125,7 +126,7 @@ All notable changes to this project will be documented in this file.
   - Mode argument in "create" directive can be omitted. Only owner and group
     is set in this case. Check man page for more info.
 
-## [3.8.2]
+## [3.8.2] - 2012-08-01
   - show error and ignore config if '{' is not present after log files
     declaration
   - support whitespaces in compressoptions directive
@@ -144,7 +145,7 @@ All notable changes to this project will be documented in this file.
     stdlib.h there
   - 13 new tests added
 
-## [3.8.1]
+## [3.8.1] - 2011-08-31
   - fixed 1 memory leak in prerotateSingleLog
   - another fixes for Solaris
   - fixed HP-UX compilation and default config 
@@ -153,7 +154,7 @@ All notable changes to this project will be documented in this file.
   - handle situation when acl_get_fd is supported, but acl_set_fd is not
   - added "maxsize" directive (see man page)
 
-## [3.8.0]
+## [3.8.0] - 2011-06-21
   - added "dateyesterday" option (see man page)
   - fixed crash when config file had exactly 4096*N bytes
   - added WITH_ACL make option to link against -lacl and preserve ACLs
@@ -169,7 +170,7 @@ All notable changes to this project will be documented in this file.
   - NetBSD/FreeBSD compilation fixes
   - Solaris compilation fixes
 
-## [3.7.9]
+## [3.7.9] - 2010-06-28
   - fix building on Solaris (patch by András Szilárd)
   - don't copy config files on the stack -- mmap them instead
     (fixes segfaults with too large/invalid config files)
@@ -194,7 +195,7 @@ All notable changes to this project will be documented in this file.
   - Better *rotate scripts parser. (taken from the Debian patches)
   - Allow 'include' directive in log file definitions
 
-## [3.7.8]
+## [3.7.8] - 2009-01-28
   - do not exit on status file errors
   - limit config file inclusion nesting
   - use hashes for status file handling (patch by Petr Tesarik
@@ -204,33 +205,33 @@ All notable changes to this project will be documented in this file.
   - manual page corrections (taken from the Debian patches by
     Paul Martin <pm@debian.org>)
 
-## [3.7.7]
+## [3.7.7] - 2008-05-19
   - dateformat
   - fix possible buffer overflows in strings handling
   - various minor bugfixes
   - change logInfo handling (patches by Leonardo Chiquitto)
 
-## [3.7.6]
+## [3.7.6] - 2008-05-14
   - patches from Leonardo Chiquitto that fix compile warnings
   - examples/logrotate-default: add btmp rotation, dateext
   - update man page
   - tabooext honor wildcards
   - fix selinux support with dateext
 
-## [3.7.5]
+## [3.7.5] - 2007-03-01
   - import Fedora patches
   - add option to use shred for deleting files, patch by
     Peter Eckersley <pde@eff.org>
   - ignore .cfsaved files
   - bugfixes
 
-## [3.7.1]
+## [3.7.1] - 2004-10-20
   - Fix sending mails and running scripts after the 
     system() -> execve() changes
   - Preserve file attributes when compressing files (original patch
     by Daniel Himler)
 
-## [3.7]
+## [3.7] - 2004-01-26
   - always use compressext for the extension for compressed
     files; before compresscmd and compressext had to agree
   - moved all compression to one code block
@@ -240,27 +241,27 @@ All notable changes to this project will be documented in this file.
   - don't use system() for mailing (or uncompressing) logs anymore
   - use "-s" for speciying the subjected of mailed logs
 
-## [3.6]
+## [3.6] - 2001-11-28
   - See .spec file for changes
 
-## [3.5.4]
+## [3.5.4] - 2001-01-05
   - %defattr(-,root,root) in specfile
 
-## [3.5.3]
+## [3.5.3] - 2001-01-03
   - patch /tmp file race condition problem, use mkstemp;
     Thanks go to Solar Designer <solar@openwall.com>
 
-## [3.5.2]
+## [3.5.2] - 2000-09-29
   - added .swp and .rpmnew to default taboo list
 
-## [3.5.1]
+## [3.5.1] - 2000-08-11
   - handle state dates in the future a bit more sanely
 
-## [3.5]
+## [3.5] - 2000-07-23
   - multiple file names/patterns may be given for a single entry
   - fixed mistake in when logs were uncompressed before mailing
 
-## [3.4]
+## [3.4] - 2000-07-13
   - added sharedscripts/nosharedscripts
   - added simple testbed
   - quote filenames in state file to allow proper rotation of files
@@ -268,46 +269,46 @@ All notable changes to this project will be documented in this file.
     the state file!
   - ignore white space at end of line
 
-## [3.3.2]
+## [3.3.2] - 2000-06-19
   - don't rotate lastlog
 
-## [3.3.1]
+## [3.3.1] - 2000-02-03
   - support gzipped man pages
 
-## [3.3]
+## [3.3] - 1999-06-16
   - added "mailfirst" and "maillast" flags (based on Tim Wall's patch)
   - documented "extension" flag
   - "rotate 0" gives proper script and mail behavior
 
-## [3.2]
+## [3.2] - 1999-04-07
   - create wtmp with correct perms
 
-## [3.1]
+## [3.1] - 1999-04-01
   - fixed small alloca()
   - added missingok flag
   - use popt to display usage message
   - handle /some/file { } in config file
 
-## [3.0]
+## [3.0] - 1999-03-18
   - updates for glibc 2.1
 
-## [2.9]
+## [2.9] - 1999-03-05
   - fixed a bug parsing lines where { immediately follows the filename
   - allow log file patterns to be placed in double quotes, which	
     allows spaces in names
   - complain about missing log files (John Van Essen)
 
-## [2.8]
+## [2.8] - 1999-01-13
   - changes for glibc 2.1 (Cristian Gafton)
 
-## [2.7]
+## [2.7] - 1998-12-29
   - updated man page to include --force (Simon Mudd)
   - invoke scripts via /bin/sh rather then relying on /tmp execute
     semantics (Philip Guenther)
   - added "extension" option for forcing a file extension after rotation
     (Rob Hagopian)
 
-## [2.6]
+## [2.6] - 1998-05-05
   - added nodelaycompress flag (from Jos Vos)
   - added copytruncate, nocopytruncate flag (from Jos Vos)
   - removed umask handling; explicitly use fchmod() insteadmoved umask
@@ -316,7 +317,7 @@ All notable changes to this project will be documented in this file.
   - fixed segv caused by overly long filenames
   - switched from getopt_long to popt
 
-## [2.5]
+## [2.5] - 1997-09-01
   - set the umask of the process to 0, letting open() create processes
     with the proper permissions
   - added delaycompress flag (from Jos Vos)
@@ -327,20 +328,20 @@ All notable changes to this project will be documented in this file.
   - added the tabooext directive
   - fixed problem in globbing
 
-## [2.4]
+## [2.4] - 1997-08-11
   - glob log names in config file
   - added ,v to taboo list
   - fixed bug w/ create parsing
   - use an int rather then a mode_t when parsing create entries as
     sscanf requires it
 
-## [2.3]
+## [2.3] - 1997-03-18
   - fill in all of last rotated structure (this probable isn't
     really necessary but it's a bit cleaner and will avoid future
     problems);
   - fixed .spec file
 
-## [2.2]
+## [2.2] - 1997-02-27
   - If a file is rotated and we have no state information for it,
     right out the current time.
   - Weekly rotation happens when the current weekday is less then
@@ -359,15 +360,15 @@ All notable changes to this project will be documented in this file.
   - made "make install" accept PREFIX argument
   - added .spec file to tarball
 
-## [2.1]
+## [2.1] - 1997-01-13
   - Don't output state information for logs that have never been
     rotated (better then 1900-1-0)
   - Accept 1900-1-0 as time 0
 
-## [2.0.2]
+## [2.0.2] - 1996-12-10
   - I have no idea :-(
 
-## [2.0.1]
+## [2.0.1] - 1996-12-09
   - ignore files in included directories which end with ~, .rpmorig, or
     .rpmsave
 
