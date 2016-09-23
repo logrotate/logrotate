@@ -5,7 +5,7 @@ logrotate_SOURCES = basenames.c config.c log.c logrotate.c \
 
 dist_man_MANS = logrotate.8 logrotate.conf.5
 
-EXTRA_DIST = CHANGES README.md autogen.sh examples
+EXTRA_DIST = ChangeLog.md README.md autogen.sh examples
 
 # deprecated hard-wired Makefile, will be removed eventually
 EXTRA_DIST += Makefile.legacy
