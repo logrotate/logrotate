@@ -370,6 +370,52 @@ All notable changes to this project will be documented in this file.
 ## [2.0.1]
   - ignore files in included directories which end with ~, .rpmorig, or
     .rpmsave
+
+[3.10.0]: https://github.com/logrotate/logrotate/compare/3.9.2...3.10.0
+ [3.9.2]: https://github.com/logrotate/logrotate/compare/r3-9-1...3.9.2
+ [3.9.1]: https://github.com/logrotate/logrotate/compare/r3-9-0...r3-9-1
+ [3.9.0]: https://github.com/logrotate/logrotate/compare/r3-8-9...r3-9-0
+ [3.8.9]: https://github.com/logrotate/logrotate/compare/r3-8-8...r3-8-9
+ [3.8.8]: https://github.com/logrotate/logrotate/compare/r3-8-7...r3-8-8
+ [3.8.7]: https://github.com/logrotate/logrotate/compare/r3-8-6...r3-8-7
+ [3.8.6]: https://github.com/logrotate/logrotate/compare/r3-8-5...r3-8-6
+ [3.8.5]: https://github.com/logrotate/logrotate/compare/r3-8-4...r3-8-5
+ [3.8.4]: https://github.com/logrotate/logrotate/compare/r3-8-3...r3-8-4
+ [3.8.3]: https://github.com/logrotate/logrotate/compare/r3.8.2...r3-8-3
+ [3.8.2]: https://github.com/logrotate/logrotate/compare/r3-8-1...r3.8.2
+ [3.8.1]: https://github.com/logrotate/logrotate/compare/r3-8-0...r3-8-1
+ [3.8.0]: https://github.com/logrotate/logrotate/compare/r3-7-9...r3-8-0
+ [3.7.9]: https://github.com/logrotate/logrotate/compare/r3-7-8...r3-7-9
+ [3.7.8]: https://github.com/logrotate/logrotate/compare/r3-7-7...r3-7-8
+ [3.7.7]: https://github.com/logrotate/logrotate/compare/r3-7-6...r3-7-7
+ [3.7.6]: https://github.com/logrotate/logrotate/compare/r3-7-5...r3-7-6
+ [3.7.5]: https://github.com/logrotate/logrotate/compare/r3-7-1...r3-7-5
+ [3.7.1]: https://github.com/logrotate/logrotate/compare/r3-7...r3-7-1
+   [3.7]: https://github.com/logrotate/logrotate/compare/r3-6...r3-7
+   [3.6]: https://github.com/logrotate/logrotate/compare/r3-5-4...r3-6
+ [3.5.4]: https://github.com/logrotate/logrotate/compare/r3-5-3...r3-5-4
+ [3.5.3]: https://github.com/logrotate/logrotate/compare/r3-5-2...r3-5-3
+ [3.5.2]: https://github.com/logrotate/logrotate/compare/r3-5-1...r3-5-2
+ [3.5.1]: https://github.com/logrotate/logrotate/compare/r3-5...r3-5-1
+   [3.5]: https://github.com/logrotate/logrotate/compare/r3-4...r3-5
+   [3.4]: https://github.com/logrotate/logrotate/compare/r3-3-2...r3-4
+ [3.3.2]: https://github.com/logrotate/logrotate/compare/r3-3-1...r3-3-2
+ [3.3.1]: https://github.com/logrotate/logrotate/compare/r3-3...r3-3-1
+   [3.3]: https://github.com/logrotate/logrotate/compare/r3-2...r3-3
+   [3.2]: https://github.com/logrotate/logrotate/compare/r3-1...r3-2
+   [3.1]: https://github.com/logrotate/logrotate/compare/r3-0...r3-1
+   [3.0]: https://github.com/logrotate/logrotate/compare/r2-9...r3-0
+   [2.9]: https://github.com/logrotate/logrotate/compare/r2-8...r2-9
+   [2.8]: https://github.com/logrotate/logrotate/compare/r2-7...r2-8
+   [2.7]: https://github.com/logrotate/logrotate/compare/r2-6...r2-7
+   [2.6]: https://github.com/logrotate/logrotate/compare/r2-5...r2-6
+   [2.5]: https://github.com/logrotate/logrotate/compare/r2-4...r2-5
+   [2.4]: https://github.com/logrotate/logrotate/compare/2-3...r2-4
+   [2.3]: https://github.com/logrotate/logrotate/compare/2-2...2-3
+   [2.2]: https://github.com/logrotate/logrotate/compare/2-1...2-2
+   [2.1]: https://github.com/logrotate/logrotate/compare/2-0-2...2-1
+ [2.0.2]: https://github.com/logrotate/logrotate/compare/2-0-1...2-0-2
+ [2.0.1]: https://github.com/logrotate/logrotate/commits/2-0-1
   
 <!--
 vim:et:sw=2:ts=2
