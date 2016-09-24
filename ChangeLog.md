@@ -2,6 +2,8 @@
 
 All notable changes to this project will be documented in this file.
 
+## [UNRELEASED]
+
 ## [3.10.0] - 2016-08-03
 
   - Legacy Makefile renamed to Makefile.legacy, will be removed eventually.
@@ -372,6 +374,7 @@ All notable changes to this project will be documented in this file.
   - ignore files in included directories which end with ~, .rpmorig, or
     .rpmsave
 
+[UNRELEASED]: https://github.com/logrotate/logrotate/compare/3.10.0...master
 [3.10.0]: https://github.com/logrotate/logrotate/compare/3.9.2...3.10.0
  [3.9.2]: https://github.com/logrotate/logrotate/compare/r3-9-1...3.9.2
  [3.9.1]: https://github.com/logrotate/logrotate/compare/r3-9-0...r3-9-1
