@@ -183,7 +183,7 @@ checkoutput() {
 	if [ -n "$co_compressed" ] && [ "$co_compressed" != 0 ]; then
 		contents=`gunzip -c $file`
 	else
-		contents=`cat $file`
+		contents=`cat $file | tr -d '\000'`
 	fi
 	if [ "$contents" != "$expected" ]; then
 	    echo "file $file does not contain expected results (compressed $co_compressed, args $*)" >&2
