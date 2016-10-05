@@ -287,6 +287,15 @@ configured to be run by cron daily. You have to change this configuration
 and run \fIlogrotate\fR hourly to be able to really rotate logs hourly.
 
 .TP
+\fBaddextension \fIext\fR
+Log files are given the final extension \fIext\fR after rotation. If
+the original file already ends with \fIext\fR, the extension is not
+duplicated, but merely moved to the end, i.e. both \fBfilename\fR and
+\fBfilename\fIext\fR would get rotated to filename.1\fIext\fR. If
+compression is used, the compression extension (normally \fB.gz\fR)
+appears after \fIext\fR.
+
+.TP
 \fBifempty\fR
 Rotate the log file even if it is empty, overriding the \fBnotifempty\fR
 option (\fBifempty\fR is the default).

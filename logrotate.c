@@ -1227,6 +1227,22 @@ int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 
     rotNames->baseName = strdup(ourBaseName(log->files[logNum]));
 
+    if (log->addextension) {
+	size_t baseLen = strlen(rotNames->baseName);
+	size_t extLen = strlen(log->addextension);
+	if (baseLen >= extLen &&
+		strncmp(&(rotNames->baseName[baseLen - extLen]),
+		    log->addextension, extLen) == 0) {
+	    char *tempstr;
+
+	    tempstr = calloc(baseLen - extLen + 1, sizeof(char));
+	    strncat(tempstr, rotNames->baseName, baseLen - extLen);
+	    free(rotNames->baseName);
+	    rotNames->baseName = tempstr;
+	}
+	fileext = log->addextension;
+    }
+
     if (log->extension &&
 	strncmp(&
 		(rotNames->
