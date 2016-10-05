@@ -55,6 +55,7 @@ struct logInfo {
     char *pre, *post, *first, *last, *preremove;
     char *logAddress;
     char *extension;
+    char *addextension;
     char *compress_prog;
     char *uncompress_prog;
     char *compress_ext;
