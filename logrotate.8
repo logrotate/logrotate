@@ -127,6 +127,9 @@ compressed after they are rotated.  Note that comments may appear
 anywhere in the config file as long as the first non-whitespace
 character on the line is a \fB#\fR.
 
+Values are separated from directives by whitespace and/or an optional =.
+Numbers must be specified in a format understood by \fBstrtoul(3)\fR.
+
 The next section of the config file defines how to handle the log file
 \fI/var/log/messages\fR. The log will go through five weekly rotations before
 being removed. After the log file has been rotated (but before the old
