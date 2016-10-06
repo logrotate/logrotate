@@ -727,6 +727,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
     char **scriptDest = NULL;
     struct logInfo *newlog = defConfig;
     char *start, *chptr;
+    char *compresscmd_base;
     char *dirName;
     struct passwd *pw = NULL;
     int rc;
@@ -1266,6 +1267,20 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 					message(MESS_DEBUG, "compress_prog is now %s\n",
 						newlog->compress_prog);
 
+			 		compresscmd_base=strdup(basename(newlog->compress_prog));
+			 		fprintf(stdout, "compress_ext is %s\n", newlog->compress_prog);
+			 		i=0; /* have to check whether we may do this! */
+			 		/* we check whether we changed the compress_cmd. In case we use the apropriate extension
+			 		   as listed in compress_cmd_list */
+			 		while ((i>=0)&&(strcmp(compress_cmd_list[i][0], "EOLIST"))){
+			 		    if (0==strcmp(compress_cmd_list[i][0], compresscmd_base)){
+			 			newlog->compress_ext=strdup((char *)compress_cmd_list[i][1]);
+			 			message(MESS_DEBUG, "compress_ext was changed to %s\n", newlog->compress_ext);
+			 			fprintf(stdout, "compress_ext was changed to %s\n", newlog->compress_ext);
+			 			i=-10; /* terminate loop! */
+			 		    }
+			 		    i++;
+			 		}
 				} else if (!strcmp(key, "uncompresscmd")) {
 					freeLogItem (uncompress_prog);
 

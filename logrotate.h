@@ -80,6 +80,9 @@ TAILQ_HEAD(logInfoHead, logInfo) logs;
 extern int numLogs;
 extern int debug;
 
+/* This is the definition. Note we have to carry the "2" within the declaration (logrotate.c), too! */
+extern const char * compress_cmd_list[][2];
+
 int readAllConfigPaths(const char **paths);
 #if !defined(asprintf) && !defined(_FORTIFY_SOURCE)
 int asprintf(char **string_ptr, const char *format, ...);

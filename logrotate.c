@@ -106,6 +106,16 @@ unsigned int hashSize;
 int numLogs = 0;
 int debug = 0;
 char *mailCommand = DEFAULT_MAIL_COMMAND;
+/* This is the declaration. Note the "2" is needed in the definition (logrotate.h), too! */
+const char * compress_cmd_list[][2] = {
+  {"gzip", ".gz"},
+  {"bzip2", ".bz2"},
+  {"xz", ".xz"},
+  {"compress", ".Z"},
+  {"zip", "zip"},
+  {"EOLIST", "EOLIST"} /* end-marker */
+};
+
 time_t nowSecs = 0;
 static uid_t save_euid;
 static gid_t save_egid;
