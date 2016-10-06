@@ -101,6 +101,15 @@ char *strndup(const char *s, size_t n)
 }
 #endif
 
+const char * compress_cmd_list[][2] = {
+    {"gzip", ".gz"},
+    {"bzip2", ".bz2"},
+    {"xz", ".xz"},
+    {"compress", ".Z"},
+    {"zip", "zip"},
+    {NULL, NULL} /* end-marker */
+};
+
 enum {
 	STATE_DEFAULT = 2,
 	STATE_SKIP_LINE = 4,
@@ -1263,6 +1272,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 
 				} else if (!strcmp(key, "compresscmd")) {
 					freeLogItem (compress_prog);
+					char *compresscmd_base;
 
 					if (!
 						(newlog->compress_prog =
@@ -1280,6 +1290,16 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 					message(MESS_DEBUG, "compress_prog is now %s\n",
 						newlog->compress_prog);
 
+					compresscmd_base = strdup(basename(newlog->compress_prog));
+					/* we check whether we changed the compress_cmd. In case we use the apropriate extension
+					   as listed in compress_cmd_list */
+					for(i = 0; compress_cmd_list[i][0] != NULL; i++) {
+						if (!strcmp(compress_cmd_list[i][0], compresscmd_base)) {
+							newlog->compress_ext = strdup((char *)compress_cmd_list[i][1]);
+							message(MESS_DEBUG, "compress_ext was changed to %s\n", newlog->compress_ext);
+							break;
+						}
+					}
 				} else if (!strcmp(key, "uncompresscmd")) {
 					freeLogItem (uncompress_prog);
 

@@ -585,7 +585,7 @@ $RLR test-config.18 -l syslog --force
 
 checkoutput <<EOF
 test.log 0
-test.log.1.gz 1 zero
+test.log.1.Z 1 zero
 EOF
 
 (echo "gzip -f -9") | diff -u - compress-args
