@@ -13,8 +13,5 @@ EXTRA_DIST += Makefile.legacy
 # the dot ensures that logrotate is built before it is tested
 SUBDIRS = . test
 
-# needed for 'make dist' and 'make distcheck' to work out of the box
-dist: all
-
 # for compatibility with older releases of logrotate
 test: check
