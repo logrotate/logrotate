@@ -648,6 +648,7 @@ int readAllConfigPaths(const char **paths)
 		.preremove = NULL,
 		.logAddress = NULL,
 		.extension = NULL,
+		.addextension = NULL,
 		.compress_prog = NULL,
 		.uncompress_prog = NULL,
 		.compress_ext = NULL,
@@ -1246,6 +1247,19 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 
 					message(MESS_DEBUG, "extension is now %s\n",
 						newlog->extension);
+
+				} else if (!strcmp(key, "addextension")) {
+					if ((key = isolateValue
+						(configFile, lineNum, "addextension name", &start,
+							&buf, length)) != NULL) {
+						freeLogItem (addextension);
+						newlog->addextension = key;
+						key = NULL;
+					}
+					else continue;
+
+					message(MESS_DEBUG, "addextension is now %s\n",
+						newlog->addextension);
 
 				} else if (!strcmp(key, "compresscmd")) {
 					freeLogItem (compress_prog);

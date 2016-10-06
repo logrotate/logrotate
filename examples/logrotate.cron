@@ -1,8 +1,23 @@
-#!/bin/sh
+#!/bin/bash
 
-/usr/sbin/logrotate /etc/logrotate.conf
-EXITVALUE=$?
-if [ $EXITVALUE != 0 ]; then
-    /usr/bin/logger -t logrotate "ALERT exited abnormally with [$EXITVALUE]"
+# exit immediately if there is another instance running
+if pgrep /usr/sbin/logrotate > /dev/null ; then
+	/bin/logger -p cron.warning -t logrotate "ALERT another instance of logrotate is running - exiting"
+	exit 1
 fi
+
+TMPF=`mktemp ${TMPDIR:-/tmp}/logrotate.XXXXXXXXXX`
+
+/usr/sbin/logrotate /etc/logrotate.conf 2>&1 | tee $TMPF
+EXITVALUE=${PIPESTATUS[0]}
+
+if [ $EXITVALUE != 0 ]; then
+    # wait a sec, we might just have restarted syslog
+    sleep 1
+    # tell what went wrong
+    /bin/logger -p cron.warning -t logrotate "ALERT exited abnormally with [$EXITVALUE]"
+    /bin/logger -p cron.warning -t logrotate -f $TMPF
+ fi
+
+rm -f $TMPF
 exit 0
