@@ -1,7 +1,8 @@
 AC_INIT([logrotate],[3.10.0])
 
-dnl Do not require AUTHORS, ChangeLog, NEWS, and README to exist
-AM_INIT_AUTOMAKE([foreign])
+dnl foreign: Do not require AUTHORS, ChangeLog, NEWS, and README to exist
+dnl serial-tests: Do not hide standard output of our sequential test-suite
+AM_INIT_AUTOMAKE([foreign serial-tests])
 
 AC_DEFINE(_GNU_SOURCE)
 
