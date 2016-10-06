@@ -10,6 +10,8 @@ DISTCLEANFILES = \
 	test.SELINUX \
 	test.example
 
-check:
-	test $(top_srcdir) = $(top_builddir) || ln -fs $(top_srcdir)/test/* .
-	LOGROTATE=$(top_builddir)/logrotate ./test
+TESTS_ENVIRONMENT = \
+	test $(top_srcdir) = $(top_builddir) || ln -fs $(top_srcdir)/test/* . ; \
+	export LOGROTATE=$(top_builddir)/logrotate ;
+
+TESTS = test
