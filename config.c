@@ -1268,7 +1268,6 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 						newlog->compress_prog);
 
 			 		compresscmd_base=strdup(basename(newlog->compress_prog));
-			 		fprintf(stdout, "compress_ext is %s\n", newlog->compress_prog);
 			 		i=0; /* have to check whether we may do this! */
 			 		/* we check whether we changed the compress_cmd. In case we use the apropriate extension
 			 		   as listed in compress_cmd_list */
@@ -1276,7 +1275,6 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 			 		    if (0==strcmp(compress_cmd_list[i][0], compresscmd_base)){
 			 			newlog->compress_ext=strdup((char *)compress_cmd_list[i][1]);
 			 			message(MESS_DEBUG, "compress_ext was changed to %s\n", newlog->compress_ext);
-			 			fprintf(stdout, "compress_ext was changed to %s\n", newlog->compress_ext);
 			 			i=-10; /* terminate loop! */
 			 		    }
 			 		    i++;
