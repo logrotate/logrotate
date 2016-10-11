@@ -7,7 +7,6 @@ Group: System Environment/Base
 Source: https://github.com/logrotate/logrotate/releases/download/%{version}/logrotate-%{version}.tar.gz
 Requires: coreutils >= 5.92 libsepol libselinux popt
 BuildRequires: libselinux-devel popt-devel
-BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 %description
 The logrotate utility is designed to simplify the administration of
@@ -28,7 +27,6 @@ log files on your system.
 make %{?_smp_mflags} RPM_OPT_FLAGS="$RPM_OPT_FLAGS" WITH_SELINUX=yes
 
 %install
-rm -rf $RPM_BUILD_ROOT
 %make_install MANDIR=%{_mandir}
 mkdir -p $RPM_BUILD_ROOT/%{_sysconfdir}/logrotate.d
 mkdir -p $RPM_BUILD_ROOT/%{_sysconfdir}/cron.daily
@@ -38,11 +36,7 @@ install -p -m 644 examples/logrotate-default $RPM_BUILD_ROOT/%{_sysconfdir}/logr
 install -p -m 755 examples/logrotate.cron $RPM_BUILD_ROOT/%{_sysconfdir}/cron.daily/logrotate
 touch $RPM_BUILD_ROOT/%{_localstatedir}/lib/logrotate.status
 
-%clean
-rm -rf $RPM_BUILD_ROOT
-
 %files
-%defattr(-,root,root)
 %doc COPYING
 %attr(0755, root, root) %{_sbindir}/logrotate
 %attr(0644, root, root) %{_mandir}/man8/logrotate.8*
