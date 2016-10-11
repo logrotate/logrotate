@@ -287,6 +287,72 @@ static unsigned hashIndex(const char *fn)
 	return hash % hashSize;
 }
 
+static int setSecCtx(int fdSrc, const char *src, void **pPrevCtx)
+{
+#ifdef WITH_SELINUX
+    security_context_t srcCtx;
+    *pPrevCtx = NULL;
+
+    if (!selinux_enabled)
+	/* pretend success */
+	return 0;
+
+    /* read security context of fdSrc */
+    if (fgetfilecon_raw(fdSrc, &srcCtx) < 0) {
+	if (errno == ENOTSUP)
+	    /* pretend success */
+	    return 0;
+
+	message(MESS_ERROR, "getting file context %s: %s\n", src,
+		strerror(errno));
+	return selinux_enforce;
+    }
+
+    /* save default security context for restoreSecCtx() */
+    if (getfscreatecon_raw((security_context_t *)pPrevCtx) < 0) {
+	message(MESS_ERROR, "getting default context: %s\n", strerror(errno));
+	return selinux_enforce;
+    }
+
+    /* set default security context to match fdSrc */
+    if (setfscreatecon_raw(srcCtx) < 0) {
+	message(MESS_ERROR, "setting default context to %s: %s\n", srcCtx,
+		strerror(errno));
+	freecon(srcCtx);
+	return selinux_enforce;
+    }
+
+    message(MESS_DEBUG, "set default create context to %s\n", srcCtx);
+    freecon(srcCtx);
+#else
+    (void) fdSrc;
+    (void) src;
+    (void) pPrevCtx;
+#endif
+    return 0;
+}
+
+static void restoreSecCtx(void **pPrevCtx)
+{
+#ifdef WITH_SELINUX
+    const security_context_t prevCtx = (security_context_t) *pPrevCtx;
+    if (!prevCtx)
+	/* no security context saved for restoration */
+	return;
+
+    /* set default security context to the previously stored one */
+    if (selinux_enabled && setfscreatecon_raw(prevCtx) < 0)
+	message(MESS_ERROR, "setting default context to %s: %s\n", prevCtx,
+		strerror(errno));
+
+    /* free the memory allocated to save the security context */
+    freecon(prevCtx);
+    *pPrevCtx = NULL;
+#else
+    (void) pPrevCtx;
+#endif
+}
+
 static struct logState *newState(const char *fn)
 {
 	struct tm now = *localtime(&nowSecs);
@@ -900,6 +966,7 @@ static int copyTruncate(char *currLog, char *saveLog, struct stat *sb,
 			int flags)
 {
     int fdcurr = -1, fdsave = -1;
+    void *prevCtx;
 
     message(MESS_DEBUG, "copying %s to %s\n", currLog, saveLog);
 
@@ -909,48 +976,18 @@ static int copyTruncate(char *currLog, char *saveLog, struct stat *sb,
 		    strerror(errno));
 	    return 1;
 	}
-#ifdef WITH_SELINUX
-	if (selinux_enabled) {
-	    security_context_t oldContext;
-	    if (fgetfilecon_raw(fdcurr, &oldContext) >= 0) {
-		if (getfscreatecon_raw(&prev_context) < 0) {
-		    message(MESS_ERROR,
-			    "getting default context: %s\n",
-			    strerror(errno));
-		    if (selinux_enforce) {
-				freecon(oldContext);
-				close(fdcurr);
-				return 1;
-		    }
-		}
-		if (setfscreatecon_raw(oldContext) < 0) {
-		    message(MESS_ERROR,
-			    "setting file context %s to %s: %s\n",
-			    saveLog, oldContext, strerror(errno));
-			if (selinux_enforce) {
-				freecon(oldContext);
-				close(fdcurr);
-				return 1;
-		    }
-		}
-		message(MESS_DEBUG, "set default create context\n");
-		freecon(oldContext);
-	    } else {
-		    if (errno != ENOTSUP) {
-			    message(MESS_ERROR, "getting file context %s: %s\n",
-				    currLog, strerror(errno));
-			    if (selinux_enforce) {
-				    return 1;
-			    }
-		    }
-	    }
+
+	if (setSecCtx(fdcurr, currLog, &prevCtx) != 0) {
+	    /* error msg already printed */
+	    close(fdcurr);
+	    return 1;
 	}
-#endif
 #ifdef WITH_ACL
 	if ((prev_acl = acl_get_fd(fdcurr)) == NULL) {
 		if (!ACL_NOT_WELL_SUPPORTED(errno)) {
 			message(MESS_ERROR, "getting file ACL %s: %s\n",
 				currLog, strerror(errno));
+			restoreSecCtx(&prevCtx);
 			close(fdcurr);
 			return 1;
 		}
@@ -958,13 +995,7 @@ static int copyTruncate(char *currLog, char *saveLog, struct stat *sb,
 #endif /* WITH_ACL */
 	fdsave =
 	    createOutputFile(saveLog, O_WRONLY | O_CREAT, sb, prev_acl, 0);
-#ifdef WITH_SELINUX
-	if (selinux_enabled) {
-	    setfscreatecon_raw(prev_context);
-		freecon(prev_context);
-		prev_context = NULL;
-	}
-#endif
+	restoreSecCtx(&prevCtx);
 #ifdef WITH_ACL
 	if (prev_acl) {
 		acl_free(prev_acl);
