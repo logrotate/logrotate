@@ -34,7 +34,14 @@ mkdir -p $RPM_BUILD_ROOT/%{_localstatedir}/lib
 
 install -p -m 644 examples/logrotate-default $RPM_BUILD_ROOT/%{_sysconfdir}/logrotate.conf
 install -p -m 755 examples/logrotate.cron $RPM_BUILD_ROOT/%{_sysconfdir}/cron.daily/logrotate
-touch $RPM_BUILD_ROOT/%{_localstatedir}/lib/logrotate.status
+
+install -dDm 0755 $RPM_BUILD_ROOT/%{_localstatedir}/lib/%{name}
+touch $RPM_BUILD_ROOT/%{_localstatedir}/lib/%{name}/logrotate.status
+
+%post
+# Removing the previous state file here as in read-only systems
+# during this stage it's rw
+rm -f %{_localstatedir}/lib/logrotate.status &> /dev/null
 
 %files
 %doc COPYING
@@ -44,4 +51,4 @@ touch $RPM_BUILD_ROOT/%{_localstatedir}/lib/logrotate.status
 %attr(0755, root, root) %{_sysconfdir}/cron.daily/logrotate
 %attr(0644, root, root) %config(noreplace) %{_sysconfdir}/logrotate.conf
 %attr(0755, root, root) %dir %{_sysconfdir}/logrotate.d
-%attr(0644, root, root) %verify(not size md5 mtime) %config(noreplace) %{_localstatedir}/lib/logrotate.status
+%attr(0644, root, root) %verify(not size md5 mtime) %config(noreplace) %{_localstatedir}/lib/%{name}/logrotate.status

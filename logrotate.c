@@ -2503,6 +2503,7 @@ int main(int argc, const char **argv)
     const char **files;
     poptContext optCon;
 	struct logInfo *log;
+    struct stat st = {0};
 
     struct poptOption options[] = {
 	{"debug", 'd', 0, 0, 'd',
@@ -2522,6 +2523,14 @@ int main(int argc, const char **argv)
 
     logSetLevel(MESS_NORMAL);
     setlocale (LC_ALL, "");
+
+    if (stat(STATEDIR, &st) == -1) {
+        mkdir(STATEDIR, 0755);
+    }
+
+    if (stat(OLDSTATEFILE, &st) == 0) {
+        unlink(OLDSTATEFILE);
+    }
 
     optCon = poptGetContext("logrotate", argc, argv, options, 0);
     poptReadDefaultConfig(optCon, 1);
