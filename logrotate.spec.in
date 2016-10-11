@@ -2,7 +2,7 @@ Summary: Rotates, compresses, removes and mails system log files
 Name: logrotate
 Version: @VERSION@
 Release: 1
-License: GPL+
+License: GPLv2+
 Group: System Environment/Base
 Source: https://github.com/logrotate/logrotate/releases/download/%{version}/logrotate-%{version}.tar.gz
 Requires: coreutils >= 5.92 libsepol libselinux popt
