@@ -43,7 +43,7 @@ rm -rf $RPM_BUILD_ROOT
 
 %files
 %defattr(-,root,root)
-%doc CHANGES COPYING
+%doc COPYING
 %attr(0755, root, root) %{_sbindir}/logrotate
 %attr(0644, root, root) %{_mandir}/man8/logrotate.8*
 %attr(0644, root, root) %{_mandir}/man5/logrotate.conf.5*
