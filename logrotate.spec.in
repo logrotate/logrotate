@@ -24,6 +24,7 @@ log files on your system.
 %setup -q
 
 %build
+%configure
 make %{?_smp_mflags} RPM_OPT_FLAGS="$RPM_OPT_FLAGS" WITH_SELINUX=yes
 
 %install
