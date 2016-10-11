@@ -631,6 +631,7 @@ static int compressLogFile(char *name, struct logInfo *log, struct stat *sb)
     int compressPipe[2];
     char buff[4092];
     int error_printed = 0;
+    void *prevCtx;
 
     message(MESS_DEBUG, "compressing log with: %s\n", log->compress_prog);
     if (debug)
@@ -651,11 +652,18 @@ static int compressLogFile(char *name, struct logInfo *log, struct stat *sb)
 	return 1;
     }
 
+    if (setSecCtx(inFile, name, &prevCtx) != 0) {
+	/* error msg already printed */
+	close(inFile);
+	return 1;
+    }
+
 #ifdef WITH_ACL
 	if ((prev_acl = acl_get_fd(inFile)) == NULL) {
 		if (!ACL_NOT_WELL_SUPPORTED(errno)) {
 			message(MESS_ERROR, "getting file ACL %s: %s\n",
 				name, strerror(errno));
+			restoreSecCtx(&prevCtx);
 			close(inFile);
 			return 1;
 		}
@@ -664,6 +672,7 @@ static int compressLogFile(char *name, struct logInfo *log, struct stat *sb)
 
     outFile =
 	createOutputFile(compressedName, O_RDWR | O_CREAT, sb, prev_acl, 0);
+    restoreSecCtx(&prevCtx);
 #ifdef WITH_ACL
 	if (prev_acl) {
 		acl_free(prev_acl);
