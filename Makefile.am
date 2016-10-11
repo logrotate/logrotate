@@ -27,3 +27,10 @@ SUBDIRS = . test
 
 # for compatibility with older releases of logrotate
 test: check
+
+.PHONY: srpm rpm
+
+rpm: srpm
+	rpmbuild $(RPM_FLAGS) -ta $(distdir).tar.gz
+srpm: dist
+	rpmbuild $(RPM_FLAGS) -ts $(distdir).tar.gz
