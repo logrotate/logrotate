@@ -531,9 +531,9 @@ static int compressLogFile(char *name, struct logInfo *log, struct stat *sb)
     int outFile;
     int i;
     int status;
-	int compressPipe[2];
-	char buff[4092];
-	int error_printed = 0;
+    int compressPipe[2];
+    char buff[4092];
+    int error_printed = 0;
 
     message(MESS_DEBUG, "compressing log with: %s\n", log->compress_prog);
     if (debug)
@@ -607,16 +607,16 @@ static int compressLogFile(char *name, struct logInfo *log, struct stat *sb)
     }
 
     close(compressPipe[1]);
-	while ((i = read(compressPipe[0], buff, sizeof(buff) - 1)) > 0) {
-		if (!error_printed) {
-			error_printed = 1;
-			message(MESS_ERROR, "Compressing program wrote following message "
-					"to stderr when compressing log %s:\n", name);
-		}
-		buff[i] = '\0';
-		fprintf(stderr, "%s", buff);
-	}
-	close(compressPipe[0]);
+    while ((i = read(compressPipe[0], buff, sizeof(buff) - 1)) > 0) {
+            if (!error_printed) {
+                error_printed = 1;
+		message(MESS_ERROR, "Compressing program wrote following message "
+                               "to stderr when compressing log %s:\n", name);
+            }
+            buff[i] = '\0';
+            fprintf(stderr, "%s", buff);
+    }
+    close(compressPipe[0]);
     wait(&status);
 
     fsync(outFile);
@@ -636,7 +636,7 @@ static int compressLogFile(char *name, struct logInfo *log, struct stat *sb)
        It might possibly fail under SELinux. */
 
     shred_file(inFile, name, log);
-	close(inFile);
+    close(inFile);
 
     return 0;
 }
@@ -1194,10 +1194,10 @@ int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
     int logStart = (log->logStart == -1) ? 1 : log->logStart;
 #define DATEEXT_LEN 64
 #define PATTERN_LEN (DATEEXT_LEN * 2)
-	char dext_str[DATEEXT_LEN];
-	char dformat[DATEEXT_LEN] = "";
-	char dext_pattern[PATTERN_LEN];
-	char *dext;
+    char dext_str[DATEEXT_LEN];
+    char dformat[DATEEXT_LEN] = "";
+    char dext_pattern[PATTERN_LEN];
+    char *dext;
 
     if (!state->doRotate)
 	return 0;
@@ -1628,9 +1628,9 @@ int rotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
     struct stat sb;
     int fd;
 #ifdef WITH_SELINUX
-	security_context_t savedContext = NULL;
+    security_context_t savedContext = NULL;
 #endif
-	char *tmpFilename = NULL;
+    char *tmpFilename = NULL;
 
     if (!state->doRotate)
 	return 0;
@@ -2311,7 +2311,7 @@ static int readState(char *stateFilename)
 {
     FILE *f;
     char buf[STATEFILE_BUFFER_SIZE];
-	char *filename;
+    char *filename;
     const char **argv;
     int argc;
     int year, month, day, hour, minute, second;
