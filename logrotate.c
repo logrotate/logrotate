@@ -367,8 +367,24 @@ static int runScript(struct logInfo *log, char *logfn, char *script)
 int createOutputFile(char *fileName, int flags, struct stat *sb, acl_type acl, int force_mode)
 {
     int fd;
-	struct stat sb_create;
-	int acl_set = 0;
+    struct stat sb_create;
+    int acl_set = 0;
+
+    if (stat(fileName, &sb_create) == 0) {
+        /* the destination file already exists, while it should not */
+        struct tm now = *localtime(&nowSecs);
+        size_t fileName_size = strlen(fileName);
+        char* backupName = alloca(fileName_size + sizeof("-YYYYMMDDHH.backup"));
+        strncpy(backupName, fileName, fileName_size);
+        size_t date_size=strftime(backupName+fileName_size, 12, "-%Y%m%d%H", &now);
+        strncpy(backupName+fileName_size+date_size, ".backup\0", 8);
+        message(MESS_ERROR, "destination %s already exists, renaming to %s\n", fileName, backupName);
+        if (rename(fileName, backupName) != 0) {
+            message(MESS_ERROR, "error renaming already existing output file %s to %s: %s\n",
+                fileName, backupName, strerror(errno));
+            return -1;
+        }
+    }
 
 	fd = open(fileName, (flags | O_EXCL | O_NOFOLLOW),
 		(S_IRUSR | S_IWUSR) & sb->st_mode);
