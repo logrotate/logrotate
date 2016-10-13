@@ -2115,6 +2115,7 @@ static int writeState(char *stateFilename)
 	char *tmpFilename = NULL;
 	struct tm now = *localtime(&nowSecs);
 	time_t now_time, last_time;
+	void *prevCtx;
 
 	tmpFilename = malloc(strlen(stateFilename) + 5 );
 	if (tmpFilename == NULL) {
@@ -2135,49 +2136,18 @@ static int writeState(char *stateFilename)
 	    return 1;
 	}
 
-#ifdef WITH_SELINUX
-	if (selinux_enabled) {
-	    security_context_t oldContext;
-	    if (fgetfilecon_raw(fdcurr, &oldContext) >= 0) {
-		if (getfscreatecon_raw(&prev_context) < 0) {
-		    message(MESS_ERROR,
-			    "getting default context: %s\n",
-			    strerror(errno));
-		    if (selinux_enforce) {
-				freecon(oldContext);
-				free(tmpFilename);
-				return 1;
-		    }
-		}
-		if (setfscreatecon_raw(oldContext) < 0) {
-		    message(MESS_ERROR,
-			    "setting file context %s to %s: %s\n",
-			    tmpFilename, oldContext, strerror(errno));
-			if (selinux_enforce) {
-				freecon(oldContext);
-				free(tmpFilename);
-				return 1;
-		    }
-		}
-		message(MESS_DEBUG, "set default create context\n");
-		freecon(oldContext);
-	    } else {
-		    if (errno != ENOTSUP) {
-			    message(MESS_ERROR, "getting file context %s: %s\n",
-				    tmpFilename, strerror(errno));
-			    if (selinux_enforce) {
-					free(tmpFilename);
-				    return 1;
-			    }
-		    }
-	    }
+	if (setSecCtx(fdcurr, stateFilename, &prevCtx) != 0) {
+	    /* error msg already printed */
+	    close(fdcurr);
+	    return 1;
 	}
-#endif
+
 #ifdef WITH_ACL
 	if ((prev_acl = acl_get_fd(fdcurr)) == NULL) {
 		if (!ACL_NOT_WELL_SUPPORTED(errno)) {
 			message(MESS_ERROR, "getting file ACL %s: %s\n",
 				stateFilename, strerror(errno));
+			restoreSecCtx(&prevCtx);
 			close(fdcurr);
 			return 1;
 		}
@@ -2194,13 +2164,7 @@ static int writeState(char *stateFilename)
 		prev_acl = NULL;
 	}
 #endif
-#ifdef WITH_SELINUX
-	if (selinux_enabled) {
-	    setfscreatecon_raw(prev_context);
-		freecon(prev_context);
-		prev_context = NULL;
-	}
-#endif
+	restoreSecCtx(&prevCtx);
 
 	if (fdsave < 0) {
 	    free(tmpFilename);
