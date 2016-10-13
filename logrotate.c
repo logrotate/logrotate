@@ -332,6 +332,24 @@ static int setSecCtx(int fdSrc, const char *src, void **pPrevCtx)
     return 0;
 }
 
+static int setSecCtxByName(const char *src, void **pPrevCtx)
+{
+    int hasErrors = 0;
+#ifdef WITH_SELINUX
+    int fd = open(src, O_RDONLY | O_NOFOLLOW);
+    if (fd < 0) {
+	message(MESS_ERROR, "error opening %s: %s\n", src, strerror(errno));
+	return 1;
+    }
+    hasErrors = setSecCtx(fd, src, pPrevCtx);
+    close(fd);
+#else
+    (void) src;
+    (void) pPrevCtx;
+#endif
+    return hasErrors;
+}
+
 static void restoreSecCtx(void **pPrevCtx)
 {
 #ifdef WITH_SELINUX
@@ -1428,41 +1446,10 @@ int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 	message(MESS_DEBUG, "dateext suffix '%s'\n", dext_str);
 	message(MESS_DEBUG, "glob pattern '%s'\n", dext_pattern);
 
-#ifdef WITH_SELINUX
-	if (selinux_enabled) {
-	    security_context_t oldContext = NULL;
-	    if (getfilecon_raw(log->files[logNum], &oldContext) > 0) {
-			if (getfscreatecon_raw(&prev_context) < 0) {
-				message(MESS_ERROR,
-					"getting default context: %s\n",
-					strerror(errno));
-				if (selinux_enforce) {
-					freecon(oldContext);
-					return 1;
-				}
-			}
-			if (setfscreatecon_raw(oldContext) < 0) {
-				message(MESS_ERROR,
-					"setting file context %s to %s: %s\n",
-					log->files[logNum], oldContext,
-					strerror(errno));
-				if (selinux_enforce) {
-					freecon(oldContext);
-					return 1;
-				}
-			}
-			freecon(oldContext);
-	    } else {
-		if (errno != ENOENT && errno != ENOTSUP) {
-			message(MESS_ERROR, "getting file context %s: %s\n",
-				log->files[logNum], strerror(errno));
-			if (selinux_enforce) {
-				return 1;
-			}
-		}
-	    }
-	}
-#endif
+    if (setSecCtxByName(log->files[logNum], (void **) &prev_context) != 0) {
+	/* error msg already printed */
+	return 1;
+    }
 
     /* First compress the previous log when necessary */
     if (log->flags & LOG_FLAG_COMPRESS &&
@@ -1930,13 +1917,7 @@ int postrotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
     if (!hasErrors && rotNames->disposeName)
 	hasErrors = removeLogFile(rotNames->disposeName, log);
 
-#ifdef WITH_SELINUX
-    if (selinux_enabled) {
-		setfscreatecon_raw(prev_context);
-		freecon(prev_context);
-		prev_context = NULL;
-	}
-#endif
+    restoreSecCtx((void **) &prev_context);
     return hasErrors;
 }
 
