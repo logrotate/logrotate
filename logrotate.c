@@ -1685,9 +1685,7 @@ int rotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
     int hasErrors = 0;
     struct stat sb;
     int fd;
-#ifdef WITH_SELINUX
-    security_context_t savedContext = NULL;
-#endif
+    void *savedContext = NULL;
     char *tmpFilename = NULL;
 
     if (!state->doRotate)
@@ -1696,62 +1694,10 @@ int rotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
     if (!hasErrors) {
 
 	if (!(log->flags & (LOG_FLAG_COPYTRUNCATE | LOG_FLAG_COPY))) {
-#ifdef WITH_SELINUX
-		if (selinux_enabled) {
-			security_context_t oldContext = NULL;
-			int fdcurr = -1;
-
-			if ((fdcurr = open(log->files[logNum], O_RDWR | O_NOFOLLOW)) < 0) {
-				message(MESS_ERROR, "error opening %s: %s\n",
-						log->files[logNum],
-					strerror(errno));
-				return 1;
-			}
-			if (fgetfilecon_raw(fdcurr, &oldContext) >= 0) {
-				if (getfscreatecon_raw(&savedContext) < 0) {
-					message(MESS_ERROR,
-						"getting default context: %s\n",
-						strerror(errno));
-					if (selinux_enforce) {
-						freecon(oldContext);
-						if (close(fdcurr) < 0)
-							message(MESS_ERROR, "error closing file %s",
-									log->files[logNum]);
-						return 1;
-					}
-				}
-				if (setfscreatecon_raw(oldContext) < 0) {
-					message(MESS_ERROR,
-						"setting file context %s to %s: %s\n",
-						log->files[logNum], oldContext, strerror(errno));
-					if (selinux_enforce) {
-						freecon(oldContext);
-						if (close(fdcurr) < 0)
-							message(MESS_ERROR, "error closing file %s",
-									log->files[logNum]);
-						return 1;
-					}
-				}
-				message(MESS_DEBUG, "fscreate context set to %s\n",
-						oldContext);
-				freecon(oldContext);
-			} else {
-				if (errno != ENOTSUP) {
-					message(MESS_ERROR, "getting file context %s: %s\n",
-						log->files[logNum], strerror(errno));
-					if (selinux_enforce) {
-						if (close(fdcurr) < 0)
-							message(MESS_ERROR, "error closing file %s",
-									log->files[logNum]);
-						return 1;
-					}
-				}
-			}
-			if (close(fdcurr) < 0)
-				message(MESS_ERROR, "error closing file %s",
-						log->files[logNum]);
-		}
-#endif
+	    if (setSecCtxByName(log->files[logNum], &savedContext) != 0) {
+		/* error msg already printed */
+		return 1;
+	    }
 #ifdef WITH_ACL
 		if ((prev_acl = acl_get_file(log->files[logNum], ACL_TYPE_ACCESS)) == NULL) {
 			if (!ACL_NOT_WELL_SUPPORTED(errno)) {
@@ -1764,6 +1710,7 @@ int rotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 		if (log->flags & LOG_FLAG_TMPFILENAME) {
 			if (asprintf(&tmpFilename, "%s%s", log->files[logNum], ".tmp") < 0) {
 				message(MESS_FATAL, "could not allocate tmpFilename memory\n");
+				restoreSecCtx(&savedContext);
 				return 1;
 			}
 
@@ -1845,13 +1792,8 @@ int rotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 			}
 	    }
 	}
-#ifdef WITH_SELINUX
-	if (selinux_enabled) {
-	    setfscreatecon_raw(savedContext);
-		freecon(savedContext);
-		savedContext = NULL;
-	}
-#endif
+
+	restoreSecCtx(&savedContext);
 
 	if (!hasErrors
 	    && log->flags & (LOG_FLAG_COPYTRUNCATE | LOG_FLAG_COPY)
