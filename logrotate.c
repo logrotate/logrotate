@@ -381,14 +381,24 @@ int createOutputFile(char *fileName, int flags, struct stat *sb, acl_type acl, i
 	/* the destination file already exists, while it should not */
 	struct tm now = *localtime(&nowSecs);
 	size_t fileName_size = strlen(fileName);
-	char* backupName = alloca(fileName_size + sizeof("-YYYYMMDDHH.backup"));
-	strncpy(backupName, fileName, fileName_size);
-	size_t date_size=strftime(backupName+fileName_size, 12, "-%Y%m%d%H", &now);
-	strncpy(backupName+fileName_size+date_size, ".backup\0", 8);
-	message(MESS_ERROR, "destination %s already exists, renaming to %s\n", fileName, backupName);
+	size_t buf_size = fileName_size + sizeof("-YYYYMMDDHH.backup");
+	char *backupName = alloca(buf_size);
+	char *ptr = backupName;
+
+	/* construct backupName starting with fileName */
+	strcpy(ptr, fileName);
+	ptr += fileName_size;
+	buf_size -= fileName_size;
+
+	/* append the -YYYYMMDDHH time stamp and the .backup suffix */
+	ptr += strftime(ptr, buf_size, "-%Y%m%d%H", &now);
+	strcpy(ptr, ".backup");
+
+	message(MESS_ERROR, "destination %s already exists, renaming to %s\n",
+		fileName, backupName);
 	if (rename(fileName, backupName) != 0) {
-	    message(MESS_ERROR, "error renaming already existing output file %s to %s: %s\n",
-		    fileName, backupName, strerror(errno));
+	    message(MESS_ERROR, "error renaming already existing output file"
+		    " %s to %s: %s\n", fileName, backupName, strerror(errno));
 	    return -1;
 	}
 	/* existing file renamed, try it once again */
