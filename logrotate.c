@@ -366,11 +366,18 @@ static int runScript(struct logInfo *log, char *logfn, char *script)
 
 int createOutputFile(char *fileName, int flags, struct stat *sb, acl_type acl, int force_mode)
 {
-    int fd;
+    int fd = -1;
     struct stat sb_create;
     int acl_set = 0;
+    int i;
 
-    if (stat(fileName, &sb_create) == 0) {
+    for (i = 0; i < 2; ++i) {
+	fd = open(fileName, (flags | O_EXCL | O_NOFOLLOW),
+		(S_IRUSR | S_IWUSR) & sb->st_mode);
+
+	if ((fd >= 0) || (errno != EEXIST))
+	    break;
+
 	/* the destination file already exists, while it should not */
 	struct tm now = *localtime(&nowSecs);
 	size_t fileName_size = strlen(fileName);
@@ -384,10 +391,8 @@ int createOutputFile(char *fileName, int flags, struct stat *sb, acl_type acl, i
 		    fileName, backupName, strerror(errno));
 	    return -1;
 	}
+	/* existing file renamed, try it once again */
     }
-
-	fd = open(fileName, (flags | O_EXCL | O_NOFOLLOW),
-		(S_IRUSR | S_IWUSR) & sb->st_mode);
 
     if (fd < 0) {
 	message(MESS_ERROR, "error creating output file %s: %s\n",
