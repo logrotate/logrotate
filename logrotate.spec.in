@@ -2,12 +2,11 @@ Summary: Rotates, compresses, removes and mails system log files
 Name: logrotate
 Version: @VERSION@
 Release: 1
-License: GPL+
+License: GPLv2+
 Group: System Environment/Base
 Source: https://github.com/logrotate/logrotate/releases/download/%{version}/logrotate-%{version}.tar.gz
 Requires: coreutils >= 5.92 libsepol libselinux popt
 BuildRequires: libselinux-devel popt-devel
-BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 %description
 The logrotate utility is designed to simplify the administration of
@@ -24,29 +23,32 @@ log files on your system.
 %setup -q
 
 %build
+%configure
 make %{?_smp_mflags} RPM_OPT_FLAGS="$RPM_OPT_FLAGS" WITH_SELINUX=yes
 
 %install
-rm -rf $RPM_BUILD_ROOT
-make PREFIX=$RPM_BUILD_ROOT MANDIR=%{_mandir} install
+%make_install MANDIR=%{_mandir}
 mkdir -p $RPM_BUILD_ROOT/%{_sysconfdir}/logrotate.d
 mkdir -p $RPM_BUILD_ROOT/%{_sysconfdir}/cron.daily
 mkdir -p $RPM_BUILD_ROOT/%{_localstatedir}/lib
 
 install -p -m 644 examples/logrotate-default $RPM_BUILD_ROOT/%{_sysconfdir}/logrotate.conf
 install -p -m 755 examples/logrotate.cron $RPM_BUILD_ROOT/%{_sysconfdir}/cron.daily/logrotate
-touch $RPM_BUILD_ROOT/%{_localstatedir}/lib/logrotate.status
 
-%clean
-rm -rf $RPM_BUILD_ROOT
+install -dDm 0755 $RPM_BUILD_ROOT/%{_localstatedir}/lib/%{name}
+touch $RPM_BUILD_ROOT/%{_localstatedir}/lib/%{name}/logrotate.status
+
+%post
+# Removing the previous state file here as in read-only systems
+# during this stage it's rw
+rm -f %{_localstatedir}/lib/logrotate.status &> /dev/null
 
 %files
-%defattr(-,root,root)
-%doc CHANGES COPYING
+%doc COPYING
 %attr(0755, root, root) %{_sbindir}/logrotate
 %attr(0644, root, root) %{_mandir}/man8/logrotate.8*
 %attr(0644, root, root) %{_mandir}/man5/logrotate.conf.5*
 %attr(0755, root, root) %{_sysconfdir}/cron.daily/logrotate
 %attr(0644, root, root) %config(noreplace) %{_sysconfdir}/logrotate.conf
 %attr(0755, root, root) %dir %{_sysconfdir}/logrotate.d
-%attr(0644, root, root) %verify(not size md5 mtime) %config(noreplace) %{_localstatedir}/lib/logrotate.status
+%attr(0644, root, root) %verify(not size md5 mtime) %config(noreplace) %{_localstatedir}/lib/%{name}/logrotate.status
