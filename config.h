@@ -8,19 +8,25 @@
 #define DEFAULT_MAIL_COMMAND "/usr/bin/mailx"
 #define COMPRESS_COMMAND "/usr/contrib/bin/gzip"
 #define UNCOMPRESS_COMMAND "/usr/contrib/bin/gunzip"
-#define STATEFILE "/var/run/logrotate.status"
+#define OLDSTATEFILE "/var/run/logrotate.status"
+#define STATEDIR "/var/run/logrotate/"
+#define STATEFILE STATEDIR "logrotate.status"
 #endif
 
 #ifdef SunOS
 #define DEFAULT_MAIL_COMMAND "/usr/bin/mailx"
-#define STATEFILE "/var/log/logrotate.status"
+#define OLDSTATEFILE "/var/log/logrotate.status"
+#define STATEDIR "/var/log/logrotate/"
+#define STATEFILE STATEDIR "logrotate.status"
 #endif
 
 #ifdef __NetBSD__
 #define DEFAULT_MAIL_COMMAND "/usr/bin/mail -s"
 #define COMPRESS_COMMAND "/usr/bin/gzip"
 #define UNCOMPRESS_COMMAND "/usr/bin/gunzip"
-#define STATEFILE "/var/log/logrotate.status"
+#define OLDSTATEFILE "/var/log/logrotate.status"
+#define STATEDIR "/var/log/logrotate/"
+#define STATEFILE STATEDIR "logrotate.status"
 #endif
 
 #if defined(__APPLE__) && defined(__MACH__)
@@ -48,5 +54,7 @@
 #endif
 
 #ifndef STATEFILE
-#define STATEFILE "/var/lib/logrotate.status"
+#define OLDSTATEFILE "/var/lib/logrotate.status"
+#define STATEDIR "/var/lib/logrotate/"
+#define STATEFILE STATEDIR "logrotate.status"
 #endif
