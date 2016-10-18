@@ -8,6 +8,8 @@ Source: https://github.com/logrotate/logrotate/releases/download/%{version}/logr
 Requires: coreutils >= 5.92 libsepol libselinux popt
 BuildRequires: libselinux-devel popt-devel
 
+%{!?_licensedir:%global license %%doc}
+
 %description
 The logrotate utility is designed to simplify the administration of
 log files on a system which generates a lot of log files.  Logrotate
@@ -38,7 +40,7 @@ install -p -m 755 examples/logrotate.cron $RPM_BUILD_ROOT/%{_sysconfdir}/cron.da
 touch $RPM_BUILD_ROOT/%{_localstatedir}/lib/logrotate.status
 
 %files
-%doc COPYING
+%license COPYING
 %attr(0755, root, root) %{_sbindir}/logrotate
 %attr(0644, root, root) %{_mandir}/man8/logrotate.8*
 %attr(0644, root, root) %{_mandir}/man5/logrotate.conf.5*
