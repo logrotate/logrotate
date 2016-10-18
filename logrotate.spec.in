@@ -24,8 +24,9 @@ log files on your system.
 %setup -q
 
 %build
-%configure
-make %{?_smp_mflags} RPM_OPT_FLAGS="$RPM_OPT_FLAGS" WITH_SELINUX=yes
+%configure \
+  --with-selinux
+make %{?_smp_mflags} RPM_OPT_FLAGS="$RPM_OPT_FLAGS"
 
 %install
 rm -rf $RPM_BUILD_ROOT
