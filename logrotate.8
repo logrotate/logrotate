@@ -65,7 +65,7 @@ and mail it to the recipient. The default mail command is \fB/bin/mail
 \fB\-s\fR, \fB\-\-state <statefile>\fR
 Tells \fBlogrotate\fR to use an alternate state file.  This is useful
 if logrotate is being run as a different user for various sets of
-log files.  The default state file is \fI/var/lib/logrotate.status\fR.
+log files.  The default state file is \fI/var/lib/logrotate/logrotate.status\fR.
 
 .TP
 \fB\-\-usage\fR
@@ -574,7 +574,7 @@ Log files are rotated if the current year is not the same as the last rotation.
 .SH FILES
 .PD 0
 .TP 27
-\fI/var/lib/logrotate.status\fR
+\fI/var/lib/logrotate/logrotate.status\fR
 Default state file.
 .TP 27
 \fI/etc/logrotate.conf\fR

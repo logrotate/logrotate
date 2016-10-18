@@ -2554,6 +2554,11 @@ int main(int argc, const char **argv)
     logSetLevel(MESS_NORMAL);
     setlocale (LC_ALL, "");
 
+    /* Creates the dir for state file and moves old
+       state file to new location */
+    mkdir(STATEDIR, 0755);
+    rename(OLDSTATEFILE, STATEFILE);
+
     optCon = poptGetContext("logrotate", argc, argv, options, 0);
     poptReadDefaultConfig(optCon, 1);
     poptSetOtherOptionHelp(optCon, "[OPTION...] <configfile>");
