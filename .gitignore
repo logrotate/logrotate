@@ -3,9 +3,12 @@
 .*.swp
 *.m4
 *.o
+*.tar.gz
 Makefile
 Makefile.in
-cscope.out
+/config.status
+/config.log
+/cscope.out
 /autom4te.cache/
 /compile
 /configure
