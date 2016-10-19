@@ -3,9 +3,9 @@
 .*.swp
 *.m4
 *.o
-Makefile
-Makefile.in
-cscope.out
+/Makefile
+/Makefile.in
+/cscope.out
 /autom4te.cache/
 /compile
 /configure
