@@ -105,7 +105,7 @@ matrix:
 install:
   - sudo add-apt-repository ppa:dns/gnu -y
   - sudo apt-get -qq update
-  - sudo apt-get -qq install libpopt-dev libselinux1-dev libacl1-dev automake dash
+  - sudo apt-get -qq install libpopt-dev libselinux1-dev libacl1-dev automake dash rpm
 
 script:
   - $COMPILER --version
@@ -115,6 +115,8 @@ script:
   - make test
   - cd test && LOGROTATE=../logrotate /bin/dash test && cd ..
   - make distcheck
+  # nodeps because rpm build deps can not be installed on debian system
+  - make rpm RPM_FLAGS="--nodeps"
 
 notifications:
   email:
