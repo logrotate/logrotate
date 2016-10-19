@@ -5,10 +5,10 @@
 *.o
 Makefile
 Makefile.in
-cscope.out
 /autom4te.cache/
 /compile
 /configure
+/cscope.out
 /depcomp
 /install-sh
 /logrotate
