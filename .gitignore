@@ -5,7 +5,7 @@
 *.o
 Makefile
 Makefile.in
-cscope.out
+/cscope.out
 /autom4te.cache/
 /compile
 /configure
