@@ -105,7 +105,7 @@ struct logStates {
 unsigned int hashSize;
 int numLogs = 0;
 int debug = 0;
-char *mailCommand = DEFAULT_MAIL_COMMAND;
+char *mailCommand = "@DEFAULT_MAIL_COMMAND@";
 time_t nowSecs = 0;
 static uid_t save_euid;
 static gid_t save_egid;
@@ -2526,7 +2526,7 @@ static int readState(char *stateFilename)
 int main(int argc, const char **argv)
 {
     int force = 0;
-    char *stateFile = STATEFILE;
+    char *stateFile = "@STATE_FILE_PATH@";
     char *logFile = NULL;
     FILE *logFd = 0;
     int rc = 0;
@@ -2540,7 +2540,7 @@ int main(int argc, const char **argv)
 	 "Don't do anything, just test (implies -v)"},
 	{"force", 'f', 0, &force, 0, "Force file rotation"},
 	{"mail", 'm', POPT_ARG_STRING, &mailCommand, 0,
-	 "Command to send mail (instead of `" DEFAULT_MAIL_COMMAND "')",
+	 "Command to send mail (instead of @DEFAULT_MAIL_COMMAND@)",
 	 "command"},
 	{"state", 's', POPT_ARG_STRING, &stateFile, 0,
 	 "Path of state file",

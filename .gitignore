@@ -10,12 +10,15 @@ Makefile.in
 /config.status
 /autom4te.cache/
 /compile
+/config.c
 /configure
 /cscope.out
 /depcomp
 /install-sh
 /logrotate
 /logrotate.spec
+/logrotate.8
+/logrotate.c
 /missing
 /test/test.ACL
 /test/test.SELINUX
