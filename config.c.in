@@ -799,7 +799,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 		return 1;
 	}
 
-	if (getuid() == ROOT_UID) {
+	if (getuid() == @ROOT_UID@) {
 		if ((sb.st_mode & 07533) != 0400) {
 			message(MESS_ERROR,
 				"Ignoring %s because of bad file mode - must be 0644 or 0444.\n",
@@ -808,7 +808,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 			return 0;
 		}
 
-		if ((pw = getpwuid(ROOT_UID)) == NULL) {
+		if ((pw = getpwuid(@ROOT_UID@)) == NULL) {
 			message(MESS_DEBUG,
 				"Ignoring %s because there's no password entry for the owner.\n",
 				configFile);
@@ -816,9 +816,9 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 			return 0;
 		}
 
-		if (sb.st_uid != ROOT_UID && (pw == NULL ||
+		if (sb.st_uid != @ROOT_UID@ && (pw == NULL ||
 				sb.st_uid != pw->pw_uid ||
-				pw->pw_uid != ROOT_UID)) {
+				pw->pw_uid != @ROOT_UID@)) {
 			message(MESS_DEBUG,
 				"Ignoring %s because the file owner is wrong (should be root or user with uid 0).\n",
 				configFile);
@@ -1362,11 +1362,11 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 				/* If no compression options were found in config file, set
 				default values */
 				if (!newlog->compress_prog)
-					newlog->compress_prog = strdup(COMPRESS_COMMAND);
+					newlog->compress_prog = strdup("@COMPRESS_COMMAND@");
 				if (!newlog->uncompress_prog)
-					newlog->uncompress_prog = strdup(UNCOMPRESS_COMMAND);
+					newlog->uncompress_prog = strdup("@UNCOMPRESS_COMMAND@");
 				if (!newlog->compress_ext)
-					newlog->compress_ext = strdup(COMPRESS_EXT);
+					newlog->compress_ext = strdup("@COMPRESS_EXT@");
 
 				/* Allocate a new logInfo structure and insert it into the logs
 				queue, copying the actual values from defConfig */
