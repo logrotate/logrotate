@@ -577,6 +577,32 @@ checkoutput <<EOF
 test.log 0 zero
 EOF
 
+cleanup 18
+
+# ------------------------------- Test 18 ------------------------------------
+preptest test.log 18 1
+$RLR test-config.18 -l syslog --force
+
+checkoutput <<EOF
+test.log 0
+test.log.1.gz 1 zero
+EOF
+
+(echo "gzip -f -9") | diff -u - compress-args
+egrep -q '^LOGROTATE_COMPRESSED_FILENAME=.+/test/test.log.1$' compress-env
+if [ $? != 0 ]; then
+      echo "LOGROTATE_COMPRESSED_FILENAME environment variable not found."
+      cat compress-env++      exit 3
+fi
+
+if [ $SYSLOG_TESTS = 1 ]; then
+       journalctl -n 50 2>/dev/null|grep $PWD/test.log.1 2>/dev/null >/dev/null
+       if [ $? != 0 ]; then
+               echo "syslog message not found"
+               exit 1
+       fi
+fi
+
 cleanup 19
 
 # ------------------------------- Test 19 ------------------------------------
