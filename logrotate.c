@@ -106,6 +106,7 @@ unsigned int hashSize;
 int numLogs = 0;
 int debug = 0;
 char *mailCommand = DEFAULT_MAIL_COMMAND;
+
 time_t nowSecs = 0;
 static uid_t save_euid;
 static gid_t save_egid;

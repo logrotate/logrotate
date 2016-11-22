@@ -585,7 +585,7 @@ $RLR test-config.18 -l syslog --force
 
 checkoutput <<EOF
 test.log 0
-test.log.1.gz 1 zero
+test.log.1.Z 1 zero
 EOF
 
 (echo "gzip -f -9") | diff -u - compress-args
@@ -596,11 +596,11 @@ if [ $? != 0 ]; then
 fi
 
 if [ $SYSLOG_TESTS = 1 ]; then
-	journalctl -n 50 2>/dev/null|grep $PWD/test.log.1 2>/dev/null >/dev/null
-	if [ $? != 0 ]; then
-		echo "syslog message not found"
-		exit 1
-	fi
+       journalctl -n 50 2>/dev/null|grep $PWD/test.log.1 2>/dev/null >/dev/null
+       if [ $? != 0 ]; then
+               echo "syslog message not found"
+               exit 1
+       fi
 fi
 
 cleanup 19
