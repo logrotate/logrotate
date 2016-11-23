@@ -63,8 +63,9 @@ AC_ARG_WITH([state-file-path],
     STATE_FILE_PATH="/var/lib/logrotate.status"
   ])
 AC_DEFINE_UNQUOTED([STATEFILE], "$STATE_FILE_PATH")
+AC_SUBST(STATE_FILE_PATH)
 
 AC_CHECK_FUNCS([asprintf fork madvise qsort strndup strptime vfork vsyslog])
 
-AC_CONFIG_FILES([Makefile test/Makefile logrotate.spec])
+AC_CONFIG_FILES([Makefile test/Makefile logrotate.8 logrotate.spec])
 AC_OUTPUT

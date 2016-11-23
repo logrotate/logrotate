@@ -15,6 +15,7 @@ Makefile.in
 /depcomp
 /install-sh
 /logrotate
+/logrotate.8
 /logrotate.spec
 /missing
 /test/test.ACL
