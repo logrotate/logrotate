@@ -133,7 +133,7 @@ static char *defTabooExts[] = { ".rpmsave", ".rpmorig", "~", ",v",
 static int defTabooCount = sizeof(defTabooExts) / sizeof(char *);
 
 /* I shouldn't use globals here :-( */
-static char **tabooExts = NULL;
+static char **tabooPatterns = NULL;
 int tabooCount = 0;
 static int glob_errno = 0;
 
@@ -380,7 +380,6 @@ static int mkpath(const char *path, mode_t mode, uid_t uid, gid_t gid) {
 static int checkFile(const char *fname)
 {
 	int i;
-	char *pattern;
 
 	/* Check if fname is '.' or '..'; if so, return false */
 	if (fname[0] == '.' && (!fname[1] || (fname[1] == '.' && !fname[2])))
@@ -388,18 +387,14 @@ static int checkFile(const char *fname)
 
 	/* Check if fname is ending in a taboo-extension; if so, return false */
 	for (i = 0; i < tabooCount; i++) {
-		if (asprintf(&pattern, "*%s", tabooExts[i]) < 0) {
-			message(MESS_FATAL, "failed to allocate taboo pattern memory\n");
-		}
+		const char *pattern = tabooPatterns[i];
 		if (!fnmatch(pattern, fname, 0))
 		{
-			free(pattern);
-			message(MESS_DEBUG, "Ignoring %s, because of %s ending\n",
-					fname, tabooExts[i]);
+			message(MESS_DEBUG, "Ignoring %s, because of %s pattern match\n",
+					fname, pattern);
 			return 0;
 		}
 	}
-	free(pattern);
 	/* All checks have been passed; return true */
 	return 1;
 }
@@ -682,13 +677,20 @@ int readAllConfigPaths(const char **paths)
 		.compress_options_count = 0
     };
 
-    tabooExts = malloc(sizeof(*tabooExts) * defTabooCount);
+    tabooPatterns = malloc(sizeof(*tabooPatterns) * defTabooCount);
     for (i = 0; i < defTabooCount; i++) {
-	if ((tabooExts[i] = (char *) malloc(strlen(defTabooExts[i]) + 1))) {
-	    strcpy(tabooExts[i], defTabooExts[i]);
+	int bytes;
+	char *pattern = NULL;
+
+	/* generate a pattern by concatenating star (wildcard) to the
+	 * suffix literal
+	 */
+	bytes = asprintf(&pattern, "*%s", defTabooExts[i]);
+	if (bytes != -1) {
+	    tabooPatterns[i] = pattern;
 	    tabooCount++;
 	} else {
-	    free_2d_array(tabooExts, tabooCount);
+	    free_2d_array(tabooPatterns, tabooCount);
 	    message(MESS_ERROR, "cannot malloc: %s\n", strerror(errno));
 	    return 1;
 	}
@@ -700,7 +702,7 @@ int readAllConfigPaths(const char **paths)
 	    break;
 	}
     }
-    free_2d_array(tabooExts, tabooCount);
+    free_2d_array(tabooPatterns, tabooCount);
     freeLogInfo(&defConfig);
     return result;
 }
@@ -1196,23 +1198,27 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 							while (isspace((unsigned char)*endtag) && *endtag)
 								endtag++;
 						} else {
-							free_2d_array(tabooExts, tabooCount);
+							free_2d_array(tabooPatterns, tabooCount);
 							tabooCount = 0;
-							tabooExts = malloc(1);
+							/* realloc of NULL is safe by definition */
+							tabooPatterns = NULL;
 						}
 
-
 						while (*endtag) {
+							int bytes;
+							char *pattern = NULL;
+
 							chptr = endtag;
 							while (!isspace((unsigned char)*chptr) && *chptr != ',' && *chptr)
 								chptr++;
 
-							tabooExts = realloc(tabooExts, sizeof(*tabooExts) *
+							tabooPatterns = realloc(tabooPatterns, sizeof(*tabooPatterns) *
 										(tabooCount + 1));
-							tabooExts[tabooCount] = malloc(chptr - endtag + 1);
-							strncpy(tabooExts[tabooCount], endtag,
-								chptr - endtag);
-							tabooExts[tabooCount][chptr - endtag] = '\0';
+							bytes = asprintf(&pattern, "*%.*s", (int)(chptr - endtag), endtag);
+
+							/* should test for malloc() failure */
+							assert(bytes != -1);
+							tabooPatterns[tabooCount] = pattern;
 							tabooCount++;
 
 							endtag = chptr;
@@ -1721,8 +1727,8 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 	close(fd);
     return 0;
 error:
-	if (key)
-		free(key);
+	/* free is a NULL-safe operation */
+	free(key);
 	munmap(buf, (size_t) length);
 	close(fd);
     return 1;
