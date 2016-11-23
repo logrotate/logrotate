@@ -388,7 +388,7 @@ static int checkFile(const char *fname)
 	/* Check if fname is ending in a taboo-extension; if so, return false */
 	for (i = 0; i < tabooCount; i++) {
 		const char *pattern = tabooPatterns[i];
-		if (!fnmatch(pattern, fname, 0))
+		if (!fnmatch(pattern, fname, FNM_PERIOD))
 		{
 			message(MESS_DEBUG, "Ignoring %s, because of %s pattern match\n",
 					fname, pattern);
@@ -1215,6 +1215,56 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 							tabooPatterns = realloc(tabooPatterns, sizeof(*tabooPatterns) *
 										(tabooCount + 1));
 							bytes = asprintf(&pattern, "*%.*s", (int)(chptr - endtag), endtag);
+
+							/* should test for malloc() failure */
+							assert(bytes != -1);
+							tabooPatterns[tabooCount] = pattern;
+							tabooCount++;
+
+							endtag = chptr;
+							if (*endtag == ',')
+								endtag++;
+							while (*endtag && isspace((unsigned char)*endtag))
+								endtag++;
+						}
+					}
+					else continue;
+				} else if (!strcmp(key, "taboopat")) {
+					if (newlog != defConfig) {
+						message(MESS_ERROR,
+							"%s:%d taboopat may not appear inside "
+							"of log file definition\n", configFile,
+							lineNum);
+						state = STATE_ERROR;
+						continue;
+					}
+					free(key);
+					if ((key = isolateValue(configFile, lineNum, "taboopat", &start,
+							&buf, length)) != NULL) {
+						endtag = key;
+						if (*endtag == '+') {
+							endtag++;
+							while (isspace((unsigned char)*endtag) && *endtag)
+								endtag++;
+						} else {
+							free_2d_array(tabooPatterns, tabooCount);
+							tabooCount = 0;
+							/* realloc of NULL is safe by definition */
+							tabooPatterns = NULL;
+						}
+
+						while (*endtag) {
+							int bytes;
+							char *pattern = NULL;
+
+							chptr = endtag;
+							while (!isspace((unsigned char)*chptr) && *chptr != ',' && *chptr)
+								chptr++;
+
+							tabooPatterns = realloc(tabooPatterns, sizeof(*tabooPatterns) *
+										(tabooCount + 1));
+							bytes = asprintf(&pattern, "%.*s", (int)(chptr - endtag), endtag);
+
 							/* should test for malloc() failure */
 							assert(bytes != -1);
 							tabooPatterns[tabooCount] = pattern;

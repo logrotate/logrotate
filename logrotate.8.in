@@ -308,7 +308,8 @@ most of the files in that directory are read in alphabetic order
 before processing of the including file continues. The only files
 which are ignored are files which are not regular files (such as
 directories and named pipes) and files whose names end with one of
-the taboo extensions, as specified by the \fBtabooext\fR directive.
+the taboo extensions or patterns, as specified by the \fBtabooext\fR
+or \fBtaboopat\fR directives, respectively.
 
 .TP
 \fBmail \fIaddress\fR
@@ -558,6 +559,13 @@ for information on the taboo extensions). If a + precedes the list of
 extensions, the current taboo extension list is augmented, otherwise it
 is replaced. At startup, the taboo extension list 
 contains .rpmsave, .rpmorig, ~, .disabled, .dpkg\-old, .dpkg\-dist, .dpkg\-new, .cfsaved, .ucf\-old, .ucf\-dist, .ucf\-new, .rpmnew, .swp, .cfsaved, .rhn\-cfg\-tmp\-*
+
+.TP
+\fBtaboopat\fR [+] \fIlist\fR
+The current taboo glob pattern list is changed (see the \fBinclude\fR directive
+for information on the taboo extensions and patterns). If a + precedes the list of
+patterns, the current taboo pattern list is augmented, otherwise it
+is replaced. At startup, the taboo pattern list is empty.
 
 .TP
 \fBweekly\fR
