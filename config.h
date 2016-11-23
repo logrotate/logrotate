@@ -8,19 +8,19 @@
 #define DEFAULT_MAIL_COMMAND "/usr/bin/mailx"
 #define COMPRESS_COMMAND "/usr/contrib/bin/gzip"
 #define UNCOMPRESS_COMMAND "/usr/contrib/bin/gunzip"
+#ifndef STATEFILE
 #define STATEFILE "/var/run/logrotate.status"
+#endif /* STATEFILE */
 #endif
 
 #ifdef SunOS
 #define DEFAULT_MAIL_COMMAND "/usr/bin/mailx"
-#define STATEFILE "/var/log/logrotate.status"
 #endif
 
 #ifdef __NetBSD__
 #define DEFAULT_MAIL_COMMAND "/usr/bin/mail -s"
 #define COMPRESS_COMMAND "/usr/bin/gzip"
 #define UNCOMPRESS_COMMAND "/usr/bin/gunzip"
-#define STATEFILE "/var/log/logrotate.status"
 #endif
 
 #if defined(__APPLE__) && defined(__MACH__)
@@ -29,7 +29,7 @@
 #endif
 
 /*
- * Default settings for Linux - leave these last.
+ * Default settings (mainly for Linux) - leave these last.
  */
 #ifndef DEFAULT_MAIL_COMMAND
 #define DEFAULT_MAIL_COMMAND "/bin/mail"

@@ -46,6 +46,24 @@ AS_CASE(["$with_acl"],
 AS_IF([test "$ac_cv_lib_acl_acl_get_file" = yes],
   echo "1" > ./test/test.ACL;, echo "0" > ./test/test.ACL;)
 
+AC_ARG_WITH([state-file-path],
+  AC_HELP_STRING([--with-state-file-path=PATH],
+                 [path to state file (/var/lib/logrotate.status by default)]),
+  [
+    case "$withval" in
+      yes|no)
+        AC_MSG_ERROR([--with-state-file-path=PATH requires a path to be specified])
+        ;;
+      *)
+        STATE_FILE_PATH="$withval"
+        ;;
+    esac
+  ],
+  [
+    STATE_FILE_PATH="/var/lib/logrotate.status"
+  ])
+AC_DEFINE_UNQUOTED([STATEFILE], "$STATE_FILE_PATH")
+
 AC_CHECK_FUNCS([asprintf fork madvise qsort strndup strptime vfork vsyslog])
 
 AC_CONFIG_FILES([Makefile test/Makefile logrotate.spec])
