@@ -101,14 +101,20 @@ char *strndup(const char *s, size_t n)
 }
 #endif
 
-const char * compress_cmd_list[][2] = {
+/* list of compression commands and the corresponding file extensions */
+struct compress_cmd_item {
+    const char *cmd;
+    const char *ext;
+};
+static const struct compress_cmd_item compress_cmd_list[] = {
     {"gzip", ".gz"},
     {"bzip2", ".bz2"},
     {"xz", ".xz"},
     {"compress", ".Z"},
     {"zip", "zip"},
-    {NULL, NULL} /* end-marker */
 };
+static const int compress_cmd_list_size = sizeof(compress_cmd_list)
+    / sizeof(compress_cmd_list[0]);
 
 enum {
 	STATE_DEFAULT = 2,
@@ -1293,13 +1299,14 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 					compresscmd_base = strdup(basename(newlog->compress_prog));
 					/* we check whether we changed the compress_cmd. In case we use the apropriate extension
 					   as listed in compress_cmd_list */
-					for(i = 0; compress_cmd_list[i][0] != NULL; i++) {
-						if (!strcmp(compress_cmd_list[i][0], compresscmd_base)) {
-							newlog->compress_ext = strdup((char *)compress_cmd_list[i][1]);
+					for(i = 0; i < compress_cmd_list_size; i++) {
+						if (!strcmp(compress_cmd_list[i].cmd, compresscmd_base)) {
+							newlog->compress_ext = strdup((char *)compress_cmd_list[i].ext);
 							message(MESS_DEBUG, "compress_ext was changed to %s\n", newlog->compress_ext);
 							break;
 						}
 					}
+					free(compresscmd_base);
 				} else if (!strcmp(key, "uncompresscmd")) {
 					freeLogItem (uncompress_prog);
 
