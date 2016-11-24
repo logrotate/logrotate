@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## [UNRELEASED]
 
+  - Added --disable-dot-files option to skip config files starting with
+    '.' (which would normally not show up for 'ls' anyway). This allows
+    you to deactivate a config file by renaming it instead of having to
+    delete it altogether (or move it into another directory). [Philip
+    Prindeville]
+
 ## [3.10.0] - 2016-08-03
 
   - Legacy Makefile renamed to Makefile.legacy, will be removed eventually.

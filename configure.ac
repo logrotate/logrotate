@@ -46,6 +46,17 @@ AS_CASE(["$with_acl"],
 AS_IF([test "$ac_cv_lib_acl_acl_get_file" = yes],
   echo "1" > ./test/test.ACL;, echo "0" > ./test/test.ACL;)
 
+AC_ARG_ENABLE([dot-files],
+   [AS_HELP_STRING([--enable-dot-files],
+     [Include configuration files starting with dot])],
+   [],
+   [enable_dot_files=yes])
+AS_CASE(["$enable_dot_files"],
+   [yes], [],
+   [no], [AC_DEFINE([DISABLE_DOT_FILES], [1],
+     [Skip configuration files whose name starts with dot])],
+   [])
+
 AC_CHECK_FUNCS([asprintf fork madvise qsort strndup strptime vfork vsyslog])
 
 AC_CONFIG_FILES([Makefile test/Makefile logrotate.spec])

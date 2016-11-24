@@ -30,6 +30,10 @@ else
 TEST_ACL=0
 endif
 
+ifeq ($(DISABLE_DOT_FILES),yes)
+CFLAGS += -DDISABLE_DOT_FILES
+endif
+
 # HP-UX using GCC
 ifeq ($(OS_NAME),HP-UX)
     ifeq ($(RPM_OPT_FLAGS),)

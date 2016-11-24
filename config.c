@@ -383,8 +383,14 @@ static int checkFile(const char *fname)
 	char *pattern;
 
 	/* Check if fname is '.' or '..'; if so, return false */
-	if (fname[0] == '.' && (!fname[1] || (fname[1] == '.' && !fname[2])))
+	if (fname[0] == '.') {
+#ifndef DISABLE_DOT_FILES
+		if (!fname[1] || (fname[1] == '.' && !fname[2]))
+			return 0;
+#else
 		return 0;
+#endif
+	}
 
 	/* Check if fname is ending in a taboo-extension; if so, return false */
 	for (i = 0; i < tabooCount; i++) {

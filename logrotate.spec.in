@@ -27,7 +27,7 @@ log files on your system.
 
 %build
 %configure \
-  --with-selinux
+  --with-selinux --disable-dot-files
 make %{?_smp_mflags} RPM_OPT_FLAGS="$RPM_OPT_FLAGS"
 
 %install
