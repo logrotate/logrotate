@@ -73,7 +73,7 @@ extern int asprintf(char **str, const char *fmt, ...);
 #define DOEXIT exit
 #endif
 
-// Number of seconds in a day
+/* Number of seconds in a day */
 #define DAY_SECONDS 86400
 
 struct logState {
@@ -184,7 +184,7 @@ int switch_user_permanently(const struct logInfo *log) {
 	}
 	if (getuid() == user && getgid() == group)
 		return 0;
-	// switch to full root first
+	/* switch to full root first */
 	if (setgid(getgid()) || setuid(getuid())) {
 		message(MESS_ERROR, "error getting rid of euid != uid\n");
 		return 1;
@@ -814,7 +814,7 @@ static int mailLog(struct logInfo *log, char *logFile, char *mailCommand,
 	close(mailInput);
 	close(1);
 
-	// mail command runs as root
+	/* mail command runs as root */
 	if (log->flags & LOG_FLAG_SU) {
 		if (switch_user_back_permanently() != 0) {
 			DOEXIT(1);
@@ -885,7 +885,7 @@ static int is_probably_sparse(struct stat const *sb)
 /* Return whether the buffer consists entirely of NULs.
    Note the word after the buffer must be non NUL. */
 
-static inline int is_nul (void const *buf, size_t bufsize)
+static int is_nul (void const *buf, size_t bufsize)
 {
   char const *cbuf = buf;
   char const *cp = buf;

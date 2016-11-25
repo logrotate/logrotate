@@ -181,6 +181,7 @@ static char *isolateValue(const char *fileName, int lineNum, char *key,
 
 static char *isolateWord(char **strt, char **buf, size_t length) {
 	char *endtag, *start;
+	char *key;
 	start = *strt;
 	while (start - *buf < length && isblank((unsigned char)*start))
 		start++;
@@ -189,7 +190,7 @@ static char *isolateWord(char **strt, char **buf, size_t length) {
 		endtag++;}
 	if (endtag - *buf > length)
 		return NULL;
-	char *key = strndup(start, endtag - start);
+	key = strndup(start, endtag - start);
 	*strt = endtag;
 	return key;
 }
@@ -1332,8 +1333,8 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 						newlog->addextension);
 
 				} else if (!strcmp(key, "compresscmd")) {
-					freeLogItem (compress_prog);
 					char *compresscmd_base;
+					freeLogItem (compress_prog);
 
 					if (!
 						(newlog->compress_prog =
@@ -1433,6 +1434,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                                                                            || *start == '~'
 #endif
                                                                            ) {
+				char *key;
 				in_config = 0;
 				if (newlog != defConfig) {
 					message(MESS_ERROR, "%s:%d unexpected log filename\n",
@@ -1473,7 +1475,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 						lineNum);
 					goto error;
 				}
-				char *key = strndup(start, endtag - start);
+				key = strndup(start, endtag - start);
 				start = endtag;
 
 				if (poptParseArgvString(key, &argc, &argv)) {
