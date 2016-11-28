@@ -4,6 +4,28 @@ All notable changes to this project will be documented in this file.
 
 ## [UNRELEASED]
 
+## [3.11.0] - 2016-12-02
+
+  - Add 'taboopat' configuration directive to exclude configuration files
+    based on globing patterns.
+  - Allow to change default state path at build time (via the
+    --with-state-file-path option of the configure script).
+  - Automatically determine resulting file suffix based on the compression
+    program in use.
+  - Preserve SELinux context with 'compress' and 'sharedscripts' properly.
+  - Rename already existing output files to avoid collisions.
+  - Import systemd service and timer for logrotate from openSUSE.
+  - Introduce the 'addextension' configuration directive.
+  - Create 'CONTRIBUTING.md' with instructions for logrotate contributors.
+  - Maintain ChangeLog.md instead of the legacy CHANGES file.
+  - Make 'createolddir' configuration directive preserve sticky bit.
+  - Add 'minage' configuration directive to specify minimum file age to rotate.
+  - Avoid using local implementation of strndup() and asprintf() if these
+    functions are available at build time.
+  - Fix parsing of 'su' directive to accept usernames starting with numeric
+    symbols.
+  - Make sure that 64-bit file offsets are used on 32-bit systems.
+
 ## [3.10.0] - 2016-08-03
 
   - Legacy Makefile renamed to Makefile.legacy, will be removed eventually.
