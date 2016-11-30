@@ -30,9 +30,9 @@
 #include "log.h"
 #include "logrotate.h"
 
+static void *prev_context;
 #ifdef WITH_SELINUX
 #include <selinux/selinux.h>
-static security_context_t prev_context = NULL;
 int selinux_enabled = 0;
 int selinux_enforce = 0;
 #endif
@@ -1446,7 +1446,7 @@ int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 	message(MESS_DEBUG, "dateext suffix '%s'\n", dext_str);
 	message(MESS_DEBUG, "glob pattern '%s'\n", dext_pattern);
 
-    if (setSecCtxByName(log->files[logNum], (void **) &prev_context) != 0) {
+    if (setSecCtxByName(log->files[logNum], &prev_context) != 0) {
 	/* error msg already printed */
 	return 1;
     }
@@ -1859,7 +1859,7 @@ int postrotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
     if (!hasErrors && rotNames->disposeName)
 	hasErrors = removeLogFile(rotNames->disposeName, log);
 
-    restoreSecCtx((void **) &prev_context);
+    restoreSecCtx(&prev_context);
     return hasErrors;
 }
 
