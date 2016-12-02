@@ -29,6 +29,12 @@ test -e "$TAR_GZ" || die "$TAR_GZ does not exist"
 TAR_XZ="${NV}.tar.xz"
 gzip -cd "$TAR_GZ" | xz -c > "$TAR_XZ" || die "failed to write $TAR_XZ"
 
+# sign the tarballs
+for file in "$TAR_GZ" "$TAR_XZ"; do
+    gpg --armor --detach-sign "$file" || die "tarball signing failed"
+    test -f "${file}.asc" || die "tarball signature was not created"
+done
+
 # file to store response from GitHub API
 JSON="./${NV}-github-relase.js"
 
@@ -55,5 +61,15 @@ for comp in gzip xz; do
     curl "${UPLOAD_URL}?name=${file}" \
         -T "$file" --fail --verbose \
         --header "Authorization: token $TOKEN" \
-        --header "Content-Type: application/x-${comp}"
+        --header "Content-Type: application/x-${comp}" \
+	|| exit $?
+done
+
+# upload signatures
+for file in "${TAR_GZ}.asc" "${TAR_XZ}.asc"; do
+    curl "${UPLOAD_URL}?name=${file}" \
+        -T "$file" --fail --verbose \
+        --header "Authorization: token $TOKEN" \
+        --header "Content-Type: text/plain" \
+	|| exit $?
 done
