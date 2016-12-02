@@ -1,4 +1,4 @@
-AC_INIT([logrotate],[3.10.0])
+AC_INIT([logrotate],[3.11.0])
 
 dnl foreign: Do not require AUTHORS, ChangeLog, NEWS, and README to exist
 dnl serial-tests: Do not hide standard output of our sequential test-suite
