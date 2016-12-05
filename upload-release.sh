@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 set -x
 SELF="$0"
 TAG="$1"
@@ -25,9 +25,9 @@ test -n "$TOKEN" || usage
 TAR_GZ="${NV}.tar.gz"
 test -e "$TAR_GZ" || die "$TAR_GZ does not exist"
 
-# create .tar.xz from .tar.gz
+# check that .tar.xz is prepared
 TAR_XZ="${NV}.tar.xz"
-gzip -cd "$TAR_GZ" | xz -c > "$TAR_XZ" || die "failed to write $TAR_XZ"
+test -e "$TAR_XZ" || die "$TAR_XZ does not exist"
 
 # sign the tarballs
 for file in "$TAR_GZ" "$TAR_XZ"; do
