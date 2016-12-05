@@ -1729,7 +1729,7 @@ int rotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 			if (!debug && !hasErrors &&
 			rename(log->files[logNum], rotNames->finalName)) {
 				message(MESS_ERROR, "failed to rename %s to %s: %s\n",
-					log->files[logNum], tmpFilename,
+					log->files[logNum], rotNames->finalName,
 					strerror(errno));
 					hasErrors = 1;
 			}
