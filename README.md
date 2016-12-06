@@ -32,7 +32,7 @@ Get Kamil's PGP key rsa4096/72A37B36
     $ gpg --keyserver pgp.mit.edu --recv-key 72A37B36
     
 
-check the key fingerprint (992A 96E0 7505 6E79 CD82  14F9 873D B375 72A3 7B36
+Check the key fingerprint (992A 96E0 7505 6E79 CD82  14F9 873D B375 72A3 7B36)
 
     $ gpg --fingerprint 72A37B36
     
