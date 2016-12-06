@@ -19,12 +19,9 @@ Previous releases:
 * [logrotate-3.8.7](https://fedorahosted.org/releases/l/o/logrotate/logrotate-3.8.7.tar.gz)
 
 
-## Unpack and verify
+## Verify and unpack
 
-After downloading the tarball and .asc signature file, extract the tar file.
-
-    $ tar -xJf logrotate-3.11.0.tar.xz
-    
+After downloading the tarball and .asc signature file, check the signature:
 
 Get Kamil's PGP key rsa4096/72A37B36
 (almost any keyserver will do if pgp.mit.edu is temporarily unavailable):
@@ -51,6 +48,10 @@ If succesful your GPG output should look like this:
     gpg: WARNING: This key is not certified with a trusted signature!
     gpg:          There is no indication that the signature belongs to the owner.
     Primary key fingerprint: 992A 96E0 7505 6E79 CD82  14F9 873D B375 72A3 7B36
+    
+You may then unpack the tarball:
+
+    $ tar -xJf logrotate-3.11.0.tar.xz
 
 # Patches and Questions
 
