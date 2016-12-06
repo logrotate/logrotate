@@ -21,10 +21,9 @@ Previous releases:
 
 ## Unpack and verify
 
-After downloading, extract the tar file.
+After downloading the tarball and .asc signature file, extract the tar file.
 
     $ tar -xJf logrotate-3.11.0.tar.xz
-    logrotate-3.11.0.asc
     
 
 Get Kamil's PGP key rsa4096/72A37B36
