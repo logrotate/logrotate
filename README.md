@@ -6,7 +6,7 @@ The logrotate utility is designed to simplify the administration of log files on
 
 The latest release is:
 
-* [logrotate-3.11.0](https://github.com/logrotate/logrotate/releases/download/3.11.0/logrotate-3.11.0.tar.xz) ([Changelog](https://github.com/logrotate/logrotate/releases/tag/3.11.0))
+* [logrotate-3.11.0](https://github.com/logrotate/logrotate/releases/download/3.11.0/logrotate-3.11.0.tar.xz) ([sig](https://github.com/logrotate/logrotate/releases/download/3.11.0/logrotate-3.11.0.tar.xz.asc)) ([Changelog](https://github.com/logrotate/logrotate/releases/tag/3.11.0))
 
 Previous releases:
 
@@ -17,6 +17,41 @@ Previous releases:
 * [logrotate-3.8.9](https://fedorahosted.org/releases/l/o/logrotate/logrotate-3.8.9.tar.gz)
 * [logrotate-3.8.8](https://fedorahosted.org/releases/l/o/logrotate/logrotate-3.8.8.tar.gz)
 * [logrotate-3.8.7](https://fedorahosted.org/releases/l/o/logrotate/logrotate-3.8.7.tar.gz)
+
+
+## Verify and unpack
+
+After downloading the tarball and .asc signature file, check the signature:
+
+Get Kamil's PGP key rsa4096/72A37B36
+(almost any keyserver will do if pgp.mit.edu is temporarily unavailable):
+
+    $ gpg --keyserver pgp.mit.edu --recv-key 72A37B36
+    
+
+Check the key fingerprint (992A 96E0 7505 6E79 CD82  14F9 873D B375 72A3 7B36)
+
+    $ gpg --fingerprint 72A37B36
+    
+
+and verify the PGP signature on the distribution tarball:
+
+ 
+    $ gpg --verify logrotate-3.11.0.tar.xz.asc logrotate-3.11.0.tar.xz
+    
+
+If succesful your GPG output should look like this:
+
+    gpg: Signature made Fri 02 Dec 2016 08:30:39 AM EST
+    gpg:                using RSA key 873DB37572A37B36
+    gpg: Good signature from "Kamil Dudka <kdudka@redhat.com>" [unknown]
+    gpg: WARNING: This key is not certified with a trusted signature!
+    gpg:          There is no indication that the signature belongs to the owner.
+    Primary key fingerprint: 992A 96E0 7505 6E79 CD82  14F9 873D B375 72A3 7B36
+    
+You may then unpack the tarball:
+
+    $ tar -xJf logrotate-3.11.0.tar.xz
 
 # Patches and Questions
 
