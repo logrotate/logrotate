@@ -1499,7 +1499,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 
 				newlog->files = NULL;
 				newlog->numFiles = 0;
-				for (argNum = 0; argNum < argc && logerror != 1; argNum++) {
+				for (argNum = 0; argNum < argc; argNum++) {
 				if (globerr_msg) {
 					free(globerr_msg);
 					globerr_msg = NULL;
@@ -1780,7 +1780,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 
 	munmap(buf, (size_t) length);
 	close(fd);
-    return 0;
+    return logerror;
 error:
 	/* free is a NULL-safe operation */
 	free(key);
