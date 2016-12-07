@@ -1069,6 +1069,27 @@ static int copyTruncate(char *currLog, char *saveLog, struct stat *sb,
     return 0;
 }
 
+/* return value similar to mktime() but the exact time is ignored */
+static time_t mktimeFromDateOnly(const struct tm *src)
+{
+    /* explicit struct copy to retain C89 compatibility */
+    struct tm tmp;
+    memcpy(&tmp, src, sizeof tmp);
+
+    /* abstract out (nullify) fields expressing the exact time */
+    tmp.tm_hour = 0;
+    tmp.tm_min  = 0;
+    tmp.tm_sec  = 0;
+    return mktime(&tmp);
+}
+
+/* return by how many days the date was advanced but ignore exact time */
+static int daysElapsed(const struct tm *now, const struct tm *last)
+{
+    const time_t diff = mktimeFromDateOnly(now) - mktimeFromDateOnly(last);
+    return diff / (24 * 3600);
+}
+
 int findNeedRotating(struct logInfo *log, int logNum, int force)
 {
     struct stat sb;
@@ -1160,18 +1181,16 @@ int findNeedRotating(struct logInfo *log, int logNum, int force)
 	       state->lastRotated.tm_mon != now.tm_mon ||
 	       state->lastRotated.tm_mday != now.tm_mday ||
 	       state->lastRotated.tm_hour != now.tm_hour) {
+	int days;
 	switch (log->criterium) {
 	case ROT_WEEKLY:
-	    /* rotate if:
-	       1) the current weekday is before the weekday of the
-	       last rotation
-	       2) more then a week has passed since the last
-	       rotation */
-	    state->doRotate = ((now.tm_wday < state->lastRotated.tm_wday)
-			       ||
-			       ((mktime(&now) -
-				 mktime(&state->lastRotated)) >
-				(7 * 24 * 3600)));
+	    days = daysElapsed(&now, &state->lastRotated);
+	    /* rotate if date is advanced by 7+ days (exact time is ignored) */
+	    state->doRotate = (days >= 7)
+		/* ... or if we have not yet rotated today */
+		|| (days >= 1
+			/* ... and the selected weekday is today */
+			&& now.tm_wday == log->weekday);
 	    if (!state->doRotate) {
 	    message(MESS_DEBUG, "  log does not need rotating "
 		    "(log has been rotated at %d-%d-%d %d:%d, "

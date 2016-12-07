@@ -43,6 +43,7 @@ struct logInfo {
     char *oldDir;
     enum { ROT_HOURLY, ROT_DAYS, ROT_WEEKLY, ROT_MONTHLY, ROT_YEARLY, ROT_SIZE
             } criterium;
+    int weekday; /* used by ROT_WEEKLY only */
     off_t threshhold;
     off_t maxsize;
     off_t minsize;

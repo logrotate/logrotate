@@ -424,6 +424,7 @@ static void copyLogInfo(struct logInfo *to, struct logInfo *from)
     if (from->oldDir)
 	to->oldDir = strdup(from->oldDir);
     to->criterium = from->criterium;
+    to->weekday = from->weekday;
     to->threshhold = from->threshhold;
     to->minsize = from->minsize;
     to->maxsize = from->maxsize;
@@ -1078,7 +1079,25 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 				} else if (!strcmp(key, "monthly")) {
 					newlog->criterium = ROT_MONTHLY;
 				} else if (!strcmp(key, "weekly")) {
+					unsigned weekday;
+					char tmp;
 					newlog->criterium = ROT_WEEKLY;
+					free(key);
+					key = isolateLine(&start, &buf, length);
+					if (key == NULL || key[0] == '\0') {
+						/* default to Sunday if no argument was given */
+						newlog->weekday = 0;
+						continue;
+					}
+
+					if (1 == sscanf(key, "%u%c", &weekday, &tmp) && weekday <= 7) {
+						/* use the selected weekday, 7 means "once per week" */
+						newlog->weekday = weekday;
+						continue;
+					}
+					message(MESS_ERROR, "%s:%d bad weekly directive '%s'\n",
+							configFile, lineNum, key);
+					goto error;
 				} else if (!strcmp(key, "yearly")) {
 					newlog->criterium = ROT_YEARLY;
 				} else if (!strcmp(key, "rotate")) {

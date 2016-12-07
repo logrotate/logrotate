@@ -568,12 +568,12 @@ patterns, the current taboo pattern list is augmented, otherwise it
 is replaced. At startup, the taboo pattern list is empty.
 
 .TP
-\fBweekly\fR
-Log files are rotated if the current weekday is less than the weekday
-of the last rotation or if more than a week has passed since the last
-rotation. This is normally the same as rotating logs on the first day
-of the week, but it works better if \fIlogrotate\fR is not run every
-night.
+\fBweekly\fR [\fIweekday\fR]
+Log files are rotated once each \fIweekday\fR, or if the date is advanced by at
+least 7 days since the last rotation (while ignoring the exact time).  The
+\fIweekday\fR intepretation is following:  0 means Sunday, 1 means Monday, ...,
+6 means Saturday; the special value 7 means each 7 days, irrespectively of
+weekday.  Defaults to 0 if the \fIweekday\fR argument is omitted.
 
 .TP
 \fByearly\fR
