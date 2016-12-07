@@ -47,6 +47,10 @@ You may then unpack the tarball:
 
     $ tar -xJf logrotate-3.11.0.tar.xz
 
+Notice that git tags are signed with same key:
+
+    $ git tag --verify 3.11.0
+
 # Patches and Questions
 
 Open issues or pull requests on GitHub.
