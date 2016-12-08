@@ -4,6 +4,7 @@
 *.m4
 *.o
 *.tar.gz
+*.tar.xz
 Makefile
 Makefile.in
 /config.log
