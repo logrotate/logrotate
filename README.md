@@ -26,13 +26,7 @@ After downloading the tarball and .asc signature file, check the signature:
 Get Kamil's PGP key rsa4096/72A37B36
 (almost any keyserver will do if pgp.mit.edu is temporarily unavailable):
 
-    $ gpg --keyserver pgp.mit.edu --recv-key 72A37B36
-    
-
-Check the key fingerprint (992A 96E0 7505 6E79 CD82  14F9 873D B375 72A3 7B36)
-
-    $ gpg --fingerprint 72A37B36
-    
+    $ gpg --keyserver pgp.mit.edu --recv-key 992A96E075056E79CD8214F9873DB37572A37B36
 
 and verify the PGP signature on the distribution tarball:
 
@@ -52,6 +46,10 @@ If succesful your GPG output should look like this:
 You may then unpack the tarball:
 
     $ tar -xJf logrotate-3.11.0.tar.xz
+
+Notice that git tags are signed with same key:
+
+    $ git tag --verify 3.11.0
 
 # Patches and Questions
 
