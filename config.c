@@ -1018,9 +1018,9 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 							!strcmp(key, "maxsize")) {
 					unsigned long long size = 0;
 					char *opt = key;
-							
-					if ((key = isolateValue(configFile, lineNum, opt, &start,
-							&buf, length)) != NULL) {
+
+					key = isolateValue(configFile, lineNum, opt, &start, &buf, length);
+					if (key && key[0]) {
 						int l = strlen(key) - 1;
 						if (key[l] == 'k' || key[l] == 'K') {
 							key[l] = '\0';
