@@ -2464,18 +2464,19 @@ int main(int argc, const char **argv)
 
     struct poptOption options[] = {
 	{"debug", 'd', 0, 0, 'd',
-	 "Don't do anything, just test (implies -v)"},
-	{"force", 'f', 0, &force, 0, "Force file rotation"},
+	 "Don't do anything, just test (implies -v)", NULL},
+	{"force", 'f', 0, &force, 0, "Force file rotation", NULL},
 	{"mail", 'm', POPT_ARG_STRING, &mailCommand, 0,
 	 "Command to send mail (instead of `" DEFAULT_MAIL_COMMAND "')",
 	 "command"},
 	{"state", 's', POPT_ARG_STRING, &stateFile, 0,
 	 "Path of state file",
 	 "statefile"},
-	{"verbose", 'v', 0, 0, 'v', "Display messages during rotation"},
-	{"log", 'l', POPT_ARG_STRING, &logFile, 'l', "Log file or 'syslog' to log to syslog"},
-	{"version", '\0', POPT_ARG_NONE, NULL, 'V', "Display version information"},
-	POPT_AUTOHELP {0, 0, 0, 0, 0}
+	{"verbose", 'v', 0, 0, 'v', "Display messages during rotation", NULL},
+	{"log", 'l', POPT_ARG_STRING, &logFile, 'l', "Log file or 'syslog' to log to syslog",
+	 "logfile"},
+	{"version", '\0', POPT_ARG_NONE, NULL, 'V', "Display version information", NULL},
+	POPT_AUTOHELP { NULL, 0, 0, NULL, 0, NULL, NULL }
     };
 
     logSetLevel(MESS_NORMAL);
