@@ -1434,7 +1434,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                                                                            || *start == '~'
 #endif
                                                                            ) {
-				char *key;
+				char *local_key;
 				in_config = 0;
 				if (newlog != defConfig) {
 					message(MESS_ERROR, "%s:%d unexpected log filename\n",
@@ -1475,19 +1475,19 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 						lineNum);
 					goto error;
 				}
-				key = strndup(start, endtag - start);
+				local_key = strndup(start, endtag - start);
 				start = endtag;
 
-				if (poptParseArgvString(key, &argc, &argv)) {
+				if (poptParseArgvString(local_key, &argc, &argv)) {
 				message(MESS_ERROR, "%s:%d error parsing filename\n",
 					configFile, lineNum);
-				free(key);
+				free(local_key);
 				goto error;
 				} else if (argc < 1) {
 				message(MESS_ERROR,
 					"%s:%d { expected after log file name(s)\n",
 					configFile, lineNum);
-				free(key);
+				free(local_key);
 				goto error;
 				}
 
@@ -1555,7 +1555,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 				globfree(&globResult);
 				}
 
-				newlog->pattern = key;
+				newlog->pattern = local_key;
 
 				free(argv);
 
@@ -1583,7 +1583,6 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 			if (newlog->oldDir) {
 				for (i = 0; i < newlog->numFiles; i++) {
 					char *ld;
-					int rv;
 					dirName = ourDirName(newlog->files[i]);
 					if (stat(dirName, &sb2)) {
 						if (!(newlog->flags & LOG_FLAG_MISSINGOK)) {
@@ -1616,8 +1615,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 						dirName = newlog->oldDir;
 					}
 
-					rv = stat(dirName, &sb);
-					if (rv) {
+					if (stat(dirName, &sb)) {
 						if (errno == ENOENT && newlog->flags & LOG_FLAG_OLDDIRCREATE) {
 							if (mkpath(dirName, newlog->olddirMode,
 								newlog->olddirUid, newlog->olddirGid)) {
