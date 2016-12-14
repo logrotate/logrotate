@@ -1442,6 +1442,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 #endif
                                                                            ) {
 				char *local_key;
+				size_t glob_count;
 				in_config = 0;
 				if (newlog != defConfig) {
 					message(MESS_ERROR, "%s:%d unexpected log filename\n",
@@ -1532,9 +1533,9 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 									globResult.
 									gl_pathc));
 
-				for (i = 0; i < globResult.gl_pathc; i++) {
+				for (glob_count = 0; glob_count < globResult.gl_pathc; glob_count++) {
 					/* if we glob directories we can get false matches */
-					if (!lstat(globResult.gl_pathv[i], &sb) &&
+					if (!lstat(globResult.gl_pathv[glob_count], &sb) &&
 					S_ISDIR(sb.st_mode)) {
 						continue;
 					}
@@ -1543,11 +1544,11 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 						log = log->list.tqe_next) {
 					for (k = 0; k < log->numFiles; k++) {
 						if (!strcmp(log->files[k],
-							globResult.gl_pathv[i])) {
+							globResult.gl_pathv[glob_count])) {
 						message(MESS_ERROR,
 							"%s:%d duplicate log entry for %s\n",
 							configFile, lineNum,
-							globResult.gl_pathv[i]);
+							globResult.gl_pathv[glob_count]);
 						logerror = 1;
 						goto duperror;
 						}
@@ -1555,7 +1556,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 					}
 
 					newlog->files[newlog->numFiles] =
-					strdup(globResult.gl_pathv[i]);
+					strdup(globResult.gl_pathv[glob_count]);
 					newlog->numFiles++;
 				}
 		duperror:
