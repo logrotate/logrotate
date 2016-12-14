@@ -34,6 +34,13 @@
 
 #define REALLOC_STEP    10
 
+/* The __unused__ attribute was added in gcc 3.2.7.  */
+#if __GNUC__ >= 3 || (__GNUC__ == 2 && __GNUC_MINOR__ >= 7)
+# define ATTRIBUTE_UNUSED __attribute__((__unused__))
+#else
+# define ATTRIBUTE_UNUSED /* empty */
+#endif
+
 #if defined(SunOS)
 #include <limits.h>
 #if !defined(isblank)
@@ -138,7 +145,7 @@ int tabooCount = 0;
 static int glob_errno = 0;
 
 static int readConfigFile(const char *configFile, struct logInfo *defConfig);
-static int globerr(const char *pathname, int theerr);
+static int globerr(const char *pathname ATTRIBUTE_UNUSED, int theerr);
 
 static char *isolateLine(char **strt, char **buf, size_t length) {
 	char *endtag, *start, *tmp;
@@ -708,7 +715,7 @@ int readAllConfigPaths(const char **paths)
     return result;
 }
 
-static int globerr(const char *pathname, int theerr)
+static int globerr(const char *pathname ATTRIBUTE_UNUSED, int theerr)
 {
     /* A missing directory is not an error, so return 0 */
     if (theerr == ENOTDIR)
