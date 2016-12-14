@@ -75,7 +75,7 @@ Install dependencies for Fedora/CentOS systems:
 yum install make autoconf automake libtool popt-devel xz
 ```
 
-Compilation:
+Compilation (`autoreconf` is optional if you obtained source from tarball):
 ```
 cd logrotate-X.Y.Z
 autoreconf -fiv
