@@ -710,6 +710,8 @@ int readAllConfigPaths(const char **paths)
 
 static int globerr(const char *pathname, int theerr)
 {
+    (void) pathname;
+
     /* A missing directory is not an error, so return 0 */
     if (theerr == ENOTDIR)
         return 0;
