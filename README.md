@@ -61,7 +61,7 @@ Notice that git tags are signed with same key:
 
 ## Compiling
 
-Obtain source either by [Downloading](#download) it or doing [Git checkout](#git-checkout]).
+Obtain source either by [Downloading](#download) it or doing [Git checkout](#git-checkout).
 
 Install dependencies for Debian systems:
 ```
