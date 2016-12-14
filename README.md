@@ -27,17 +27,6 @@ git clone https://github.com/logrotate/logrotate.git -b master
 
 Replace `master` with branch or tag you intend to checkout
 
-## Compiling
-
-Obtain source either by [Downloading](#download) it or [Git checkout](#git-checkout])
-
-```
-cd logrotate-X.Y.Z
-autoreconf -fiv
-./configure
-make
-```
-
 ## Verify and unpack
 
 After downloading the tarball and .asc signature file, check the signature:
@@ -69,6 +58,32 @@ You may then unpack the tarball:
 Notice that git tags are signed with same key:
 
     $ git tag --verify 3.11.0
+
+## Compiling
+
+Obtain source either by [Downloading](#download) it or [Git checkout](#git-checkout]).
+
+Install dependencies:
+
+For Debian systems:
+```
+apt-get update
+apt-get install make autoconf libtool libpopt-dev xz-utils
+```
+
+For Fedora/CentOS systems:
+
+```
+yum install make autoconf automake libtool popt-devel xz
+```
+
+And compile:
+```
+cd logrotate-X.Y.Z
+autoreconf -fiv
+./configure
+make
+```
 
 # Patches and Questions
 
