@@ -61,23 +61,21 @@ Notice that git tags are signed with same key:
 
 ## Compiling
 
-Obtain source either by [Downloading](#download) it or [Git checkout](#git-checkout]).
+Obtain source either by [Downloading](#download) it or doing [Git checkout](#git-checkout]).
 
-Install dependencies:
-
-For Debian systems:
+Install dependencies for Debian systems:
 ```
 apt-get update
 apt-get install make autoconf libtool libpopt-dev xz-utils
 ```
 
-For Fedora/CentOS systems:
+Install dependencies for Fedora/CentOS systems:
 
 ```
 yum install make autoconf automake libtool popt-devel xz
 ```
 
-And compile:
+Compilation:
 ```
 cd logrotate-X.Y.Z
 autoreconf -fiv
