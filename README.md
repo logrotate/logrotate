@@ -18,6 +18,25 @@ Previous releases:
 * [logrotate-3.8.8](https://fedorahosted.org/releases/l/o/logrotate/logrotate-3.8.8.tar.gz)
 * [logrotate-3.8.7](https://fedorahosted.org/releases/l/o/logrotate/logrotate-3.8.7.tar.gz)
 
+## Git checkout
+
+You can also obtain code by using git checkout:
+```
+git clone https://github.com/logrotate/logrotate.git -b master
+```
+
+Replace `master` with branch or tag you intend to checkout
+
+## Compiling
+
+Obtain source either by [Downloading](#download) it or [Git checkout](#git-checkout])
+
+```
+cd logrotate-X.Y.Z
+autoreconf -fiv
+./configure
+make
+```
 
 ## Verify and unpack
 
