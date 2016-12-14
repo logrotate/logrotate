@@ -142,11 +142,12 @@ static int globerr(const char *pathname, int theerr);
 
 static char *isolateLine(char **strt, char **buf, size_t length) {
 	char *endtag, *start, *tmp;
+	const char *max = *buf + length;
 	start = *strt;
 	endtag = start;
-	while (endtag - *buf < length && *endtag != '\n') {
+	while (endtag < max && *endtag != '\n') {
 		endtag++;}
-	if (endtag - *buf > length)
+	if (max < endtag)
 		return NULL;
 	tmp = endtag - 1;
 	while (isspace((unsigned char)*endtag))
@@ -160,16 +161,17 @@ static char *isolateValue(const char *fileName, int lineNum, char *key,
 			char **startPtr, char **buf, size_t length)
 {
     char *chptr = *startPtr;
+    const char *max = *startPtr + length;
 
-    while (chptr - *buf < length && isblank((unsigned char)*chptr))
+    while (chptr < max && isblank((unsigned char)*chptr))
 	chptr++;
-    if (chptr - *buf < length && *chptr == '=') {
+    if (chptr < max && *chptr == '=') {
 	chptr++;
-	while ( chptr - *buf < length && isblank((unsigned char)*chptr))
+	while ( chptr < max && isblank((unsigned char)*chptr))
 	    chptr++;
     }
 
-    if (chptr - *buf < length && *chptr == '\n') {
+    if (chptr < max && *chptr == '\n') {
 		message(MESS_ERROR, "%s:%d argument expected after %s\n",
 			fileName, lineNum, key);
 		return NULL;
@@ -181,14 +183,15 @@ static char *isolateValue(const char *fileName, int lineNum, char *key,
 
 static char *isolateWord(char **strt, char **buf, size_t length) {
 	char *endtag, *start;
+	const char *max = *buf + length;
 	char *key;
 	start = *strt;
-	while (start - *buf < length && isblank((unsigned char)*start))
+	while (start < max && isblank((unsigned char)*start))
 		start++;
 	endtag = start;
-	while (endtag - *buf < length && isalpha((unsigned char)*endtag)) {
+	while (endtag < max && isalpha((unsigned char)*endtag)) {
 		endtag++;}
-	if (endtag - *buf > length)
+	if (max < endtag)
 		return NULL;
 	key = strndup(start, endtag - start);
 	*strt = endtag;
