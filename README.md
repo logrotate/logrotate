@@ -18,6 +18,14 @@ Previous releases:
 * [logrotate-3.8.8](https://fedorahosted.org/releases/l/o/logrotate/logrotate-3.8.8.tar.gz)
 * [logrotate-3.8.7](https://fedorahosted.org/releases/l/o/logrotate/logrotate-3.8.7.tar.gz)
 
+## Git checkout
+
+You can also obtain code by using git checkout:
+```
+git clone https://github.com/logrotate/logrotate.git -b master
+```
+
+Replace `master` with branch or tag you intend to checkout
 
 ## Verify and unpack
 
@@ -50,6 +58,30 @@ You may then unpack the tarball:
 Notice that git tags are signed with same key:
 
     $ git tag --verify 3.11.0
+
+## Compiling
+
+Obtain source either by [Downloading](#download) it or doing [Git checkout](#git-checkout).
+
+Install dependencies for Debian systems:
+```
+apt-get update
+apt-get install make autoconf libtool libpopt-dev xz-utils
+```
+
+Install dependencies for Fedora/CentOS systems:
+
+```
+yum install make autoconf automake libtool popt-devel xz
+```
+
+Compilation (`autoreconf` is optional if you obtained source from tarball):
+```
+cd logrotate-X.Y.Z
+autoreconf -fiv
+./configure
+make
+```
 
 # Patches and Questions
 
