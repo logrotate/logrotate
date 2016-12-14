@@ -765,14 +765,14 @@ static int compressLogFile(char *name, struct logInfo *log, struct stat *sb)
     return 0;
 }
 
-static int mailLog(struct logInfo *log, char *logFile, char *mailCommand,
+static int mailLog(struct logInfo *log, char *logFile, char *mailComm,
 		   char *uncompressCommand, char *address, char *subject)
 {
     int mailInput;
     pid_t mailChild, uncompressChild = 0;
     int mailStatus, uncompressStatus;
     int uncompressPipe[2];
-    char *mailArgv[] = { mailCommand, "-s", subject, address, NULL };
+    char *mailArgv[] = { mailComm, "-s", subject, address, NULL };
     int rc = 0;
 
     if ((mailInput = open(logFile, O_RDONLY | O_NOFOLLOW)) < 0) {
@@ -847,19 +847,19 @@ static int mailLog(struct logInfo *log, char *logFile, char *mailCommand,
     return rc;
 }
 
-static int mailLogWrapper(char *mailFilename, char *mailCommand,
+static int mailLogWrapper(char *mailFilename, char *mailComm,
 			  int logNum, struct logInfo *log)
 {
 	/* if the log is compressed (and we're not mailing a
 	* file whose compression has been delayed), we need
 	* to uncompress it */
 	if ((log->flags & LOG_FLAG_COMPRESS) && !(log->flags & LOG_FLAG_DELAYCOMPRESS)) {
-		if (mailLog(log, mailFilename, mailCommand,
+		if (mailLog(log, mailFilename, mailComm,
 			log->uncompress_prog, log->logAddress,
 			(log->flags & LOG_FLAG_MAILFIRST) ? log->files[logNum] : mailFilename))
 			return 1;
 	} else {
-		if (mailLog(log, mailFilename, mailCommand, NULL,
+		if (mailLog(log, mailFilename, mailComm, NULL,
 			log->logAddress, mailFilename))
 			return 1;
 	}
