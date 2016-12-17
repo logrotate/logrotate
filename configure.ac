@@ -5,6 +5,11 @@ dnl serial-tests: Do not hide standard output of our sequential test-suite
 dnl dist-xz: Produce tar.xz version of the release archive
 AM_INIT_AUTOMAKE([foreign serial-tests dist-xz])
 
+# --enable-silent-rules
+m4_ifdef([AM_SILENT_RULES],
+  [AM_SILENT_RULES([yes])],
+  [AC_SUBST([AM_DEFAULT_VERBOSITY], [1])])
+
 AC_DEFINE(_GNU_SOURCE)
 
 AC_PROG_CC
