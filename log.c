@@ -10,7 +10,7 @@
 
 #include "log.h"
 
-int logLevel = MESS_DEBUG;
+static int logLevel = MESS_DEBUG;
 static FILE *errorFile = NULL;
 static FILE *messageFile = NULL;
 static int _logToSyslog = 0;
@@ -54,7 +54,7 @@ void logClearFlags(int newFlags)
     flags &= ~newFlags;
 }
 
-static void log_once(FILE *where, int level, char *format, va_list args)
+static void log_once(FILE *where, int level, const char *format, va_list args)
 {
 	int showTime = 0;
 
@@ -80,7 +80,7 @@ static void log_once(FILE *where, int level, char *format, va_list args)
 	fflush(where);
 }
 
-void message(int level, char *format, ...)
+void message(int level, const char *format, ...)
 {
 	va_list args;
     
