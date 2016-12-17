@@ -18,11 +18,8 @@ void message(int level, const char *format, ...)
 #else
 ;
 #endif
-void logSetErrorFile(FILE * f);
 void logSetMessageFile(FILE * f);
 void logToSyslog(int enable);
-void logSetFlags(int flags);
-void logClearFlags(int flags);
 void logSetLevel(int level);
 
 #endif
