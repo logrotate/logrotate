@@ -21,12 +21,12 @@
 #include <sys/types.h>
 #include <utime.h>
 #include <stdint.h>
+#include <libgen.h>
 
 #if defined(SunOS)
 #include <limits.h>
 #endif
 
-#include "basenames.h"
 #include "log.h"
 #include "logrotate.h"
 
@@ -1106,7 +1106,8 @@ static int findNeedRotating(struct logInfo *log, int logNum, int force)
 
 	/* Check if parent directory of this log has safe permissions */
 	if ((log->flags & LOG_FLAG_SU) == 0 && getuid() == 0) {
-		char *ld = ourDirName(log->files[logNum]);
+		char *logpath = strdup(log->files[logNum]);
+		char *ld = dirname(logpath);
 		if (stat(ld, &sb)) {
 			/* If parent directory doesn't exist, it's not real error
 			  (unless nomissingok is specified)
@@ -1114,10 +1115,10 @@ static int findNeedRotating(struct logInfo *log, int logNum, int force)
 			if (errno != ENOENT || (errno == ENOENT && (log->flags & LOG_FLAG_MISSINGOK) == 0)) {
 				message(MESS_ERROR, "stat of %s failed: %s\n", ld,
 					strerror(errno));
-				free(ld);
+				free(logpath);
 				return 1;
 			}
-			free(ld);
+			free(logpath);
 			return 0;
 		}
 		/* Don't rotate in directories writable by others or group which is not "root"  */
@@ -1127,10 +1128,10 @@ static int findNeedRotating(struct logInfo *log, int logNum, int force)
 								" Set \"su\" directive in config file to tell logrotate which user/group"
 								" should be used for rotation.\n"
 								,log->files[logNum]);
-			free(ld);
+			free(logpath);
 			return 1;
 		}
-		free(ld);
+		free(logpath);
 	}
 
     if (lstat(log->files[logNum], &sb)) {
@@ -1327,19 +1328,22 @@ static int prerotateSingleLog(struct logInfo *log, int logNum,
 
     state->lastRotated = now;
 
-    if (log->oldDir) {
-	if (log->oldDir[0] != '/') {
-	    char *ld = ourDirName(log->files[logNum]);
-	    rotNames->dirName =
-		malloc(strlen(ld) + strlen(log->oldDir) + 2);
-	    sprintf(rotNames->dirName, "%s/%s", ld, log->oldDir);
-	    free(ld);
+    {
+	char *logpath = strdup(log->files[logNum]);
+	char *ld = dirname(logpath);
+	if (log->oldDir) {
+	    if (log->oldDir[0] != '/') {
+		rotNames->dirName =
+		    malloc(strlen(ld) + strlen(log->oldDir) + 2);
+		sprintf(rotNames->dirName, "%s/%s", ld, log->oldDir);
+	    } else
+		rotNames->dirName = strdup(log->oldDir);
 	} else
-	    rotNames->dirName = strdup(log->oldDir);
-    } else
-	rotNames->dirName = ourDirName(log->files[logNum]);
+	    rotNames->dirName = strdup(ld);
+	free(logpath);
+    }
 
-    rotNames->baseName = strdup(ourBaseName(log->files[logNum]));
+    rotNames->baseName = strdup(basename(log->files[logNum]));
 
     if (log->addextension) {
 	size_t baseLen = strlen(rotNames->baseName);
