@@ -23,8 +23,8 @@
 #include <wctype.h>
 #include <fnmatch.h>
 #include <sys/mman.h>
+#include <libgen.h>
 
-#include "basenames.h"
 #include "log.h"
 #include "logrotate.h"
 
@@ -1606,14 +1606,17 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 			if (newlog->oldDir) {
 				for (i = 0; i < newlog->numFiles; i++) {
 					char *ld;
-					dirName = ourDirName(newlog->files[i]);
+					char *dirpath;
+
+					dirpath = strdup(newlog->files[i]);
+					dirName = dirname(dirpath);
 					if (stat(dirName, &sb2)) {
 						if (!(newlog->flags & LOG_FLAG_MISSINGOK)) {
 							message(MESS_ERROR,
 								"%s:%d error verifying log file "
 								"path %s: %s\n", configFile, lineNum,
 								dirName, strerror(errno));
-							free(dirName);
+							free(dirpath);
 							goto error;
 						}
 						else {
@@ -1623,13 +1626,13 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 								"but missingok is set, so this is not an error.\n",
 								configFile, lineNum,
 								dirName, strerror(errno));
-							free(dirName);
+							free(dirpath);
 							continue;
 						}
 					}
 					ld = alloca(strlen(dirName) + strlen(newlog->oldDir) + 2);
 					sprintf(ld, "%s/%s", dirName, newlog->oldDir);
-					free(dirName);
+					free(dirpath);
 
 					if (newlog->oldDir[0] != '/') {
 						dirName = ld;
