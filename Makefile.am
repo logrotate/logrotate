@@ -8,6 +8,7 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
+AM_CPPFLAGS = -include config.h
 AM_CFLAGS = -Wall -Werror
 sbin_PROGRAMS = logrotate
 logrotate_SOURCES = config.c log.c logrotate.c \

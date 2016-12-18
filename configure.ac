@@ -101,7 +101,7 @@ AC_ARG_WITH([state-file-path],
         ;;
     esac
   ])
-AC_DEFINE_UNQUOTED([STATEFILE], "$STATE_FILE_PATH")
+AC_DEFINE_UNQUOTED([STATEFILE], ["$STATE_FILE_PATH"], [State file path.])
 AC_SUBST(STATE_FILE_PATH)
 
 AC_ARG_WITH([default-mail-command],
@@ -117,7 +117,7 @@ AC_ARG_WITH([default-mail-command],
         ;;
     esac
   ])
-AC_DEFINE_UNQUOTED([DEFAULT_MAIL_COMMAND], "$DEFAULT_MAIL_COMMAND")
+AC_DEFINE_UNQUOTED([DEFAULT_MAIL_COMMAND], ["$DEFAULT_MAIL_COMMAND"], [default mail command])
 AC_SUBST(DEFAULT_MAIL_COMMAND)
 
 AC_ARG_WITH([compress-command],
@@ -133,7 +133,7 @@ AC_ARG_WITH([compress-command],
         ;;
     esac
   ])
-AC_DEFINE_UNQUOTED([COMPRESS_COMMAND], "$COMPRESS_COMMAND")
+AC_DEFINE_UNQUOTED([COMPRESS_COMMAND], "$COMPRESS_COMMAND", [default compress command])
 AC_SUBST(COMPRESS_COMMAND)
 
 AC_ARG_WITH([uncompress-command],
@@ -149,7 +149,7 @@ AC_ARG_WITH([uncompress-command],
         ;;
     esac
   ])
-AC_DEFINE_UNQUOTED([UNCOMPRESS_COMMAND], "$UNCOMPRESS_COMMAND")
+AC_DEFINE_UNQUOTED([UNCOMPRESS_COMMAND], "$UNCOMPRESS_COMMAND", [default uncompress command])
 AC_SUBST(UNCOMPRESS_COMMAND)
 
 AC_ARG_WITH([compress-extension],
@@ -165,13 +165,14 @@ AC_ARG_WITH([compress-extension],
         ;;
     esac
   ])
-AC_DEFINE_UNQUOTED([COMPRESS_EXT], "$COMPRESS_EXT")
+AC_DEFINE_UNQUOTED([COMPRESS_EXT], ["$COMPRESS_EXT"], [default compress extension])
 AC_SUBST(COMPRESS_EXT)
 
-AC_DEFINE_UNQUOTED([ROOT_UID], 0)
+AC_DEFINE_UNQUOTED([ROOT_UID], [0], [Root user-id.])
 AC_SUBST(ROOT_UID)
 
 AC_CHECK_FUNCS([asprintf fork madvise qsort strndup strptime vfork vsyslog])
+AC_CONFIG_HEADERS([config.h])
 
 AC_CONFIG_FILES([Makefile test/Makefile logrotate.8 logrotate.spec])
 AC_OUTPUT
