@@ -162,6 +162,7 @@ AC_DEFINE_UNQUOTED([ROOT_UID], 0)
 AC_SUBST(ROOT_UID)
 
 AC_CHECK_FUNCS([asprintf fork madvise qsort strndup strptime vfork vsyslog])
+AC_CONFIG_HEADERS([config.h])
 
 AC_CONFIG_FILES([Makefile test/Makefile logrotate.8 logrotate.spec])
 AC_OUTPUT
