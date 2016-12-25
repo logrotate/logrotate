@@ -243,7 +243,7 @@ static void unescape(char *arg)
 #define HASH_SIZE_MIN 64
 static int allocateHash(unsigned int hs)
 {
-	int i;
+	size_t i;
 
 	/* Enforce some reasonable minimum hash size */
 	if (hs < HASH_SIZE_MIN)
@@ -765,14 +765,14 @@ static int compressLogFile(char *name, struct logInfo *log, struct stat *sb)
     return 0;
 }
 
-static int mailLog(struct logInfo *log, char *logFile, char *mailCommand,
+static int mailLog(struct logInfo *log, char *logFile, char *mailComm,
 		   char *uncompressCommand, char *address, char *subject)
 {
     int mailInput;
     pid_t mailChild, uncompressChild = 0;
     int mailStatus, uncompressStatus;
     int uncompressPipe[2];
-    char *mailArgv[] = { mailCommand, "-s", subject, address, NULL };
+    char *mailArgv[] = { mailComm, "-s", subject, address, NULL };
     int rc = 0;
 
     if ((mailInput = open(logFile, O_RDONLY | O_NOFOLLOW)) < 0) {
@@ -847,19 +847,19 @@ static int mailLog(struct logInfo *log, char *logFile, char *mailCommand,
     return rc;
 }
 
-static int mailLogWrapper(char *mailFilename, char *mailCommand,
+static int mailLogWrapper(char *mailFilename, char *mailComm,
 			  int logNum, struct logInfo *log)
 {
 	/* if the log is compressed (and we're not mailing a
 	* file whose compression has been delayed), we need
 	* to uncompress it */
 	if ((log->flags & LOG_FLAG_COMPRESS) && !(log->flags & LOG_FLAG_DELAYCOMPRESS)) {
-		if (mailLog(log, mailFilename, mailCommand,
+		if (mailLog(log, mailFilename, mailComm,
 			log->uncompress_prog, log->logAddress,
 			(log->flags & LOG_FLAG_MAILFIRST) ? log->files[logNum] : mailFilename))
 			return 1;
 	} else {
-		if (mailLog(log, mailFilename, mailCommand, NULL,
+		if (mailLog(log, mailFilename, mailComm, NULL,
 			log->logAddress, mailFilename))
 			return 1;
 	}
@@ -1275,7 +1275,7 @@ int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
     char *compext = "";
     char *fileext = "";
     int hasErrors = 0;
-    int i, j;
+    int i;
     char *glob_pattern;
     glob_t globResult;
     int rc;
@@ -1361,14 +1361,14 @@ int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 	 * Construct the glob pattern corresponding to the date format */
 	dext_str[0] = '\0';
 	if (log->dateformat) {
-		i = j = 0;
+		size_t ii = 0, jj = 0;
 		memset(dext_pattern, 0, sizeof(dext_pattern));
 		dext = log->dateformat;
 		while (*dext == ' ')
 			dext++;
 		while ((*dext != '\0') && (!hasErrors)) {
 			/* Will there be a space for a char and '\0'? */
-			if (j >= (sizeof(dext_pattern) - 1)) {
+			if (jj >= (sizeof(dext_pattern) - 1)) {
 				message(MESS_ERROR, "Date format %s is too long\n",
 						log->dateformat);
 				hasErrors = 1;
@@ -1379,7 +1379,7 @@ int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 					case 'Y':
 						strncat(dext_pattern, "[0-9][0-9]",
 								sizeof(dext_pattern) - strlen(dext_pattern) - 1);
-						j += 10; /* strlen("[0-9][0-9]") */
+						jj += 10; /* strlen("[0-9][0-9]") */
 					case 'm':
 					case 'd':
 					case 'H':
@@ -1388,45 +1388,45 @@ int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 					case 'V':
 						strncat(dext_pattern, "[0-9][0-9]",
 								sizeof(dext_pattern) - strlen(dext_pattern) - 1);
-						j += 10;
-						if (j >= (sizeof(dext_pattern) - 1)) {
+						jj += 10;
+						if (jj >= (sizeof(dext_pattern) - 1)) {
 							message(MESS_ERROR, "Date format %s is too long\n",
 									log->dateformat);
 							hasErrors = 1;
 							break;
 						}
-						dformat[i++] = *(dext++);
-						dformat[i] = *dext;
+						dformat[ii++] = *(dext++);
+						dformat[ii] = *dext;
 						break;
 					case 's':
 						/* End of year 2293 this pattern does not work. */
 						strncat(dext_pattern,
 								"[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]",
 								sizeof(dext_pattern) - strlen(dext_pattern) - 1);
-						j += 50;
-						if (j >= (sizeof(dext_pattern) - 1)) {
+						jj += 50;
+						if (jj >= (sizeof(dext_pattern) - 1)) {
 							message(MESS_ERROR, "Date format %s is too long\n",
 									log->dateformat);
 							hasErrors = 1;
 							break;
 						}
-						dformat[i++] = *(dext++);
-						dformat[i] = *dext;
+						dformat[ii++] = *(dext++);
+						dformat[ii] = *dext;
 						break;
 					default:
-						dformat[i++] = *dext;
-						dformat[i] = '%';
-						dext_pattern[j++] = *dext;
+						dformat[ii++] = *dext;
+						dformat[ii] = '%';
+						dext_pattern[jj++] = *dext;
 						break;
 				}
 			} else {
-				dformat[i] = *dext;
-				dext_pattern[j++] = *dext;
+				dformat[ii] = *dext;
+				dext_pattern[jj++] = *dext;
 			}
-			++i;
+			++ii;
 			++dext;
 		}
-		dformat[i] = '\0';
+		dformat[ii] = '\0';
 		message(MESS_DEBUG, "Converted '%s' -> '%s'\n", log->dateformat, dformat);
 		strftime(dext_str, sizeof(dext_str), dformat, &now);
 	} else {
@@ -1462,11 +1462,12 @@ int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 		}
 	    rc = glob(glob_pattern, 0, globerr, &globResult);
 	    if (!rc && globResult.gl_pathc > 0) {
+		size_t glob_count;
 		sortGlobResult(&globResult, strlen(rotNames->dirName) + 1 + strlen(rotNames->baseName), dformat);
-		for (i = 0; i < globResult.gl_pathc && !hasErrors; i++) {
+		for (glob_count = 0; glob_count < globResult.gl_pathc && !hasErrors; glob_count++) {
 		    struct stat sbprev;
 
-			if (asprintf(&oldName, "%s", (globResult.gl_pathv)[i]) < 0) {
+			if (asprintf(&oldName, "%s", (globResult.gl_pathv)[glob_count]) < 0) {
 				message(MESS_FATAL, "could not allocate glob result memory\n");
 			}
 			if (stat(oldName, &sbprev)) {
@@ -1525,13 +1526,14 @@ int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 	     * remember the second and so on */
 	    struct stat fst_buf;
 	    int mail_out = -1;
+	    size_t glob_count;
 	    /* remove the first (n - rotateCount) matches
 	     * no real rotation needed, since the files have
 	     * the date in their name */
 		sortGlobResult(&globResult, strlen(rotNames->dirName) + 1 + strlen(rotNames->baseName), dformat);
-	    for (i = 0; i < globResult.gl_pathc; i++) {
-		if (!stat((globResult.gl_pathv)[i], &fst_buf)) {
-		    if ((i <= ((int) globResult.gl_pathc - rotateCount))
+	    for (glob_count = 0; glob_count < globResult.gl_pathc; glob_count++) {
+		if (!stat((globResult.gl_pathv)[glob_count], &fst_buf)) {
+		    if ((glob_count <= (globResult.gl_pathc - rotateCount))
 			|| ((log->rotateAge > 0)
 			    &&
 			    (((nowSecs - fst_buf.st_mtime) / DAY_SECONDS)
@@ -1549,7 +1551,7 @@ int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 				hasErrors = removeLogFile(mailFilename, log);
 				}
 			}
-			mail_out = i;
+			mail_out = glob_count;
 		    }
 		}
 	    }
@@ -1883,7 +1885,7 @@ int rotateLogSet(struct logInfo *log, int force)
         message(MESS_DEBUG, "hourly ");
         break;
         case ROT_DAYS:
-        message(MESS_DEBUG, "after %llu days ", log->threshhold);
+        message(MESS_DEBUG, "after %jd days ", (intmax_t)log->threshhold);
         break;
         case ROT_WEEKLY:
         message(MESS_DEBUG, "weekly ");
@@ -1895,7 +1897,7 @@ int rotateLogSet(struct logInfo *log, int force)
         message(MESS_DEBUG, "yearly ");
         break;
         case ROT_SIZE:
-        message(MESS_DEBUG, "%llu bytes ", log->threshhold);
+        message(MESS_DEBUG, "%jd bytes ", (intmax_t)log->threshhold);
         break;
         }
     }
@@ -1914,10 +1916,10 @@ int rotateLogSet(struct logInfo *log, int force)
 	message(MESS_DEBUG, "empty log files are not rotated, ");
 
     if (log->minsize) 
-	message(MESS_DEBUG, "only log files >= %llu bytes are rotated, ",	log->minsize);
+	message(MESS_DEBUG, "only log files >= %jd bytes are rotated, ", (intmax_t)log->minsize);
 
     if (log->maxsize) 
-	message(MESS_DEBUG, "log files >= %llu are rotated earlier, ",	log->maxsize);
+	message(MESS_DEBUG, "log files >= %jd are rotated earlier, ", (intmax_t)log->maxsize);
 
     if (log->rotateMinAge)
         message(MESS_DEBUG, "only log files older than %d days are rotated, ", log->rotateMinAge);
@@ -2106,7 +2108,7 @@ static int writeState(char *stateFilename)
 	struct logState *p;
 	FILE *f;
 	char *chptr;
-	int i;
+	size_t i = 0;
 	int error = 0;
 	int bytes = 0;
 	int fdcurr;
@@ -2464,18 +2466,19 @@ int main(int argc, const char **argv)
 
     struct poptOption options[] = {
 	{"debug", 'd', 0, 0, 'd',
-	 "Don't do anything, just test (implies -v)"},
-	{"force", 'f', 0, &force, 0, "Force file rotation"},
+	 "Don't do anything, just test (implies -v)", NULL},
+	{"force", 'f', 0, &force, 0, "Force file rotation", NULL},
 	{"mail", 'm', POPT_ARG_STRING, &mailCommand, 0,
 	 "Command to send mail (instead of `" DEFAULT_MAIL_COMMAND "')",
 	 "command"},
 	{"state", 's', POPT_ARG_STRING, &stateFile, 0,
 	 "Path of state file",
 	 "statefile"},
-	{"verbose", 'v', 0, 0, 'v', "Display messages during rotation"},
-	{"log", 'l', POPT_ARG_STRING, &logFile, 'l', "Log file or 'syslog' to log to syslog"},
-	{"version", '\0', POPT_ARG_NONE, NULL, 'V', "Display version information"},
-	POPT_AUTOHELP {0, 0, 0, 0, 0}
+	{"verbose", 'v', 0, 0, 'v', "Display messages during rotation", NULL},
+	{"log", 'l', POPT_ARG_STRING, &logFile, 'l', "Log file or 'syslog' to log to syslog",
+	 "logfile"},
+	{"version", '\0', POPT_ARG_NONE, NULL, 'V', "Display version information", NULL},
+	POPT_AUTOHELP { NULL, 0, 0, NULL, 0, NULL, NULL }
     };
 
     logSetLevel(MESS_NORMAL);

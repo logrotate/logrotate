@@ -34,6 +34,13 @@
 
 #define REALLOC_STEP    10
 
+/* The __unused__ attribute was added in gcc 3.2.7.  */
+#if __GNUC__ >= 3 || (__GNUC__ == 2 && __GNUC_MINOR__ >= 7)
+# define ATTRIBUTE_UNUSED __attribute__((__unused__))
+#else
+# define ATTRIBUTE_UNUSED /* empty */
+#endif
+
 #if defined(SunOS)
 #include <limits.h>
 #if !defined(isblank)
@@ -138,15 +145,16 @@ int tabooCount = 0;
 static int glob_errno = 0;
 
 static int readConfigFile(const char *configFile, struct logInfo *defConfig);
-static int globerr(const char *pathname, int theerr);
+static int globerr(const char *pathname ATTRIBUTE_UNUSED, int theerr);
 
 static char *isolateLine(char **strt, char **buf, size_t length) {
 	char *endtag, *start, *tmp;
+	const char *max = *buf + length;
 	start = *strt;
 	endtag = start;
-	while (endtag - *buf < length && *endtag != '\n') {
+	while (endtag < max && *endtag != '\n') {
 		endtag++;}
-	if (endtag - *buf > length)
+	if (max < endtag)
 		return NULL;
 	tmp = endtag - 1;
 	while (isspace((unsigned char)*endtag))
@@ -160,16 +168,17 @@ static char *isolateValue(const char *fileName, int lineNum, char *key,
 			char **startPtr, char **buf, size_t length)
 {
     char *chptr = *startPtr;
+    const char *max = *startPtr + length;
 
-    while (chptr - *buf < length && isblank((unsigned char)*chptr))
+    while (chptr < max && isblank((unsigned char)*chptr))
 	chptr++;
-    if (chptr - *buf < length && *chptr == '=') {
+    if (chptr < max && *chptr == '=') {
 	chptr++;
-	while ( chptr - *buf < length && isblank((unsigned char)*chptr))
+	while ( chptr < max && isblank((unsigned char)*chptr))
 	    chptr++;
     }
 
-    if (chptr - *buf < length && *chptr == '\n') {
+    if (chptr < max && *chptr == '\n') {
 		message(MESS_ERROR, "%s:%d argument expected after %s\n",
 			fileName, lineNum, key);
 		return NULL;
@@ -181,14 +190,15 @@ static char *isolateValue(const char *fileName, int lineNum, char *key,
 
 static char *isolateWord(char **strt, char **buf, size_t length) {
 	char *endtag, *start;
+	const char *max = *buf + length;
 	char *key;
 	start = *strt;
-	while (start - *buf < length && isblank((unsigned char)*start))
+	while (start < max && isblank((unsigned char)*start))
 		start++;
 	endtag = start;
-	while (endtag - *buf < length && isalpha((unsigned char)*endtag)) {
+	while (endtag < max && isalpha((unsigned char)*endtag)) {
 		endtag++;}
-	if (endtag - *buf > length)
+	if (max < endtag)
 		return NULL;
 	key = strndup(start, endtag - start);
 	*strt = endtag;
@@ -708,7 +718,7 @@ int readAllConfigPaths(const char **paths)
     return result;
 }
 
-static int globerr(const char *pathname, int theerr)
+static int globerr(const char *pathname ATTRIBUTE_UNUSED, int theerr)
 {
     /* A missing directory is not an error, so return 0 */
     if (theerr == ENOTDIR)
@@ -1434,7 +1444,8 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                                                                            || *start == '~'
 #endif
                                                                            ) {
-				char *key;
+				char *local_key;
+				size_t glob_count;
 				in_config = 0;
 				if (newlog != defConfig) {
 					message(MESS_ERROR, "%s:%d unexpected log filename\n",
@@ -1475,19 +1486,19 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 						lineNum);
 					goto error;
 				}
-				key = strndup(start, endtag - start);
+				local_key = strndup(start, endtag - start);
 				start = endtag;
 
-				if (poptParseArgvString(key, &argc, &argv)) {
+				if (poptParseArgvString(local_key, &argc, &argv)) {
 				message(MESS_ERROR, "%s:%d error parsing filename\n",
 					configFile, lineNum);
-				free(key);
+				free(local_key);
 				goto error;
 				} else if (argc < 1) {
 				message(MESS_ERROR,
 					"%s:%d { expected after log file name(s)\n",
 					configFile, lineNum);
-				free(key);
+				free(local_key);
 				goto error;
 				}
 
@@ -1525,9 +1536,9 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 									globResult.
 									gl_pathc));
 
-				for (i = 0; i < globResult.gl_pathc; i++) {
+				for (glob_count = 0; glob_count < globResult.gl_pathc; glob_count++) {
 					/* if we glob directories we can get false matches */
-					if (!lstat(globResult.gl_pathv[i], &sb) &&
+					if (!lstat(globResult.gl_pathv[glob_count], &sb) &&
 					S_ISDIR(sb.st_mode)) {
 						continue;
 					}
@@ -1536,11 +1547,11 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 						log = log->list.tqe_next) {
 					for (k = 0; k < log->numFiles; k++) {
 						if (!strcmp(log->files[k],
-							globResult.gl_pathv[i])) {
+							globResult.gl_pathv[glob_count])) {
 						message(MESS_ERROR,
 							"%s:%d duplicate log entry for %s\n",
 							configFile, lineNum,
-							globResult.gl_pathv[i]);
+							globResult.gl_pathv[glob_count]);
 						logerror = 1;
 						goto duperror;
 						}
@@ -1548,14 +1559,14 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 					}
 
 					newlog->files[newlog->numFiles] =
-					strdup(globResult.gl_pathv[i]);
+					strdup(globResult.gl_pathv[glob_count]);
 					newlog->numFiles++;
 				}
 		duperror:
 				globfree(&globResult);
 				}
 
-				newlog->pattern = key;
+				newlog->pattern = local_key;
 
 				free(argv);
 
@@ -1583,7 +1594,6 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 			if (newlog->oldDir) {
 				for (i = 0; i < newlog->numFiles; i++) {
 					char *ld;
-					int rv;
 					dirName = ourDirName(newlog->files[i]);
 					if (stat(dirName, &sb2)) {
 						if (!(newlog->flags & LOG_FLAG_MISSINGOK)) {
@@ -1616,8 +1626,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 						dirName = newlog->oldDir;
 					}
 
-					rv = stat(dirName, &sb);
-					if (rv) {
+					if (stat(dirName, &sb)) {
 						if (errno == ENOENT && newlog->flags & LOG_FLAG_OLDDIRCREATE) {
 							if (mkpath(dirName, newlog->olddirMode,
 								newlog->olddirUid, newlog->olddirGid)) {
