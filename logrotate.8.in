@@ -1,4 +1,4 @@
-.TH LOGROTATE 8 "Wed Nov 5 2002" "Linux" "System Administrator's Manual"
+.TH LOGROTATE 8 "@VERSION@" "Linux" "System Administrator's Manual"
 .SH NAME
 logrotate \(hy rotates, compresses, and mails system logs
 .SH SYNOPSIS
@@ -72,7 +72,7 @@ log files.  The default state file is \fI@STATE_FILE_PATH@\fR.
 Prints a short usage message.
 
 .TP
-+\fB\-v\fR, \fB\-\-verbose\fR
+\fB\-v\fR, \fB\-\-verbose\fR
 Turns on verbose mode, ie. display messages during rotation.
 
 .SH CONFIGURATION FILE
