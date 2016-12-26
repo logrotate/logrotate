@@ -62,17 +62,6 @@ static acl_type prev_acl = NULL;
 extern int asprintf(char **str, const char *fmt, ...);
 #endif
 
-#if defined(HAVE_FORK)
-#define FORK_OR_VFORK fork
-#define DOEXIT exit
-#elif defined(HAVE_VFORK)
-#define FORK_OR_VFORK vfork
-#define DOEXIT _exit
-#else
-#define FORK_OR_VFORK fork
-#define DOEXIT exit
-#endif
-
 /* Number of seconds in a day */
 #define DAY_SECONDS 86400
 
@@ -435,14 +424,14 @@ static int runScript(struct logInfo *log, char *logfn, char *script)
 		return 0;
 	}
 
-	if (!FORK_OR_VFORK()) {
+	if (!fork()) {
 		if (log->flags & LOG_FLAG_SU) {
 			if (switch_user_back_permanently() != 0) {
-				DOEXIT(1);
+				exit(1);
 			}
 		}
 		execl("/bin/sh", "sh", "-c", script, "logrotate_script", logfn, NULL);
-		DOEXIT(1);
+		exit(1);
 	}
 
 	wait(&rc);
@@ -596,16 +585,16 @@ static int shred_file(int fd, char *filename, struct logInfo *log)
 	fullCommand[id++] = "-";
 	fullCommand[id++] = NULL;
 
-	if (!FORK_OR_VFORK()) {
+	if (!fork()) {
 		dup2(fd, 1);
 		close(fd);
 
 		if (switch_user_permanently(log) != 0) {
-			DOEXIT(1);
+			exit(1);
 		}
 
 		execvp(fullCommand[0], (void *) fullCommand);
-		DOEXIT(1);
+		exit(1);
 	}
 	
 	wait(&status);
@@ -716,7 +705,7 @@ static int compressLogFile(char *name, struct logInfo *log, struct stat *sb)
 		return 1;
 	}
 
-    if (!FORK_OR_VFORK()) {
+    if (!fork()) {
 	dup2(inFile, 0);
 	close(inFile);
 	dup2(outFile, 1);
@@ -726,14 +715,14 @@ static int compressLogFile(char *name, struct logInfo *log, struct stat *sb)
 	close(compressPipe[1]);
 
 	if (switch_user_permanently(log) != 0) {
-		DOEXIT(1);
+		exit(1);
 	}
 
 	envInFilename = alloca(strlen("LOGROTATE_COMPRESSED_FILENAME=") + strlen(name) + 2);
 	sprintf(envInFilename, "LOGROTATE_COMPRESSED_FILENAME=%s", name);
 	putenv(envInFilename);
 	execvp(fullCommand[0], (void *) fullCommand);
-	DOEXIT(1);
+	exit(1);
     }
 
     close(compressPipe[1]);
@@ -794,7 +783,7 @@ static int mailLog(struct logInfo *log, char *logFile, const char *mailComm,
 			close(mailInput);
 			return 1;
 		}
-		if (!(uncompressChild = FORK_OR_VFORK())) {
+		if (!(uncompressChild = fork())) {
 			/* uncompress child */
 			dup2(mailInput, 0);
 			close(mailInput);
@@ -803,11 +792,11 @@ static int mailLog(struct logInfo *log, char *logFile, const char *mailComm,
 			close(uncompressPipe[1]);
 
 			if (switch_user_permanently(log) != 0) {
-				DOEXIT(1);
+				exit(1);
 			}
 
 			execlp(uncompressCommand, uncompressCommand, NULL);
-			DOEXIT(1);
+			exit(1);
 		}
 
 		close(mailInput);
@@ -815,7 +804,7 @@ static int mailLog(struct logInfo *log, char *logFile, const char *mailComm,
 		close(uncompressPipe[1]);
     }
 
-    if (!(mailChild = FORK_OR_VFORK())) {
+    if (!(mailChild = fork())) {
 	dup2(mailInput, 0);
 	close(mailInput);
 	close(1);
@@ -823,12 +812,12 @@ static int mailLog(struct logInfo *log, char *logFile, const char *mailComm,
 	/* mail command runs as root */
 	if (log->flags & LOG_FLAG_SU) {
 		if (switch_user_back_permanently() != 0) {
-			DOEXIT(1);
+			exit(1);
 		}
 	}
 
 	execvp(mailArgv[0], mailArgv);
-	DOEXIT(1);
+	exit(1);
     }
 
     close(mailInput);
