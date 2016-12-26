@@ -1608,6 +1608,7 @@ test.log 0
 test.log.1 0 zerox
 EOF
 
+rm -f test.example
 cleanup 63
 
 # ------------------------------- Test 63 ------------------------------------
@@ -1644,6 +1645,7 @@ test.log 0
 test.log.1 0 zero
 EOF
 
+rm -f test.example
 cleanup 64
 
 # ------------------------------- Test 64 ------------------------------------
