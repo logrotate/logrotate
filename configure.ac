@@ -1,4 +1,5 @@
-AC_INIT([logrotate],[3.11.0])
+AC_INIT([logrotate],[m4_esyscmd([build-aux/git-version-gen .tarball-version])],
+[],[],[https://github.com/logrotate/logrotate])
 
 dnl foreign: Do not require AUTHORS, ChangeLog, NEWS, and README to exist
 dnl serial-tests: Do not hide standard output of our sequential test-suite
