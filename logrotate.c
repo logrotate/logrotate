@@ -40,8 +40,6 @@ int selinux_enforce = 0;
 #ifdef WITH_ACL
 #include "sys/acl.h"
 #define acl_type acl_t
-#define ACL_NOT_WELL_SUPPORTED(Err) \
-     ((Err) == ENOTSUP || (Err) == ENOSYS || (Err) == EINVAL || (Err) == EBUSY)
 #else
 #define acl_type void *
 #endif
@@ -438,6 +436,19 @@ static int runScript(struct logInfo *log, char *logfn, char *script)
 	return rc;
 }
 
+static int is_acl_well_supported(int err)
+{
+	switch (err) {
+	case ENOTSUP:	/* no file system support */
+	case EINVAL:	/* acl does not point to a valid ACL */
+	case ENOSYS:	/* compatibility - acl_(g|s)et_fd(3) should never return this */
+	case EBUSY:	/* compatibility - acl_(g|s)et_fd(3) should never return this */
+		return 0;
+	default:
+		return 1;
+	}
+}
+
 static int createOutputFile(char *fileName, int flags, struct stat *sb,
 			    acl_type acl, int force_mode)
 {
@@ -513,7 +524,7 @@ static int createOutputFile(char *fileName, int flags, struct stat *sb,
 #ifdef WITH_ACL
 	if (!force_mode && acl) {
 		if (acl_set_fd(fd, acl) == -1) {
-			if (!ACL_NOT_WELL_SUPPORTED(errno)) {
+			if (is_acl_well_supported(errno)) {
 				message(MESS_ERROR, "setting ACL for %s: %s\n",
 				fileName, strerror(errno));
 				close(fd);
@@ -673,7 +684,7 @@ static int compressLogFile(char *name, struct logInfo *log, struct stat *sb)
 
 #ifdef WITH_ACL
 	if ((prev_acl = acl_get_fd(inFile)) == NULL) {
-		if (!ACL_NOT_WELL_SUPPORTED(errno)) {
+		if (is_acl_well_supported(errno)) {
 			message(MESS_ERROR, "getting file ACL %s: %s\n",
 				name, strerror(errno));
 			restoreSecCtx(&prevCtx);
@@ -1006,7 +1017,7 @@ static int copyTruncate(char *currLog, char *saveLog, struct stat *sb,
 	}
 #ifdef WITH_ACL
 	if ((prev_acl = acl_get_fd(fdcurr)) == NULL) {
-		if (!ACL_NOT_WELL_SUPPORTED(errno)) {
+		if (is_acl_well_supported(errno)) {
 			message(MESS_ERROR, "getting file ACL %s: %s\n",
 				currLog, strerror(errno));
 			restoreSecCtx(&prevCtx);
@@ -1721,7 +1732,7 @@ static int rotateSingleLog(struct logInfo *log, int logNum,
 	    }
 #ifdef WITH_ACL
 		if ((prev_acl = acl_get_file(log->files[logNum], ACL_TYPE_ACCESS)) == NULL) {
-			if (!ACL_NOT_WELL_SUPPORTED(errno)) {
+			if (is_acl_well_supported(errno)) {
 				message(MESS_ERROR, "getting file ACL %s: %s\n",
 					log->files[logNum], strerror(errno));
 				hasErrors = 1;
@@ -2168,7 +2179,7 @@ static int writeState(const char *stateFilename)
 
 #ifdef WITH_ACL
 	if ((prev_acl = acl_get_fd(fdcurr)) == NULL) {
-		if (!ACL_NOT_WELL_SUPPORTED(errno)) {
+		if (is_acl_well_supported(errno)) {
 			message(MESS_ERROR, "getting file ACL %s: %s\n",
 				stateFilename, strerror(errno));
 			restoreSecCtx(&prevCtx);
