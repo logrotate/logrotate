@@ -58,8 +58,8 @@ output logged to that file is the same as when running \fBlogrotate\fR with
 Tells \fBlogrotate\fR which command to use when mailing logs. This
 command should accept two arguments: 1) the subject of the message, and
 2) the recipient. The command must then read a message on standard input
-and mail it to the recipient. The default mail command is \fB/bin/mail
--s\fR.
+and mail it to the recipient. The default mail command is shown in the
+output from \fBlogrotate --help\fR.
 
 .TP
 \fB\-s\fR, \fB\-\-state <statefile>\fR
