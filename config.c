@@ -524,8 +524,8 @@ static void freeTailLogs(int num)
 static int readConfigPath(const char *path, struct logInfo *defConfig)
 {
     struct stat sb;
-    int here, oldnumlogs, result = 1;
-	struct logInfo defConfigBackup;
+    int here, result = 1;
+    struct logInfo defConfigBackup;
 
     if (stat(path, &sb)) {
 	message(MESS_ERROR, "cannot stat %s: %s\n", path, strerror(errno));
@@ -602,11 +602,9 @@ static int readConfigPath(const char *path, struct logInfo *defConfig)
 
 	for (i = 0; i < files_count; ++i) {
 	    assert(namelist[i] != NULL);
-	    oldnumlogs = numLogs;
 	    copyLogInfo(&defConfigBackup, defConfig);
 	    if (readConfigFile(namelist[i], defConfig)) {
 		message(MESS_ERROR, "found error in file %s, skipping\n", namelist[i]);
-		freeTailLogs(numLogs - oldnumlogs);
 		freeLogInfo(defConfig);
 		copyLogInfo(defConfig, &defConfigBackup);
 		freeLogInfo(&defConfigBackup);
@@ -623,10 +621,8 @@ static int readConfigPath(const char *path, struct logInfo *defConfig)
 	close(here);
 	free_2d_array(namelist, files_count);
     } else {
-    	oldnumlogs = numLogs;
 	copyLogInfo(&defConfigBackup, defConfig);
 	if (readConfigFile(path, defConfig)) {
-	    freeTailLogs(numLogs - oldnumlogs);
 	    freeLogInfo(defConfig);
 	    copyLogInfo(defConfig, &defConfigBackup);
 	} else {
@@ -701,10 +697,8 @@ int readAllConfigPaths(const char **paths)
     }
 
     for (file = paths; *file; file++) {
-	if (readConfigPath(*file, &defConfig)) {
+	if (readConfigPath(*file, &defConfig))
 	    result = 1;
-	    break;
-	}
     }
     free_2d_array(tabooPatterns, tabooCount);
     freeLogInfo(&defConfig);
@@ -1290,17 +1284,21 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 							&buf, length)) != NULL) {
 
 						message(MESS_DEBUG, "including %s\n", key);
-						if (++recursion_depth > MAX_NESTING) {
+						if (recursion_depth >= MAX_NESTING) {
 							message(MESS_ERROR, "%s:%d include nesting too deep\n",
 									configFile, lineNum);
-							--recursion_depth;
-							goto error;
+							logerror = 1;
+							continue;
 						}
-						if (readConfigPath(key, newlog)) {
-							--recursion_depth;
-							goto error;
-						}
+
+						++recursion_depth;
+						rv = readConfigPath(key, newlog);
 						--recursion_depth;
+
+						if (rv) {
+							logerror = 1;
+							continue;
+						}
 					}
 					else continue;
 				} else if (!strcmp(key, "olddir")) {
