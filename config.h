@@ -5,7 +5,9 @@
 #define ROOT_UID 0
 
 #ifdef __hpux
+#ifndef DEFAULT_MAIL_COMMAND
 #define DEFAULT_MAIL_COMMAND "/usr/bin/mailx"
+#endif
 #define COMPRESS_COMMAND "/usr/contrib/bin/gzip"
 #define UNCOMPRESS_COMMAND "/usr/contrib/bin/gunzip"
 #ifndef STATEFILE
@@ -14,11 +16,15 @@
 #endif
 
 #ifdef SunOS
+#ifndef DEFAULT_MAIL_COMMAND
 #define DEFAULT_MAIL_COMMAND "/usr/bin/mailx"
+#endif
 #endif
 
 #ifdef __NetBSD__
+#ifndef DEFAULT_MAIL_COMMAND
 #define DEFAULT_MAIL_COMMAND "/usr/bin/mail -s"
+#endif
 #define COMPRESS_COMMAND "/usr/bin/gzip"
 #define UNCOMPRESS_COMMAND "/usr/bin/gunzip"
 #endif

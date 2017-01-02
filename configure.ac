@@ -64,6 +64,22 @@ AC_ARG_WITH([state-file-path],
 AC_DEFINE_UNQUOTED([STATEFILE], "$STATE_FILE_PATH")
 AC_SUBST(STATE_FILE_PATH)
 
+AC_ARG_WITH([default-mail-command],
+  AC_HELP_STRING([--with-default-mail-command=COMMAND],
+                 [default mail command (based on config.h if not given)]),
+  [
+    case "$withval" in
+      yes|no)
+        AC_MSG_ERROR([--with-default-mail-command=COMMAND requires a command to be specified])
+        ;;
+      *)
+        DEFAULT_MAIL_COMMAND="$withval"
+        AC_DEFINE_UNQUOTED([DEFAULT_MAIL_COMMAND], "$DEFAULT_MAIL_COMMAND")
+        AC_SUBST(DEFAULT_MAIL_COMMAND)
+        ;;
+    esac
+  ])
+
 AC_CHECK_FUNCS([asprintf fork madvise qsort strndup strptime vfork vsyslog])
 
 AC_CONFIG_FILES([Makefile test/Makefile logrotate.8 logrotate.spec])
