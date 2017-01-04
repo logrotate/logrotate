@@ -9,6 +9,8 @@ Makefile
 Makefile.in
 /config.log
 /config.status
+/config.guess
+/config.sub
 /autom4te.cache/
 /compile
 /configure
