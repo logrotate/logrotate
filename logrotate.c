@@ -2218,6 +2218,11 @@ static int writeState(const char *stateFilename)
 	if (bytes < 0)
 		error = bytes;
 
+/*
+ * Time in seconds it takes earth to go around sun.  The value is
+ * astronomical measurement (solar year) rather than something derived from
+ * a convention (calendar year).
+ */
 #define SECONDS_IN_YEAR 31556926
 
 	for (i = 0; i < hashSize && error == 0; i++) {
