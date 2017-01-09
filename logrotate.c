@@ -544,6 +544,36 @@ int createOutputFile(char *fileName, int flags, struct stat *sb, acl_type acl, i
     return fd;
 }
 
+/*
+ * This function tries to handle this scenario:
+ * When the disk is full, logrotate will die ungracefully and leave some
+ * temporary files. After free some space in the disk, logrotate should
+ * handle the previous erroneous state, instead of exiting with "File exists"
+ * error, otherwise, logrotate can't rotate current logs normally and this
+ * will make the disk full finally.
+ * The solution is to rename the previously broken file with
+ * "_broken_$timestamp" suffix append and try to create this output file again.
+ */
+int retryCreateOutputFile(char *brokenFileName, int flags, struct stat *sb,
+			  acl_type acl, int force_mode)
+{
+    char *renamedFile;
+    char curr_time[14];
+    struct tm now = *localtime(&nowSecs);
+
+    message(MESS_DEBUG, "Rename broken file: %s\n", brokenFileName);
+    renamedFile = (char *)malloc(strlen(brokenFileName) + 24);
+    strftime(curr_time, sizeof(curr_time), "%m%d%H%M%Y", &now);
+    sprintf(renamedFile, "%s_%s_%s", brokenFileName, "broken", curr_time);
+    if (rename(brokenFileName, renamedFile)) {
+	message(MESS_ERROR, "failed to rename %s to %s: %s\n",
+		brokenFileName, renamedFile, strerror(errno));
+    }
+    free(renamedFile);
+
+    return createOutputFile(brokenFileName, flags, sb, acl, force_mode);
+}
+
 #define DIGITS 10
 
 /* unlink, but try to call shred from GNU fileutils */
@@ -697,7 +727,16 @@ static int compressLogFile(char *name, struct logInfo *log, struct stat *sb)
 		prev_acl = NULL;
 	}
 #endif
-    if (outFile < 0) {
+    if (outFile < 0 && errno == EEXIST) {
+	/* Handle previsouly erroneous state caused by disk full:
+	 * rename the existed file and try to create it again */
+	outFile = retryCreateOutputFile(compressedName, O_RDWR | O_CREAT,
+					sb, prev_acl, 0);
+	if (outFile < 0) {
+		close(inFile);
+		return 1;
+	}
+    } else if (outFile < 0) {
 	close(inFile);
 	return 1;
     }
@@ -1029,7 +1068,16 @@ static int copyTruncate(char *currLog, char *saveLog, struct stat *sb,
 		prev_acl = NULL;
 	}
 #endif
-	if (fdsave < 0) {
+	if (fdsave < 0 && errno == EEXIST) {
+		/* Handle previsouly erroneous state caused by disk full:
+		 * rename the existed file and try to create it again */
+		fdsave = retryCreateOutputFile(saveLog, O_WRONLY | O_CREAT,
+					       sb, prev_acl, 0);
+		if (fdsave < 0) {
+			close(fdcurr);
+			return 1;
+		}
+	} else if (fdsave < 0) {
 	    close(fdcurr);
 	    return 1;
 	}
