@@ -544,7 +544,7 @@ int createOutputFile(char *fileName, int flags, struct stat *sb, acl_type acl, i
     return fd;
 }
 
-#define DIGITS 10
+#define DIGITS 12
 
 /* unlink, but try to call shred from GNU fileutils */
 static int shred_file(int fd, char *filename, struct logInfo *log)
