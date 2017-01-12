@@ -524,7 +524,7 @@ static void freeTailLogs(int num)
 static int readConfigPath(const char *path, struct logInfo *defConfig)
 {
     struct stat sb;
-    int here, result = 1;
+    int here, result = 0;
     struct logInfo defConfigBackup;
 
     if (stat(path, &sb)) {
@@ -608,9 +608,8 @@ static int readConfigPath(const char *path, struct logInfo *defConfig)
 		freeLogInfo(defConfig);
 		copyLogInfo(defConfig, &defConfigBackup);
 		freeLogInfo(&defConfigBackup);
+		result = 1;
 		continue;
-	    } else {
-		result = 0;
 	    }
 	    freeLogInfo(&defConfigBackup);
 	}
@@ -625,8 +624,7 @@ static int readConfigPath(const char *path, struct logInfo *defConfig)
 	if (readConfigFile(path, defConfig)) {
 	    freeLogInfo(defConfig);
 	    copyLogInfo(defConfig, &defConfigBackup);
-	} else {
-	    result = 0;
+	    result = 1;
 	}
 	freeLogInfo(&defConfigBackup);
     }
