@@ -2541,12 +2541,10 @@ int main(int argc, const char **argv)
     selinux_enforce = security_getenforce();
 #endif
 
-	TAILQ_INIT(&logs);
+    TAILQ_INIT(&logs);
 
-	if (readAllConfigPaths(files)) {
-	poptFreeContext(optCon);
-	exit(1);
-    }
+    if (readAllConfigPaths(files))
+	rc = 1;
 
     poptFreeContext(optCon);
     nowSecs = time(NULL);
