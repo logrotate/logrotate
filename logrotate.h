@@ -5,8 +5,6 @@
 #include "queue.h"
 #include <glob.h>
 
-#include "config.h"
-
 #define LOG_FLAG_COMPRESS	(1 << 0)
 #define LOG_FLAG_CREATE		(1 << 1)
 #define LOG_FLAG_IFEMPTY	(1 << 2)
