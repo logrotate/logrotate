@@ -542,6 +542,8 @@ static int createOutputFile(char *fileName, int flags, struct stat *sb,
 			acl_set = 1;
 		}
 	}
+#else
+	(void) acl_set;
 #endif
 
 	if (!acl_set || force_mode) {
