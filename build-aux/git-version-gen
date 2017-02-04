@@ -94,7 +94,7 @@ Options:
 
 Running without arguments will suffice in most cases."
 
-prefix=v
+prefix=
 fallback=
 
 while test $# -gt 0; do
@@ -213,6 +213,12 @@ if test "x$v_from_git" != x; then
           esac ;;
   esac
 fi
+
+# Logrotate travis tests include rpmbuild that fail if version number has
+# hyphen(s) in it.  To go-around convert hyphens to underscores, that does
+# nothing when building real release version, but needs to take effect when
+# a development time build is packaged.
+v=`echo "$v" |sed "s/-/_/g"`
 
 # Omit the trailing newline, so that m4_esyscmd can use the result directly.
 printf %s "$v"
