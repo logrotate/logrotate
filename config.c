@@ -1452,6 +1452,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 					   as listed in compress_cmd_list */
 					for(i = 0; i < compress_cmd_list_size; i++) {
 						if (!strcmp(compress_cmd_list[i].cmd, compresscmd_base)) {
+							freeLogItem (compress_ext);
 							newlog->compress_ext = strdup((char *)compress_cmd_list[i].ext);
 							message(MESS_DEBUG, "compress_ext was changed to %s\n", newlog->compress_ext);
 							break;
