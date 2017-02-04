@@ -205,7 +205,7 @@ static char *readPath(const char *configFile, int lineNum, const char *key,
 		      char **startPtr, char **buf, size_t length)
 {
     char *chptr;
-    char *start = *startPtr;
+    char *start;
     char *path;
 
     wchar_t pwc;
