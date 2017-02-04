@@ -986,10 +986,6 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 					newlog->flags |= LOG_FLAG_COMPRESS;
 				} else if (!strcmp(key, "nocompress")) {
 					newlog->flags &= ~LOG_FLAG_COMPRESS;
-				} else if (!strcmp(key, "compress")) {
-					newlog->flags |= LOG_FLAG_COMPRESS;
-				} else if (!strcmp(key, "nocompress")) {
-					newlog->flags &= ~LOG_FLAG_COMPRESS;
 				} else if (!strcmp(key, "delaycompress")) {
 					newlog->flags |= LOG_FLAG_DELAYCOMPRESS;
 				} else if (!strcmp(key, "nodelaycompress")) {
