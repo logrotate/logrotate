@@ -2185,6 +2185,7 @@ static int writeState(const char *stateFilename)
 
 	if (setSecCtx(fdcurr, stateFilename, &prevCtx) != 0) {
 	    /* error msg already printed */
+	    free(tmpFilename);
 	    close(fdcurr);
 	    return 1;
 	}
@@ -2195,6 +2196,7 @@ static int writeState(const char *stateFilename)
 			message(MESS_ERROR, "getting file ACL %s: %s\n",
 				stateFilename, strerror(errno));
 			restoreSecCtx(&prevCtx);
+			free(tmpFilename);
 			close(fdcurr);
 			return 1;
 		}
@@ -2489,6 +2491,8 @@ static int readState(const char *stateFilename)
 	unescape(filename);
 	
 	if ((st = findState(filename)) == NULL) {
+		free(argv);
+		free(filename);
 		fclose(f);
 		return 1;
 	}
