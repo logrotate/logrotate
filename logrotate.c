@@ -1914,7 +1914,12 @@ static int rotateLogSet(struct logInfo *log, int force)
     struct logState **state;
     struct logNames **rotNames;
 
-    logHasErrors = alloca(log->numFiles * sizeof(int));
+    logHasErrors = calloc(log->numFiles, sizeof(int));
+    if (!logHasErrors) {
+        message(MESS_ERROR, "could not allocate memory for "
+                "logHasErrors\n");
+        return 1;
+    }
     message(MESS_DEBUG, "\nrotating pattern: %s ", log->pattern);
     if (force) {
         message(MESS_DEBUG, "forced from command line ");
@@ -1974,11 +1979,13 @@ static int rotateLogSet(struct logInfo *log, int force)
 
 	if (log->numFiles == 0) {
 		message(MESS_DEBUG, "No logs found. Rotation not needed.\n");
+		free(logHasErrors);
 		return 0;
 	}
 
 	if (log->flags & LOG_FLAG_SU) {
 		if (switch_user(log->suUid, log->suGid) != 0) {
+			free(logHasErrors);
 			return 1;
 		}
 	}
@@ -2005,10 +2012,12 @@ static int rotateLogSet(struct logInfo *log, int force)
 		hasErrors = 1;
 		if (log->flags & LOG_FLAG_SU) {
 			if (switch_user_back() != 0) {
+				free(logHasErrors);
 				return 1;
 			}
 		}
 		/* finish early, firstaction failed, affects all logs in set */
+		free(logHasErrors);
 		return hasErrors;
 	    }
 	}
@@ -2141,10 +2150,11 @@ static int rotateLogSet(struct logInfo *log, int force)
 
 	if (log->flags & LOG_FLAG_SU) {
 		if (switch_user_back() != 0) {
+			free(logHasErrors);
 			return 1;
 		}
 	}
-
+    free(logHasErrors);
     return hasErrors;
 }
 
