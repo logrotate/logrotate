@@ -135,7 +135,7 @@ static int defTabooCount = sizeof(defTabooExts) / sizeof(char *);
 
 /* I shouldn't use globals here :-( */
 static char **tabooPatterns = NULL;
-int tabooCount = 0;
+static int tabooCount = 0;
 static int glob_errno = 0;
 
 static int readConfigFile(const char *configFile, struct logInfo *defConfig);
@@ -369,7 +369,7 @@ static int mkpath(const char *path, mode_t mode, uid_t uid, gid_t gid) {
 
 	rv = 0;
 	pp = copypath;
-	while (rv == 0 && (sp = strchr(pp, '/')) != 0) {
+	while (rv == 0 && (sp = strchr(pp, '/')) != NULL) {
 		if (sp != pp) {
 			*sp = '\0';
 			rv = do_mkdir(copypath, mode, uid, gid);
