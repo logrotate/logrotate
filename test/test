@@ -1188,8 +1188,7 @@ EOF
 cleanup 46
 
 # ------------------------------- Test 46 ------------------------------------
-# the state file is truncated and obviously corrupt, so no rotation should
-# happen
+# the state file is truncated and obviously corrupt
 preptest test.log 46 1
 
 cat > state << EOF
@@ -1210,7 +1209,7 @@ fi
 rm -f error.log
 
 checkoutput <<EOF
-test.log 0 zero
+test.log 0
 EOF
 
 

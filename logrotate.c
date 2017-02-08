@@ -2333,32 +2333,49 @@ static int readState(const char *stateFilename)
     struct logState *st;
     time_t lr_time;
     struct stat f_stat;
+    int rc = 0;
 
     message(MESS_DEBUG, "Reading state from file: %s\n", stateFilename);
 
     error = stat(stateFilename, &f_stat);
+    if (error) {
+	/* treat non-statable file as an empty file */
+	f_stat.st_size = 0;
+	if (errno != ENOENT) {
+	    message(MESS_ERROR, "error stat()ing state file %s: %s\n",
+		    stateFilename, strerror(errno));
 
-	if ((error && errno == ENOENT) || (!error && f_stat.st_size == 0)) {
-		/* create the file before continuing to ensure we have write
-		access to the file */
-		f = fopen(stateFilename, "w");
-		if (!f) {
-			message(MESS_ERROR, "error creating state file %s: %s\n",
-				stateFilename, strerror(errno));
-			return 1;
-		}
-		fprintf(f, "logrotate state -- version 2\n");
-		fclose(f);
-
-		if (allocateHash(64) != 0)
-			return 1;
-
-		return 0;
-	} else if (error) {
-		message(MESS_ERROR, "error stat()ing state file %s: %s\n",
-			stateFilename, strerror(errno));
-		return 1;
+	    /* do not return until the hash table is allocated */
+	    rc = 1;
 	}
+    }
+
+    if (!debug && (f_stat.st_size == 0)) {
+	/* create the file before continuing to ensure we have write
+	   access to the file */
+	f = fopen(stateFilename, "w");
+	if (f) {
+	    fprintf(f, "logrotate state -- version 2\n");
+	    fclose(f);
+	} else {
+	    message(MESS_ERROR, "error creating state file %s: %s\n",
+		    stateFilename, strerror(errno));
+
+	    /* do not return until the hash table is allocated */
+	    rc = 1;
+	}
+    }
+
+    /* Try to estimate how many state entries we have in the state file.
+     * We expect single entry to have around 80 characters (Of course this is
+     * just an estimation). During the testing I've found out that 200 entries
+     * per single hash entry gives good mem/performance ratio. */
+    if (allocateHash(f_stat.st_size / 80 / 200))
+	return 1;
+
+    if (rc || (f_stat.st_size == 0))
+	/* error already occurred, or we have no state file to read from */
+	return rc;
 
     f = fopen(stateFilename, "r");
     if (!f) {
@@ -2381,13 +2398,6 @@ static int readState(const char *stateFilename)
 		stateFilename);
 	return 1;
     }
-
-	/* Try to estimate how many state entries we have in the state file.
-	 * We expect single entry to have around 80 characters (Of course this is
-	 * just an estimation). During the testing I've found out that 200 entries
-	 * per single hash entry gives good mem/performance ratio. */
-	if (allocateHash(f_stat.st_size / 80 / 200) != 0)
-		return 1;
 
     line++;
 
@@ -2603,10 +2613,10 @@ int main(int argc, const char **argv)
     poptFreeContext(optCon);
     nowSecs = time(NULL);
 
-	if (readState(stateFile))
-		exit(1);
+    if (readState(stateFile))
+	rc = 1;
 
-	message(MESS_DEBUG, "\nHandling %d logs\n", numLogs);
+    message(MESS_DEBUG, "\nHandling %d logs\n", numLogs);
 
 	for (log = logs.tqh_first; log != NULL; log = log->list.tqe_next)
 		rc |= rotateLogSet(log, force);
