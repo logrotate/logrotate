@@ -263,9 +263,12 @@ static int allocateHash(unsigned int hs)
 }
 
 #define HASH_CONST 13
-static unsigned hashIndex(const char *fn)
+static int hashIndex(const char *fn)
 {
 	unsigned hash = 0;
+	if (!hashSize)
+	    /* hash table not yet allocated */
+	    return -1;
 
 	while (*fn) {
 		hash *= HASH_CONST;
@@ -394,8 +397,11 @@ static struct logState *newState(const char *fn)
 
 static struct logState *findState(const char *fn)
 {
-	unsigned int i = hashIndex(fn);
+	const int i = hashIndex(fn);
 	struct logState *p;
+	if (i < 0)
+	    /* hash table not yet allocated */
+	    return NULL;
 
 	for (p = states[i]->head.lh_first; p != NULL; p = p->list.le_next)
 		if (!strcmp(fn, p->fn))
@@ -1145,10 +1151,13 @@ static int findNeedRotating(struct logInfo *log, int logNum, int force)
 	return 1;
     }
 
-	state = findState(log->files[logNum]);
-	state->doRotate = 0;
-	state->sb = sb;
-	state->isUsed = 1;
+    state = findState(log->files[logNum]);
+    if (!state)
+	return 1;
+
+    state->doRotate = 0;
+    state->sb = sb;
+    state->isUsed = 1;
 
 	if ((sb.st_mode & S_IFMT) == S_IFLNK) {
 	    message(MESS_DEBUG, "  log %s is symbolic link. Rotation of symbolic"
@@ -1975,11 +1984,12 @@ static int rotateLogSet(struct logInfo *log, int force)
 	}
 
     for (i = 0; i < log->numFiles; i++) {
+	struct logState *logState;
 	logHasErrors[i] = findNeedRotating(log, i, force);
 	hasErrors |= logHasErrors[i];
 
 	/* sure is a lot of findStating going on .. */
-	if ((findState(log->files[i]))->doRotate)
+	if (((logState = findState(log->files[i]))) && logState->doRotate)
 	    numRotated++;
     }
 
@@ -2015,6 +2025,8 @@ static int rotateLogSet(struct logInfo *log, int force)
 	     ((log->flags & LOG_FLAG_SHAREDSCRIPTS) && i < log->numFiles)
 	     || (!(log->flags & LOG_FLAG_SHAREDSCRIPTS) && i == j); i++) {
 	    state[i] = findState(log->files[i]);
+	    if (!state[i])
+		logHasErrors[i] = 1;
 
 	    rotNames[i] = malloc(sizeof(struct logNames));
 	    memset(rotNames[i], 0, sizeof(struct logNames));
