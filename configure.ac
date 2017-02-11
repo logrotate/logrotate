@@ -25,6 +25,8 @@ AC_SYS_LARGEFILE
 AC_CHECK_LIB([popt],[poptParseArgvString],,
   AC_MSG_ERROR([libpopt required but not found]))
 
+AC_CHECK_FUNCS([asprintf fork madvise qsort strndup strptime vfork vsyslog])
+
 dnl Needed for out-of-source builds
 mkdir -p test
 
@@ -52,32 +54,7 @@ AS_CASE(["$with_acl"],
 AS_IF([test "$ac_cv_lib_acl_acl_get_file" = yes],
   echo "1" > ./test/test.ACL;, echo "0" > ./test/test.ACL;)
 
-DEFAULT_MAIL_COMMAND="/bin/mail"
-COMPRESS_COMMAND="/bin/gzip"
-UNCOMPRESS_COMMAND="/bin/gunzip"
-COMPRESS_EXT=".gz"
-STATE_FILE_PATH="/var/lib/logrotate.status"
-
-case "$host" in
-  *-hpux*)
-          DEFAULT_MAIL_COMMAND="/usr/bin/mailx"
-          COMPRESS_COMMAND="/usr/contrib/bin/gzip"
-          UNCOMPRESS_COMMAND="/usr/contrib/bin/gunzip"
-          ;;
-  *-solaris*|*-sunos*)
-          DEFAULT_MAIL_COMMAND="/usr/bin/mailx"
-          ;;
-  *-netbsd*)
-          DEFAULT_MAIL_COMMAND="/usr/bin/mail -s"
-          COMPRESS_COMMAND="/usr/bin/gzip"
-          UNCOMPRESS_COMMAND="/usr/bin/gunzip"
-          ;;
-  *-darwin*)
-          COMPRESS_COMMAND="/usr/bin/gzip"
-          UNCOMPRESS_COMMAND="/usr/bin/gunzip"
-          ;;
-esac
-
+STATEFILE_val=''
 AC_ARG_WITH([state-file-path],
   AC_HELP_STRING([--with-state-file-path=PATH],
                  [path to state file (/var/lib/logrotate.status by default)]),
@@ -87,13 +64,24 @@ AC_ARG_WITH([state-file-path],
         AC_MSG_ERROR([--with-state-file-path=PATH requires a path to be specified])
         ;;
       *)
-        STATE_FILE_PATH="$withval"
+	STATEFILE_val="$withval"
         ;;
     esac
   ])
-AC_DEFINE_UNQUOTED([STATEFILE], "$STATE_FILE_PATH")
-AC_SUBST(STATE_FILE_PATH)
+AS_IF([test x$STATEFILE_val != x], [
+  state_file_path="$withval"
+], [
+  AS_CASE([${host_os}],
+    [*hpux*],
+      [state_file_path="/var/run/logrotate.status"],
+    [state_file_path="/var/lib/logrotate.status"]
+ )
+])
+AC_DEFINE_UNQUOTED([STATEFILE], ["$state_file_path"], [State file path.])
+AC_SUBST([STATE_FILE_PATH], [$state_file_path])
 
+
+default_mail_comm=''
 AC_ARG_WITH([default-mail-command],
   AC_HELP_STRING([--with-default-mail-command=COMMAND],
                  [default mail command (e.g. /bin/mail -s)]),
@@ -103,45 +91,83 @@ AC_ARG_WITH([default-mail-command],
         AC_MSG_ERROR([--with-default-mail-command=COMMAND requires a command to be specified])
         ;;
       *)
-        DEFAULT_MAIL_COMMAND="$withval"
+        default_mail_comm="$withval"
         ;;
     esac
   ])
-AC_DEFINE_UNQUOTED([DEFAULT_MAIL_COMMAND], "$DEFAULT_MAIL_COMMAND")
+AS_IF([test "x$default_mail_comm" = x], [
+  AS_CASE([${host_os}],
+    [*hpux*],
+      [default_mail_comm=/usr/bin/mailx],
+    [*solaris*],
+      [default_mail_comm=/usr/bin/mailx],
+    [*netbsd*],
+      [default_mail_comm=/usr/bin/mail -s],
+    [default_mail_comm=/bin/mail]
+  )
+])
+AC_DEFINE_UNQUOTED([DEFAULT_MAIL_COMMAND], "$default_mail_comm", [default mail command])
 AC_SUBST(DEFAULT_MAIL_COMMAND)
 
+
+default_compress_comm=''
 AC_ARG_WITH([compress-command],
   AC_HELP_STRING([--with-compress-command=COMMAND],
-                 [compress command (default: /bin/gzip)]),
+                 [compress command]),
   [
     case "$withval" in
       yes|no)
         AC_MSG_ERROR([--with-compress-command=COMMAND requires a command to be specified])
         ;;
       *)
-        COMPRESS_COMMAND="$withval"
+        default_compress_comm="$withval"
         ;;
     esac
   ])
-AC_DEFINE_UNQUOTED([COMPRESS_COMMAND], "$COMPRESS_COMMAND")
+AS_IF([test "x$default_compress_comm" = x], [
+  AS_CASE([${host_os}],
+    [*hpux*],
+      [default_compress_comm=/usr/contrib/bin/gzip],
+    [*darwin*],
+      [default_compress_comm=/usr/bin/gzip],
+    [*netbsd*],
+      [default_compress_comm=/usr/bin/gzip],
+    [default_compress_comm=/bin/gzip]
+  )
+])
+AC_DEFINE_UNQUOTED([COMPRESS_COMMAND], "$default_compress_comm", [default compress command])
 AC_SUBST(COMPRESS_COMMAND)
 
+
+default_uncompress_comm=''
 AC_ARG_WITH([uncompress-command],
   AC_HELP_STRING([--with-uncompress-command=COMMAND],
-                 [uncompress command (default: /bin/gunzip)]),
+                 [uncompress command, default path: see configure output, often /usr/bin/gzip]),
   [
     case "$withval" in
       yes|no)
         AC_MSG_ERROR([--with-uncompress-command=COMMAND requires a command to be specified])
         ;;
       *)
-        UNCOMPRESS_COMMAND="$withval"
+        default_uncompress_comm="$withval"
         ;;
     esac
   ])
-AC_DEFINE_UNQUOTED([UNCOMPRESS_COMMAND], "$UNCOMPRESS_COMMAND")
+AS_IF([test "x$default_uncompress_comm" = x], [
+  AS_CASE([${host_os}],
+    [*hpux*],
+      [default_uncompress_comm=/usr/contrib/bin/gunzip],
+    [*darwin*],
+      [default_uncompress_comm=/usr/bin/gunzip],
+    [*netbsd*],
+      [default_uncompress_comm=/usr/bin/gunzip],
+    [default_uncompress_comm=/bin/gunzip]
+  )
+])
+AC_DEFINE_UNQUOTED([UNCOMPRESS_COMMAND], "$default_uncompress_comm", [default uncompress command])
 AC_SUBST(UNCOMPRESS_COMMAND)
 
+COMPRESS_EXT='.gz'
 AC_ARG_WITH([compress-extension],
   AC_HELP_STRING([--with-compress-extension=EXTENSION],
                  [compress extension (default: .gz)]),
@@ -155,13 +181,12 @@ AC_ARG_WITH([compress-extension],
         ;;
     esac
   ])
-AC_DEFINE_UNQUOTED([COMPRESS_EXT], "$COMPRESS_EXT")
+AC_DEFINE_UNQUOTED([COMPRESS_EXT], "$COMPRESS_EXT", [default compress extension])
 AC_SUBST(COMPRESS_EXT)
 
-AC_DEFINE_UNQUOTED([ROOT_UID], 0)
-AC_SUBST(ROOT_UID)
 
-AC_CHECK_FUNCS([asprintf fork madvise qsort strndup strptime vfork vsyslog])
+AC_DEFINE_UNQUOTED([ROOT_UID], [0], [Root user-id.])
+
 AC_CONFIG_HEADERS([config.h])
 
 AC_CONFIG_FILES([Makefile test/Makefile logrotate.8 logrotate.spec])
@@ -170,9 +195,9 @@ AC_OUTPUT
 AC_MSG_RESULT([
   ${PACKAGE_NAME} ${VERSION}
 
-  default mail command:   ${DEFAULT_MAIL_COMMAND}
-  compress command:       ${COMPRESS_COMMAND}
-  uncompress command:     ${UNCOMPRESS_COMMAND}
+  default mail command:   ${default_mail_comm}
+  compress command:       ${default_compress_comm}
+  uncompress command:     ${default_uncompress_comm}
   compress extension:     ${COMPRESS_EXT}
   statefile path:         ${STATE_FILE_PATH}
 ])
