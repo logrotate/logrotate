@@ -13,7 +13,7 @@ usage() {
 }
 
 die() {
-    printf "%s: error: %s\n" "$SELF" >&2
+    printf "%s: error: %s\n" "$SELF" "$*" >&2
     exit 1
 }
 
