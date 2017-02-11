@@ -14,3 +14,4 @@ Long description of the change, explanation of why the change is useful, etc.
 ```
   - Push to the branch (`git push -u origin fixing-blah`).
   - Create a new pull request.
+  - Check that the pull request does not cause [Travis](https://travis-ci.org/logrotate/logrotate) to fail.
