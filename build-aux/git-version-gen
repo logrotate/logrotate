@@ -94,7 +94,7 @@ Options:
 
 Running without arguments will suffice in most cases."
 
-prefix=
+prefix=v
 fallback=
 
 while test $# -gt 0; do

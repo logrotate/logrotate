@@ -1,4 +1,4 @@
-AC_INIT([logrotate],[m4_esyscmd([build-aux/git-version-gen .tarball-version])],
+AC_INIT([logrotate],m4_esyscmd([build-aux/git-version-gen --prefix '' .tarball-version]),
 [],[],[https://github.com/logrotate/logrotate])
 
 dnl serial-test not supported prior version 1.12
