@@ -434,7 +434,7 @@ static int runScript(struct logInfo *log, char *logfn, char *script)
 				exit(1);
 			}
 		}
-		execl("/bin/sh", "sh", "-c", script, "logrotate_script", logfn, NULL);
+		execl("/bin/sh", "sh", "-c", script, "logrotate_script", logfn, (char *) NULL);
 		exit(1);
 	}
 
@@ -816,7 +816,7 @@ static int mailLog(struct logInfo *log, char *logFile, const char *mailComm,
 				exit(1);
 			}
 
-			execlp(uncompressCommand, uncompressCommand, NULL);
+			execlp(uncompressCommand, uncompressCommand, (char *) NULL);
 			exit(1);
 		}
 
