@@ -1,9 +1,19 @@
 AC_INIT([logrotate],[3.11.0])
 
+dnl serial-test not supported prior version 1.12
+m4_define([serial_tests], [
+    m4_esyscmd([automake --version |
+                perl -nae '{@v = split("[.]", $F[-1]);
+                            if ($v[0] >= 1 && $v[1] >= 12)
+                                {print "serial-tests\n";}
+                            exit;}'
+    ])
+])
+
 dnl foreign: Do not require AUTHORS, ChangeLog, NEWS, and README to exist
-dnl serial-tests: Do not hide standard output of our sequential test-suite
+dnl serial_tests: Do not hide standard output of our sequential test-suite
 dnl dist-xz: Produce tar.xz version of the release archive
-AM_INIT_AUTOMAKE([foreign serial-tests dist-xz])
+AM_INIT_AUTOMAKE(foreign dist-xz serial_tests)
 
 AC_DEFINE(_GNU_SOURCE)
 
