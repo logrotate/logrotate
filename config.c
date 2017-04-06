@@ -1638,8 +1638,20 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 
 					if (stat(dirName, &sb)) {
 						if (errno == ENOENT && newlog->flags & LOG_FLAG_OLDDIRCREATE) {
-							if (mkpath(dirName, newlog->olddirMode,
-								newlog->olddirUid, newlog->olddirGid)) {
+							int rv;
+							if (newlog->flags & LOG_FLAG_SU) {
+								if (switch_user(newlog->suUid, newlog->suGid) != 0) {
+									goto error;
+								}
+							}
+							rv = mkpath(dirName, newlog->olddirMode,
+								newlog->olddirUid, newlog->olddirGid);
+							if (newlog->flags & LOG_FLAG_SU) {
+								if (switch_user_back() != 0) {
+									goto error;
+								}
+							}
+							if (rv) {
 								goto error;
 							}
 						}
