@@ -714,9 +714,32 @@ static char* parseGlobString(const char *configFile, int lineNum,
     char *globString = NULL;
     size_t globStringPos = 0;
     size_t globStringAlloc = 0;
+    enum {
+	PGS_INIT,	/* picking blanks, looking for '#' */
+	PGS_DATA,	/* picking data, looking for end of line */
+	PGS_COMMENT	/* skipping comment, looking for end of line */
+    } state = PGS_INIT;
 
     /* move the cursor at caller's side while going through the input */
     for (; (*ppos - buf < length) && **ppos; (*ppos)++) {
+	/* state transition (see above) */
+	switch (state) {
+	    case PGS_INIT:
+		if ('#' == **ppos)
+		    state = PGS_COMMENT;
+		else if (!isspace((unsigned char) **ppos))
+		    state = PGS_DATA;
+		break;
+
+	    default:
+		if ('\n' == **ppos)
+		    state = PGS_INIT;
+	};
+
+	if (PGS_COMMENT == state)
+	    /* skip comment */
+	    continue;
+
 	switch (**ppos) {
 	    case '}':
 		message(MESS_ERROR, "%s:%d unexpected } (missing previous '{')\n", configFile, lineNum);
