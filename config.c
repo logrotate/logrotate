@@ -23,8 +23,8 @@
 #include <wctype.h>
 #include <fnmatch.h>
 #include <sys/mman.h>
+#include <libgen.h>
 
-#include "basenames.h"
 #include "log.h"
 #include "logrotate.h"
 
@@ -125,7 +125,7 @@ enum {
 	STATE_ERROR = 64,
 };
 
-static char *defTabooExts[] = { ".rpmsave", ".rpmorig", "~", ",v",
+static const char *defTabooExts[] = { ".rpmsave", ".rpmorig", "~", ",v",
     ".disabled", ".dpkg-old", ".dpkg-dist", ".dpkg-new", ".cfsaved",
     ".ucf-old", ".ucf-dist", ".ucf-new",
     ".rpmnew", ".swp", ".cfsaved", ".rhn-cfg-tmp-*"
@@ -143,6 +143,8 @@ static int globerr(const char *pathname, int theerr);
 static char *isolateLine(char **strt, char **buf, size_t length) {
 	char *endtag, *start, *tmp;
 	const char *max = *buf + length;
+	char *key;
+
 	start = *strt;
 	endtag = start;
 	while (endtag < max && *endtag != '\n') {
@@ -152,12 +154,12 @@ static char *isolateLine(char **strt, char **buf, size_t length) {
 	tmp = endtag - 1;
 	while (isspace((unsigned char)*endtag))
 		endtag--;
-	char *key = strndup(start, endtag - start + 1);
+	key = strndup(start, endtag - start + 1);
 	*strt = tmp;
 	return key;
 }
 
-static char *isolateValue(const char *fileName, int lineNum, char *key,
+static char *isolateValue(const char *fileName, int lineNum, const char *key,
 			char **startPtr, char **buf, size_t length)
 {
     char *chptr = *startPtr;
@@ -198,7 +200,7 @@ static char *isolateWord(char **strt, char **buf, size_t length) {
 	return key;
 }
 
-static char *readPath(const char *configFile, int lineNum, char *key,
+static char *readPath(const char *configFile, int lineNum, const char *key,
 		      char **startPtr, char **buf, size_t length)
 {
     char *chptr;
@@ -243,7 +245,7 @@ static int readModeUidGid(const char *configFile, int lineNum, char *key,
 							const char *directive, mode_t *mode, uid_t *uid,
 							gid_t *gid) {
 	char u[200], g[200];
-	int m;
+	unsigned int m;
 	char tmp;
 	int rc;
 	struct group *group;
@@ -299,7 +301,7 @@ static int readModeUidGid(const char *configFile, int lineNum, char *key,
 	return 0;
 }
 
-static char *readAddress(const char *configFile, int lineNum, char *key,
+static char *readAddress(const char *configFile, int lineNum, const char *key,
 			 char **startPtr, char **buf, size_t length)
 {
     char *endtag, *chptr;
@@ -1604,14 +1606,17 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 			if (newlog->oldDir) {
 				for (i = 0; i < newlog->numFiles; i++) {
 					char *ld;
-					dirName = ourDirName(newlog->files[i]);
+					char *dirpath;
+
+					dirpath = strdup(newlog->files[i]);
+					dirName = dirname(dirpath);
 					if (stat(dirName, &sb2)) {
 						if (!(newlog->flags & LOG_FLAG_MISSINGOK)) {
 							message(MESS_ERROR,
 								"%s:%d error verifying log file "
 								"path %s: %s\n", configFile, lineNum,
 								dirName, strerror(errno));
-							free(dirName);
+							free(dirpath);
 							goto error;
 						}
 						else {
@@ -1621,13 +1626,13 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 								"but missingok is set, so this is not an error.\n",
 								configFile, lineNum,
 								dirName, strerror(errno));
-							free(dirName);
+							free(dirpath);
 							continue;
 						}
 					}
 					ld = alloca(strlen(dirName) + strlen(newlog->oldDir) + 2);
 					sprintf(ld, "%s/%s", dirName, newlog->oldDir);
-					free(dirName);
+					free(dirpath);
 
 					if (newlog->oldDir[0] != '/') {
 						dirName = ld;
@@ -1787,6 +1792,10 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 				key = NULL;
 			}
 			break;
+		default:
+			message(MESS_DEBUG,
+				"%s: %d: readConfigFile() unknown state\n",
+				configFile, lineNum);
 	}
 	if (key) {
 		free(key);

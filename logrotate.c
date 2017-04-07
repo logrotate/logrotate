@@ -21,12 +21,12 @@
 #include <sys/types.h>
 #include <utime.h>
 #include <stdint.h>
+#include <libgen.h>
 
 #if defined(SunOS)
 #include <limits.h>
 #endif
 
-#include "basenames.h"
 #include "log.h"
 #include "logrotate.h"
 
@@ -40,8 +40,6 @@ int selinux_enforce = 0;
 #ifdef WITH_ACL
 #include "sys/acl.h"
 #define acl_type acl_t
-#define ACL_NOT_WELL_SUPPORTED(Err) \
-     ((Err) == ENOTSUP || (Err) == ENOSYS || (Err) == EINVAL || (Err) == EBUSY)
 #else
 #define acl_type void *
 #endif
@@ -60,17 +58,6 @@ static acl_type prev_acl = NULL;
 
 #ifdef __hpux
 extern int asprintf(char **str, const char *fmt, ...);
-#endif
-
-#if defined(HAVE_FORK)
-#define FORK_OR_VFORK fork
-#define DOEXIT exit
-#elif defined(HAVE_VFORK)
-#define FORK_OR_VFORK vfork
-#define DOEXIT _exit
-#else
-#define FORK_OR_VFORK fork
-#define DOEXIT exit
 #endif
 
 /* Number of seconds in a day */
@@ -98,15 +85,16 @@ struct compData {
 	const char *dformat;
 };
 
-struct logStates {
+static struct logStates {
 	LIST_HEAD(stateSet, logState) head;
 } **states;
 
-unsigned int hashSize;
 int numLogs = 0;
 int debug = 0;
-char *mailCommand = DEFAULT_MAIL_COMMAND;
-time_t nowSecs = 0;
+
+static unsigned int hashSize;
+static const char *mailCommand = DEFAULT_MAIL_COMMAND;
+static time_t nowSecs = 0;
 static uid_t save_euid;
 static gid_t save_egid;
 
@@ -161,7 +149,7 @@ static void sortGlobResult(glob_t *result, int prefix_len, const char *dformat) 
 }
 #endif
 
-int switch_user(uid_t user, gid_t group) {
+static int switch_user(uid_t user, gid_t group) {
 	save_egid = getegid();
 	save_euid = geteuid();
 	if (save_euid == user && save_egid == group)
@@ -176,7 +164,7 @@ int switch_user(uid_t user, gid_t group) {
 	return 0;
 }
 
-int switch_user_permanently(const struct logInfo *log) {
+static int switch_user_permanently(const struct logInfo *log) {
 	gid_t group = getegid();
 	uid_t user = geteuid();
 	if (!(log->flags & LOG_FLAG_SU)) {
@@ -199,11 +187,11 @@ int switch_user_permanently(const struct logInfo *log) {
 	return 0;
 }
 
-int switch_user_back() {
+static int switch_user_back(void) {
 	return switch_user(save_euid, save_egid);
 }
 
-int switch_user_back_permanently() {
+static int switch_user_back_permanently(void) {
 	gid_t tmp_egid = save_egid;
 	uid_t tmp_euid = save_euid;
 	int ret = switch_user(save_euid, save_egid);
@@ -434,21 +422,35 @@ static int runScript(struct logInfo *log, char *logfn, char *script)
 		return 0;
 	}
 
-	if (!FORK_OR_VFORK()) {
+	if (!fork()) {
 		if (log->flags & LOG_FLAG_SU) {
 			if (switch_user_back_permanently() != 0) {
-				DOEXIT(1);
+				exit(1);
 			}
 		}
 		execl("/bin/sh", "sh", "-c", script, "logrotate_script", logfn, NULL);
-		DOEXIT(1);
+		exit(1);
 	}
 
 	wait(&rc);
 	return rc;
 }
 
-int createOutputFile(char *fileName, int flags, struct stat *sb, acl_type acl, int force_mode)
+static int is_acl_well_supported(int err)
+{
+	switch (err) {
+	case ENOTSUP:	/* no file system support */
+	case EINVAL:	/* acl does not point to a valid ACL */
+	case ENOSYS:	/* compatibility - acl_(g|s)et_fd(3) should never return this */
+	case EBUSY:	/* compatibility - acl_(g|s)et_fd(3) should never return this */
+		return 0;
+	default:
+		return 1;
+	}
+}
+
+static int createOutputFile(char *fileName, int flags, struct stat *sb,
+			    acl_type acl, int force_mode)
 {
     int fd = -1;
     struct stat sb_create;
@@ -456,6 +458,10 @@ int createOutputFile(char *fileName, int flags, struct stat *sb, acl_type acl, i
     int i;
 
     for (i = 0; i < 2; ++i) {
+    	struct tm now;
+    	size_t fileName_size, buf_size;
+    	char *backupName, *ptr;
+
 	fd = open(fileName, (flags | O_EXCL | O_NOFOLLOW),
 		(S_IRUSR | S_IWUSR) & sb->st_mode);
 
@@ -463,11 +469,11 @@ int createOutputFile(char *fileName, int flags, struct stat *sb, acl_type acl, i
 	    break;
 
 	/* the destination file already exists, while it should not */
-	struct tm now = *localtime(&nowSecs);
-	size_t fileName_size = strlen(fileName);
-	size_t buf_size = fileName_size + sizeof("-YYYYMMDDHH.backup");
-	char *backupName = alloca(buf_size);
-	char *ptr = backupName;
+	now = *localtime(&nowSecs);
+	fileName_size = strlen(fileName);
+	buf_size = fileName_size + sizeof("-YYYYMMDDHH.backup");
+	backupName = alloca(buf_size);
+	ptr = backupName;
 
 	/* construct backupName starting with fileName */
 	strcpy(ptr, fileName);
@@ -518,7 +524,7 @@ int createOutputFile(char *fileName, int flags, struct stat *sb, acl_type acl, i
 #ifdef WITH_ACL
 	if (!force_mode && acl) {
 		if (acl_set_fd(fd, acl) == -1) {
-			if (!ACL_NOT_WELL_SUPPORTED(errno)) {
+			if (is_acl_well_supported(errno)) {
 				message(MESS_ERROR, "setting ACL for %s: %s\n",
 				fileName, strerror(errno));
 				close(fd);
@@ -590,16 +596,16 @@ static int shred_file(int fd, char *filename, struct logInfo *log)
 	fullCommand[id++] = "-";
 	fullCommand[id++] = NULL;
 
-	if (!FORK_OR_VFORK()) {
+	if (!fork()) {
 		dup2(fd, 1);
 		close(fd);
 
 		if (switch_user_permanently(log) != 0) {
-			DOEXIT(1);
+			exit(1);
 		}
 
 		execvp(fullCommand[0], (void *) fullCommand);
-		DOEXIT(1);
+		exit(1);
 	}
 	
 	wait(&status);
@@ -678,7 +684,7 @@ static int compressLogFile(char *name, struct logInfo *log, struct stat *sb)
 
 #ifdef WITH_ACL
 	if ((prev_acl = acl_get_fd(inFile)) == NULL) {
-		if (!ACL_NOT_WELL_SUPPORTED(errno)) {
+		if (is_acl_well_supported(errno)) {
 			message(MESS_ERROR, "getting file ACL %s: %s\n",
 				name, strerror(errno));
 			restoreSecCtx(&prevCtx);
@@ -710,7 +716,7 @@ static int compressLogFile(char *name, struct logInfo *log, struct stat *sb)
 		return 1;
 	}
 
-    if (!FORK_OR_VFORK()) {
+    if (!fork()) {
 	dup2(inFile, 0);
 	close(inFile);
 	dup2(outFile, 1);
@@ -720,14 +726,14 @@ static int compressLogFile(char *name, struct logInfo *log, struct stat *sb)
 	close(compressPipe[1]);
 
 	if (switch_user_permanently(log) != 0) {
-		DOEXIT(1);
+		exit(1);
 	}
 
 	envInFilename = alloca(strlen("LOGROTATE_COMPRESSED_FILENAME=") + strlen(name) + 2);
 	sprintf(envInFilename, "LOGROTATE_COMPRESSED_FILENAME=%s", name);
 	putenv(envInFilename);
 	execvp(fullCommand[0], (void *) fullCommand);
-	DOEXIT(1);
+	exit(1);
     }
 
     close(compressPipe[1]);
@@ -765,14 +771,14 @@ static int compressLogFile(char *name, struct logInfo *log, struct stat *sb)
     return 0;
 }
 
-static int mailLog(struct logInfo *log, char *logFile, char *mailComm,
+static int mailLog(struct logInfo *log, char *logFile, const char *mailComm,
 		   char *uncompressCommand, char *address, char *subject)
 {
     int mailInput;
     pid_t mailChild, uncompressChild = 0;
     int mailStatus, uncompressStatus;
     int uncompressPipe[2];
-    char *mailArgv[] = { mailComm, "-s", subject, address, NULL };
+    char * const mailArgv[] = { (char *) mailComm, (char *) "-s", subject, address, NULL };
     int rc = 0;
 
     if ((mailInput = open(logFile, O_RDONLY | O_NOFOLLOW)) < 0) {
@@ -788,7 +794,7 @@ static int mailLog(struct logInfo *log, char *logFile, char *mailComm,
 			close(mailInput);
 			return 1;
 		}
-		if (!(uncompressChild = FORK_OR_VFORK())) {
+		if (!(uncompressChild = fork())) {
 			/* uncompress child */
 			dup2(mailInput, 0);
 			close(mailInput);
@@ -797,11 +803,11 @@ static int mailLog(struct logInfo *log, char *logFile, char *mailComm,
 			close(uncompressPipe[1]);
 
 			if (switch_user_permanently(log) != 0) {
-				DOEXIT(1);
+				exit(1);
 			}
 
 			execlp(uncompressCommand, uncompressCommand, NULL);
-			DOEXIT(1);
+			exit(1);
 		}
 
 		close(mailInput);
@@ -809,7 +815,7 @@ static int mailLog(struct logInfo *log, char *logFile, char *mailComm,
 		close(uncompressPipe[1]);
     }
 
-    if (!(mailChild = FORK_OR_VFORK())) {
+    if (!(mailChild = fork())) {
 	dup2(mailInput, 0);
 	close(mailInput);
 	close(1);
@@ -817,12 +823,12 @@ static int mailLog(struct logInfo *log, char *logFile, char *mailComm,
 	/* mail command runs as root */
 	if (log->flags & LOG_FLAG_SU) {
 		if (switch_user_back_permanently() != 0) {
-			DOEXIT(1);
+			exit(1);
 		}
 	}
 
 	execvp(mailArgv[0], mailArgv);
-	DOEXIT(1);
+	exit(1);
     }
 
     close(mailInput);
@@ -847,7 +853,7 @@ static int mailLog(struct logInfo *log, char *logFile, char *mailComm,
     return rc;
 }
 
-static int mailLogWrapper(char *mailFilename, char *mailComm,
+static int mailLogWrapper(char *mailFilename, const char *mailComm,
 			  int logNum, struct logInfo *log)
 {
 	/* if the log is compressed (and we're not mailing a
@@ -1011,7 +1017,7 @@ static int copyTruncate(char *currLog, char *saveLog, struct stat *sb,
 	}
 #ifdef WITH_ACL
 	if ((prev_acl = acl_get_fd(fdcurr)) == NULL) {
-		if (!ACL_NOT_WELL_SUPPORTED(errno)) {
+		if (is_acl_well_supported(errno)) {
 			message(MESS_ERROR, "getting file ACL %s: %s\n",
 				currLog, strerror(errno));
 			restoreSecCtx(&prevCtx);
@@ -1090,7 +1096,7 @@ static int daysElapsed(const struct tm *now, const struct tm *last)
     return diff / (24 * 3600);
 }
 
-int findNeedRotating(struct logInfo *log, int logNum, int force)
+static int findNeedRotating(struct logInfo *log, int logNum, int force)
 {
     struct stat sb;
     struct logState *state = NULL;
@@ -1100,7 +1106,8 @@ int findNeedRotating(struct logInfo *log, int logNum, int force)
 
 	/* Check if parent directory of this log has safe permissions */
 	if ((log->flags & LOG_FLAG_SU) == 0 && getuid() == 0) {
-		char *ld = ourDirName(log->files[logNum]);
+		char *logpath = strdup(log->files[logNum]);
+		char *ld = dirname(logpath);
 		if (stat(ld, &sb)) {
 			/* If parent directory doesn't exist, it's not real error
 			  (unless nomissingok is specified)
@@ -1108,10 +1115,10 @@ int findNeedRotating(struct logInfo *log, int logNum, int force)
 			if (errno != ENOENT || (errno == ENOENT && (log->flags & LOG_FLAG_MISSINGOK) == 0)) {
 				message(MESS_ERROR, "stat of %s failed: %s\n", ld,
 					strerror(errno));
-				free(ld);
+				free(logpath);
 				return 1;
 			}
-			free(ld);
+			free(logpath);
 			return 0;
 		}
 		/* Don't rotate in directories writable by others or group which is not "root"  */
@@ -1121,10 +1128,10 @@ int findNeedRotating(struct logInfo *log, int logNum, int force)
 								" Set \"su\" directive in config file to tell logrotate which user/group"
 								" should be used for rotation.\n"
 								,log->files[logNum]);
-			free(ld);
+			free(logpath);
 			return 1;
 		}
-		free(ld);
+		free(logpath);
 	}
 
     if (lstat(log->files[logNum], &sb)) {
@@ -1249,6 +1256,7 @@ int findNeedRotating(struct logInfo *log, int logNum, int force)
 		    state->lastRotated.tm_hour, state->lastRotated.tm_min);
 	    }
 	    break;
+	case ROT_SIZE:
 	default:
 	    /* ack! */
 	    state->doRotate = 0;
@@ -1286,13 +1294,13 @@ int findNeedRotating(struct logInfo *log, int logNum, int force)
     return 0;
 }
 
-int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
-		       struct logNames *rotNames)
+static int prerotateSingleLog(struct logInfo *log, int logNum,
+			      struct logState *state, struct logNames *rotNames)
 {
     struct tm now = *localtime(&nowSecs);
     char *oldName, *newName = NULL;
-    char *compext = "";
-    char *fileext = "";
+    const char *compext = "";
+    const char *fileext = "";
     int hasErrors = 0;
     char *glob_pattern;
     glob_t globResult;
@@ -1320,19 +1328,22 @@ int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 
     state->lastRotated = now;
 
-    if (log->oldDir) {
-	if (log->oldDir[0] != '/') {
-	    char *ld = ourDirName(log->files[logNum]);
-	    rotNames->dirName =
-		malloc(strlen(ld) + strlen(log->oldDir) + 2);
-	    sprintf(rotNames->dirName, "%s/%s", ld, log->oldDir);
-	    free(ld);
+    {
+	char *logpath = strdup(log->files[logNum]);
+	char *ld = dirname(logpath);
+	if (log->oldDir) {
+	    if (log->oldDir[0] != '/') {
+		rotNames->dirName =
+		    malloc(strlen(ld) + strlen(log->oldDir) + 2);
+		sprintf(rotNames->dirName, "%s/%s", ld, log->oldDir);
+	    } else
+		rotNames->dirName = strdup(log->oldDir);
 	} else
-	    rotNames->dirName = strdup(log->oldDir);
-    } else
-	rotNames->dirName = ourDirName(log->files[logNum]);
+	    rotNames->dirName = strdup(ld);
+	free(logpath);
+    }
 
-    rotNames->baseName = strdup(ourBaseName(log->files[logNum]));
+    rotNames->baseName = strdup(basename(log->files[logNum]));
 
     if (log->addextension) {
 	size_t baseLen = strlen(rotNames->baseName);
@@ -1700,8 +1711,8 @@ int prerotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
     return hasErrors;
 }
 
-int rotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
-		    struct logNames *rotNames)
+static int rotateSingleLog(struct logInfo *log, int logNum,
+			   struct logState *state, struct logNames *rotNames)
 {
     int hasErrors = 0;
     struct stat sb;
@@ -1721,7 +1732,7 @@ int rotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 	    }
 #ifdef WITH_ACL
 		if ((prev_acl = acl_get_file(log->files[logNum], ACL_TYPE_ACCESS)) == NULL) {
-			if (!ACL_NOT_WELL_SUPPORTED(errno)) {
+			if (is_acl_well_supported(errno)) {
 				message(MESS_ERROR, "getting file ACL %s: %s\n",
 					log->files[logNum], strerror(errno));
 				hasErrors = 1;
@@ -1773,6 +1784,8 @@ int rotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 
 	if (!hasErrors && log->flags & LOG_FLAG_CREATE &&
 	    !(log->flags & (LOG_FLAG_COPYTRUNCATE | LOG_FLAG_COPY))) {
+	    int have_create_mode = 0;
+
 	    if (log->createUid == NO_UID)
 		sb.st_uid = state->sb.st_uid;
 	    else
@@ -1782,8 +1795,6 @@ int rotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
 		sb.st_gid = state->sb.st_gid;
 	    else
 		sb.st_gid = log->createGid;
-
-	    int have_create_mode = 0;
 	    if (log->createMode == NO_MODE)
 		sb.st_mode = state->sb.st_mode & 0777;
 	    else {
@@ -1835,8 +1846,9 @@ int rotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
     return hasErrors;
 }
 
-int postrotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
-			struct logNames *rotNames)
+static int postrotateSingleLog(struct logInfo *log, int logNum,
+			       struct logState *state,
+			       struct logNames *rotNames)
 {
     int hasErrors = 0;
 
@@ -1884,16 +1896,16 @@ int postrotateSingleLog(struct logInfo *log, int logNum, struct logState *state,
     return hasErrors;
 }
 
-int rotateLogSet(struct logInfo *log, int force)
+static int rotateLogSet(struct logInfo *log, int force)
 {
     int i, j;
     int hasErrors = 0;
-    int logHasErrors[log->numFiles];
+    int *logHasErrors;
     int numRotated = 0;
     struct logState **state;
     struct logNames **rotNames;
 
-
+    logHasErrors = alloca(log->numFiles * sizeof(int));
     message(MESS_DEBUG, "\nrotating pattern: %s ", log->pattern);
     if (force) {
         message(MESS_DEBUG, "forced from command line ");
@@ -1918,6 +1930,8 @@ int rotateLogSet(struct logInfo *log, int force)
         case ROT_SIZE:
         message(MESS_DEBUG, "%jd bytes ", (intmax_t)log->threshhold);
         break;
+        default:
+        message(MESS_DEBUG, "rotateLogSet() does not have case for: %d ", log->criterium);
         }
     }
 
@@ -2122,7 +2136,7 @@ int rotateLogSet(struct logInfo *log, int force)
     return hasErrors;
 }
 
-static int writeState(char *stateFilename)
+static int writeState(const char *stateFilename)
 {
 	struct logState *p;
 	FILE *f;
@@ -2165,7 +2179,7 @@ static int writeState(char *stateFilename)
 
 #ifdef WITH_ACL
 	if ((prev_acl = acl_get_fd(fdcurr)) == NULL) {
-		if (!ACL_NOT_WELL_SUPPORTED(errno)) {
+		if (is_acl_well_supported(errno)) {
 			message(MESS_ERROR, "getting file ACL %s: %s\n",
 				stateFilename, strerror(errno));
 			restoreSecCtx(&prevCtx);
@@ -2204,6 +2218,11 @@ static int writeState(char *stateFilename)
 	if (bytes < 0)
 		error = bytes;
 
+/*
+ * Time in seconds it takes earth to go around sun.  The value is
+ * astronomical measurement (solar year) rather than something derived from
+ * a convention (calendar year).
+ */
 #define SECONDS_IN_YEAR 31556926
 
 	for (i = 0; i < hashSize && error == 0; i++) {
@@ -2233,6 +2252,8 @@ static int writeState(char *stateFilename)
 						error = fputc('n', f) == EOF;
 					}
 					continue;
+				default:
+					break;
 				}
 				if (error == 0 && fputc(*chptr, f) == EOF) {
 					error = 1;
@@ -2286,7 +2307,7 @@ static int writeState(char *stateFilename)
 	return error;
 }
 
-static int readState(char *stateFilename)
+static int readState(const char *stateFilename)
 {
     FILE *f;
     char buf[STATEFILE_BUFFER_SIZE];
@@ -2474,9 +2495,9 @@ static int readState(char *stateFilename)
 int main(int argc, const char **argv)
 {
     int force = 0;
-    char *stateFile = STATEFILE;
+    const char *stateFile = STATEFILE;
     char *logFile = NULL;
-    FILE *logFd = 0;
+    FILE *logFd = NULL;
     int rc = 0;
     int arg;
     const char **files;
@@ -2484,7 +2505,7 @@ int main(int argc, const char **argv)
 	struct logInfo *log;
 
     struct poptOption options[] = {
-	{"debug", 'd', 0, 0, 'd',
+    	{"debug", 'd', 0, NULL, 'd',
 	 "Don't do anything, just test (implies -v)", NULL},
 	{"force", 'f', 0, &force, 0, "Force file rotation", NULL},
 	{"mail", 'm', POPT_ARG_STRING, &mailCommand, 0,
@@ -2493,7 +2514,7 @@ int main(int argc, const char **argv)
 	{"state", 's', POPT_ARG_STRING, &stateFile, 0,
 	 "Path of state file",
 	 "statefile"},
-	{"verbose", 'v', 0, 0, 'v', "Display messages during rotation", NULL},
+	{"verbose", 'v', 0, NULL, 'v', "Display messages during rotation", NULL},
 	{"log", 'l', POPT_ARG_STRING, &logFile, 'l', "Log file or 'syslog' to log to syslog",
 	 "logfile"},
 	{"version", '\0', POPT_ARG_NONE, NULL, 'V', "Display version information", NULL},
@@ -2533,6 +2554,8 @@ int main(int argc, const char **argv)
 	    fprintf(stderr, "logrotate %s\n", VERSION);
 	    poptFreeContext(optCon);
 	    exit(0);
+	default:
+		break;
 	}
     }
 
