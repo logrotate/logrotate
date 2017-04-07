@@ -33,6 +33,7 @@
 #endif
 
 #define REALLOC_STEP    10
+#define GLOB_STR_REALLOC_STEP	0x100
 
 #if defined(SunOS)
 #include <limits.h>
@@ -704,6 +705,55 @@ int readAllConfigPaths(const char **paths)
     free_2d_array(tabooPatterns, tabooCount);
     freeLogInfo(&defConfig);
     return result;
+}
+
+static char* parseGlobString(const char *configFile, int lineNum,
+			     const char *buf, off_t length, char **ppos)
+{
+    /* output buffer */
+    char *globString = NULL;
+    size_t globStringPos = 0;
+    size_t globStringAlloc = 0;
+
+    /* move the cursor at caller's side while going through the input */
+    for (; (*ppos - buf < length) && **ppos; (*ppos)++) {
+	switch (**ppos) {
+	    case '}':
+		message(MESS_ERROR, "%s:%d unexpected } (missing previous '{')\n", configFile, lineNum);
+		free(globString);
+		return NULL;
+
+	    case '{':
+		/* NUL-terminate globString */
+		assert(globStringPos < globStringAlloc);
+		globString[globStringPos] = '\0';
+		return globString;
+
+	    default:
+		break;
+	}
+
+	/* grow the output buffer if needed */
+	if (globStringPos + 2 > globStringAlloc) {
+	    char *ptr;
+	    globStringAlloc += GLOB_STR_REALLOC_STEP;
+	    ptr = realloc(globString, globStringAlloc);
+	    if (!ptr) {
+		/* out of memory */
+		free(globString);
+		return NULL;
+	    }
+	    globString = ptr;
+	}
+
+	/* copy a single character */
+	globString[globStringPos++] = **ppos;
+    }
+
+    /* premature end of input */
+    message(MESS_ERROR, "%s:%d missing '{' after log files definition\n", configFile, lineNum);
+    free(globString);
+    return NULL;
 }
 
 static int globerr(const char *pathname, int theerr)
@@ -1456,7 +1506,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                                                                            || *start == '~'
 #endif
                                                                            ) {
-				char *local_key;
+				char *glob_string;
 				size_t glob_count;
 				in_config = 0;
 				if (newlog != defConfig) {
@@ -1480,37 +1530,23 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 				if ((newlog = newLogInfo(defConfig)) == NULL)
 					goto error;
 
-				endtag = start;
-				while (endtag - buf < length && *endtag != '{' && *endtag != '}' && *endtag != '\0') {
-					endtag++;}
-				if (endtag - buf > length)
-					continue;
-				if (*endtag == '}') {
-					message(MESS_ERROR, "%s:%d unexpected } (missing previous '{')\n", configFile,
-						lineNum);
-					goto error;
-				}
-				if (*endtag == '{') {
-					in_config = 1;
-				}
-				else {
-					message(MESS_ERROR, "%s:%d missing '{' after log files definition\n", configFile,
-						lineNum);
-					goto error;
-				}
-				local_key = strndup(start, endtag - start);
-				start = endtag;
+				glob_string = parseGlobString(configFile, lineNum, buf, length, &start);
+				if (glob_string)
+				    	in_config = 1;
+				else
+				    	/* error already printed */
+				    	goto error;
 
-				if (poptParseArgvString(local_key, &argc, &argv)) {
+				if (poptParseArgvString(glob_string, &argc, &argv)) {
 				message(MESS_ERROR, "%s:%d error parsing filename\n",
 					configFile, lineNum);
-				free(local_key);
+				free(glob_string);
 				goto error;
 				} else if (argc < 1) {
 				message(MESS_ERROR,
 					"%s:%d { expected after log file name(s)\n",
 					configFile, lineNum);
-				free(local_key);
+				free(glob_string);
 				goto error;
 				}
 
@@ -1578,7 +1614,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 				globfree(&globResult);
 				}
 
-				newlog->pattern = local_key;
+				newlog->pattern = glob_string;
 
 				free(argv);
 
