@@ -33,6 +33,9 @@ AC_CANONICAL_HOST
 dnl Use 64-bit file offsets on 32-bit systems (defines C macros if necessary)
 AC_SYS_LARGEFILE
 
+dnl needed for basename() on OS X
+AC_CHECK_HEADERS([libgen.h])
+
 AC_CHECK_LIB([popt],[poptParseArgvString],,
   AC_MSG_ERROR([libpopt required but not found]))
 

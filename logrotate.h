@@ -5,6 +5,11 @@
 #include "queue.h"
 #include <glob.h>
 
+/* needed for basename() on OS X */
+#if HAVE_LIBGEN_H
+#   include <libgen.h>
+#endif
+
 #define LOG_FLAG_COMPRESS	(1 << 0)
 #define LOG_FLAG_CREATE		(1 << 1)
 #define LOG_FLAG_IFEMPTY	(1 << 2)
