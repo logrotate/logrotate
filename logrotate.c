@@ -1573,7 +1573,7 @@ static int prerotateSingleLog(struct logInfo *log, int logNum,
 		sortGlobResult(&globResult, strlen(rotNames->dirName) + 1 + strlen(rotNames->baseName), dformat);
 	    for (glob_count = 0; glob_count < globResult.gl_pathc; glob_count++) {
 		if (!stat((globResult.gl_pathv)[glob_count], &fst_buf)) {
-		    if ((glob_count <= (globResult.gl_pathc - rotateCount))
+		    if (((globResult.gl_pathc >= rotateCount) && (glob_count <= (globResult.gl_pathc - rotateCount)))
 			|| ((log->rotateAge > 0)
 			    &&
 			    (((nowSecs - fst_buf.st_mtime) / DAY_SECONDS)
