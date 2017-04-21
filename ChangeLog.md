@@ -414,7 +414,7 @@ All notable changes to this project will be documented in this file.
     .rpmsave
 
 [UNRELEASED]: https://github.com/logrotate/logrotate/compare/3.12.1...master
-[3.12.0]: https://github.com/logrotate/logrotate/compare/3.12.0...3.12.1
+[3.12.1]: https://github.com/logrotate/logrotate/compare/3.12.0...3.12.1
 [3.12.0]: https://github.com/logrotate/logrotate/compare/3.11.0...3.12.0
 [3.11.0]: https://github.com/logrotate/logrotate/compare/3.10.0...3.11.0
 [3.10.0]: https://github.com/logrotate/logrotate/compare/3.9.2...3.10.0
