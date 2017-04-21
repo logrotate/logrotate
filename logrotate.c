@@ -442,6 +442,7 @@ static int runScript(struct logInfo *log, char *logfn, char *script)
 	return rc;
 }
 
+#ifdef WITH_ACL
 static int is_acl_well_supported(int err)
 {
 	switch (err) {
@@ -454,6 +455,7 @@ static int is_acl_well_supported(int err)
 		return 1;
 	}
 }
+#endif /* WITH_ACL */
 
 static int createOutputFile(char *fileName, int flags, struct stat *sb,
 			    acl_type acl, int force_mode)
