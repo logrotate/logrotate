@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [UNRELEASED]
 
+## [3.12.1] - 2017-04-21
+
+  - Included forgotten ```build-aux``` directory in release tarballs.
+
 ## [3.12.0] - 2017-04-21
 
   - Fixed accident removal of rotated files with dateext. (#118)
@@ -409,7 +413,8 @@ All notable changes to this project will be documented in this file.
   - ignore files in included directories which end with ~, .rpmorig, or
     .rpmsave
 
-[UNRELEASED]: https://github.com/logrotate/logrotate/compare/3.12.0...master
+[UNRELEASED]: https://github.com/logrotate/logrotate/compare/3.12.1...master
+[3.12.0]: https://github.com/logrotate/logrotate/compare/3.12.0...3.12.1
 [3.12.0]: https://github.com/logrotate/logrotate/compare/3.11.0...3.12.0
 [3.11.0]: https://github.com/logrotate/logrotate/compare/3.10.0...3.11.0
 [3.10.0]: https://github.com/logrotate/logrotate/compare/3.9.2...3.10.0

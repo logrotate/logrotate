@@ -18,7 +18,7 @@ dist_man_MANS = logrotate.8 logrotate.conf.5
 
 dist_noinst_DATA = logrotate.spec
 
-EXTRA_DIST = ChangeLog.md README.md autogen.sh examples
+EXTRA_DIST = ChangeLog.md README.md autogen.sh build-aux examples
 
 # the dot ensures that logrotate is built before it is tested
 SUBDIRS = . test
