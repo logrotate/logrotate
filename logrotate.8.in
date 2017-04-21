@@ -146,7 +146,7 @@ The next section of the config file defines how to handle the log file
 \fI/var/log/messages\fR. The log will go through five weekly rotations before
 being removed. After the log file has been rotated (but before the old
 version of the log has been compressed), the command 
-\fI/sbin/killall \-HUP syslogd\fR will be executed.
+\fI/usr/bin/killall \-HUP syslogd\fR will be executed.
 
 The next section defines the parameters for both
 \fI/var/log/httpd/access.log\fR and \fI/var/log/httpd/error.log\fR.
