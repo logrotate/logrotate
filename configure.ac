@@ -178,6 +178,15 @@ AC_SUBST(ROOT_UID)
 AC_CHECK_FUNCS([asprintf fork madvise qsort strndup strptime vfork vsyslog])
 AC_CONFIG_HEADERS([config.h])
 
+AM_CFLAGS="-Wall"
+AC_ARG_ENABLE([werror],
+        [AS_HELP_STRING([--enable-werror],
+                [Treat warnings as errors (default: warnings are not errors)])],
+                [enable_werror="$enableval"],
+                [enable_werror=no])
+AS_IF([test "x$enable_werror" = "xyes"], [AM_CFLAGS="$AM_CFLAGS -Werror"])
+AC_SUBST([AM_CFLAGS])
+
 AC_CONFIG_FILES([Makefile test/Makefile logrotate.8 logrotate.spec])
 AC_OUTPUT
 
