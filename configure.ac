@@ -178,6 +178,14 @@ AC_SUBST(ROOT_UID)
 AC_CHECK_FUNCS([asprintf fork madvise qsort strndup strptime vfork vsyslog])
 AC_CONFIG_HEADERS([config.h])
 
+dnl This has to follow after AC_CHECK_FUNCS in order to keep the checks working
+AC_ARG_ENABLE([werror],
+        [AS_HELP_STRING([--enable-werror],
+                [Treat warnings as errors (default: warnings are not errors)])],
+                [enable_werror="$enableval"],
+                [enable_werror=no])
+AS_IF([test "x$enable_werror" = "xyes"], [AX_APPEND_COMPILE_FLAGS([-Werror])])
+
 AC_CONFIG_FILES([Makefile test/Makefile logrotate.8 logrotate.spec])
 AC_OUTPUT
 

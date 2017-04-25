@@ -110,7 +110,7 @@ install:
 script:
   - $COMPILER --version
   - ./autogen.sh
-  - ./configure CC=$COMPILER
+  - ./configure --enable-werror CC=$COMPILER
   - make
   - make check
   - cd test && LOGROTATE=../logrotate /bin/dash test && cd ..
