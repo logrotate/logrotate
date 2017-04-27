@@ -39,6 +39,8 @@ AC_CHECK_HEADERS([libgen.h])
 AC_CHECK_LIB([popt],[poptParseArgvString],,
   AC_MSG_ERROR([libpopt required but not found]))
 
+AC_CHECK_FUNCS([strndup asprintf])
+
 dnl Needed for out-of-source builds
 mkdir -p test
 
