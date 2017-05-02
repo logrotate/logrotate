@@ -1433,13 +1433,6 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 						RAISE_ERROR();
 					}
 
-					if (access(newlog->compress_prog, X_OK)) {
-						message(MESS_ERROR,
-							"%s:%d compression program %s is not an executable file\n",
-							configFile, lineNum, newlog->compress_prog);
-						RAISE_ERROR();
-					}
-
 					message(MESS_DEBUG, "compress_prog is now %s\n",
 						newlog->compress_prog);
 
@@ -1462,13 +1455,6 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 						(newlog->uncompress_prog =
 							readPath(configFile, lineNum, "uncompress",
 								&start, &buf, length))) {
-						RAISE_ERROR();
-					}
-
-					if (access(newlog->uncompress_prog, X_OK)) {
-						message(MESS_ERROR,
-							"%s:%d uncompression program %s is not an executable file\n",
-							configFile, lineNum, newlog->uncompress_prog);
 						RAISE_ERROR();
 					}
 
