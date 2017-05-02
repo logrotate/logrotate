@@ -4,7 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## [UNRELEASED]
 
-[UNRELEASED]: https://github.com/logrotate/logrotate/compare/3.12.1...master
+[UNRELEASED]: https://github.com/logrotate/logrotate/compare/3.12.2...master
+
+## [3.12.2] - 2017-05-02
+
+  - build fixes related to ```-Werror``` (#119) and ```-Werror=format=``` (#108)
+  - ```configure --enable-werror``` now controls use of the -Werror flag (#123)
+
+[3.12.2]: https://github.com/logrotate/logrotate/compare/3.12.1...3.12.2
 
 ## [3.12.1] - 2017-04-21
 
