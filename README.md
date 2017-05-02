@@ -6,10 +6,11 @@ The logrotate utility is designed to simplify the administration of log files on
 
 The latest release is:
 
-* [logrotate-3.12.2](https://github.com/logrotate/logrotate/releases/download/3.12.2/logrotate-3.12.2.tar.xz) ([sig](https://github.com/logrotate/logrotate/releases/download/3.12.2/logrotate-3.12.2.tar.xz.asc)) ([Changelog](https://github.com/logrotate/logrotate/releases/tag/3.12.2))
+* [logrotate-3.12.3](https://github.com/logrotate/logrotate/releases/download/3.12.3/logrotate-3.12.3.tar.xz) ([sig](https://github.com/logrotate/logrotate/releases/download/3.12.3/logrotate-3.12.3.tar.xz.asc)) ([Changelog](https://github.com/logrotate/logrotate/releases/tag/3.12.3))
 
 Previous releases:
 
+* [logrotate-3.12.2](https://github.com/logrotate/logrotate/releases/download/3.12.2/logrotate-3.12.2.tar.xz) ([sig](https://github.com/logrotate/logrotate/releases/download/3.12.2/logrotate-3.12.2.tar.xz.asc)) ([Changelog](https://github.com/logrotate/logrotate/releases/tag/3.12.2))
 * [logrotate-3.12.1](https://github.com/logrotate/logrotate/releases/download/3.12.1/logrotate-3.12.1.tar.xz) ([sig](https://github.com/logrotate/logrotate/releases/download/3.12.1/logrotate-3.12.1.tar.xz.asc)) ([Changelog](https://github.com/logrotate/logrotate/releases/tag/3.12.1))
 * [logrotate-3.12.0](https://github.com/logrotate/logrotate/releases/download/3.12.0/logrotate-3.12.0.tar.xz) ([sig](https://github.com/logrotate/logrotate/releases/download/3.12.0/logrotate-3.12.0.tar.xz.asc)) ([Changelog](https://github.com/logrotate/logrotate/releases/tag/3.12.0))
 * [logrotate-3.11.0](https://github.com/logrotate/logrotate/releases/download/3.11.0/logrotate-3.11.0.tar.xz) ([sig](https://github.com/logrotate/logrotate/releases/download/3.11.0/logrotate-3.11.0.tar.xz.asc)) ([Changelog](https://github.com/logrotate/logrotate/releases/tag/3.11.0))

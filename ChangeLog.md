@@ -4,7 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## [UNRELEASED]
 
-[UNRELEASED]: https://github.com/logrotate/logrotate/compare/3.12.2...master
+[UNRELEASED]: https://github.com/logrotate/logrotate/compare/3.12.3...master
+
+## [3.12.3] - 2017-06-30
+
+  - ```copy``` and ```copytruncate``` directives now work together again
+  - ```unlink()``` is no longer preceded by ```open()``` unless shred is enabled (#124)
+  - ```compress``` and ```uncompress``` now take commands from ```$PATH```, too (#122)
+
+[3.12.3]: https://github.com/logrotate/logrotate/compare/3.12.2...3.12.3
 
 ## [3.12.2] - 2017-05-02
 
