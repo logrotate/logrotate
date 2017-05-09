@@ -562,7 +562,8 @@ static int createOutputFile(char *fileName, int flags, struct stat *sb,
 
 #define DIGITS 12
 
-/* unlink, but try to call shred from GNU fileutils */
+/* unlink, but try to call shred from GNU coreutils if LOG_FLAG_SHRED
+ * is enabled (in that case fd needs to be a valid file descriptor) */
 static int shred_file(int fd, char *filename, struct logInfo *log)
 {
 	char count[DIGITS];    /*  that's a lot of shredding :)  */
@@ -632,24 +633,28 @@ static int shred_file(int fd, char *filename, struct logInfo *log)
 
 static int removeLogFile(char *name, struct logInfo *log)
 {
-	int fd;
+	int fd = -1;
+	int result = 0;
 	message(MESS_DEBUG, "removing old log %s\n", name);
 
-	if ((fd = open(name, O_RDWR | O_NOFOLLOW)) < 0) {
-		message(MESS_ERROR, "error opening %s: %s\n",
-			name, strerror(errno));
-		return 1;
+	if (log->flags & LOG_FLAG_SHRED) {
+		fd = open(name, O_RDWR | O_NOFOLLOW);
+		if (fd < 0) {
+			message(MESS_ERROR, "error opening %s: %s\n",
+				name, strerror(errno));
+			return 1;
+		}
 	}
 
 	if (!debug && shred_file(fd, name, log)) {
 		message(MESS_ERROR, "Failed to remove old log %s: %s\n",
 			name, strerror(errno));
-		close(fd);
-		return 1;
+		result = 1;
 	}
 
-	close(fd);
-	return 0;
+	if (fd != -1)
+		close(fd);
+	return result;
 }
 
 static int compressLogFile(char *name, struct logInfo *log, struct stat *sb)
