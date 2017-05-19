@@ -126,10 +126,22 @@ enum {
 	STATE_ERROR = 64,
 };
 
-static const char *defTabooExts[] = { ".rpmsave", ".rpmorig", "~", ",v",
-    ".disabled", ".dpkg-old", ".dpkg-dist", ".dpkg-new", ".cfsaved",
-    ".ucf-old", ".ucf-dist", ".ucf-new",
-    ".rpmnew", ".swp", ".cfsaved", ".rhn-cfg-tmp-*"
+static const char *defTabooExts[] = {
+	",v",
+	".cfsaved",
+	".disabled",
+	".dpkg-dist",
+	".dpkg-new",
+	".dpkg-old",
+	".rhn-cfg-tmp-*",
+	".rpmnew",
+	".rpmorig",
+	".rpmsave",
+	".swp",
+	".ucf-dist",
+	".ucf-new",
+	".ucf-old",
+	"~"
 };
 static int defTabooCount = sizeof(defTabooExts) / sizeof(char *);
 

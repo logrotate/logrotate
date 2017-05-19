@@ -573,21 +573,21 @@ The current taboo extension list is changed (see the \fBinclude\fR directive
 for information on the taboo extensions). If a + precedes the list of
 extensions, the current taboo extension list is augmented, otherwise it
 is replaced. At startup, the taboo extension list 
-.IR .rpmsave ,
-.IR .rpmorig ,
-.IR ~ ,
+.IR ,v ,
+.IR .cfsaved ,
 .IR .disabled ,
-.IR .dpkg\-old ,
 .IR .dpkg\-dist ,
 .IR .dpkg\-new ,
-.IR .cfsaved ,
-.IR .ucf\-old ,
+.IR .dpkg\-old ,
+.IR .rhn\-cfg\-tmp\-* ,
+.IR .rpmnew ,
+.IR .rpmorig ,
+.IR .rpmsave ,
+.IR .swp ,
 .IR .ucf\-dist ,
 .IR .ucf\-new ,
-.IR .rpmnew ,
-.IR .swp ,
-.IR .cfsaved ,
-.IR .rhn\-cfg\-tmp\-*
+.IR .ucf\-old ,
+.IR ~
 
 .TP
 \fBtaboopat\fR [+] \fIlist\fR
