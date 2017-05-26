@@ -19,6 +19,7 @@ include /etc/logrotate.d
 
 # no packages own wtmp and btmp -- we'll rotate them here
 /var/log/wtmp {
+    missingok
     monthly
     create 0664 root utmp
     minsize 1M
