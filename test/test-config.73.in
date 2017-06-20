@@ -1,0 +1,4 @@
+&DIR&/test*.log {
+    copy
+    copytruncate
+}

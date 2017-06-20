@@ -1019,7 +1019,10 @@ static int copyTruncate(char *currLog, char *saveLog, struct stat *sb,
     message(MESS_DEBUG, "copying %s to %s\n", currLog, saveLog);
 
     if (!debug) {
-	if ((fdcurr = open(currLog, ((flags & LOG_FLAG_COPY) ? O_RDONLY : O_RDWR) | O_NOFOLLOW)) < 0) {
+	/* read access is sufficient for 'copy' but not for 'copytruncate' */
+	const int read_only = (flags & LOG_FLAG_COPY)
+	    && !(flags & LOG_FLAG_COPYTRUNCATE);
+	if ((fdcurr = open(currLog, ((read_only) ? O_RDONLY : O_RDWR) | O_NOFOLLOW)) < 0) {
 	    message(MESS_ERROR, "error opening %s: %s\n", currLog,
 		    strerror(errno));
 	    return 1;
