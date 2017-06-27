@@ -1614,7 +1614,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 					for (k = 0; k < log->numFiles; k++) {
 						if (!strcmp(log->files[k],
 							globResult.gl_pathv[glob_count])) {
-						message(MESS_ERROR,
+						message(MESS_NORMAL,
 							"%s:%d duplicate log entry for %s\n",
 							configFile, lineNum,
 							globResult.gl_pathv[glob_count]);
