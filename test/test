@@ -1,5 +1,0 @@
-#!/bin/bash
-
-for i in $(seq 73) 100 101; do
-  ./test-$(printf "%04d" $i).sh || exit $?
-done

@@ -79,7 +79,6 @@ EXTRA_DIST = \
 	compress \
 	compress-error \
 	mailer \
-	test \
 	test-common.sh \
 	test-common-acl.sh \
 	test-common-selinux.sh \
@@ -92,8 +91,11 @@ DISTCLEANFILES = \
 	test.example \
 	test-????/*
 
+# this needs to run exactly once even if tests run in parallel
+all:
+	test $(top_srcdir) = $(top_builddir) || ln -fs $(top_srcdir)/test/* .
+
 TESTS_ENVIRONMENT = \
-	test $(top_srcdir) = $(top_builddir) || ln -fs $(top_srcdir)/test/* . ; \
 	export LOGROTATE=$(top_builddir)/logrotate ;
 
-TESTS = test
+TESTS = $(TEST_CASES)
