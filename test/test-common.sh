@@ -1,5 +1,25 @@
 # common variables and functions for legacy tests
+LOGROTATE="$(readlink -f $LOGROTATE)"
 RLR="$LOGROTATE -m ./mailer -s state"
+
+TESTDIR="$(basename "$0" .sh)"
+mkdir -p "$TESTDIR"
+cd "$TESTDIR" || exit $?
+
+TESTNUM="$(printf "%s\n" "$TESTDIR" | sed -e 's/^test-0*//')"
+
+import() {
+  [ -e "$1" ] && return
+  [ -e "../$1" ] || return
+  ln -s "../$1"
+}
+
+import "compress"
+import "compress-error"
+import "mailer"
+import "test-common-acl.sh"
+import "test-common-selinux.sh"
+import "test-config.$TESTNUM.in"
 
 cleanup() {
     rm -f test*.log* anothertest*.log* state test-config. scriptout mail-out compress-args compress-env different*.log*

@@ -6,10 +6,10 @@ cleanup 59
 
 # ------------------------------- Test 59 ------------------------------------
 # Test renamecopy in debug mode, nothing should happen
-preptest test.log 58 1 0
+preptest test.log 59 1 0
 touch test.log.1
 touch test.log.2
-$RLR test-config.58 --force -d 2>/dev/null
+$RLR test-config.59 --force -d 2>/dev/null
 
 checkoutput <<EOF
 test.log 0 zero
