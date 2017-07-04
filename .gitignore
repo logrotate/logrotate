@@ -27,3 +27,4 @@ Makefile.in
 /stamp-h1
 /test/test.ACL
 /test/test.SELINUX
+/test-driver

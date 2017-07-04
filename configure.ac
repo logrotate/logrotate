@@ -1,20 +1,9 @@
 AC_INIT([logrotate],m4_esyscmd([build-aux/git-version-gen --prefix '' .tarball-version]),
 [],[],[https://github.com/logrotate/logrotate])
 
-dnl serial-test not supported prior version 1.12
-m4_define([serial_tests], [
-    m4_esyscmd([automake --version |
-                perl -nae '{@v = split("[.]", $F[-1]);
-                            if ($v[0] >= 1 && $v[1] >= 12)
-                                {print "serial-tests\n";}
-                            exit;}'
-    ])
-])
-
 dnl foreign: Do not require AUTHORS, ChangeLog, NEWS, and README to exist
-dnl serial_tests: Do not hide standard output of our sequential test-suite
 dnl dist-xz: Produce tar.xz version of the release archive
-AM_INIT_AUTOMAKE(foreign dist-xz serial_tests)
+AM_INIT_AUTOMAKE(foreign dist-xz)
 
 # --enable-silent-rules
 m4_ifdef([AM_SILENT_RULES],
