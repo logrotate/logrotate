@@ -13,6 +13,7 @@ if [ -z "$SELINUX_TESTS" ]; then
   if [ $SELINUX_TESTS = 1 ]; then
     # It seems we can run the ACL tests, but was logrotate compiled WITH_ACL=yes ?
     # See the Makefile, "pretest" part, for more information
+    import "test.SELINUX"
     if [ -f ./test.SELINUX ]; then
       SELINUX_TESTS=`cat ./test.SELINUX`
       if [ $SELINUX_TESTS = 0 ]; then

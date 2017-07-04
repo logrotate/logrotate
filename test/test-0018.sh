@@ -14,10 +14,11 @@ test.log.1.Z 1 zero
 EOF
 
 (echo "gzip -f -9") | diff -u - compress-args
-egrep -q '^LOGROTATE_COMPRESSED_FILENAME=.+/test/test.log.1$' compress-env
+egrep -q '^LOGROTATE_COMPRESSED_FILENAME=.+/test.log.1$' compress-env
 if [ $? != 0 ]; then
       echo "LOGROTATE_COMPRESSED_FILENAME environment variable not found."
-      cat compress-env++      exit 3
+      cat compress-env
+      exit 3
 fi
 
 SYSLOG_TESTS=0

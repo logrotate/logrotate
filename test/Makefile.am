@@ -89,7 +89,8 @@ EXTRA_DIST = \
 DISTCLEANFILES = \
 	test.ACL \
 	test.SELINUX \
-	test.example
+	test.example \
+	test-????/*
 
 TESTS_ENVIRONMENT = \
 	test $(top_srcdir) = $(top_builddir) || ln -fs $(top_srcdir)/test/* . ; \
