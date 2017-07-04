@@ -2,38 +2,6 @@
 
 . ./test-common.sh
 
-# -- SELINUX - BEGIN --------------------------------
-# We test if the ACLs tests should be done or not
-SELINUX_TESTS=0
-if type "selinuxenabled" >/dev/null 2>&1 && selinuxenabled; then
-	SELINUX_TESTS=1
-else
-	echo "SELinux disabled. SELinux tests will not be executed."
-fi
-
-if [ $SELINUX_TESTS = 1 ]; then
-  # It seems we can run the ACL tests, but was logrotate compiled WITH_ACL=yes ?
-  # See the Makefile, "pretest" part, for more information
-  if [ -f ./test.SELINUX ]; then
-    SELINUX_TESTS=`cat ./test.SELINUX`
-    if [ $SELINUX_TESTS = 0 ]; then
-      echo "logrotate was NOT compiled with 'WITH_SELINUX=yes'. SELINUX tests will not be executed."
-    fi
-  fi
-fi
-
-if [ $SELINUX_TESTS = 1 ]; then
-  # if logrotate_tmp_t, we can't continue with SELinux tests...
-  touch .selinuxtest
-  chcon --type=logrotate_tmp_t .selinuxtest 2>/dev/null
-  if [ $? != 0 ]; then
-    SELINUX_TESTS=0
-    echo "SELinux context 'logrotate_tmp_t' does not exist. SELinux tests will not be executed."
-  fi
-  rm -f .selinuxtest
-fi
-# -- SELINUX - END ----------------------------------
-
 # we don't want any stuff left from previous runs
 cleanup 1
 
@@ -149,6 +117,7 @@ cleanup 6
 # ------------------------------- Test 6 -------------------------------------
 preptest test.log 6 1
 preptest anothertest.log 6 1
+. ./test-common-selinux.sh
 if [ $SELINUX_TESTS = 1 ]; then
 	chcon --type=logrotate_tmp_t test.log
 else
@@ -226,6 +195,7 @@ cleanup 10
 # ------------------------------- Test 10 ------------------------------------
 preptest test.log 10 1
 
+. ./test-common-selinux.sh
 if [ $SELINUX_TESTS = 1 ]; then
 	chcon --type=logrotate_tmp_t test.log
 else
@@ -1046,6 +1016,7 @@ test.log 0
 EOF
 
 
+. ./test-common-selinux.sh
 if [ $SELINUX_TESTS = 1 ]; then
 	chcon --type=logrotate_tmp_t test.log
 else
@@ -1054,6 +1025,7 @@ fi
 
 cleanup 47
 
+. ./test-common-selinux.sh
 if [ $SELINUX_TESTS = 1 ]; then
 
 # ------------------------------- Test 47 ------------------------------------
