@@ -3,6 +3,7 @@ EXTRA_DIST = \
 	compress-error \
 	mailer \
 	test \
+	test-common.sh \
 	$(top_srcdir)/test/test-config.*.in
 
 DISTCLEANFILES = \
