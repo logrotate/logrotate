@@ -5,6 +5,7 @@ EXTRA_DIST = \
 	test \
 	test-common.sh \
 	test-common-acl.sh \
+	test-common-selinux.sh \
 	$(top_srcdir)/test/test-config.*.in
 
 DISTCLEANFILES = \
