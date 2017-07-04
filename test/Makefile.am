@@ -4,6 +4,7 @@ EXTRA_DIST = \
 	mailer \
 	test \
 	test-common.sh \
+	test-common-acl.sh \
 	$(top_srcdir)/test/test-config.*.in
 
 DISTCLEANFILES = \

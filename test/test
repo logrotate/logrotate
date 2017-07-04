@@ -2,28 +2,6 @@
 
 . ./test-common.sh
 
-# -- ACL - BEGIN --------------------------------
-# We test if the ACLs tests should be done or not
-ACL_TESTS=1
-echo 1 > test.x
-setfacl -m u:nobody:rwx test.x 2>/dev/null
-if [ $? != 0 ]; then
-	ACL_TESTS=0
-	echo "setfacl failed on this system. ACL tests will not be executed."
-fi
-rm -f test.x
-if [ $ACL_TESTS = 1 ]; then
-  # It seems we can run the ACL tests, but was logrotate compiled WITH_ACL=yes ?
-  # See the Makefile, "pretest" part, for more information
-  if [ -f ./test.ACL ]; then
-    ACL_TESTS=`cat ./test.ACL`
-    if [ $ACL_TESTS = 0 ]; then
-      echo "logrotate was NOT compiled with 'WITH_ACL=yes'. ACL tests will not be executed."
-    fi
-  fi
-fi
-# -- ACL - END ----------------------------------
-
 # -- SELINUX - BEGIN --------------------------------
 # We test if the ACLs tests should be done or not
 SELINUX_TESTS=0
@@ -680,6 +658,7 @@ test.log 0
 test.log.1 0 zero
 EOF
 
+. ./test-common-acl.sh
 if [ $ACL_TESTS = 0 ]; then
   echo "Skipping test 32: no ACL support"
 else
@@ -730,6 +709,7 @@ EOF
 
 fi
 
+. ./test-common-acl.sh
 if [ $ACL_TESTS = 0 ]; then
   echo "Skipping test 33: no ACL support"
 else
@@ -782,6 +762,7 @@ checkoutput <<EOF
 test.log 0 zero
 EOF
 
+. ./test-common-acl.sh
 if [ $ACL_TESTS = 0 ]; then
   echo "Skipping test 35: no ACL support"
 else
@@ -1105,6 +1086,7 @@ fi
 
 cleanup 48
 
+. ./test-common-acl.sh
 if [ $ACL_TESTS = 0 ]; then
   echo "Skipping test 48: no ACL support"
 else
