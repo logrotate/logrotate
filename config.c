@@ -260,6 +260,12 @@ static char *readPath(const char *configFile, int lineNum, const char *key,
 static int resolveUid(const char *userName, uid_t *pUid)
 {
 	struct passwd *pw;
+#ifdef __CYGWIN__
+	if (strcmp(userName, "root") == 0) {
+		*pUid = 0;
+		return 0;
+	}
+#endif
 	pw = getpwnam(userName);
 	if (!pw)
 		return -1;
@@ -272,6 +278,12 @@ static int resolveUid(const char *userName, uid_t *pUid)
 static int resolveGid(const char *groupName, gid_t *pGid)
 {
 	struct group *gr;
+#ifdef __CYGWIN__
+	if (strcmp(groupName, "root") == 0) {
+		*pGid = 0;
+		return 0;
+	}
+#endif
 	gr = getgrnam(groupName);
 	if (!gr)
 		return -1;
