@@ -130,6 +130,8 @@ static const char *defTabooExts[] = {
 	",v",
 	".cfsaved",
 	".disabled",
+	".dpkg-bak",
+	".dpkg-del",
 	".dpkg-dist",
 	".dpkg-new",
 	".dpkg-old",
