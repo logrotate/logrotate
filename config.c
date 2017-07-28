@@ -256,15 +256,38 @@ static char *readPath(const char *configFile, int lineNum, const char *key,
 	return NULL;
 }
 
+/* set *pUid to UID of the given user, return non-zero on failure */
+static int resolveUid(const char *userName, uid_t *pUid)
+{
+	struct passwd *pw;
+	pw = getpwnam(userName);
+	if (!pw)
+		return -1;
+	*pUid = pw->pw_uid;
+	endpwent();
+	return 0;
+}
+
+/* set *pGid to GID of the given group, return non-zero on failure */
+static int resolveGid(const char *groupName, gid_t *pGid)
+{
+	struct group *gr;
+	gr = getgrnam(groupName);
+	if (!gr)
+		return -1;
+	*pGid = gr->gr_gid;
+	endgrent();
+	return 0;
+}
+
 static int readModeUidGid(const char *configFile, int lineNum, char *key,
-							const char *directive, mode_t *mode, uid_t *uid,
-							gid_t *gid) {
+			  const char *directive, mode_t *mode, uid_t *pUid,
+			  gid_t *pGid)
+{
 	char u[200], g[200];
 	unsigned int m;
 	char tmp;
 	int rc;
-	struct group *group;
-	struct passwd *pw = NULL;
 
 	if (!strcmp("su", directive))
 	    /* do not read <mode> for the 'su' directive */
@@ -293,24 +316,18 @@ static int readModeUidGid(const char *configFile, int lineNum, char *key,
 	}
 
 	if (rc > 1) {
-		pw = getpwnam(u);
-		if (!pw) {
+		if (resolveUid(u, pUid) != 0) {
 			message(MESS_ERROR, "%s:%d unknown user '%s'\n",
 				configFile, lineNum, u);
 			return -1;
 		}
-		*uid = pw->pw_uid;
-		endpwent();
 	}
 	if (rc > 2) {
-		group = getgrnam(g);
-		if (!group) {
+		if (resolveGid(g, pGid) != 0) {
 			message(MESS_ERROR, "%s:%d unknown group '%s'\n",
 				configFile, lineNum, g);
 			return -1;
 		}
-		*gid = group->gr_gid;
-		endgrent();
 	}
 
 	return 0;
