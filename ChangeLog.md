@@ -6,6 +6,8 @@ All notable changes to this project will be documented in this file.
 
 [UNRELEASED]: https://github.com/logrotate/logrotate/compare/3.12.3...master
 
+  - add ```.dpkg-bak``` and ```.dpkg-del``` to default tabooext list
+
 ## [3.12.3] - 2017-06-30
 
   - ```copy``` and ```copytruncate``` directives now work together again

@@ -576,6 +576,8 @@ is replaced. At startup, the taboo extension list
 .IR ,v ,
 .IR .cfsaved ,
 .IR .disabled ,
+.IR .dpkg\-bak ,
+.IR .dpkg\-del ,
 .IR .dpkg\-dist ,
 .IR .dpkg\-new ,
 .IR .dpkg\-old ,
