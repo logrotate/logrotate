@@ -112,11 +112,11 @@ script:
   - ./autogen.sh
   - ./configure --enable-werror CC=$COMPILER
   - make
-  - make check
-  - cd test && LOGROTATE=../logrotate /bin/dash test && cd ..
-  - make distcheck
+  - make -j9 check
+  - make -j9 distcheck
   # nodeps because rpm build deps can not be installed on debian system
   - make rpm RPM_FLAGS="--nodeps"
+  - sed 's|/bin/bash|/bin/dash|' -i test/*.sh && make -j9 check
 
 notifications:
   email:
