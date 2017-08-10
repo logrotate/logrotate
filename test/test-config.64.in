@@ -6,6 +6,9 @@ create
     dateformat -%Y%m%d
     rotate 0
     compress
+    compresscmd gzip
+    uncompresscmd gunzip
+    compressext .gz
     nosharedscripts
     dateext
     mail user@myhost.org

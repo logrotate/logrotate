@@ -8,6 +8,9 @@ copytruncate
 
 # compress the file
 compress
+compresscmd gzip
+uncompresscmd gunzip
+compressext .gz
 
 # do only rotate when not empty
 notifempty
