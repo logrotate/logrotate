@@ -5,6 +5,7 @@ create
     compress
     compresscmd ./compress-error
     compressoptions -f -9
+    compressext .gz
     weekly
     rotate 1
 }

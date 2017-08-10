@@ -1,6 +1,9 @@
 create
 
 compress
+compresscmd gzip
+uncompresscmd gunzip
+compressext .gz
 
 &DIR&/test.log {
     monthly

@@ -4,6 +4,9 @@ create
     daily
     rotate 3
     compress
+    compresscmd gzip
+    uncompresscmd gunzip
+    compressext .gz
     delaycompress
     create
     mailfirst
