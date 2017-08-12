@@ -4,6 +4,6 @@ create
     daily
     # note the white space after this line
     rotate 2 
-    mail user@myhost.org
+    mail user@invalid.
     maillast
 }

@@ -8,7 +8,7 @@ compressext .gz
 &DIR&/test.log {
     monthly
     rotate 3
-    mail user@myhost.org
+    mail user@invalid.
     mailfirst
     sharedscripts
 

@@ -11,6 +11,6 @@ create
     compressext .gz
     nosharedscripts
     dateext
-    mail user@myhost.org
+    mail user@invalid.
     maillast
 }
