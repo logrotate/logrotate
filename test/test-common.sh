@@ -22,8 +22,7 @@ import "test-common-selinux.sh"
 import "test-config.$TESTNUM.in"
 
 cleanup() {
-    rm -f test*.log* anothertest*.log* state test-config. scriptout mail-out compress-args compress-env different*.log*
-    rm -f $(ls | egrep '^test-config.[0-9]+$')
+    rm -f test*.log* anothertest*.log* state test-config. scriptout mail-out compress-args compress-env different*.log* test-config.*[0-9]
 
     [ -n "$1" ] && echo "Running test $1"
     return 0
