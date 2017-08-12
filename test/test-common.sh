@@ -103,7 +103,7 @@ createlogs() {
 }
 
 checkmail() {
-    (echo -s $PWD/$1 user@myhost.org; echo $2) | diff -u - mail-out
+    (echo -s $PWD/$1 user@invalid.; echo $2) | diff -u - mail-out
     if [ $? != 0 ]; then
         exit 5
     fi

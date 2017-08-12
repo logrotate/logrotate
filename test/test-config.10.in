@@ -10,5 +10,5 @@ create
     delaycompress
     create
     mailfirst
-    mail user@myhost.org
+    mail user@invalid.
 }

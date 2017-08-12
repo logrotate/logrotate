@@ -7,6 +7,6 @@ create
     rotate 0
     nosharedscripts
     dateext
-    mail user@myhost.org
+    mail user@invalid.
     maillast
 }

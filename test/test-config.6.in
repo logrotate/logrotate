@@ -4,7 +4,7 @@ create
     monthly
     rotate 1
     start 0
-    mail user@myhost.org
+    mail user@invalid.
     maillast
     sharedscripts
 
