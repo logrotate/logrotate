@@ -143,7 +143,7 @@ checkoutput() {
 	    echo expected: \'$expected\'
 	    exit 2
 	fi
-	echo "$config_crc" | md5sum -c - 2>&1 > /dev/null
+	echo "$config_crc" | md5sum -c - >/dev/null
 	if [ $? != 0 ]; then
 		echo "config file $output has been altered: MD5 sum mismatch"
 		exit 3
