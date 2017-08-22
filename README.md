@@ -16,11 +16,6 @@ Previous releases:
 * [logrotate-3.11.0](https://github.com/logrotate/logrotate/releases/download/3.11.0/logrotate-3.11.0.tar.xz) ([sig](https://github.com/logrotate/logrotate/releases/download/3.11.0/logrotate-3.11.0.tar.xz.asc)) ([Changelog](https://github.com/logrotate/logrotate/releases/tag/3.11.0))
 * [logrotate-3.10.0](https://github.com/logrotate/logrotate/releases/download/3.10.0/logrotate-3.10.0.tar.gz) ([Changelog](https://github.com/logrotate/logrotate/releases/tag/3.10.0))
 * [logrotate-3.9.2](https://github.com/logrotate/logrotate/releases/download/3.9.2/logrotate-3.9.2.tar.gz) ([Changelog](https://github.com/logrotate/logrotate/releases/tag/3.9.2))
-* [logrotate-3.9.1](https://fedorahosted.org/releases/l/o/logrotate/logrotate-3.9.1.tar.gz)
-* [logrotate-3.9.0](https://fedorahosted.org/releases/l/o/logrotate/logrotate-3.9.0.tar.gz)
-* [logrotate-3.8.9](https://fedorahosted.org/releases/l/o/logrotate/logrotate-3.8.9.tar.gz)
-* [logrotate-3.8.8](https://fedorahosted.org/releases/l/o/logrotate/logrotate-3.8.8.tar.gz)
-* [logrotate-3.8.7](https://fedorahosted.org/releases/l/o/logrotate/logrotate-3.8.7.tar.gz)
 
 ## Git checkout
 
