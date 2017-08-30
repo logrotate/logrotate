@@ -1194,7 +1194,7 @@ static int findNeedRotating(struct logInfo *log, int logNum, int force)
         state->doRotate = 1;
     }
     else if (log->criterium == ROT_SIZE) {
-	state->doRotate = (sb.st_size >= log->threshhold);
+	state->doRotate = (sb.st_size >= log->threshold);
 	if (!state->doRotate) {
 	message(MESS_DEBUG, "  log does not need rotating "
 		"(log size is below the 'size' threshold)\n");
@@ -1942,7 +1942,7 @@ static int rotateLogSet(struct logInfo *log, int force)
         message(MESS_DEBUG, "hourly ");
         break;
         case ROT_DAYS:
-        message(MESS_DEBUG, "after %jd days ", (intmax_t)log->threshhold);
+        message(MESS_DEBUG, "after %jd days ", (intmax_t)log->threshold);
         break;
         case ROT_WEEKLY:
         message(MESS_DEBUG, "weekly ");
@@ -1954,7 +1954,7 @@ static int rotateLogSet(struct logInfo *log, int force)
         message(MESS_DEBUG, "yearly ");
         break;
         case ROT_SIZE:
-        message(MESS_DEBUG, "%jd bytes ", (intmax_t)log->threshhold);
+        message(MESS_DEBUG, "%jd bytes ", (intmax_t)log->threshold);
         break;
         default:
         message(MESS_DEBUG, "rotateLogSet() does not have case for: %d ", log->criterium);

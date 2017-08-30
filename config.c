@@ -471,7 +471,7 @@ static void copyLogInfo(struct logInfo *to, struct logInfo *from)
 	to->oldDir = strdup(from->oldDir);
     to->criterium = from->criterium;
     to->weekday = from->weekday;
-    to->threshhold = from->threshhold;
+    to->threshold = from->threshold;
     to->minsize = from->minsize;
     to->maxsize = from->maxsize;
     to->rotateCount = from->rotateCount;
@@ -689,7 +689,7 @@ int readAllConfigPaths(const char **paths)
 		.numFiles = 0,
 		.oldDir = NULL,
 		.criterium = ROT_SIZE,
-		.threshhold = 1024 * 1024,
+		.threshold = 1024 * 1024,
 		.minsize = 0,
 		.maxsize = 0,
 		.rotateCount = 0,
@@ -1161,7 +1161,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 						}
 						if (!strncmp(opt, "size", 4)) {
 						  newlog->criterium = ROT_SIZE;
-						  newlog->threshhold = size;
+						  newlog->threshold = size;
 						} else if (!strncmp(opt, "maxsize", 7)) {
 						  newlog->maxsize = size;
 						} else {
@@ -1189,7 +1189,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 					newlog->criterium = ROT_HOURLY;
 				} else if (!strcmp(key, "daily")) {
 					newlog->criterium = ROT_DAYS;
-					newlog->threshhold = 1;
+					newlog->threshold = 1;
 				} else if (!strcmp(key, "monthly")) {
 					newlog->criterium = ROT_MONTHLY;
 				} else if (!strcmp(key, "weekly")) {
@@ -1480,7 +1480,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 						newlog->compress_prog);
 
 					compresscmd_base = strdup(basename(newlog->compress_prog));
-					/* we check whether we changed the compress_cmd. In case we use the apropriate extension
+					/* we check whether we changed the compress_cmd. In case we use the appropriate extension
 					   as listed in compress_cmd_list */
 					for(i = 0; i < compress_cmd_list_size; i++) {
 						if (!strcmp(compress_cmd_list[i].cmd, compresscmd_base)) {
