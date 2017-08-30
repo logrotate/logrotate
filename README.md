@@ -41,7 +41,7 @@ and verify the PGP signature on the distribution tarball:
     $ gpg --verify logrotate-3.11.0.tar.xz.asc logrotate-3.11.0.tar.xz
     
 
-If succesful your GPG output should look like this:
+If successful your GPG output should look like this:
 
     gpg: Signature made Fri 02 Dec 2016 08:30:39 AM EST
     gpg:                using RSA key 873DB37572A37B36
