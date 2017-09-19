@@ -116,18 +116,18 @@ static int globerr(const char *pathname, int theerr)
 static struct compData _compData;
 
 static int compGlobResult(const void *result1, const void *result2)  {
-	struct tm time;
+	struct tm time_tmp;
 	time_t t1, t2;
 	const char *r1 = *(const char **)(result1);
 	const char *r2 = *(const char **)(result2);
 
-	memset(&time, 0, sizeof(struct tm));
-	strptime(r1 + _compData.prefix_len, _compData.dformat, &time);
-	t1 = mktime(&time);
+	memset(&time_tmp, 0, sizeof(struct tm));
+	strptime(r1 + _compData.prefix_len, _compData.dformat, &time_tmp);
+	t1 = mktime(&time_tmp);
 
-	memset(&time, 0, sizeof(struct tm));
-	strptime(r2 + _compData.prefix_len, _compData.dformat, &time);
-	t2 = mktime(&time);
+	memset(&time_tmp, 0, sizeof(struct tm));
+	strptime(r2 + _compData.prefix_len, _compData.dformat, &time_tmp);
+	t2 = mktime(&time_tmp);
 
 	if (t1 < t2) return -1;
 	if (t1 > t2) return  1;
@@ -1430,6 +1430,7 @@ static int prerotateSingleLog(struct logInfo *log, int logNum,
 						strncat(dext_pattern, "[0-9][0-9]",
 								sizeof(dext_pattern) - strlen(dext_pattern) - 1);
 						j += 10; /* strlen("[0-9][0-9]") */
+						/* FALLTHRU */
 					case 'm':
 					case 'd':
 					case 'H':
@@ -1576,14 +1577,14 @@ static int prerotateSingleLog(struct logInfo *log, int logNum,
 	     * remember the second and so on */
 	    struct stat fst_buf;
 	    int mail_out = -1;
-	    ssize_t glob_count;
+	    size_t glob_count;
 	    /* remove the first (n - rotateCount) matches
 	     * no real rotation needed, since the files have
 	     * the date in their name */
 		sortGlobResult(&globResult, strlen(rotNames->dirName) + 1 + strlen(rotNames->baseName), dformat);
 	    for (glob_count = 0; glob_count < globResult.gl_pathc; glob_count++) {
 		if (!stat((globResult.gl_pathv)[glob_count], &fst_buf)) {
-		    if (((globResult.gl_pathc >= rotateCount) && (glob_count <= (globResult.gl_pathc - rotateCount)))
+		    if (((globResult.gl_pathc >= (size_t)rotateCount) && (glob_count <= (globResult.gl_pathc - rotateCount)))
 			|| ((log->rotateAge > 0)
 			    &&
 			    (((nowSecs - fst_buf.st_mtime) / DAY_SECONDS)

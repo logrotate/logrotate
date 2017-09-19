@@ -167,7 +167,7 @@ AC_SUBST(ROOT_UID)
 AC_CHECK_FUNCS([asprintf fork madvise qsort strndup strptime vfork vsyslog])
 AC_CONFIG_HEADERS([config.h])
 
-AM_CFLAGS="-Wall"
+AM_CFLAGS="-Wall -Wextra -Wmissing-format-attribute -Wmissing-noreturn -Wpointer-arith -Wshadow -Wstrict-prototypes -Wundef -Wunused -Wwrite-strings"
 AC_ARG_ENABLE([werror],
         [AS_HELP_STRING([--enable-werror],
                 [Treat warnings as errors (default: warnings are not errors)])],

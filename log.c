@@ -37,6 +37,7 @@ void logToSyslog(int enable) {
 #endif
 }
 
+__attribute__((format (printf, 3, 0)))
 static void log_once(FILE *where, int level, const char *format, va_list args)
 {
 	switch (level) {
@@ -53,6 +54,7 @@ static void log_once(FILE *where, int level, const char *format, va_list args)
 	fflush(where);
 }
 
+__attribute__((format (printf, 2, 3)))
 void message(int level, const char *format, ...)
 {
 	va_list args;
