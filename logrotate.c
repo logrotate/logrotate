@@ -2604,6 +2604,22 @@ int main(int argc, const char **argv)
 		break;
 	case 'V':
 	    printf("logrotate %s\n", VERSION);
+	    printf("\n");
+	    printf("    Default mail command:       %s\n", DEFAULT_MAIL_COMMAND);
+	    printf("    Default compress command:   %s\n", COMPRESS_COMMAND);
+	    printf("    Default uncompress command: %s\n", UNCOMPRESS_COMMAND);
+	    printf("    Default compress extension: %s\n", COMPRESS_EXT);
+	    printf("    Default state file path:    %s\n", STATEFILE);
+#ifdef WITH_ACL
+	    printf("    ACL support:                yes\n");
+#else
+	    printf("    ACL support:                no\n");
+#endif
+#ifdef WITH_SELINUX
+	    printf("    SELinux support:            yes\n");
+#else
+	    printf("    SELinux support:            no\n");
+#endif
 	    poptFreeContext(optCon);
 	    exit(0);
 	default:
