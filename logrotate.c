@@ -248,7 +248,7 @@ static int allocateHash(unsigned int hs)
 	}
 
 	for (i = 0; i < hs; i++) {
-		states[i] = malloc(sizeof(struct logState));
+		states[i] = malloc(sizeof(struct logStates));
 		if (states[i] == NULL) {
 			message(MESS_ERROR, "could not allocate memory for "
 				"hash element\n");
