@@ -2603,7 +2603,7 @@ int main(int argc, const char **argv)
 		}
 		break;
 	case 'V':
-	    fprintf(stderr, "logrotate %s\n", VERSION);
+	    printf("logrotate %s\n", VERSION);
 	    poptFreeContext(optCon);
 	    exit(0);
 	default:
