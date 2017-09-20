@@ -2314,6 +2314,9 @@ static int writeState(const char *stateFilename)
 	}
 
 	if (error == 0)
+		error = fflush(f);
+
+	if (error == 0)
 		error = fsync(fdsave);
 
 	if (error == 0)
