@@ -2599,22 +2599,22 @@ int main(int argc, const char **argv)
 		}
 		break;
 	case 'V':
-	    fprintf(stderr, "logrotate %s\n", VERSION);
-	    fprintf(stderr, "\n");
-	    fprintf(stderr, "    Default mail command:       %s\n", DEFAULT_MAIL_COMMAND);
-	    fprintf(stderr, "    Default compress command:   %s\n", COMPRESS_COMMAND);
-	    fprintf(stderr, "    Default uncompress command: %s\n", UNCOMPRESS_COMMAND);
-	    fprintf(stderr, "    Default compress extension: %s\n", COMPRESS_EXT);
-	    fprintf(stderr, "    Default state file path:    %s\n", STATEFILE);
+	    fprintf(stdout, "logrotate %s\n", VERSION);
+	    fprintf(stdout, "\n");
+	    fprintf(stdout, "    Default mail command:       %s\n", DEFAULT_MAIL_COMMAND);
+	    fprintf(stdout, "    Default compress command:   %s\n", COMPRESS_COMMAND);
+	    fprintf(stdout, "    Default uncompress command: %s\n", UNCOMPRESS_COMMAND);
+	    fprintf(stdout, "    Default compress extension: %s\n", COMPRESS_EXT);
+	    fprintf(stdout, "    Default state file path:    %s\n", STATEFILE);
 #ifdef WITH_ACL
-	    fprintf(stderr, "    ACL support:                yes\n");
+	    fprintf(stdout, "    ACL support:                yes\n");
 #else
-	    fprintf(stderr, "    ACL support:                no\n");
+	    fprintf(stdout, "    ACL support:                no\n");
 #endif
 #ifdef WITH_SELINUX
-	    fprintf(stderr, "    SELinux support:            yes\n");
+	    fprintf(stdout, "    SELinux support:            yes\n");
 #else
-	    fprintf(stderr, "    SELinux support:            no\n");
+	    fprintf(stdout, "    SELinux support:            no\n");
 #endif
 	    poptFreeContext(optCon);
 	    exit(0);
