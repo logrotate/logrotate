@@ -85,7 +85,7 @@ struct compData {
 	const char *dformat;
 };
 
-static struct logStates {
+static struct logStateList {
 	LIST_HEAD(stateSet, logState) head;
 } **states;
 
@@ -240,7 +240,7 @@ static int allocateHash(unsigned int hs)
 	message(MESS_DEBUG, "Allocating hash table for state file, size %d entries\n",
 			hs);
 
-	states = calloc(hs, sizeof(struct logStates *));
+	states = calloc(hs, sizeof(struct logStateList *));
 	if (states == NULL) {
 		message(MESS_ERROR, "could not allocate memory for "
 				"hash table\n");
@@ -248,7 +248,7 @@ static int allocateHash(unsigned int hs)
 	}
 
 	for (i = 0; i < hs; i++) {
-		states[i] = malloc(sizeof(struct logState));
+		states[i] = malloc(sizeof(sizeof states[i]));
 		if (states[i] == NULL) {
 			message(MESS_ERROR, "could not allocate memory for "
 				"hash element\n");
