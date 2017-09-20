@@ -5,7 +5,7 @@ compress
 &DIR&/test.log {
     monthly
     rotate 0
-    mail user@myhost.org
+    mail user@invalid.
     mailfirst
     sharedscripts
 

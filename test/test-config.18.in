@@ -1,7 +1,7 @@
 create
 
 # tests more compressoptions
-&DIR&/test.log {
+&DIR&/*.log {
     compress
     compresscmd ./compress
     compressoptions -f -9

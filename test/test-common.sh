@@ -22,8 +22,7 @@ import "test-common-selinux.sh"
 import "test-config.$TESTNUM.in"
 
 cleanup() {
-    rm -f test*.log* anothertest*.log* state test-config. scriptout mail-out compress-args compress-env different*.log*
-    rm -f $(ls | egrep '^test-config.[0-9]+$')
+    rm -f test*.log* anothertest*.log* state test-config. scriptout mail-out compress-args compress-env different*.log* test-config.*[0-9]
 
     [ -n "$1" ] && echo "Running test $1"
     return 0
@@ -103,7 +102,7 @@ createlogs() {
 }
 
 checkmail() {
-    (echo -s $PWD/$1 user@myhost.org; echo $2) | diff -u - mail-out
+    (echo -s $PWD/$1 user@invalid.; echo $2) | diff -u - mail-out
     if [ $? != 0 ]; then
         exit 5
     fi
@@ -143,7 +142,7 @@ checkoutput() {
 	    echo expected: \'$expected\'
 	    exit 2
 	fi
-	echo "$config_crc" | md5sum -c - 2>&1 > /dev/null
+	echo "$config_crc" | md5sum -c - >/dev/null
 	if [ $? != 0 ]; then
 		echo "config file $output has been altered: MD5 sum mismatch"
 		exit 3
