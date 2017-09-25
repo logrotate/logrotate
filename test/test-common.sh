@@ -89,14 +89,10 @@ createlogs() {
 
     rm -f ${base}*
 
-    num=0
-    while [ $num != $numlogs ]; do
-	if [ $num = 0 ]; then
-	    createlog 0 $base
-	else
-	    createlog $num ${base}.$num $cls_compressed
-	fi
-
+    createlog 0 $base
+    num=1
+    while [ $num -le $numlogs ]; do
+	createlog $num ${base}.$num $cls_compressed
 	num=`expr $num + 1`
     done
 }
