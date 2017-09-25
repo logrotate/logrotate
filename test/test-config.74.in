@@ -1,0 +1,8 @@
+&DIR&/test.log {
+    create
+    rotate 1
+    size 0
+    postrotate
+        rm -fv &DIR&/test.log.2
+    endscript
+}

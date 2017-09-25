@@ -72,6 +72,7 @@ TEST_CASES = \
 	test-0071.sh \
 	test-0072.sh \
 	test-0073.sh \
+	test-0074.sh \
 	test-0100.sh \
 	test-0101.sh
 

@@ -98,8 +98,6 @@ static time_t nowSecs = 0;
 static uid_t save_euid;
 static gid_t save_egid;
 
-static int shred_file(int fd, char *filename, struct logInfo *log);
-
 static int globerr(const char *pathname, int theerr)
 {
     message(MESS_ERROR, "error accessing %s: %s\n", pathname,
@@ -585,7 +583,7 @@ static int shred_file(int fd, char *filename, struct logInfo *log)
 	}
 
 	if (!(log->flags & LOG_FLAG_SHRED)) {
-		return unlink(filename);
+		goto unlink_file;
 	}
 
 	message(MESS_DEBUG, "Using shred to remove the file %s\n", filename);
@@ -628,7 +626,17 @@ static int shred_file(int fd, char *filename, struct logInfo *log)
 
 	/* We have to unlink it after shred anyway,
 	 * because it doesn't remove the file itself */
-	return unlink(filename);
+
+unlink_file:
+	if (unlink(filename) == 0)
+		return 0;
+	if (errno != ENOENT)
+		return 1;
+
+	/* unlink of log file that no longer exists is not a fatal error */
+	message(MESS_ERROR, "error unlinking log file %s: %s\n", filename,
+			strerror(errno));
+	return 0;
 }
 
 static int removeLogFile(char *name, struct logInfo *log)
