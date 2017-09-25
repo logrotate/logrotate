@@ -71,7 +71,7 @@ case "$host" in
           DEFAULT_MAIL_COMMAND="/usr/bin/mailx"
           ;;
   *-netbsd*)
-          DEFAULT_MAIL_COMMAND="/usr/bin/mail -s"
+          DEFAULT_MAIL_COMMAND="/usr/bin/mail"
           COMPRESS_COMMAND="/usr/bin/gzip"
           UNCOMPRESS_COMMAND="/usr/bin/gunzip"
           ;;
@@ -99,7 +99,7 @@ AC_SUBST(STATE_FILE_PATH)
 
 AC_ARG_WITH([default-mail-command],
   AC_HELP_STRING([--with-default-mail-command=COMMAND],
-                 [default mail command (e.g. /bin/mail -s)]),
+                 [default mail command (e.g. /bin/mail)]),
   [
     case "$withval" in
       yes|no)
