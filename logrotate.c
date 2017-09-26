@@ -879,20 +879,24 @@ static int mailLog(struct logInfo *log, char *logFile, const char *mailComm,
 static int mailLogWrapper(char *mailFilename, const char *mailComm,
 			  int logNum, struct logInfo *log)
 {
-	/* if the log is compressed (and we're not mailing a
-	* file whose compression has been delayed), we need
-	* to uncompress it */
-	if ((log->flags & LOG_FLAG_COMPRESS) && !(log->flags & LOG_FLAG_DELAYCOMPRESS)) {
-		if (mailLog(log, mailFilename, mailComm,
-			log->uncompress_prog, log->logAddress,
-			(log->flags & LOG_FLAG_MAILFIRST) ? log->files[logNum] : mailFilename))
-			return 1;
-	} else {
-		if (mailLog(log, mailFilename, mailComm, NULL,
-			log->logAddress, mailFilename))
-			return 1;
-	}
-	return 0;
+    /* uncompress already compressed log files before mailing them */
+    char *uncompress_prog = (log->flags & LOG_FLAG_COMPRESS)
+	? log->uncompress_prog
+	: NULL;
+
+    char *subject = mailFilename;
+    if (log->flags & LOG_FLAG_MAILFIRST) {
+	if (log->flags & LOG_FLAG_DELAYCOMPRESS)
+	    /* the log we are mailing has not been compressed yet */
+	    uncompress_prog = NULL;
+
+	if (uncompress_prog)
+	    /* use correct subject when mailfirst is enabled */
+	    subject = log->files[logNum];
+    }
+
+    return mailLog(log, mailFilename, mailComm, uncompress_prog,
+	    log->logAddress, subject);
 }
 
 /* Use a heuristic to determine whether stat buffer SB comes from a file
