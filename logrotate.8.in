@@ -63,9 +63,9 @@ output logged to that file is the same as when running \fBlogrotate\fR with
 .TP
 \fB\-m\fR, \fB\-\-mail\fR \fIcommand\fR
 Tells \fBlogrotate\fR which command to use when mailing logs. This
-command should accept two arguments:
+command should accept the following arguments:
 .IP
-1) the subject of the message
+1) the subject of the message given with '-s subject'
 .br
 2) the recipient.
 .IP
