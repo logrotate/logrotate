@@ -1,0 +1,7 @@
+&DIR&/test.log {
+    create
+    rotate 2
+    size 0
+    compress
+    mail user@invalid.
+}

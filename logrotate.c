@@ -276,6 +276,21 @@ static int hashIndex(const char *fn)
 	return hash % hashSize;
 }
 
+/* safe implementation of dup2(oldfd, nefd) followed by close(oldfd) */
+static int movefd(int oldfd, int newfd)
+{
+    int rc;
+    if (oldfd == newfd)
+	/* avoid accidental close of newfd in case it is equal to oldfd */
+	return 0;
+
+    rc = dup2(oldfd, newfd);
+    if (rc == 0)
+	close(oldfd);
+
+    return rc;
+}
+
 static int setSecCtx(int fdSrc, const char *src, void **pPrevCtx)
 {
 #ifdef WITH_SELINUX
@@ -606,8 +621,7 @@ static int shred_file(int fd, char *filename, struct logInfo *log)
 	fullCommand[id++] = NULL;
 
 	if (!fork()) {
-		dup2(fd, 1);
-		close(fd);
+	    	movefd(fd, STDOUT_FILENO);
 
 		if (switch_user_permanently(log) != 0) {
 			exit(1);
@@ -731,6 +745,7 @@ static int compressLogFile(char *name, struct logInfo *log, struct stat *sb)
 	return 1;
     }
 
+    /* pipe used to capture stderr of the compress process */
 	if (pipe(compressPipe) < 0) {
 		message(MESS_ERROR, "error opening pipe for compress: %s",
 				strerror(errno));
@@ -740,13 +755,12 @@ static int compressLogFile(char *name, struct logInfo *log, struct stat *sb)
 	}
 
     if (!fork()) {
-	dup2(inFile, 0);
-	close(inFile);
-	dup2(outFile, 1);
-	close(outFile);
-	dup2(compressPipe[1], 2);
+	/* close read end of pipe in the child process */
 	close(compressPipe[0]);
-	close(compressPipe[1]);
+
+	movefd(inFile, STDIN_FILENO);
+	movefd(outFile, STDOUT_FILENO);
+	movefd(compressPipe[1], STDERR_FILENO);
 
 	if (switch_user_permanently(log) != 0) {
 		exit(1);
@@ -759,7 +773,9 @@ static int compressLogFile(char *name, struct logInfo *log, struct stat *sb)
 	exit(1);
     }
 
+    /* close write end of pipe in the parent process */
     close(compressPipe[1]);
+
     while ((i = read(compressPipe[0], buff, sizeof(buff) - 1)) > 0) {
 	if (!error_printed) {
 	    error_printed = 1;
@@ -811,6 +827,7 @@ static int mailLog(struct logInfo *log, char *logFile, const char *mailComm,
     }
 
     if (uncompressCommand) {
+		/* pipe used to capture ouput of the uncompress process */
 		if (pipe(uncompressPipe) < 0) {
 			message(MESS_ERROR, "error opening pipe for uncompress: %s",
 					strerror(errno));
@@ -819,11 +836,12 @@ static int mailLog(struct logInfo *log, char *logFile, const char *mailComm,
 		}
 		if (!(uncompressChild = fork())) {
 			/* uncompress child */
-			dup2(mailInput, 0);
-			close(mailInput);
-			dup2(uncompressPipe[1], 1);
+
+			/* close read end of pipe in the child process */
 			close(uncompressPipe[0]);
-			close(uncompressPipe[1]);
+
+			movefd(mailInput, STDIN_FILENO);
+			movefd(uncompressPipe[1], STDOUT_FILENO);
 
 			if (switch_user_permanently(log) != 0) {
 				exit(1);
@@ -839,9 +857,8 @@ static int mailLog(struct logInfo *log, char *logFile, const char *mailComm,
     }
 
     if (!(mailChild = fork())) {
-	dup2(mailInput, 0);
-	close(mailInput);
-	close(1);
+	movefd(mailInput, STDIN_FILENO);
+	close(STDOUT_FILENO);
 
 	/* mail command runs as root */
 	if (log->flags & LOG_FLAG_SU) {
