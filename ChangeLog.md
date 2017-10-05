@@ -4,9 +4,25 @@ All notable changes to this project will be documented in this file.
 
 ## [UNRELEASED]
 
-[UNRELEASED]: https://github.com/logrotate/logrotate/compare/3.12.3...master
+[UNRELEASED]: https://github.com/logrotate/logrotate/compare/3.13.0...master
 
-  - add ```.dpkg-bak``` and ```.dpkg-del``` to default tabooext list
+## [3.13.0] - 2017-10-13
+
+  - make distribution tarballs report logrotate version properly
+    [RHBZ#1500264](https://bugzilla.redhat.com/1500264)
+  - make ```(un)compress work``` even if stdin and/or stdout are closed (#154)
+  - remove ```-s``` from ```DEFAULT_MAIL_COMMAND``` and improve its documenation (#152)
+  - uncompress logs before mailing them even if ```delaycompress``` is enabled (#151)
+  - handle unlink of a non-existing log file as a warning only (#144)
+  - include compile-time options in the output of ```logrotate --version``` (#145)
+  - make ```logrotate --version``` print to stdout instead of stderr (#145)
+  - flush write buffers before syncing state file (#148)
+  - specify (un)compress utility explicitly in tests (#137)
+  - enable running tests in parallel (#132)
+  - explicitly map root UID/GID to 0 on Cygwin (#133)
+  - add ```.dpkg-bak``` and ```.dpkg-del``` to default tabooext list (#134)
+
+[3.13.0]: https://github.com/logrotate/logrotate/compare/3.12.3...3.13.0
 
 ## [3.12.3] - 2017-06-30
 
