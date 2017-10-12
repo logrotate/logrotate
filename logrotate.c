@@ -246,7 +246,7 @@ static int allocateHash(unsigned int hs)
 	}
 
 	for (i = 0; i < hs; i++) {
-		states[i] = malloc(sizeof(sizeof states[i]));
+		states[i] = malloc(sizeof *states[0]);
 		if (states[i] == NULL) {
 			message(MESS_ERROR, "could not allocate memory for "
 				"hash element\n");
