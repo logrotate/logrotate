@@ -5,7 +5,8 @@
 . ./test-common-acl.sh
 if [ $ACL_TESTS = 0 ]; then
   echo "Skipping test 32: no ACL support"
-else
+  exit 77
+fi
 
 cleanup 32
 
@@ -50,5 +51,3 @@ checkoutput <<EOF
 test.log 0
 test.log.1 0 zero
 EOF
-
-fi

@@ -7,7 +7,8 @@ cleanup 48
 . ./test-common-acl.sh
 if [ $ACL_TESTS = 0 ]; then
   echo "Skipping test 48: no ACL support"
-else
+  exit 77
+fi
 
 # ------------------------------- Test 48 ------------------------------------
 # Test that state file keeps the set ACLs
@@ -31,5 +32,3 @@ checkoutput <<EOF
 test.log 0
 test.log.1 0 zero
 EOF
-
-fi

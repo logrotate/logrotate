@@ -5,7 +5,10 @@
 cleanup 47
 
 . ./test-common-selinux.sh
-if [ $SELINUX_TESTS = 1 ]; then
+if [ $SELINUX_TESTS = 0 ]; then
+	echo "Skipping SELinux test 47"
+	exit 77
+fi
 
 # ------------------------------- Test 47 ------------------------------------
 # test that newly created state file has the same SELinux context as the
@@ -30,7 +33,3 @@ fi
 checkoutput <<EOF
 test.log 0 zero
 EOF
-
-else
-	echo "Skipping SELinux test 47"
-fi
