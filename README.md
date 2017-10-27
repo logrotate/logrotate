@@ -66,7 +66,7 @@ Obtain source either by [Downloading](#download) it or doing [Git checkout](#git
 Install dependencies for Debian systems:
 ```
 apt-get update
-apt-get install make autoconf libtool libpopt-dev xz-utils
+apt-get install make automake autoconf libtool libpopt-dev xz-utils
 ```
 
 Install dependencies for Fedora/CentOS systems:
