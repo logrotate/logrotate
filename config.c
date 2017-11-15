@@ -1063,6 +1063,8 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 					newlog->flags &= ~LOG_FLAG_DATEEXT;
 				} else if (!strcmp(key, "dateyesterday")) {
 					newlog->flags |= LOG_FLAG_DATEYESTERDAY;
+				} else if (!strcmp(key, "datehourago")) {
+					newlog->flags |= LOG_FLAG_DATEHOURAGO;
 				} else if (!strcmp(key, "dateformat")) {
 					freeLogItem(dateformat);
 					newlog->dateformat = isolateLine(&start, &buf, length);

@@ -282,6 +282,12 @@ extension, so that the rotated log file has a date in its name that is
 the same as the timestamps within it.
 
 .TP
+\fBdatehourago\fR
+Use hour ago instead of current date to create the \fBdateext\fR extension,
+so that the rotated log file has a hour in its name that is the same as the
+timestamps within it.  Useful with rotate \fBhourly\fR.
+
+.TP
 \fBdelaycompress\fR
 Postpone compression of the previous log file to the next rotation cycle.
 This only has effect when used in combination with \fBcompress\fR.
