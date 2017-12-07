@@ -1436,6 +1436,11 @@ static int prerotateSingleLog(struct logInfo *log, int logNum,
         mktime(&now);
     }
 
+    if (log->flags & LOG_FLAG_DATEHOURAGO) {
+        now.tm_hour -= 1;
+        mktime(&now);
+    }
+
 	/* Allow only %Y %d %m and create valid strftime format string
 	 * Construct the glob pattern corresponding to the date format */
 	dext_str[0] = '\0';
