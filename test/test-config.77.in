@@ -1,0 +1,6 @@
+tabooext + ,v
+
+include &DIR&/includedir
+
+&DIR&/test*.log {
+}

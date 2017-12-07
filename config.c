@@ -1343,14 +1343,17 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 							while (!isspace((unsigned char)*chptr) && *chptr != ',' && *chptr)
 								chptr++;
 
-							tabooPatterns = realloc(tabooPatterns, sizeof(*tabooPatterns) *
-										(tabooCount + 1));
-							bytes = asprintf(&pattern, "*%.*s", (int)(chptr - endtag), endtag);
+							/* accept only non-empty patterns to avoid exclusion of everything */
+							if (endtag < chptr) {
+								tabooPatterns = realloc(tabooPatterns, sizeof(*tabooPatterns) *
+											(tabooCount + 1));
+								bytes = asprintf(&pattern, "*%.*s", (int)(chptr - endtag), endtag);
 
-							/* should test for malloc() failure */
-							assert(bytes != -1);
-							tabooPatterns[tabooCount] = pattern;
-							tabooCount++;
+								/* should test for malloc() failure */
+								assert(bytes != -1);
+								tabooPatterns[tabooCount] = pattern;
+								tabooCount++;
+							}
 
 							endtag = chptr;
 							if (*endtag == ',')
