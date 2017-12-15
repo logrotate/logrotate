@@ -135,6 +135,7 @@ static const char *defTabooExts[] = {
 	".dpkg-dist",
 	".dpkg-new",
 	".dpkg-old",
+	".dpkg-tmp",
 	".rhn-cfg-tmp-*",
 	".rpmnew",
 	".rpmorig",
