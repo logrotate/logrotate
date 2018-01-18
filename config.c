@@ -935,9 +935,9 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 	}
 
 	if (getuid() == ROOT_UID) {
-		if ((sb.st_mode & 07533) != 0400) {
+		if ((sb.st_mode & 07433) != 0400) {
 			message(MESS_ERROR,
-				"Ignoring %s because of bad file mode - must be 0644 or 0444.\n",
+				"Ignoring %s because of bad file mode - must not be u-r g+wx o+wx.\n",
 				configFile);
 			close(fd);
 			return 0;
