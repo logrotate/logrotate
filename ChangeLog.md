@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [UNRELEASED]
 
+  - ```wtmp``` and ```btmp``` definitions are no longer included in
+    ```logrotate.conf```.  They need to be installed to ```logrotate.d```
+    separately. (#168)
+
 [UNRELEASED]: https://github.com/logrotate/logrotate/compare/3.13.0...master
 
 ## [3.13.0] - 2017-10-13
