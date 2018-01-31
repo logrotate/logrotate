@@ -9,7 +9,7 @@ also work on HP-UX 10.20):
     at http://hpux.cs.utah.edu/.
 
     Obtain and install the following GNU/Linux to HP-UX Porting package:
-	libhplx library
+    libhplx library
     See http://devresource.hp.com/LPK/index.html for downloads.
     This library is needed to provide the ??? function.
  
@@ -29,7 +29,8 @@ also work on HP-UX 10.20):
  
 5.  Copy the configuration files into your desired location.
         cp examples/logrotate-default /etc/logrotate.conf
-	mkdir /etc/logrotate.d
+        mkdir /etc/logrotate.d
+        cp examples/?tmp /etc/logrotate.d
 
 6.  Set up a cron job to run logrotate daily. See examples/logrotate.cron.
  
