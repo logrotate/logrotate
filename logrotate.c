@@ -2593,7 +2593,7 @@ int main(int argc, const char **argv)
 
     struct poptOption options[] = {
     	{"debug", 'd', 0, NULL, 'd',
-	 "Don't do anything, just test (implies -v)", NULL},
+	 "Don't do anything, just test and print debug messages", NULL},
 	{"force", 'f', 0, &force, 0, "Force file rotation", NULL},
 	{"mail", 'm', POPT_ARG_STRING, &mailCommand, 0,
 	 "Command to send mail (instead of `" DEFAULT_MAIL_COMMAND "')",
@@ -2619,6 +2619,9 @@ int main(int argc, const char **argv)
 	switch (arg) {
 	case 'd':
 	    debug = 1;
+	    message(MESS_NORMAL, "WARNING: logrotate in debug mode does nothing"
+		    " except printing debug messages!  Consider using verbose"
+		    " mode (-v) instead if this is not what you want.\n\n");
 	    /* fallthrough */
 	case 'v':
 	    logSetLevel(MESS_DEBUG);

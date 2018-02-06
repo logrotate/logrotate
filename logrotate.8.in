@@ -43,8 +43,8 @@ Prints help message.
 
 .TP
 \fB\-d\fR, \fB\-\-debug\fR
-Turns on debug mode and implies \fB-v\fR.  In debug mode, no changes will
-be made to the logs or to the \fBlogrotate\fR state file.
+Turn on debug mode, which means that no changes are made to the logs and the
+\fBlogrotate\fR state file is not updated.  Only debug messages are printed.
 
 .TP
 \fB\-f\fR, \fB\-\-force\fR
