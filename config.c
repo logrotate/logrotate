@@ -936,15 +936,21 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 
 	if (getuid() == ROOT_UID) {
 		if ((sb.st_mode & 07533) != 0400) {
+			message(MESS_DEBUG,
+				"Potentially dangerous mode on %s: 0%o\n",
+				configFile, (unsigned) (sb.st_mode & 07777));
+		}
+
+		if (sb.st_mode & 0022) {
 			message(MESS_ERROR,
-				"Ignoring %s because of bad file mode - must be 0644 or 0444.\n",
+				"Ignoring %s because it is writable by group or others.\n",
 				configFile);
 			close(fd);
 			return 0;
 		}
 
 		if ((pw = getpwuid(ROOT_UID)) == NULL) {
-			message(MESS_DEBUG,
+			message(MESS_ERROR,
 				"Ignoring %s because there's no password entry for the owner.\n",
 				configFile);
 			close(fd);
@@ -954,7 +960,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 		if (sb.st_uid != ROOT_UID && (pw == NULL ||
 				sb.st_uid != pw->pw_uid ||
 				pw->pw_uid != ROOT_UID)) {
-			message(MESS_DEBUG,
+			message(MESS_ERROR,
 				"Ignoring %s because the file owner is wrong (should be root or user with uid 0).\n",
 				configFile);
 			close(fd);
