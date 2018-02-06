@@ -189,7 +189,7 @@ then
     v=`echo "$v" | sed 's/-/./;s/\(.*\)-g/\1-/'`;
     v_from_git=1
 elif test "x$fallback" = x || git --version >/dev/null 2>&1; then
-    # fallback for tarballs produced by 'make dist' (use directory suffix)
+    # fallback in case .tarball-version is missing (use directory suffix)
     v="`basename "$PWD" | sed 's/^[^-]*-//'`"
 else
     v=$fallback
