@@ -760,11 +760,12 @@ static int compressLogFile(char *name, struct logInfo *log, struct stat *sb)
 
 	movefd(inFile, STDIN_FILENO);
 	movefd(outFile, STDOUT_FILENO);
-	movefd(compressPipe[1], STDERR_FILENO);
 
 	if (switch_user_permanently(log) != 0) {
 		exit(1);
 	}
+
+	movefd(compressPipe[1], STDERR_FILENO);
 
 	envInFilename = alloca(strlen("LOGROTATE_COMPRESSED_FILENAME=") + strlen(name) + 2);
 	sprintf(envInFilename, "LOGROTATE_COMPRESSED_FILENAME=%s", name);
