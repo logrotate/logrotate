@@ -155,6 +155,8 @@ static int glob_errno = 0;
 
 static int readConfigFile(const char *configFile, struct logInfo *defConfig);
 static int globerr(const char *pathname, int theerr);
+static int globFiles(struct logInfo *log);
+static int handleOldDir(struct logInfo *log);
 
 static char *isolateLine(char **strt, char **buf, size_t length) {
 	char *endtag, *start, *tmp;
@@ -515,6 +517,9 @@ static void copyLogInfo(struct logInfo *to, struct logInfo *from)
     }
 	if (from->dateformat)
 		to->dateformat = strdup(from->dateformat);
+	if (from->configFilePath)
+		to->configFilePath = strdup(from->configFilePath);
+	to->configFileLineNum = from->configFileLineNum;
 }
 
 static void freeLogInfo(struct logInfo *log)
@@ -534,6 +539,7 @@ static void freeLogInfo(struct logInfo *log)
 	free(log->compress_ext);
 	free(log->compress_options_list);
 	free(log->dateformat);
+	free(log->configFilePath);
 }
 
 static struct logInfo *newLogInfo(struct logInfo *template)
@@ -684,6 +690,7 @@ int readAllConfigPaths(const char **paths)
 {
     int i, result = 0;
     const char **file;
+    struct logInfo *log = NULL;
     struct logInfo defConfig = {
 		.pattern = NULL,
 		.files = NULL,
@@ -748,6 +755,16 @@ int readAllConfigPaths(const char **paths)
     }
     free_2d_array(tabooPatterns, tabooCount);
     freeLogInfo(&defConfig);
+
+    for (log = logs.tqh_first; log != NULL; log = log->list.tqe_next) {
+        if (globFiles(log)) {
+            result = 1;
+        }
+        if (handleOldDir(log)) {
+            result = 1;
+        }
+    }
+
     return result;
 }
 
@@ -823,6 +840,172 @@ static char* parseGlobString(const char *configFile, int lineNum,
     return NULL;
 }
 
+static int findDuplicateFile(const char *filepath)
+{
+	int k;
+	struct logInfo *log;
+
+	for (log = logs.tqh_first; log != NULL; log = log->list.tqe_next) {
+		for (k = 0; k < log->numFiles; k++) {
+			if (!strcmp(log->files[k], filepath)) {
+				//message(MESS_ERROR, "%s:%d duplicate log entry for %s\n", configFile, lineNum, globResult.gl_pathv[glob_count]);
+				return 1;
+			}
+		}
+	}
+
+	return 0;
+}
+
+static int globFiles(struct logInfo *log)
+{
+	int rc;
+	const char **argv;
+	int argc, argNum;
+	int result = 0;
+	size_t glob_count;
+	struct stat sb;
+
+	if (poptParseArgvString(log->pattern, &argc, &argv)) {
+		message(MESS_ERROR, "%s:%d error parsing filename\n", log->configFilePath, log->configFileLineNum);
+		free(log->pattern);
+		log->pattern = NULL;
+		return 1;
+	} else if (argc < 1) {
+		message(MESS_ERROR, "%s:%d { expected after log file name(s)\n", log->configFilePath, log->configFileLineNum);
+		free(log->pattern);
+		log->pattern = NULL;
+		return 1;
+	}
+
+	log->files = NULL;
+	log->numFiles = 0;
+	for (argNum = 0; argNum < argc; argNum++) {
+		glob_t globResult;
+		rc = glob(argv[argNum], GLOB_NOCHECK
+#ifdef GLOB_TILDE
+												| GLOB_TILDE
+#endif
+											, globerr, &globResult);
+		if (rc == GLOB_ABORTED) {
+			if (log->flags & LOG_FLAG_MISSINGOK) {
+				continue;
+			}
+
+			message(MESS_ERROR, "%s:%d glob failed for %s: %s\n", log->configFilePath, log->configFileLineNum, argv[argNum], strerror(glob_errno));
+
+			globResult.gl_pathc = 0;
+		}
+
+		log->files = realloc(log->files, sizeof(*log->files) * (log->numFiles + globResult.gl_pathc));
+
+		for (glob_count = 0; glob_count < globResult.gl_pathc; glob_count++) {
+			/* if we glob directories we can get false matches */
+			if (!lstat(globResult.gl_pathv[glob_count], &sb) && S_ISDIR(sb.st_mode)) {
+				continue;
+			}
+
+			if (findDuplicateFile(globResult.gl_pathv[glob_count])) {
+				message(MESS_ERROR, "%s:%d duplicate log entry for %s\n", log->configFilePath, log->configFileLineNum, globResult.gl_pathv[glob_count]);
+				result = 1;
+				break;
+			}
+
+			log->files[log->numFiles] = strdup(globResult.gl_pathv[glob_count]);
+			log->numFiles++;
+		}
+		globfree(&globResult);
+	}
+
+	free(argv);
+
+	return result;
+}
+
+static int handleOldDir(struct logInfo *log)
+{
+	int i;
+	char *dirName;
+	struct stat sb1, sb2;
+
+	if (!log->oldDir) {
+		return 0;
+	}
+
+	for (i = 0; i < log->numFiles; i++) {
+		char *ld;
+		char *dirpath;
+
+		dirpath = strdup(log->files[i]);
+		dirName = dirname(dirpath);
+		if (stat(dirName, &sb2)) {
+			if (!(log->flags & LOG_FLAG_MISSINGOK)) {
+				message(MESS_ERROR,
+					"%s:%d error verifying log file "
+					"path %s: %s\n",
+					log->configFilePath, log->configFileLineNum, dirName, strerror(errno));
+				free(dirpath);
+				return 1;
+			} else {
+				message(MESS_DEBUG,
+					"%s:%d verifying log file "
+					"path failed %s: %s, log is probably missing, "
+					"but missingok is set, so this is not an error.\n",
+					log->configFilePath, log->configFileLineNum, dirName, strerror(errno));
+				free(dirpath);
+				continue;
+			}
+		}
+		ld = alloca(strlen(dirName) + strlen(log->oldDir) + 2);
+		sprintf(ld, "%s/%s", dirName, log->oldDir);
+		free(dirpath);
+
+		if (log->oldDir[0] != '/') {
+			dirName = ld;
+		}
+		else {
+			dirName = log->oldDir;
+		}
+
+		if (stat(dirName, &sb1)) {
+			if (errno == ENOENT && log->flags & LOG_FLAG_OLDDIRCREATE) {
+				int ret;
+				if (log->flags & LOG_FLAG_SU) {
+					if (switch_user(log->suUid, log->suGid) != 0) {
+						return 1;
+					}
+				}
+				ret = mkpath(dirName, log->olddirMode, log->olddirUid, log->olddirGid);
+				if (log->flags & LOG_FLAG_SU) {
+					if (switch_user_back() != 0) {
+						return 1;
+					}
+				}
+				if (ret) {
+					return 1;
+				}
+			}
+			else {
+				message(MESS_ERROR,
+					"%s:%d error verifying olddir "
+					"path %s: %s\n",
+					log->configFilePath, log->configFileLineNum, dirName, strerror(errno));
+				return 1;
+			}
+		}
+
+		if (sb1.st_dev != sb2.st_dev && !(log->flags & (LOG_FLAG_COPYTRUNCATE | LOG_FLAG_COPY | LOG_FLAG_TMPFILENAME))) {
+			message(MESS_ERROR,
+				"%s:%d olddir %s and log file %s "
+				"are on different devices\n",
+				log->configFilePath, log->configFileLineNum, log->oldDir, log->files[i]);
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
 static int globerr(const char *pathname, int theerr)
 {
     (void) pathname;
@@ -858,24 +1041,17 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
     off_t length;
     int lineNum = 1;
     unsigned long long multiplier;
-    int i, k;
+    int i;
     char *scriptStart = NULL;
     char **scriptDest = NULL;
     struct logInfo *newlog = defConfig;
     char *start, *chptr;
-    char *dirName;
     struct passwd *pw = NULL;
-    int rc;
-    struct stat sb, sb2;
-    glob_t globResult;
-    const char **argv;
-    int argc, argNum;
+    struct stat sb;
 	int flags;
 	int state = STATE_DEFAULT;
     int logerror = 0;
-    struct logInfo *log;
 	static unsigned recursion_depth = 0U;
-	char *globerr_msg = NULL;
 	int in_config = 0;
 	int rv;
 	struct flock fd_lock = {
@@ -1562,7 +1738,6 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 #endif
                                                                            ) {
 				char *glob_string;
-				size_t glob_count;
 				in_config = 0;
 				if (newlog != defConfig) {
 					message(MESS_ERROR, "%s:%d unexpected log filename\n",
@@ -1585,6 +1760,9 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 				if ((newlog = newLogInfo(defConfig)) == NULL)
 					goto error;
 
+                newlog->configFilePath = strdup(configFile);
+                newlog->configFileLineNum = lineNum;
+
 				glob_string = parseGlobString(configFile, lineNum, buf, length, &start);
 				if (glob_string)
 				    	in_config = 1;
@@ -1592,86 +1770,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 				    	/* error already printed */
 				    	goto error;
 
-				if (poptParseArgvString(glob_string, &argc, &argv)) {
-				message(MESS_ERROR, "%s:%d error parsing filename\n",
-					configFile, lineNum);
-				free(glob_string);
-				goto error;
-				} else if (argc < 1) {
-				message(MESS_ERROR,
-					"%s:%d { expected after log file name(s)\n",
-					configFile, lineNum);
-				free(glob_string);
-				goto error;
-				}
-
-				newlog->files = NULL;
-				newlog->numFiles = 0;
-				for (argNum = 0; argNum < argc; argNum++) {
-				if (globerr_msg) {
-					free(globerr_msg);
-					globerr_msg = NULL;
-				}
-					
-				rc = glob(argv[argNum], GLOB_NOCHECK
-#ifdef GLOB_TILDE
-                                                        | GLOB_TILDE
-#endif 
-                                                    , globerr, &globResult);
-				if (rc == GLOB_ABORTED) {
-					if (newlog->flags & LOG_FLAG_MISSINGOK) {
-						continue;
-					}
-
-				/* We don't yet know whether this stanza has "missingok"
-					* set, so store the error message for later. */
-					rc = asprintf(&globerr_msg, "%s:%d glob failed for %s: %s\n",
-						configFile, lineNum, argv[argNum], strerror(glob_errno));
-					if (rc == -1)
-					globerr_msg = NULL;
-					
-					globResult.gl_pathc = 0;
-				}
-
-				newlog->files =
-					realloc(newlog->files,
-						sizeof(*newlog->files) * (newlog->numFiles +
-									globResult.
-									gl_pathc));
-
-				for (glob_count = 0; glob_count < globResult.gl_pathc; glob_count++) {
-					/* if we glob directories we can get false matches */
-					if (!lstat(globResult.gl_pathv[glob_count], &sb) &&
-					S_ISDIR(sb.st_mode)) {
-						continue;
-					}
-
-					for (log = logs.tqh_first; log != NULL;
-						log = log->list.tqe_next) {
-					for (k = 0; k < log->numFiles; k++) {
-						if (!strcmp(log->files[k],
-							globResult.gl_pathv[glob_count])) {
-						message(MESS_ERROR,
-							"%s:%d duplicate log entry for %s\n",
-							configFile, lineNum,
-							globResult.gl_pathv[glob_count]);
-						logerror = 1;
-						goto duperror;
-						}
-					}
-					}
-
-					newlog->files[newlog->numFiles] =
-					strdup(globResult.gl_pathv[glob_count]);
-					newlog->numFiles++;
-				}
-		duperror:
-				globfree(&globResult);
-				}
-
 				newlog->pattern = glob_string;
-
-				free(argv);
 
 			} else if (*start == '}') {
 				if (newlog == defConfig) {
@@ -1685,90 +1784,6 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 					goto error;
 				}
 				in_config = 0;
-			if (globerr_msg) {
-				if (!(newlog->flags & LOG_FLAG_MISSINGOK))
-					message(MESS_ERROR, "%s", globerr_msg);
-				free(globerr_msg);
-				globerr_msg = NULL;
-				if (!(newlog->flags & LOG_FLAG_MISSINGOK))
-					goto error;
-			}
-
-			if (newlog->oldDir) {
-				for (i = 0; i < newlog->numFiles; i++) {
-					char *ld;
-					char *dirpath;
-
-					dirpath = strdup(newlog->files[i]);
-					dirName = dirname(dirpath);
-					if (stat(dirName, &sb2)) {
-						if (!(newlog->flags & LOG_FLAG_MISSINGOK)) {
-							message(MESS_ERROR,
-								"%s:%d error verifying log file "
-								"path %s: %s\n", configFile, lineNum,
-								dirName, strerror(errno));
-							free(dirpath);
-							goto error;
-						}
-						else {
-							message(MESS_DEBUG,
-								"%s:%d verifying log file "
-								"path failed %s: %s, log is probably missing, "
-								"but missingok is set, so this is not an error.\n",
-								configFile, lineNum,
-								dirName, strerror(errno));
-							free(dirpath);
-							continue;
-						}
-					}
-					ld = alloca(strlen(dirName) + strlen(newlog->oldDir) + 2);
-					sprintf(ld, "%s/%s", dirName, newlog->oldDir);
-					free(dirpath);
-
-					if (newlog->oldDir[0] != '/') {
-						dirName = ld;
-					}
-					else {
-						dirName = newlog->oldDir;
-					}
-
-					if (stat(dirName, &sb)) {
-						if (errno == ENOENT && newlog->flags & LOG_FLAG_OLDDIRCREATE) {
-							int ret;
-							if (newlog->flags & LOG_FLAG_SU) {
-								if (switch_user(newlog->suUid, newlog->suGid) != 0) {
-									goto error;
-								}
-							}
-							ret = mkpath(dirName, newlog->olddirMode,
-								newlog->olddirUid, newlog->olddirGid);
-							if (newlog->flags & LOG_FLAG_SU) {
-								if (switch_user_back() != 0) {
-									goto error;
-								}
-							}
-							if (ret) {
-								goto error;
-							}
-						}
-						else {
-							message(MESS_ERROR, "%s:%d error verifying olddir "
-								"path %s: %s\n", configFile, lineNum,
-								dirName, strerror(errno));
-							goto error;
-						}
-					}
-
-					if (sb.st_dev != sb2.st_dev
-						&& !(newlog->flags & (LOG_FLAG_COPYTRUNCATE | LOG_FLAG_COPY | LOG_FLAG_TMPFILENAME))) {
-						message(MESS_ERROR,
-							"%s:%d olddir %s and log file %s "
-							"are on different devices\n", configFile,
-							lineNum, newlog->oldDir, newlog->files[i]);
-						goto error;
-					}
-				}
-			}
 
 				newlog = defConfig;
 				state = STATE_DEFINITION_END;
