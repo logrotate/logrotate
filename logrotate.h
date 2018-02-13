@@ -26,6 +26,7 @@
 #define LOG_FLAG_OLDDIRCREATE	(1 << 13)
 #define LOG_FLAG_TMPFILENAME	(1 << 14)
 #define LOG_FLAG_DATEHOURAGO	(1 << 15)
+#define LOG_FLAG_GLOBOVERRIDE	(1 << 16)
 
 #define NO_MODE ((mode_t) -1)
 #define NO_UID  ((uid_t) -1)

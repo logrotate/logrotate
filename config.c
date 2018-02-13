@@ -906,7 +906,12 @@ static int globFiles(struct logInfo *log)
 			}
 
 			if (findDuplicateFile(globResult.gl_pathv[glob_count])) {
-				message(MESS_ERROR, "%s:%d duplicate log entry for %s\n", log->configFilePath, log->configFileLineNum, globResult.gl_pathv[glob_count]);
+				if (log->flags & LOG_FLAG_GLOBOVERRIDE) {
+					message(MESS_DEBUG, "%s:%d overriden log entry for %s\n", log->configFilePath, log->configFileLineNum, globResult.gl_pathv[glob_count]);
+					continue;
+				} else {
+					message(MESS_ERROR, "%s:%d duplicate log entry for %s\n", log->configFilePath, log->configFileLineNum, globResult.gl_pathv[glob_count]);
+				}
 				result = 1;
 				break;
 			}
@@ -1253,6 +1258,10 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 					newlog->flags |= LOG_FLAG_MAILFIRST;
 				} else if (!strcmp(key, "maillast")) {
 					newlog->flags &= ~LOG_FLAG_MAILFIRST;
+				} else if (!strcmp(key, "globoverride")) {
+					newlog->flags |= LOG_FLAG_GLOBOVERRIDE;
+				} else if (!strcmp(key, "nogloboverride")) {
+					newlog->flags &= ~LOG_FLAG_GLOBOVERRIDE;
 				} else if (!strcmp(key, "su")) {
 					mode_t tmp_mode = NO_MODE;
 					free(key);

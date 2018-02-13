@@ -1,0 +1,11 @@
+daily
+rotate 1
+
+&DIR&/test1.log {
+    addextension .a
+}
+
+&DIR&/test*.log {
+    addextension .b
+    globoverride
+}
