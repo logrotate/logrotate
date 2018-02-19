@@ -54,5 +54,5 @@ rm -rf $RPM_BUILD_ROOT
 %attr(0644, root, root) %{_mandir}/man5/logrotate.conf.5*
 %attr(0755, root, root) %{_sysconfdir}/cron.daily/logrotate
 %attr(0644, root, root) %config(noreplace) %{_sysconfdir}/logrotate.conf
-%attr(0755, root, root) %dir %{_sysconfdir}/logrotate.d
+%attr(0755, root, root) %{_sysconfdir}/logrotate.d
 %attr(0644, root, root) %verify(not size md5 mtime) %config(noreplace) %{_localstatedir}/lib/logrotate.status
