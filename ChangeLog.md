@@ -4,7 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## [UNRELEASED]
 
-[UNRELEASED]: https://github.com/logrotate/logrotate/compare/3.13.0...master
+[UNRELEASED]: https://github.com/logrotate/logrotate/compare/3.13.1...master
+
+## [3.13.1] - 2018-01-31
+
+  - move ```wtmp``` and ```btmp``` definitions to ```logrotate.d```
 
 ## [3.13.0] - 2017-10-13
 
