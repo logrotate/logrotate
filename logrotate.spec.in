@@ -33,15 +33,15 @@ make %{?_smp_mflags} RPM_OPT_FLAGS="$RPM_OPT_FLAGS"
 %install
 rm -rf $RPM_BUILD_ROOT
 make install DESTDIR=$RPM_BUILD_ROOT MANDIR=%{_mandir}
-mkdir -p $RPM_BUILD_ROOT/%{_sysconfdir}/logrotate.d
-mkdir -p $RPM_BUILD_ROOT/%{_sysconfdir}/cron.daily
-mkdir -p $RPM_BUILD_ROOT/%{_localstatedir}/lib
+mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/logrotate.d
+mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/cron.daily
+mkdir -p $RPM_BUILD_ROOT%{_localstatedir}/lib
 
-install -p -m 644 examples/logrotate-default $RPM_BUILD_ROOT/%{_sysconfdir}/logrotate.conf
-install -p -m 644 examples/btmp $RPM_BUILD_ROOT/%{_sysconfdir}/logrotate.d/btmp
-install -p -m 644 examples/wtmp $RPM_BUILD_ROOT/%{_sysconfdir}/logrotate.d/wtmp
-install -p -m 755 examples/logrotate.cron $RPM_BUILD_ROOT/%{_sysconfdir}/cron.daily/logrotate
-touch $RPM_BUILD_ROOT/%{_localstatedir}/lib/logrotate.status
+install -p -m 644 examples/logrotate-default $RPM_BUILD_ROOT%{_sysconfdir}/logrotate.conf
+install -p -m 644 examples/btmp $RPM_BUILD_ROOT%{_sysconfdir}/logrotate.d/btmp
+install -p -m 644 examples/wtmp $RPM_BUILD_ROOT%{_sysconfdir}/logrotate.d/wtmp
+install -p -m 755 examples/logrotate.cron $RPM_BUILD_ROOT%{_sysconfdir}/cron.daily/logrotate
+touch $RPM_BUILD_ROOT%{_localstatedir}/lib/logrotate.status
 
 %clean
 rm -rf $RPM_BUILD_ROOT
