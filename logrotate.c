@@ -1,6 +1,6 @@
 #include "queue.h"
 /* alloca() is defined in stdlib.h in NetBSD */
-#ifndef __NetBSD__
+#if !defined(__NetBSD__) && !defined(__FreeBSD__)
 #include <alloca.h>
 #endif
 #include <limits.h>
@@ -25,6 +25,10 @@
 
 #if defined(SunOS)
 #include <limits.h>
+#endif
+
+#if !defined(PATH_MAX) && defined(__FreeBSD__)
+#include <sys/param.h>
 #endif
 
 #include "log.h"
