@@ -31,6 +31,7 @@ AC_CHECK_LIB([popt],[poptParseArgvString],,
 dnl Needed for out-of-source builds
 mkdir -p test
 
+WITH_SELINUX="no"
 AC_ARG_WITH([selinux],
   [AS_HELP_STRING([--with-selinux],
     [support handling SELinux contexts (yes,no,check) @<:@default=check@:>@])],
@@ -41,8 +42,9 @@ AS_CASE(["$with_selinux"],
   [no], [],
   [AC_CHECK_LIB([selinux],[getfscreatecon_raw])])
 AS_IF([test "$ac_cv_lib_selinux_getfscreatecon_raw" = yes],
-  echo "1" > ./test/test.SELINUX;, echo "0" > ./test/test.SELINUX;)
+  echo "1" > ./test/test.SELINUX; WITH_SELINUX="yes";, echo "0" > ./test/test.SELINUX;)
 
+WITH_ACL="no"
 AC_ARG_WITH([acl],
   [AS_HELP_STRING([--with-acl],
     [support handling ACL (yes,no,check) @<:@default=check@:>@])],
@@ -53,7 +55,7 @@ AS_CASE(["$with_acl"],
   [no], [],
   [AC_CHECK_LIB([acl],[acl_get_file])])
 AS_IF([test "$ac_cv_lib_acl_acl_get_file" = yes],
-  echo "1" > ./test/test.ACL;, echo "0" > ./test/test.ACL;)
+  echo "1" > ./test/test.ACL; WITH_ACL="yes";, echo "0" > ./test/test.ACL;)
 
 DEFAULT_MAIL_COMMAND="/bin/mail"
 COMPRESS_COMMAND="/bin/gzip"
@@ -182,6 +184,8 @@ AC_OUTPUT
 AC_MSG_RESULT([
   ${PACKAGE_NAME} ${VERSION}
 
+  SELinux support:        ${WITH_SELINUX}
+  ACL support:            ${WITH_ACL}
   default mail command:   ${DEFAULT_MAIL_COMMAND}
   compress command:       ${COMPRESS_COMMAND}
   uncompress command:     ${UNCOMPRESS_COMMAND}
