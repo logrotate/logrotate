@@ -1,6 +1,6 @@
 #include "queue.h"
-/* Alloca is defined in stdlib.h in NetBSD */
-#ifndef __NetBSD__
+/* Alloca is defined in stdlib.h in NetBSD/FreeBSD */
+#if !defined(__NetBSD__) && !defined(__FreeBSD__)
 #include <alloca.h>
 #endif
 #include <limits.h>
@@ -24,6 +24,10 @@
 #include <fnmatch.h>
 #include <sys/mman.h>
 #include <libgen.h>
+
+#if !defined(PATH_MAX) && defined(__FreeBSD__)
+#include <sys/param.h>
+#endif
 
 #include "log.h"
 #include "logrotate.h"
