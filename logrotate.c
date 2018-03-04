@@ -537,8 +537,8 @@ static int createOutputFile(char *fileName, int flags, struct stat *sb,
 		close(fd);
 		return -1;
 	}
- 
-    if ((sb_create.st_uid != sb->st_uid || sb_create.st_gid != sb->st_gid) && 
+
+    if ((sb_create.st_uid != sb->st_uid || sb_create.st_gid != sb->st_gid) &&
 		fchown(fd, sb->st_uid, sb->st_gid)) {
 	message(MESS_ERROR, "error setting owner of %s to uid %d and gid %d: %s\n",
 		fileName, sb->st_uid, sb->st_gid, strerror(errno));
@@ -634,7 +634,7 @@ static int shred_file(int fd, char *filename, struct logInfo *log)
 		execvp(fullCommand[0], (void *) fullCommand);
 		exit(1);
 	}
-	
+
 	wait(&status);
 
 	if (!WIFEXITED(status) || WEXITSTATUS(status)) {
@@ -1222,7 +1222,7 @@ static int findNeedRotating(struct logInfo *log, int logNum, int force)
 
     if (force) {
 	/* user forced rotation of logs from command line */
-	state->doRotate = 1;   
+	state->doRotate = 1;
     }
     else if (log->maxsize && sb.st_size > log->maxsize) {
         state->doRotate = 1;
@@ -1433,7 +1433,7 @@ static int prerotateSingleLog(struct logInfo *log, int logNum,
 	free(rotNames->baseName);
 	rotNames->baseName = tempstr;
     }
-	
+
     /* Adjust "now" if we want yesterday's date */
     if (log->flags & LOG_FLAG_DATEYESTERDAY) {
         now.tm_hour = 12; /* set hour to noon to work around DST issues */
@@ -1729,7 +1729,7 @@ static int prerotateSingleLog(struct logInfo *log, int logNum,
 	    }
 	    if (hasErrors || i - 1 < 0)
 		    free(oldName);
-	    
+
 	}
 	free(newName);
     }				/* !LOG_FLAG_DATEEXT */
@@ -1902,7 +1902,7 @@ static int rotateSingleLog(struct logInfo *log, int logNum,
 		prev_acl = NULL;
 	}
 #endif /* WITH_ACL */
-		
+
     }
     return hasErrors;
 }
@@ -2014,10 +2014,10 @@ static int rotateLogSet(struct logInfo *log, int force)
     else
 	message(MESS_DEBUG, "empty log files are not rotated, ");
 
-    if (log->minsize) 
+    if (log->minsize)
 	message(MESS_DEBUG, "only log files >= %jd bytes are rotated, ", (intmax_t)log->minsize);
 
-    if (log->maxsize) 
+    if (log->maxsize)
 	message(MESS_DEBUG, "log files >= %jd are rotated earlier, ", (intmax_t)log->maxsize);
 
     if (log->rotateMinAge)
@@ -2554,7 +2554,7 @@ static int readState(const char *stateFilename)
 
 	filename = strdup(argv[0]);
 	unescape(filename);
-	
+
 	if ((st = findState(filename)) == NULL) {
 		free(argv);
 		free(filename);
