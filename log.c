@@ -58,13 +58,13 @@ __attribute__((format (printf, 2, 3)))
 void message(int level, const char *format, ...)
 {
 	va_list args;
-    
+
 	if (level >= logLevel) {
 		va_start(args, format);
 		log_once(stderr, level, format, args);
 		va_end(args);
 	}
-    
+
 	if (messageFile != NULL) {
 		va_start(args, format);
 		log_once(messageFile, level, format, args);
