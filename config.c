@@ -63,6 +63,7 @@ int asprintf(char **string_ptr, const char *format, ...)
 	va_start(arg, format);
 	size = vsnprintf(NULL, 0, format, arg);
 	size++;
+	va_end(arg);
 	va_start(arg, format);
 	str = malloc(size);
 	if (str == NULL) {
