@@ -151,7 +151,7 @@ static const char *defTabooExts[] = {
 	".ucf-old",
 	"~"
 };
-static int defTabooCount = sizeof(defTabooExts) / sizeof(char *);
+static const int defTabooCount = sizeof(defTabooExts) / sizeof(char *);
 
 /* I shouldn't use globals here :-( */
 static char **tabooPatterns = NULL;
