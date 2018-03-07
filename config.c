@@ -239,6 +239,7 @@ static char *readPath(const char *configFile, int lineNum, const char *key,
 		if( len == (size_t)(-1) || len == (size_t)(-2) || !iswprint(pwc) || iswblank(pwc) ) {
 		    message(MESS_ERROR, "%s:%d bad %s path %s\n",
 			    configFile, lineNum, key, start);
+		    free(start);
 		    return NULL;
 		}
 		chptr += len;
@@ -368,6 +369,7 @@ static char *readAddress(const char *configFile, int lineNum, const char *key,
 	if (*chptr) {
 	    message(MESS_ERROR, "%s:%d bad %s address %s\n",
 		    configFile, lineNum, key, start);
+	    free(endtag);
 	    return NULL;
 	}
 
