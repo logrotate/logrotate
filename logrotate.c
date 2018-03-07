@@ -37,8 +37,8 @@
 static void *prev_context;
 #ifdef WITH_SELINUX
 #include <selinux/selinux.h>
-int selinux_enabled = 0;
-int selinux_enforce = 0;
+static int selinux_enabled = 0;
+static int selinux_enforce = 0;
 #endif
 
 #ifdef WITH_ACL
