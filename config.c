@@ -224,43 +224,23 @@ static char *isolateWord(char **strt, char **buf, size_t length) {
 static char *readPath(const char *configFile, int lineNum, const char *key,
 		      char **startPtr, char **buf, size_t length)
 {
-    char *chptr;
-    char *start;
-    char *path;
+    char *path = isolateValue(configFile, lineNum, key, startPtr, buf, length);
+    if (path != NULL) {
+	wchar_t pwc;
+	size_t len;
+	char *chptr = path;
 
-    wchar_t pwc;
-    size_t len;
-
-    if ((start = isolateValue(configFile, lineNum, key, startPtr, buf, length)) != NULL) {
-
-	chptr = start;
-
-	while( (len = mbrtowc(&pwc, chptr, strlen(chptr), NULL)) != 0 && strlen(chptr) != 0) {
-		if( len == (size_t)(-1) || len == (size_t)(-2) || !iswprint(pwc) || iswblank(pwc) ) {
-		    message(MESS_ERROR, "%s:%d bad %s path %s\n",
-			    configFile, lineNum, key, start);
-		    free(start);
-		    return NULL;
-		}
-		chptr += len;
+	while (*chptr && (len = mbrtowc(&pwc, chptr, strlen(chptr), NULL)) != 0) {
+	    if (len == (size_t)(-1) || len == (size_t)(-2) || !iswprint(pwc) || iswblank(pwc)) {
+		message(MESS_ERROR, "%s:%d bad %s path %s\n",
+			configFile, lineNum, key, path);
+		free(path);
+		return NULL;
+	    }
+	    chptr += len;
 	}
-
-/*
-	while (*chptr && isprint((unsigned char)*chptr) && *chptr != ' ')
-	    chptr++;
-	if (*chptr) {
-	    message(MESS_ERROR, "%s:%d bad %s path %s\n",
-		    configFile, lineNum, key, start);
-	    return NULL;
-	}
-*/
-
-	path = strdup(start);
-	free(start);
-
-	return path;
-    } else
-	return NULL;
+    }
+    return path;
 }
 
 /* set *pUid to UID of the given user, return non-zero on failure */
@@ -355,31 +335,25 @@ static int readModeUidGid(const char *configFile, int lineNum, char *key,
 static char *readAddress(const char *configFile, int lineNum, const char *key,
 			 char **startPtr, char **buf, size_t length)
 {
-    char *endtag, *chptr;
     char *start = *startPtr;
-    char *address;
+    char *address = isolateValue(configFile, lineNum, key, startPtr, buf, length);
 
-    if ((endtag = isolateValue(configFile, lineNum, key, startPtr, buf, length)) != NULL) {
-
-	chptr = endtag;
-	while (*chptr && isprint((unsigned char)*chptr) && *chptr != ' ') {
+    if (address != NULL) {
+	/* validate the address */
+	char *chptr = address;
+	while (isprint((unsigned char) *chptr) && *chptr != ' ') {
 	    chptr++;
 	}
 
 	if (*chptr) {
 	    message(MESS_ERROR, "%s:%d bad %s address %s\n",
 		    configFile, lineNum, key, start);
-	    free(endtag);
+	    free(address);
 	    return NULL;
 	}
+    }
 
-	address = strdup(endtag);
-
-	free(endtag);
-
-	return address;
-    } else
-	return NULL;
+    return address;
 }
 
 static int do_mkdir(const char *path, mode_t mode, uid_t uid, gid_t gid) {
