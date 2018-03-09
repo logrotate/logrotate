@@ -4,18 +4,31 @@ All notable changes to this project will be documented in this file.
 
 ## [UNRELEASED]
 
-  - ```wtmp``` and ```btmp``` definitions are no longer included in
-    ```logrotate.conf```.  They need to be installed to ```logrotate.d```
-    separately. (#168)
+[UNRELEASED]: https://github.com/logrotate/logrotate/compare/3.14.0...master
 
-[UNRELEASED]: https://github.com/logrotate/logrotate/compare/3.13.0...master
+## [3.14.0] - 2018-03-09
+
+  - make ```configure``` show support status for SELinux and ACL at the end (#179)
+  - make logrotate build again on FreeBSD (#178)
+  - move ```wtmp``` and ```btmp``` definitions from ```logrotate.conf``` to
+    separate configuration files in ```logrotate.d``` (#168)
+  - print a warning about logrotate doing nothing when ```-d``` is used (#165)
+  - do not reject executable config files (#166)
+  - add hardening options to ```logrotate.service``` in examples (#143)
+  - fix spurious compressor failure when using ```su``` and ```compress``` (#169)
+  - keep logrotate version in .tarball-version in release tarballs (#156)
+  - introduce the ```hourago``` configuration directive (#159)
+  - ignore empty patterns in ```tabooext``` to avoid exclusion of everything (#160)
+  - properly report skipped test cases instead of pretending success
+
+[3.14.0]: https://github.com/logrotate/logrotate/compare/3.13.0...3.14.0
 
 ## [3.13.0] - 2017-10-13
 
   - make distribution tarballs report logrotate version properly
     [RHBZ#1500264](https://bugzilla.redhat.com/1500264)
   - make ```(un)compress work``` even if stdin and/or stdout are closed (#154)
-  - remove ```-s``` from ```DEFAULT_MAIL_COMMAND``` and improve its documenation (#152)
+  - remove ```-s``` from ```DEFAULT_MAIL_COMMAND``` and improve its documentation (#152)
   - uncompress logs before mailing them even if ```delaycompress``` is enabled (#151)
   - handle unlink of a non-existing log file as a warning only (#144)
   - include compile-time options in the output of ```logrotate --version``` (#145)
@@ -482,7 +495,7 @@ All notable changes to this project will be documented in this file.
 ## [2.9] - 1999-03-05
 
   - fixed a bug parsing lines where { immediately follows the filename
-  - allow log file patterns to be placed in double quotes, which	
+  - allow log file patterns to be placed in double quotes, which
     allows spaces in names
   - complain about missing log files (John Van Essen)
 
