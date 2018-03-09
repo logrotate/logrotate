@@ -88,6 +88,7 @@ extern int debug;
 
 int switch_user(uid_t user, gid_t group);
 int switch_user_back(void);
+int parse_argv_string(const char *s, int *argcPtr, const char ***argvPtr);
 int readAllConfigPaths(const char **paths);
 #if !defined(asprintf) && !defined(_FORTIFY_SOURCE)
 int asprintf(char **string_ptr, const char *format, ...);
