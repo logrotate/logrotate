@@ -10,7 +10,6 @@
 #include <fcntl.h>
 #include <glob.h>
 #include <grp.h>
-#include <popt.h>
 #include <pwd.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -472,6 +471,49 @@ static void free_2d_array(char **array, int lines_count)
     free(array);
 }
 
+/**
+ * adapted from popt's poptDupArgv
+ */
+static int copy_argv_list(int argc, const char **argv, int *argcPtr, const char ***argvPtr)
+{
+    size_t nb = (argc + 1) * sizeof(*argv);
+    const char **argv2;
+    char *dst;
+    int i;
+
+    if (argc <= 0 || argv == NULL || argvPtr == NULL || argcPtr == NULL) {
+	message(MESS_ERROR, "invalid copy_argv_list arguments\n");
+	return -1;
+    }
+    for (i = 0; i < argc; i++) {
+	if (argv[i] == NULL) {
+	    message(MESS_ERROR, "invalid copy_argv_list child arguments\n");
+	    return -1;
+	}
+	nb += strlen(argv[i]) + 1;
+    }
+
+    dst = malloc(nb);
+    if (dst == NULL) {
+	message(MESS_ERROR, "cannot malloc: %s\n", strerror(errno));
+	return -1;
+    }
+    argv2 = (const char **) dst;
+    dst += (argc + 1) * sizeof(*argv);
+    *dst = '\0';
+
+    for (i = 0; i < argc; i++) {
+	argv2[i] = dst;
+	dst = stpcpy(dst, argv[i]);
+	dst++;
+    }
+    argv2[argc] = NULL;
+
+    *argvPtr = argv2;
+    *argcPtr = argc;
+    return 0;
+}
+
 static void copyLogInfo(struct logInfo *to, struct logInfo *from)
 {
     memset(to, 0, sizeof(*to));
@@ -517,7 +559,7 @@ static void copyLogInfo(struct logInfo *to, struct logInfo *from)
     to->olddirUid = from->olddirUid;
     to->olddirGid = from->olddirGid;
     if (from->compress_options_count) {
-        poptDupArgv(from->compress_options_count, from->compress_options_list,
+        copy_argv_list(from->compress_options_count, from->compress_options_list,
                     &to->compress_options_count,  &to->compress_options_list);
     }
 	if (from->dateformat)
@@ -574,6 +616,85 @@ static void freeTailLogs(int num)
 	while (num--)
 		removeLogInfo(TAILQ_LAST(&logs, logInfoHead));
 
+}
+
+/**
+ * adapted from popt's poptParseArgvString
+ */
+int parse_argv_string(const char *s, int *argcPtr, const char ***argvPtr)
+{
+    const char *src;
+    char quote = '\0';
+    int argvAlloced = 5;
+    const char **argv = malloc(sizeof(*argv) * argvAlloced);
+    int argc = 0;
+    const size_t buflen = strlen(s) + 1;
+    char *buf, *bufOrig = NULL;
+    int rc = -1;
+
+    if (argv == NULL) {
+	message(MESS_ERROR, "cannot malloc: %s\n", strerror(errno));
+	goto exit;
+    }
+    buf = bufOrig = calloc((size_t)1, buflen);
+    if (buf == NULL) {
+	message(MESS_ERROR, "cannnot calloc: %s\n", strerror(errno));
+	goto exit;
+    }
+    argv[argc] = buf;
+
+    for (src = s; *src != '\0'; src++) {
+	if (quote == *src) {
+	    quote = '\0';
+	} else if (quote != '\0') {
+	    if (*src == '\\') {
+		src++;
+		if (!*src) {
+		    goto exit;
+		}
+		if (*src != quote) *buf++ = '\\';
+	    }
+	    *buf++ = *src;
+	} else if (isspace(*src)) {
+	    if (*argv[argc] != '\0') {
+		buf++, argc++;
+		if (argc == argvAlloced) {
+		    argvAlloced += 5;
+		    argv = realloc(argv, sizeof(*argv) * argvAlloced);
+		    if (argv == NULL) {
+			message(MESS_ERROR, "cannot realloc: %s\n", strerror(errno));
+			goto exit;
+		    }
+		}
+		argv[argc] = buf;
+	    }
+	} else switch (*src) {
+	  case '"':
+	  case '\'':
+	    quote = *src;
+	    break;
+	  case '\\':
+	    src++;
+	    if (!*src) {
+		goto exit;
+	    }
+	    /*@fallthrough@*/
+	  default:
+	    *buf++ = *src;
+	    break;
+	}
+    }
+
+    if (strlen(argv[argc])) {
+	argc++, buf++;
+    }
+
+    rc = copy_argv_list(argc, argv, argcPtr, argvPtr);
+
+exit:
+    if (bufOrig) free(bufOrig);
+    if (argv) free(argv);
+    return rc;
 }
 
 static int readConfigPath(const char *path, struct logInfo *defConfig)
@@ -1536,7 +1657,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 						RAISE_ERROR();
 					}
 
-					if (poptParseArgvString(options,
+					if (parse_argv_string(options,
 								&newlog->compress_options_count,
 								&newlog->compress_options_list)) {
 						message(MESS_ERROR,
@@ -1605,7 +1726,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 				    	/* error already printed */
 				    	goto error;
 
-				if (poptParseArgvString(glob_string, &argc, &argv)) {
+				if (parse_argv_string(glob_string, &argc, &argv)) {
 				message(MESS_ERROR, "%s:%d error parsing filename\n",
 					configFile, lineNum);
 				free(glob_string);

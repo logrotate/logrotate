@@ -67,13 +67,13 @@ Obtain source either by [Downloading](#download) it or doing [Git checkout](#git
 Install dependencies for Debian systems:
 ```
 apt-get update
-apt-get install autoconf automake libpopt-dev libtool make xz-utils
+apt-get install autoconf automake libtool make xz-utils
 ```
 
 Install dependencies for Fedora/CentOS systems:
 
 ```
-yum install autoconf automake libtool make popt-devel xz
+yum install autoconf automake libtool make xz
 ```
 
 Compilation (`autoreconf` is optional if you obtained source from tarball):

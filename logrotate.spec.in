@@ -5,8 +5,8 @@ Release: 1%{?dist}
 License: GPLv2+
 Group: System Environment/Base
 Source: https://github.com/logrotate/logrotate/releases/download/%{version}/logrotate-%{version}.tar.gz
-Requires: coreutils >= 5.92 libsepol libselinux popt
-BuildRequires: libselinux-devel popt-devel
+Requires: coreutils >= 5.92 libsepol libselinux
+BuildRequires: libselinux-devel
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 %{!?_licensedir:%global license %%doc}
