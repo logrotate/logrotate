@@ -32,7 +32,7 @@ make %{?_smp_mflags} RPM_OPT_FLAGS="$RPM_OPT_FLAGS"
 
 %install
 rm -rf $RPM_BUILD_ROOT
-make install DESTDIR=$RPM_BUILD_ROOT MANDIR=%{_mandir}
+make install DESTDIR=$RPM_BUILD_ROOT
 mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/logrotate.d
 mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/cron.daily
 mkdir -p $RPM_BUILD_ROOT%{_localstatedir}/lib
