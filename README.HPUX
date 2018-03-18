@@ -28,7 +28,7 @@ also work on HP-UX 10.20):
         gmake install BASEDIR=/usr/local
  
 5.  Copy the configuration files into your desired location.
-        cp examples/logrotate-default /etc/logrotate.conf
+        cp examples/logrotate.conf /etc/logrotate.conf
         mkdir /etc/logrotate.d
         cp examples/?tmp /etc/logrotate.d
 
