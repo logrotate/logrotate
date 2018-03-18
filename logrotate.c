@@ -2683,7 +2683,7 @@ int main(int argc, const char **argv)
 		" - Copyright (C) 1995-2001 Red Hat, Inc.\n");
 	fprintf(stderr,
 		"This may be freely redistributed under the terms of "
-		"the GNU Public License\n\n");
+		"the GNU General Public License\n\n");
 	poptPrintUsage(optCon, stderr, 0);
 	poptFreeContext(optCon);
 	exit(1);
