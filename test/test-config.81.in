@@ -1,0 +1,12 @@
+create
+
+/var/log/does_not_exist.log &DIR&/test.log {
+	rotate 14
+	daily
+	missingok
+}
+/var/log/something_else.log {
+	rotate 14
+	size 2
+	missingok
+}

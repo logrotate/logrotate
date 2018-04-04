@@ -855,6 +855,8 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 	int state = STATE_DEFAULT;
     int logerror = 0;
     struct logInfo *log;
+    // to check if the (incompatible) time and size criterum are used
+    int time_criterium = 0, size_criterium = 0;
 	static unsigned recursion_depth = 0U;
 	char *globerr_msg = NULL;
 	int in_config = 0;
@@ -1150,6 +1152,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 							RAISE_ERROR();
 						}
 						if (!strncmp(opt, "size", 4)) {
+						  size_criterium = 1;
 						  newlog->criterium = ROT_SIZE;
 						  newlog->threshold = size;
 						} else if (!strncmp(opt, "maxsize", 7)) {
@@ -1176,15 +1179,19 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 					}
 					else continue;
 				} else if (!strcmp(key, "hourly")) {
+					time_criterium = 1;
 					newlog->criterium = ROT_HOURLY;
 				} else if (!strcmp(key, "daily")) {
+					time_criterium = 1;
 					newlog->criterium = ROT_DAYS;
 					newlog->threshold = 1;
 				} else if (!strcmp(key, "monthly")) {
+					time_criterium = 1;
 					newlog->criterium = ROT_MONTHLY;
 				} else if (!strcmp(key, "weekly")) {
 					unsigned weekday;
 					char tmp;
+					time_criterium = 1;
 					newlog->criterium = ROT_WEEKLY;
 					free(key);
 					key = isolateLine(&start, &buf, length);
@@ -1203,6 +1210,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 							configFile, lineNum, key);
 					goto error;
 				} else if (!strcmp(key, "yearly")) {
+					time_criterium = 1;
 					newlog->criterium = ROT_YEARLY;
 				} else if (!strcmp(key, "rotate")) {
 					free(key);
@@ -1756,6 +1764,14 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 					}
 				}
 			}
+
+				if (time_criterium && size_criterium) {
+					message(MESS_VERBOSE,
+						"%s: Warning: size option is mutually exclusive with "
+						"the time interval options.\n",
+						configFile);
+				}
+				time_criterium = size_criterium = 0;
 
 				newlog = defConfig;
 				state = STATE_DEFINITION_END;
