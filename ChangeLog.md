@@ -27,6 +27,7 @@ All notable changes to this project will be documented in this file.
   - properly report skipped test cases instead of pretending success
 
 [3.14.0]: https://github.com/logrotate/logrotate/compare/3.13.0...3.14.0
+[UNRELEASED]: https://github.com/logrotate/logrotate/compare/3.13.0...master
 
 ## [3.13.0] - 2017-10-13
 
