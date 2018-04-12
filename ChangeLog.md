@@ -7,6 +7,11 @@ All notable changes to this project will be documented in this file.
 [UNRELEASED]: https://github.com/logrotate/logrotate/compare/3.14.0...master
   - `postrotate` is passed the rotated log file name as the second argument
     to the script, if `sharedscripts` is not enabled.
+  - ```wtmp``` and ```btmp``` definitions are no longer included in
+    ```logrotate.conf```.  They need to be installed to ```logrotate.d```
+    separately. (#168)
+  - ```postrotate``` is passed the rotated log file name the second argument
+    to the script, if ```sharedscripts``` is not enabled.
 
 ## [3.14.0] - 2018-03-09
 
@@ -24,6 +29,7 @@ All notable changes to this project will be documented in this file.
   - properly report skipped test cases instead of pretending success
 
 [3.14.0]: https://github.com/logrotate/logrotate/compare/3.13.0...3.14.0
+[UNRELEASED]: https://github.com/logrotate/logrotate/compare/3.13.0...master
 
 ## [3.13.0] - 2017-10-13
 
