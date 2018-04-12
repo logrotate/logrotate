@@ -435,13 +435,13 @@ static struct logState *findState(const char *fn)
 	return p;
 }
 
-static int runScript(struct logInfo *log, char *logfn, char *script)
+static int runScript(struct logInfo *log, char *logfn, char *logrotfn, char *script)
 {
 	int rc;
 
 	if (debug) {
-		message(MESS_DEBUG, "running script with arg %s: \"%s\"\n",
-			logfn, script);
+		message(MESS_DEBUG, "running script with args %s %s: \"%s\"\n",
+			logfn, logrotfn, script);
 		return 0;
 	}
 
@@ -451,7 +451,7 @@ static int runScript(struct logInfo *log, char *logfn, char *script)
 				exit(1);
 			}
 		}
-		execl("/bin/sh", "sh", "-c", script, "logrotate_script", logfn, (char *) NULL);
+		execl("/bin/sh", "sh", "-c", script, "logrotate_script", logfn, logrotfn, (char *) NULL);
 		exit(1);
 	}
 
@@ -590,7 +590,7 @@ static int shred_file(int fd, char *filename, struct logInfo *log)
 
 	if (log->preremove) {
 	    message(MESS_DEBUG, "running preremove script\n");
-	    if (runScript(log, filename, log->preremove)) {
+	    if (runScript(log, filename, NULL, log->preremove)) {
 		    message(MESS_ERROR,
 			    "error running preremove script "
 			    "for %s of '%s'. Not removing this file.\n",
@@ -2058,7 +2058,7 @@ static int rotateLogSet(struct logInfo *log, int force)
 		    "since no logs will be rotated\n");
 	} else {
 	    message(MESS_DEBUG, "running first action script\n");
-	    if (runScript(log, log->pattern, log->first)) {
+	    if (runScript(log, log->pattern, NULL, log->first)) {
 		message(MESS_ERROR, "error running first action script "
 			"for %s\n", log->pattern);
 		hasErrors = 1;
@@ -2108,7 +2108,7 @@ static int rotateLogSet(struct logInfo *log, int force)
 			"since no logs will be rotated\n");
 	    } else {
 		message(MESS_DEBUG, "running prerotate script\n");
-		if (runScript(log, log->flags & LOG_FLAG_SHAREDSCRIPTS ? log->pattern : log->files[j], log->pre)) {
+		if (runScript(log, log->flags & LOG_FLAG_SHAREDSCRIPTS ? log->pattern : log->files[j], NULL, log->pre)) {
 		    if (log->flags & LOG_FLAG_SHAREDSCRIPTS)
 			message(MESS_ERROR,
 				"error running shared prerotate script "
@@ -2145,8 +2145,8 @@ static int rotateLogSet(struct logInfo *log, int force)
 		message(MESS_DEBUG, "not running postrotate script, "
 			"since no logs were rotated\n");
 	    } else {
-		message(MESS_DEBUG, "running postrotate script\n");
-		if (runScript(log, log->flags & LOG_FLAG_SHAREDSCRIPTS ? log->pattern : log->files[j], log->post)) {
+		// It only makes sense to pass in a final rotated filename if scripts are not shared
+		if (runScript(log, log->flags & LOG_FLAG_SHAREDSCRIPTS ? log->pattern : log->files[j], log->flags & LOG_FLAG_SHAREDSCRIPTS ? NULL : rotNames[j]->finalName, log->post)) {
 		    if (log->flags & LOG_FLAG_SHAREDSCRIPTS)
 			message(MESS_ERROR,
 				"error running shared postrotate script "
@@ -2192,7 +2192,7 @@ static int rotateLogSet(struct logInfo *log, int force)
 		    "since no logs will be rotated\n");
 	} else {
 	    message(MESS_DEBUG, "running last action script\n");
-	    if (runScript(log, log->pattern, log->last)) {
+	    if (runScript(log, log->pattern, NULL, log->last)) {
 		message(MESS_ERROR, "error running last action script "
 			"for %s\n", log->pattern);
 		hasErrors = 1;
