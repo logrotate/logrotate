@@ -5,6 +5,8 @@ All notable changes to this project will be documented in this file.
 ## [UNRELEASED]
 
 [UNRELEASED]: https://github.com/logrotate/logrotate/compare/3.14.0...master
+  - pass rotated log file name as the 2nd argument of the `postrotate` script
+    when sharedscript is not enabled (#193)
 
 ## [3.14.0] - 2018-03-09
 
