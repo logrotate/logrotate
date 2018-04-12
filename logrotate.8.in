@@ -438,8 +438,9 @@ overrides the \fBolddir\fR option).
 Run \fBprerotate\fR and \fBpostrotate\fR scripts for every log file which
 is rotated (this is the default, and overrides the \fBsharedscripts\fR
 option). The absolute path to the log file is passed as first argument 
-to the script. If the scripts exit with error, the remaining actions will
-not be executed for the affected log only.
+to the script. The absolute path to the final rotated log file is passed as
+the second argument to the \fBpostrotate\fR script. If the scripts exit with 
+error, the remaining actions will not be executed for the affected log only.
 
 .TP
 \fBnoshred\fR
@@ -465,8 +466,10 @@ The lines between \fBpostrotate\fR and \fBendscript\fR (both of which
 must appear on lines by themselves) are executed (using \fB/bin/sh\fR) 
 after the log file is rotated. These directives may only appear inside 
 a log file definition. Normally, the absolute path to the log file is 
-passed as first argument to the script. If \fBsharedscripts\fR is specified, 
-whole pattern is passed to the script.
+passed as first argument to the script and the absolute path to the final 
+rotated log file is passed as the second argument to the script. If 
+\fBsharedscripts\fR is specified, the whole pattern is passed as the first 
+argument to the script, and the second argument is omitted.
 See also \fBprerotate\fR. See \fBsharedscripts\fR and \fBnosharedscripts\fR
 for error handling.
 
