@@ -1,4 +1,5 @@
 &DIR&/test*.log {
     copy
     copytruncate
+    rotate 1
 }

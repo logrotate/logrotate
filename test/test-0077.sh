@@ -8,7 +8,10 @@ cleanup 77
 # ignore empty patterns given by the tabooext directive
 preptest test.log 77 1
 mkdir -p includedir
-echo copytruncate > includedir/test-0077.conf
+cat > includedir/test-0077.conf << EOF
+copytruncate
+rotate 1
+EOF
 
 $RLR test-config.77 --force --verbose
 
