@@ -1047,6 +1047,7 @@ static int sparse_copy(int src_fd, int dest_fd, struct stat *sb,
 static int copyTruncate(char *currLog, char *saveLog, struct stat *sb,
 			int flags)
 {
+    int rc = 1;
     int fdcurr = -1, fdsave = -1;
     void *prevCtx;
 
@@ -1059,13 +1060,12 @@ static int copyTruncate(char *currLog, char *saveLog, struct stat *sb,
 	if ((fdcurr = open(currLog, ((read_only) ? O_RDONLY : O_RDWR) | O_NOFOLLOW)) < 0) {
 	    message(MESS_ERROR, "error opening %s: %s\n", currLog,
 		    strerror(errno));
-	    return 1;
+	    goto fail;
 	}
 
 	if (setSecCtx(fdcurr, currLog, &prevCtx) != 0) {
 	    /* error msg already printed */
-	    close(fdcurr);
-	    return 1;
+	    goto fail;
 	}
 #ifdef WITH_ACL
 	if ((prev_acl = acl_get_fd(fdcurr)) == NULL) {
@@ -1073,8 +1073,7 @@ static int copyTruncate(char *currLog, char *saveLog, struct stat *sb,
 			message(MESS_ERROR, "getting file ACL %s: %s\n",
 				currLog, strerror(errno));
 			restoreSecCtx(&prevCtx);
-			close(fdcurr);
-			return 1;
+			goto fail;
 		}
 	}
 #endif /* WITH_ACL */
@@ -1088,17 +1087,14 @@ static int copyTruncate(char *currLog, char *saveLog, struct stat *sb,
 	}
 #endif
 	if (fdsave < 0) {
-	    close(fdcurr);
-	    return 1;
+	    goto fail;
 	}
 
 	if (sparse_copy(fdcurr, fdsave, sb, saveLog, currLog) != 1) {
-		close(fdcurr);
-		close(fdsave);
 		message(MESS_ERROR, "error copying %s to %s: %s\n", currLog,
 				saveLog, strerror(errno));
 		unlink(saveLog);
-		return 1;
+		goto fail;
 	}
     }
 
@@ -1110,21 +1106,21 @@ static int copyTruncate(char *currLog, char *saveLog, struct stat *sb,
 	    if (ftruncate(fdcurr, 0)) {
 		message(MESS_ERROR, "error truncating %s: %s\n", currLog,
 			strerror(errno));
-		close(fdcurr);
-		close(fdsave);
-		return 1;
+		goto fail;
 	    }
 	}
     } else
 	message(MESS_DEBUG, "Not truncating %s\n", currLog);
 
+    rc = 0;
+fail:
     if (fdcurr >= 0) {
 	close(fdcurr);
     }
     if (fdsave >= 0) {
 	close(fdsave);
     }
-    return 0;
+    return rc;
 }
 
 /* return value similar to mktime() but the exact time is ignored */
