@@ -1045,7 +1045,7 @@ static int sparse_copy(int src_fd, int dest_fd, struct stat *sb,
 }
 
 static int copyTruncate(char *currLog, char *saveLog, struct stat *sb,
-			int flags)
+			int flags, int skip_copy)
 {
     int rc = 1;
     int fdcurr = -1, fdsave = -1;
@@ -1063,38 +1063,38 @@ static int copyTruncate(char *currLog, char *saveLog, struct stat *sb,
 	    goto fail;
 	}
 
-	if (setSecCtx(fdcurr, currLog, &prevCtx) != 0) {
-	    /* error msg already printed */
-	    goto fail;
-	}
+	if (!skip_copy) {
+	    if (setSecCtx(fdcurr, currLog, &prevCtx) != 0) {
+		/* error msg already printed */
+		goto fail;
+	    }
 #ifdef WITH_ACL
-	if ((prev_acl = acl_get_fd(fdcurr)) == NULL) {
+	    if ((prev_acl = acl_get_fd(fdcurr)) == NULL) {
 		if (is_acl_well_supported(errno)) {
-			message(MESS_ERROR, "getting file ACL %s: %s\n",
-				currLog, strerror(errno));
-			restoreSecCtx(&prevCtx);
-			goto fail;
+		    message(MESS_ERROR, "getting file ACL %s: %s\n",
+			    currLog, strerror(errno));
+		    restoreSecCtx(&prevCtx);
+		    goto fail;
 		}
-	}
+	    }
 #endif /* WITH_ACL */
-	fdsave =
-	    createOutputFile(saveLog, O_WRONLY | O_CREAT, sb, prev_acl, 0);
-	restoreSecCtx(&prevCtx);
+	    fdsave = createOutputFile(saveLog, O_WRONLY | O_CREAT, sb, prev_acl, 0);
+	    restoreSecCtx(&prevCtx);
 #ifdef WITH_ACL
-	if (prev_acl) {
+	    if (prev_acl) {
 		acl_free(prev_acl);
 		prev_acl = NULL;
-	}
+	    }
 #endif
-	if (fdsave < 0) {
-	    goto fail;
-	}
+	    if (fdsave < 0)
+		goto fail;
 
-	if (sparse_copy(fdcurr, fdsave, sb, saveLog, currLog) != 1) {
+	    if (sparse_copy(fdcurr, fdsave, sb, saveLog, currLog) != 1) {
 		message(MESS_ERROR, "error copying %s to %s: %s\n", currLog,
-				saveLog, strerror(errno));
+			saveLog, strerror(errno));
 		unlink(saveLog);
 		goto fail;
+	    }
 	}
     }
 
@@ -1102,7 +1102,8 @@ static int copyTruncate(char *currLog, char *saveLog, struct stat *sb,
 	message(MESS_DEBUG, "truncating %s\n", currLog);
 
 	if (!debug) {
-	    fsync(fdsave);
+	    if (fdsave >= 0)
+		fsync(fdsave);
 	    if (ftruncate(fdcurr, 0)) {
 		message(MESS_ERROR, "error truncating %s: %s\n", currLog,
 			strerror(errno));
@@ -1888,7 +1889,7 @@ static int rotateSingleLog(struct logInfo *log, int logNum,
 		&& !(log->flags & LOG_FLAG_TMPFILENAME)) {
 	    hasErrors =
 		copyTruncate(log->files[logNum], rotNames->finalName,
-			     &state->sb, log->flags);
+			     &state->sb, log->flags, !log->rotateCount);
 	}
 
 #ifdef WITH_ACL
@@ -1920,7 +1921,7 @@ static int postrotateSingleLog(struct logInfo *log, int logNum,
 		}
 	    hasErrors =
 		copyTruncate(tmpFilename, rotNames->finalName,
-			     &state->sb, LOG_FLAG_COPY);
+			     &state->sb, LOG_FLAG_COPY, /* skip_copy */ 0);
 		message(MESS_DEBUG, "removing tmp log %s \n", tmpFilename);
 		if (!debug && !hasErrors) {
 			unlink(tmpFilename);
