@@ -2,11 +2,11 @@
 
 . ./test-common.sh
 
-cleanup 102
+cleanup 79
 
 # ------------------------------- Test 19 ------------------------------------
-preptest test.log 102 1
-$RLR test-config.102 -v --force >verbose.log
+preptest test.log 79 1
+$RLR test-config.79 -v --force >verbose.log
 if [ $? != 0 ]; then
 	echo "Logrotate exited with a non-zero exit code, but it should not have"
 	exit 3

@@ -2146,7 +2146,7 @@ static int rotateLogSet(struct logInfo *log, int force)
 			"since no logs were rotated\n");
 	    } else {
 		message(MESS_DEBUG, "running postrotate script\n");
-		// It only makes sense to pass in a final rotated filename if scripts are not shared
+		/* It only makes sense to pass in a final rotated filename if scripts are not shared */
 		if (runScript(log, log->flags & LOG_FLAG_SHAREDSCRIPTS ? log->pattern : log->files[j], log->flags & LOG_FLAG_SHAREDSCRIPTS ? NULL : rotNames[j]->finalName, log->post)) {
 		    if (log->flags & LOG_FLAG_SHAREDSCRIPTS)
 			message(MESS_ERROR,
