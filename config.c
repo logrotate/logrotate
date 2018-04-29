@@ -1765,6 +1765,14 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 				}
 			}
 
+				if (time_criterium && size_criterium) {
+					message(MESS_VERBOSE,
+						"%s: Warning: size option is mutually exclusive with "
+						"the time interval options.\n",
+						configFile);
+				}
+				time_criterium = size_criterium = 0;
+
 				newlog = defConfig;
 				state = STATE_DEFINITION_END;
 			} else if (*start != '\n') {
@@ -1891,13 +1899,6 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 	    lineNum++;
 	}
 
-    }
-
-    if (time_criterium && size_criterium) {
-	message(MESS_VERBOSE,
-		"%s: Warning: size option is mutually exclusive with "
-		"the time interval options.\n",
-		configFile);
     }
 
     if (scriptStart) {
