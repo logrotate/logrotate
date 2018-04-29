@@ -364,9 +364,10 @@ Log files are rotated when they grow bigger than \fIsize\fR bytes even
 before the additionally specified time interval (\fBdaily\fR, \fBweekly\fR,
 \fBmonthly\fR, or \fByearly\fR).  The related \fBsize\fR option is similar
 except that it is mutually exclusive with the time interval options, and it
-causes log files to be rotated without regard for the last rotation time.
-When \fBmaxsize\fR is used, both the size and timestamp of a log file are
-considered.
+causes log files to be rotated without regard for the last rotation time,
+if specified after the time criteria (the last specified option takes the
+precedence). When \fBmaxsize\fR is used, both the size and timestamp of a
+log file are considered.
 
 .TP
 \fBminsize\fR  \fIsize\fR
@@ -374,9 +375,10 @@ Log files are rotated when they grow bigger than \fIsize\fR bytes, but not
 before the additionally specified time interval (\fBdaily\fR, \fBweekly\fR,
 \fBmonthly\fR, or \fByearly\fR).  The related \fBsize\fR option is similar
 except that it is mutually exclusive with the time interval options, and it
-causes log files to be rotated without regard for the last rotation time.
-When \fBminsize\fR is used, both the size and timestamp of a log file are
-considered.
+causes log files to be rotated without regard for the last rotation time,
+if specified after the time criteria (the last specified option takes the
+precedence). When \fBminsize\fR is used, both the size and timestamp of a
+log file are considered.
 
 .TP
 \fBmissingok\fR
@@ -529,7 +531,10 @@ Log files are rotated only if they grow bigger than \fIsize\fR bytes. If
 \fIsize\fR is followed by \fIk\fR, the size is assumed to be in kilobytes.
 If the \fIM\fR is used, the size is in megabytes, and if \fIG\fR is used, the
 size is in gigabytes. So \fIsize 100\fR, \fIsize 100k\fR, \fIsize 100M\fR and
-\fIsize 100G\fR are all valid.
+\fIsize 100G\fR are all valid. This option is mutually exclusive with the time
+interval options, and it causes log files to be rotated without regard for the
+last rotation time, if specified after the time criteria (the last specified
+option takes the precedence).
 
 .TP
 \fBsharedscripts\fR
