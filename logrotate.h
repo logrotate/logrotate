@@ -42,13 +42,21 @@
 #define WITH_ACL 1
 #endif
 
+enum criterium {
+    ROT_HOURLY,
+    ROT_DAYS,
+    ROT_WEEKLY,
+    ROT_MONTHLY,
+    ROT_YEARLY,
+    ROT_SIZE
+};
+
 struct logInfo {
     char *pattern;
     char **files;
     int numFiles;
     char *oldDir;
-    enum { ROT_HOURLY, ROT_DAYS, ROT_WEEKLY, ROT_MONTHLY, ROT_YEARLY, ROT_SIZE
-            } criterium;
+    enum criterium criterium;
     int weekday; /* used by ROT_WEEKLY only */
     off_t threshold;
     off_t maxsize;

@@ -550,6 +550,30 @@ static void freeTailLogs(int num)
 
 }
 
+static const char *crit_to_string(enum criterium crit)
+{
+    switch (crit) {
+	case ROT_HOURLY:	return "hourly";
+	case ROT_DAYS:		return "daily";
+	case ROT_WEEKLY:	return "weekly";
+	case ROT_MONTHLY:	return "montly";
+	case ROT_YEARLY:	return "yearly";
+	case ROT_SIZE:		return "size";
+	default:		return "XXX";
+    }
+}
+
+static void set_criterium(enum criterium *pDst, enum criterium src, int *pSet)
+{
+    if (*pSet && (*pDst != src)) {
+	/* we are overriding a previously set criterium */
+	message(MESS_VERBOSE, "warning: '%s' overrides previously specified '%s'\n",
+		crit_to_string(src), crit_to_string(*pDst));
+    }
+    *pDst = src;
+    *pSet = 1;
+}
+
 static int readConfigPath(const char *path, struct logInfo *defConfig)
 {
     struct stat sb;
@@ -855,8 +879,8 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 	int state = STATE_DEFAULT;
     int logerror = 0;
     struct logInfo *log;
-    // to check if the (incompatible) time and size criterum are used
-    int time_criterium = 0, size_criterium = 0;
+    /* to check if incompatible criteria are specified */
+    int criterium_set = 0;
 	static unsigned recursion_depth = 0U;
 	char *globerr_msg = NULL;
 	int in_config = 0;
@@ -1152,8 +1176,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 							RAISE_ERROR();
 						}
 						if (!strncmp(opt, "size", 4)) {
-						  size_criterium = 1;
-						  newlog->criterium = ROT_SIZE;
+						  set_criterium(&newlog->criterium, ROT_SIZE, &criterium_set);
 						  newlog->threshold = size;
 						} else if (!strncmp(opt, "maxsize", 7)) {
 						  newlog->maxsize = size;
@@ -1179,20 +1202,16 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 					}
 					else continue;
 				} else if (!strcmp(key, "hourly")) {
-					time_criterium = 1;
-					newlog->criterium = ROT_HOURLY;
+					set_criterium(&newlog->criterium, ROT_HOURLY, &criterium_set);
 				} else if (!strcmp(key, "daily")) {
-					time_criterium = 1;
-					newlog->criterium = ROT_DAYS;
+					set_criterium(&newlog->criterium, ROT_DAYS, &criterium_set);
 					newlog->threshold = 1;
 				} else if (!strcmp(key, "monthly")) {
-					time_criterium = 1;
-					newlog->criterium = ROT_MONTHLY;
+					set_criterium(&newlog->criterium, ROT_MONTHLY, &criterium_set);
 				} else if (!strcmp(key, "weekly")) {
 					unsigned weekday;
 					char tmp;
-					time_criterium = 1;
-					newlog->criterium = ROT_WEEKLY;
+					set_criterium(&newlog->criterium, ROT_WEEKLY, &criterium_set);
 					free(key);
 					key = isolateLine(&start, &buf, length);
 					if (key == NULL || key[0] == '\0') {
@@ -1210,8 +1229,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 							configFile, lineNum, key);
 					goto error;
 				} else if (!strcmp(key, "yearly")) {
-					time_criterium = 1;
-					newlog->criterium = ROT_YEARLY;
+					set_criterium(&newlog->criterium, ROT_YEARLY, &criterium_set);
 				} else if (!strcmp(key, "rotate")) {
 					free(key);
 					if ((key = isolateValue
@@ -1765,14 +1783,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 				}
 			}
 
-				if (time_criterium && size_criterium) {
-					message(MESS_VERBOSE,
-						"%s: Warning: size option is mutually exclusive with "
-						"the time interval options.\n",
-						configFile);
-				}
-				time_criterium = size_criterium = 0;
-
+				criterium_set = 0;
 				newlog = defConfig;
 				state = STATE_DEFINITION_END;
 			} else if (*start != '\n') {

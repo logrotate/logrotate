@@ -10,4 +10,4 @@ cleanup 80
 preptest test.log 80 1 0
 
 $RLR -d test-config.80 2>&1 | \
-    grep -q "size option is mutually exclusive with the time interval options."
+    grep -q "warning: 'daily' overrides previously specified 'size'"
