@@ -357,33 +357,36 @@ static char *readAddress(const char *configFile, int lineNum, const char *key,
 }
 
 static int do_mkdir(const char *path, mode_t mode, uid_t uid, gid_t gid) {
-	struct stat sb;
-
-	if (stat(path, &sb) != 0) {
-		if (mkdir(path, mode) != 0 && errno != EEXIST) {
-			message(MESS_ERROR, "error creating %s: %s\n",
-				path, strerror(errno));
-			return -1;
-		}
-		if (chown(path, uid, gid) != 0) {
-			message(MESS_ERROR, "error setting owner of %s to uid %d and gid %d: %s\n",
-				path, uid, gid, strerror(errno));
-			return -1;
-		}
-		if (chmod(path, mode) != 0) {
-			message(MESS_ERROR, "error setting permissions of %s to 0%o: %s\n",
-				path, mode, strerror(errno));
-			return -1;
-		}
+    if (mkdir(path, mode) == 0) {
+	/* newly created directory, set the owner and permissions */
+	if (chown(path, uid, gid) != 0) {
+	    message(MESS_ERROR, "error setting owner of %s to uid %d and gid %d: %s\n",
+		    path, uid, gid, strerror(errno));
+	    return -1;
 	}
-	else if (!S_ISDIR(sb.st_mode)) {
-		message(MESS_ERROR, "path %s already exists, but it is not a directory\n",
-			path);
-		errno = ENOTDIR;
-		return -1;
+
+	if (chmod(path, mode) != 0) {
+	    message(MESS_ERROR, "error setting permissions of %s to 0%o: %s\n",
+		    path, mode, strerror(errno));
+	    return -1;
 	}
 
 	return 0;
+    }
+
+    if (errno == EEXIST) {
+	/* path already exists, check whether it is a directory or not */
+	struct stat sb;
+	if ((stat(path, &sb) == 0) && S_ISDIR(sb.st_mode))
+	    return 0;
+
+	message(MESS_ERROR, "path %s already exists, but it is not a directory\n", path);
+	errno = ENOTDIR;
+	return -1;
+    }
+
+    message(MESS_ERROR, "error creating %s: %s\n", path, strerror(errno));
+    return -1;
 }
 
 static int mkpath(const char *path, mode_t mode, uid_t uid, gid_t gid) {
