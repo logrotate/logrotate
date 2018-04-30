@@ -1446,8 +1446,7 @@ static int prerotateSingleLog(struct logInfo *log, int logNum,
         mktime(&now);
     }
 
-	/* Allow only %Y %d %m and create valid strftime format string
-	 * Construct the glob pattern corresponding to the date format */
+	/* Construct the glob pattern corresponding to the date format */
 	dext_str[0] = '\0';
 	if (log->dateformat) {
 		size_t i = 0, j = 0;
