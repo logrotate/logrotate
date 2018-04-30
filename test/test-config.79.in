@@ -1,0 +1,11 @@
+create
+
+&DIR&/test*.log {
+    rotate 1
+    prerotate
+        echo "Final rotated log filename should be empty in prerotate: ${2}"
+    endscript
+    postrotate
+	echo "Final rotated log filename is: ${2}"
+    endscript
+}

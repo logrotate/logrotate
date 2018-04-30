@@ -3,10 +3,10 @@
 . ./test-common.sh
 
 # check rotation with extension moved after the number
-cleanup 101
+cleanup 78
 
-preptest test.log 101 1 0
-$RLR test-config.101 --force
+preptest test.log 78 1 0
+$RLR test-config.78 --force
 
 checkoutput <<EOF
 test.log 0
