@@ -16,12 +16,12 @@ static int _logToSyslog = 0;
 
 void logSetLevel(int level)
 {
-    logLevel = level;
+	logLevel = level;
 }
 
 void logSetMessageFile(FILE * f)
 {
-    messageFile = f;
+	messageFile = f;
 }
 
 void logToSyslog(int enable) {
@@ -37,24 +37,24 @@ void logToSyslog(int enable) {
 #endif
 }
 
-__attribute__((format (printf, 3, 0)))
+	__attribute__((format (printf, 3, 0)))
 static void log_once(FILE *where, int level, const char *format, va_list args)
 {
 	switch (level) {
-	case MESS_DEBUG:
-	case MESS_NORMAL:
-	case MESS_VERBOSE:
-		break;
-	default:
-		fprintf(where, "error: ");
-		break;
+		case MESS_DEBUG:
+		case MESS_NORMAL:
+		case MESS_VERBOSE:
+			break;
+		default:
+			fprintf(where, "error: ");
+			break;
 	}
 
 	vfprintf(where, format, args);
 	fflush(where);
 }
 
-__attribute__((format (printf, 2, 3)))
+	__attribute__((format (printf, 2, 3)))
 void message(int level, const char *format, ...)
 {
 	va_list args;
