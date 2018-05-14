@@ -14,12 +14,12 @@
 
 void message(int level, const char *format, ...)
 #ifdef __GNUC__
-    __attribute__ ((format(printf, 2, 3)));
+	__attribute__ ((format(printf, 2, 3)));
 #else
-;
+	;
 #endif
-void logSetMessageFile(FILE * f);
-void logToSyslog(int enable);
-void logSetLevel(int level);
+	void logSetMessageFile(FILE * f);
+	void logToSyslog(int enable);
+	void logSetLevel(int level);
 
 #endif

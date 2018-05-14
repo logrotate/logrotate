@@ -43,50 +43,50 @@
 #endif
 
 enum criterium {
-    ROT_HOURLY,
-    ROT_DAYS,
-    ROT_WEEKLY,
-    ROT_MONTHLY,
-    ROT_YEARLY,
-    ROT_SIZE
+	ROT_HOURLY,
+	ROT_DAYS,
+	ROT_WEEKLY,
+	ROT_MONTHLY,
+	ROT_YEARLY,
+	ROT_SIZE
 };
 
 struct logInfo {
-    char *pattern;
-    char **files;
-    int numFiles;
-    char *oldDir;
-    enum criterium criterium;
-    int weekday; /* used by ROT_WEEKLY only */
-    off_t threshold;
-    off_t maxsize;
-    off_t minsize;
-    int rotateCount;
-    int rotateMinAge;
-    int rotateAge;
-    int logStart;
-    char *pre, *post, *first, *last, *preremove;
-    char *logAddress;
-    char *extension;
-    char *addextension;
-    char *compress_prog;
-    char *uncompress_prog;
-    char *compress_ext;
+	char *pattern;
+	char **files;
+	int numFiles;
+	char *oldDir;
+	enum criterium criterium;
+	int weekday; /* used by ROT_WEEKLY only */
+	off_t threshold;
+	off_t maxsize;
+	off_t minsize;
+	int rotateCount;
+	int rotateMinAge;
+	int rotateAge;
+	int logStart;
+	char *pre, *post, *first, *last, *preremove;
+	char *logAddress;
+	char *extension;
+	char *addextension;
+	char *compress_prog;
+	char *uncompress_prog;
+	char *compress_ext;
 	char *dateformat;		/* specify format for strftime (for dateext) */
-    int flags;
+	int flags;
 	int shred_cycles;		/* if !=0, pass -n shred_cycles to GNU shred */
-    mode_t createMode;		/* if any/all of these are -1, we use the */
-    uid_t createUid;		/* attributes from the log file just rotated */
-    gid_t createGid;
-    uid_t suUid;			/* switch user to this uid and group to this gid */
-    gid_t suGid;
-    mode_t olddirMode;
-    uid_t olddirUid;
-    uid_t olddirGid;
-    /* these are at the end so they end up nil */
-    const char **compress_options_list;
-    int compress_options_count;
-    TAILQ_ENTRY(logInfo) list;
+	mode_t createMode;		/* if any/all of these are -1, we use the */
+	uid_t createUid;		/* attributes from the log file just rotated */
+	gid_t createGid;
+	uid_t suUid;			/* switch user to this uid and group to this gid */
+	gid_t suGid;
+	mode_t olddirMode;
+	uid_t olddirUid;
+	uid_t olddirGid;
+	/* these are at the end so they end up nil */
+	const char **compress_options_list;
+	int compress_options_count;
+	TAILQ_ENTRY(logInfo) list;
 };
 
 TAILQ_HEAD(logInfoHead, logInfo) logs;
