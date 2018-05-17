@@ -156,10 +156,10 @@ int switch_user(uid_t user, gid_t group) {
 	save_euid = geteuid();
 	if (save_euid == user && save_egid == group)
 		return 0;
-	message(MESS_DEBUG, "switching euid to %d and egid to %d\n",
+	message(MESS_DEBUG, "switching euid to %u and egid to %u\n",
 		user, group);
 	if (setegid(group) || seteuid(user)) {
-		message(MESS_ERROR, "error switching euid to %d and egid to %d: %s\n",
+		message(MESS_ERROR, "error switching euid to %u and egid to %u: %s\n",
 			user, group, strerror(errno));
 		return 1;
 	}
@@ -179,10 +179,10 @@ static int switch_user_permanently(const struct logInfo *log) {
 		message(MESS_ERROR, "error getting rid of euid != uid\n");
 		return 1;
 	}
-	message(MESS_DEBUG, "switching uid to %d and gid to %d\n",
+	message(MESS_DEBUG, "switching uid to %u and gid to %u\n",
 		user, group);
 	if (setgid(group) || setuid(user)) {
-		message(MESS_ERROR, "error switching euid to %d and egid to %d: %s\n",
+		message(MESS_ERROR, "error switching euid to %u and egid to %u: %s\n",
 			user, group, strerror(errno));
 		return 1;
 	}
@@ -239,7 +239,7 @@ static int allocateHash(unsigned int hs)
 	if (hs < HASH_SIZE_MIN)
 		hs = HASH_SIZE_MIN;
 
-	message(MESS_DEBUG, "Allocating hash table for state file, size %d entries\n",
+	message(MESS_DEBUG, "Allocating hash table for state file, size %u entries\n",
 			hs);
 
 	states = calloc(hs, sizeof(struct logStateList *));
@@ -540,7 +540,7 @@ static int createOutputFile(char *fileName, int flags, struct stat *sb,
 
     if ((sb_create.st_uid != sb->st_uid || sb_create.st_gid != sb->st_gid) &&
 		fchown(fd, sb->st_uid, sb->st_gid)) {
-	message(MESS_ERROR, "error setting owner of %s to uid %d and gid %d: %s\n",
+	message(MESS_ERROR, "error setting owner of %s to uid %u and gid %u: %s\n",
 		fileName, sb->st_uid, sb->st_gid, strerror(errno));
 	close(fd);
 	return -1;
@@ -1993,7 +1993,7 @@ static int rotateLogSet(struct logInfo *log, int force)
         message(MESS_DEBUG, "%jd bytes ", (intmax_t)log->threshold);
         break;
         default:
-        message(MESS_DEBUG, "rotateLogSet() does not have case for: %d ", log->criterium);
+        message(MESS_DEBUG, "rotateLogSet() does not have case for: %u ", log->criterium);
         }
     }
 
