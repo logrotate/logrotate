@@ -1827,6 +1827,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 			message(MESS_ERROR, "found error in %s, skipping\n",
 				newlog->pattern ? newlog->pattern : "log config");
 
+			logerror = 1;
 			state = STATE_SKIP_CONFIG;
 			break;
 		case STATE_LOAD_SCRIPT:

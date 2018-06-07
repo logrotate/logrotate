@@ -1,0 +1,3 @@
+&DIR&/test.log {
+    rotate 1 # invalid comment
+}
