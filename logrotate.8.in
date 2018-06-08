@@ -518,7 +518,8 @@ the name of file which is soon to be removed. See also \fBfirstaction\fR.
 \fBrotate \fIcount\fR
 Log files are rotated \fIcount\fR times before being removed or mailed to the
 address specified in a \fBmail\fR directive. If \fIcount\fR is 0, old versions
-are removed rather than rotated. Default is 0.
+are removed rather than rotated. If\fIcount\fR is -1, old logs are not removed
+at all (use with caution, may waste performance and disk space). Default is 0.
 
 .TP
 \fBrenamecopy\fR
