@@ -1349,6 +1349,68 @@ static int findNeedRotating(struct logInfo *log, int logNum, int force)
     return 0;
 }
 
+/* find the rotated file with the highest index */
+static int findLastRotated(const struct logNames *rotNames,
+			   const char *fileext, const char *compext)
+{
+    char *pattern;
+    int glob_rc;
+    glob_t globResult;
+    size_t i;
+    int last = 0;
+    size_t prefixLen, suffixLen;
+
+    if (asprintf(&pattern, "%s/%s.*%s%s", rotNames->dirName,
+		rotNames->baseName, fileext, compext) < 0)
+	/* out of memory */
+	return -1;
+
+    glob_rc = glob(pattern, 0, globerr, &globResult);
+    free(pattern);
+    switch (glob_rc) {
+	case 0:
+	    /* glob() succeeded */
+	    break;
+
+	case GLOB_NOMATCH:
+	    /* found nothing -> assume first rotation */
+	    return 0;
+
+	default:
+	    /* glob() failed */
+	    return -1;
+    }
+
+    prefixLen = strlen(rotNames->dirName) + /* '/' */1
+	+ strlen(rotNames->baseName) + /* '.' */ 1;
+    suffixLen = strlen(fileext) + strlen(compext);
+
+    for (i = 0; i < globResult.gl_pathc; ++i) {
+	char *fileName = globResult.gl_pathv[i];
+	const size_t fileNameLen = strlen(fileName);
+	int num;
+	char c;
+	if (fileNameLen <= prefixLen + suffixLen)
+	    /* not enough room for index in this file name */
+	    continue;
+
+	/* cut off prefix/suffix */
+	fileName[fileNameLen - suffixLen] = '\0';
+	fileName += prefixLen;
+
+	if (sscanf(fileName, "%d%c", &num, &c) != 1)
+	    /* index not matched in this file name */
+	    continue;
+
+	/* update last index */
+	if (last < num)
+	    last = num;
+    }
+
+    globfree(&globResult);
+    return last;
+}
+
 static int prerotateSingleLog(struct logInfo *log, int logNum,
 			      struct logState *state, struct logNames *rotNames)
 {
@@ -1616,9 +1678,9 @@ static int prerotateSingleLog(struct logInfo *log, int logNum,
 	    struct stat fst_buf;
 	    int mail_out = -1;
 	    size_t glob_count;
-	    /* remove the first (n - rotateCount) matches
-	     * no real rotation needed, since the files have
-	     * the date in their name */
+	    /* Remove the first (n - rotateCount) matches no real rotation
+	     * needed, since the files have the date in their name. Note that
+	     * (size_t)-1 == SIZE_T_MAX in rotateCount */
 		sortGlobResult(&globResult, strlen(rotNames->dirName) + 1 + strlen(rotNames->baseName), dformat);
 	    for (glob_count = 0; glob_count < globResult.gl_pathc; glob_count++) {
 		if (!stat((globResult.gl_pathv)[glob_count], &fst_buf)) {
@@ -1671,6 +1733,7 @@ static int prerotateSingleLog(struct logInfo *log, int logNum,
 	int i;
 	if (log->rotateAge) {
 	    struct stat fst_buf;
+	    /* we will not enter the loop in case rotateCount == -1 */
 	    for (i = 1; i <= rotateCount + 1; i++) {
 		if (asprintf(&oldName, "%s/%s.%d%s%s", rotNames->dirName,
 			rotNames->baseName, i, fileext, compext) < 0) {
@@ -1691,6 +1754,15 @@ static int prerotateSingleLog(struct logInfo *log, int logNum,
 	    }
 	}
 
+	if (rotateCount == -1) {
+	    rotateCount = findLastRotated(rotNames, fileext, compext);
+	    if (rotateCount < 0) {
+		message(MESS_ERROR, "could not find last rotated file: %s/%s.*%s%s\n",
+			rotNames->dirName, rotNames->baseName, fileext, compext);
+		return 1;
+	    }
+	}
+
 	if (asprintf(&oldName, "%s/%s.%d%s%s", rotNames->dirName,
 		rotNames->baseName, logStart + rotateCount, fileext,
 		compext) < 0) {
@@ -1698,7 +1770,8 @@ static int prerotateSingleLog(struct logInfo *log, int logNum,
 	}
 	newName = strdup(oldName);
 
-	rotNames->disposeName = strdup(oldName);
+	if (log->rotateCount != -1)
+	    rotNames->disposeName = strdup(oldName);
 
 	sprintf(rotNames->firstRotated, "%s/%s.%d%s%s", rotNames->dirName,
 		rotNames->baseName, logStart, fileext,
@@ -2000,9 +2073,9 @@ static int rotateLogSet(struct logInfo *log, int force)
         }
     }
 
-    if (log->rotateCount)
+    if (log->rotateCount > 0)
 	message(MESS_DEBUG, "(%d rotations)\n", log->rotateCount);
-    else
+    else if (log->rotateCount == 0)
 	message(MESS_DEBUG, "(no old logs will be kept)\n");
 
     if (log->oldDir)
