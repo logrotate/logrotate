@@ -361,7 +361,7 @@ static int do_mkdir(const char *path, mode_t mode, uid_t uid, gid_t gid) {
 	/* newly created directory, set the owner and permissions */
 	if (chown(path, uid, gid) != 0) {
 	    message(MESS_ERROR, "error setting owner of %s to uid %u and gid %u: %s\n",
-		    path, uid, gid, strerror(errno));
+		    path, (unsigned) uid, (unsigned) gid, strerror(errno));
 	    return -1;
 	}
 

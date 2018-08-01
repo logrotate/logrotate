@@ -157,10 +157,10 @@ int switch_user(uid_t user, gid_t group) {
 	if (save_euid == user && save_egid == group)
 		return 0;
 	message(MESS_DEBUG, "switching euid to %u and egid to %u\n",
-		user, group);
+		(unsigned) user, (unsigned) group);
 	if (setegid(group) || seteuid(user)) {
 		message(MESS_ERROR, "error switching euid to %u and egid to %u: %s\n",
-			user, group, strerror(errno));
+			(unsigned) user, (unsigned) group, strerror(errno));
 		return 1;
 	}
 	return 0;
@@ -180,10 +180,10 @@ static int switch_user_permanently(const struct logInfo *log) {
 		return 1;
 	}
 	message(MESS_DEBUG, "switching uid to %u and gid to %u\n",
-		user, group);
+		(unsigned) user, (unsigned) group);
 	if (setgid(group) || setuid(user)) {
 		message(MESS_ERROR, "error switching euid to %u and egid to %u: %s\n",
-			user, group, strerror(errno));
+			(unsigned) user, (unsigned) group, strerror(errno));
 		return 1;
 	}
 	return 0;
@@ -541,7 +541,7 @@ static int createOutputFile(char *fileName, int flags, struct stat *sb,
     if ((sb_create.st_uid != sb->st_uid || sb_create.st_gid != sb->st_gid) &&
 		fchown(fd, sb->st_uid, sb->st_gid)) {
 	message(MESS_ERROR, "error setting owner of %s to uid %u and gid %u: %s\n",
-		fileName, sb->st_uid, sb->st_gid, strerror(errno));
+		fileName, (unsigned) sb->st_uid, (unsigned) sb->st_gid, strerror(errno));
 	close(fd);
 	return -1;
     }
@@ -1993,7 +1993,8 @@ static int rotateLogSet(struct logInfo *log, int force)
         message(MESS_DEBUG, "%jd bytes ", (intmax_t)log->threshold);
         break;
         default:
-        message(MESS_DEBUG, "rotateLogSet() does not have case for: %u ", log->criterium);
+        message(MESS_DEBUG, "rotateLogSet() does not have case for: %u ",
+                (unsigned) log->criterium);
         }
     }
 
