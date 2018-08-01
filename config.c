@@ -1040,7 +1040,8 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 			}
 
 			if (isalpha((unsigned char)*start)) {
-				if ((key = isolateWord(&start, &buf, length)) == NULL)
+				key = isolateWord(&start, &buf, length);
+				if (key == NULL)
 					continue;
 				if (!strcmp(key, "compress")) {
 					newlog->flags |= LOG_FLAG_COMPRESS;
@@ -1194,16 +1195,16 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 					}
 				} else if (!strcmp(key, "shredcycles")) {
 					free(key);
-					if ((key = isolateValue(configFile, lineNum, "shred cycles",
-							&start, &buf, length)) != NULL) {
-						newlog->shred_cycles = strtoul(key, &chptr, 0);
-						if (*chptr || newlog->shred_cycles < 0) {
-							message(MESS_ERROR, "%s:%d bad shred cycles '%s'\n",
-									configFile, lineNum, key);
-							goto error;
-						}
+					key = isolateValue(configFile, lineNum, "shred cycles",
+							&start, &buf, length);
+					if (key == NULL)
+						continue;
+					newlog->shred_cycles = strtoul(key, &chptr, 0);
+					if (*chptr || newlog->shred_cycles < 0) {
+						message(MESS_ERROR, "%s:%d bad shred cycles '%s'\n",
+								configFile, lineNum, key);
+						goto error;
 					}
-					else continue;
 				} else if (!strcmp(key, "hourly")) {
 					set_criterium(&newlog->criterium, ROT_HOURLY, &criterium_set);
 				} else if (!strcmp(key, "daily")) {
@@ -1235,59 +1236,53 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 					set_criterium(&newlog->criterium, ROT_YEARLY, &criterium_set);
 				} else if (!strcmp(key, "rotate")) {
 					free(key);
-					if ((key = isolateValue
-						(configFile, lineNum, "rotate count", &start,
-						&buf, length)) != NULL) {
-
-						newlog->rotateCount = strtol(key, &chptr, 0);
-						if (*chptr || newlog->rotateCount < -1) {
-							message(MESS_ERROR,
-								"%s:%d bad rotation count '%s'\n",
-								configFile, lineNum, key);
-							RAISE_ERROR();
-						}
+					key = isolateValue(configFile, lineNum, "rotate count", &start,
+						&buf, length);
+					if (key == NULL)
+						continue;
+					newlog->rotateCount = strtol(key, &chptr, 0);
+					if (*chptr || newlog->rotateCount < -1) {
+						message(MESS_ERROR,
+							"%s:%d bad rotation count '%s'\n",
+							configFile, lineNum, key);
+						RAISE_ERROR();
 					}
-					else continue;
 				} else if (!strcmp(key, "start")) {
 					free(key);
-					if ((key = isolateValue
-						(configFile, lineNum, "start count", &start,
-						&buf, length)) != NULL) {
-
-						newlog->logStart = strtoul(key, &chptr, 0);
-						if (*chptr || newlog->logStart < 0) {
-							message(MESS_ERROR, "%s:%d bad start count '%s'\n",
-								configFile, lineNum, key);
-							RAISE_ERROR();
-						}
+					key = isolateValue(configFile, lineNum, "start count", &start,
+						&buf, length);
+					if (key == NULL)
+						continue;
+					newlog->logStart = strtoul(key, &chptr, 0);
+					if (*chptr || newlog->logStart < 0) {
+						message(MESS_ERROR, "%s:%d bad start count '%s'\n",
+							configFile, lineNum, key);
+						RAISE_ERROR();
 					}
-					else continue;
 				} else if (!strcmp(key, "minage")) {
 					free(key);
-					if ((key = isolateValue
-						(configFile, lineNum, "minage count", &start,
-						&buf, length)) != NULL) {
-						newlog->rotateMinAge = strtoul(key, &chptr, 0);
-						if (*chptr || newlog->rotateMinAge < 0) {
-							message(MESS_ERROR, "%s:%d bad minimum age '%s'\n",
-								configFile, lineNum, start);
-							RAISE_ERROR();
-						}
+					key = isolateValue(configFile, lineNum, "minage count", &start,
+						&buf, length);
+					if (key == NULL)
+						continue;
+					newlog->rotateMinAge = strtoul(key, &chptr, 0);
+					if (*chptr || newlog->rotateMinAge < 0) {
+						message(MESS_ERROR, "%s:%d bad minimum age '%s'\n",
+							configFile, lineNum, start);
+						RAISE_ERROR();
 					}
-					else continue;
 				} else if (!strcmp(key, "maxage")) {
 					free(key);
-					if ((key = isolateValue
-						(configFile, lineNum, "maxage count", &start,
-						&buf, length)) != NULL) {
-						newlog->rotateAge = strtoul(key, &chptr, 0);
-						if (*chptr || newlog->rotateAge < 0) {
-							message(MESS_ERROR, "%s:%d bad maximum age '%s'\n",
-								configFile, lineNum, start);
-							RAISE_ERROR();
-						}
+					key = isolateValue(configFile, lineNum, "maxage count", &start,
+						&buf, length);
+					if (key == NULL)
+						continue;
+					newlog->rotateAge = strtoul(key, &chptr, 0);
+					if (*chptr || newlog->rotateAge < 0) {
+						message(MESS_ERROR, "%s:%d bad maximum age '%s'\n",
+							configFile, lineNum, start);
+						RAISE_ERROR();
 					}
-					else continue;
 				} else if (!strcmp(key, "errors")) {
 					message(MESS_DEBUG,
 						"%s: %d: the errors directive is deprecated and no longer used.\n",
@@ -1340,48 +1335,48 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 						continue;
 					}
 					free(key);
-					if ((key = isolateValue(configFile, lineNum, "tabooext", &start,
-							&buf, length)) != NULL) {
-						endtag = key;
-						if (*endtag == '+') {
+					key = isolateValue(configFile, lineNum, "tabooext", &start,
+							&buf, length);
+					if (key == NULL)
+						continue;
+					endtag = key;
+					if (*endtag == '+') {
+						endtag++;
+						while (isspace((unsigned char)*endtag) && *endtag)
 							endtag++;
-							while (isspace((unsigned char)*endtag) && *endtag)
-								endtag++;
-						} else {
-							free_2d_array(tabooPatterns, tabooCount);
-							tabooCount = 0;
-							/* realloc of NULL is safe by definition */
-							tabooPatterns = NULL;
-						}
-
-						while (*endtag) {
-							int bytes;
-							char *pattern = NULL;
-
-							chptr = endtag;
-							while (!isspace((unsigned char)*chptr) && *chptr != ',' && *chptr)
-								chptr++;
-
-							/* accept only non-empty patterns to avoid exclusion of everything */
-							if (endtag < chptr) {
-								tabooPatterns = realloc(tabooPatterns, sizeof(*tabooPatterns) *
-											(tabooCount + 1));
-								bytes = asprintf(&pattern, "*%.*s", (int)(chptr - endtag), endtag);
-
-								/* should test for malloc() failure */
-								assert(bytes != -1);
-								tabooPatterns[tabooCount] = pattern;
-								tabooCount++;
-							}
-
-							endtag = chptr;
-							if (*endtag == ',')
-								endtag++;
-							while (*endtag && isspace((unsigned char)*endtag))
-								endtag++;
-						}
+					} else {
+						free_2d_array(tabooPatterns, tabooCount);
+						tabooCount = 0;
+						/* realloc of NULL is safe by definition */
+						tabooPatterns = NULL;
 					}
-					else continue;
+
+					while (*endtag) {
+						int bytes;
+						char *pattern = NULL;
+
+						chptr = endtag;
+						while (!isspace((unsigned char)*chptr) && *chptr != ',' && *chptr)
+							chptr++;
+
+						/* accept only non-empty patterns to avoid exclusion of everything */
+						if (endtag < chptr) {
+							tabooPatterns = realloc(tabooPatterns, sizeof(*tabooPatterns) *
+										(tabooCount + 1));
+							bytes = asprintf(&pattern, "*%.*s", (int)(chptr - endtag), endtag);
+
+							/* should test for malloc() failure */
+							assert(bytes != -1);
+							tabooPatterns[tabooCount] = pattern;
+							tabooCount++;
+						}
+
+						endtag = chptr;
+						if (*endtag == ',')
+							endtag++;
+						while (*endtag && isspace((unsigned char)*endtag))
+							endtag++;
+					}
 				} else if (!strcmp(key, "taboopat")) {
 					if (newlog != defConfig) {
 						message(MESS_ERROR,
@@ -1392,68 +1387,68 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 						continue;
 					}
 					free(key);
-					if ((key = isolateValue(configFile, lineNum, "taboopat", &start,
-							&buf, length)) != NULL) {
-						endtag = key;
-						if (*endtag == '+') {
+					key = isolateValue(configFile, lineNum, "taboopat", &start,
+							&buf, length);
+					if (key == NULL)
+						continue;
+
+					endtag = key;
+					if (*endtag == '+') {
+						endtag++;
+						while (isspace((unsigned char)*endtag) && *endtag)
 							endtag++;
-							while (isspace((unsigned char)*endtag) && *endtag)
-								endtag++;
-						} else {
-							free_2d_array(tabooPatterns, tabooCount);
-							tabooCount = 0;
-							/* realloc of NULL is safe by definition */
-							tabooPatterns = NULL;
-						}
-
-						while (*endtag) {
-							int bytes;
-							char *pattern = NULL;
-
-							chptr = endtag;
-							while (!isspace((unsigned char)*chptr) && *chptr != ',' && *chptr)
-								chptr++;
-
-							tabooPatterns = realloc(tabooPatterns, sizeof(*tabooPatterns) *
-										(tabooCount + 1));
-							bytes = asprintf(&pattern, "%.*s", (int)(chptr - endtag), endtag);
-
-							/* should test for malloc() failure */
-							assert(bytes != -1);
-							tabooPatterns[tabooCount] = pattern;
-							tabooCount++;
-
-							endtag = chptr;
-							if (*endtag == ',')
-								endtag++;
-							while (*endtag && isspace((unsigned char)*endtag))
-								endtag++;
-						}
+					} else {
+						free_2d_array(tabooPatterns, tabooCount);
+						tabooCount = 0;
+						/* realloc of NULL is safe by definition */
+						tabooPatterns = NULL;
 					}
-					else continue;
+
+					while (*endtag) {
+						int bytes;
+						char *pattern = NULL;
+
+						chptr = endtag;
+						while (!isspace((unsigned char)*chptr) && *chptr != ',' && *chptr)
+							chptr++;
+
+						tabooPatterns = realloc(tabooPatterns, sizeof(*tabooPatterns) *
+									(tabooCount + 1));
+						bytes = asprintf(&pattern, "%.*s", (int)(chptr - endtag), endtag);
+
+						/* should test for malloc() failure */
+						assert(bytes != -1);
+						tabooPatterns[tabooCount] = pattern;
+						tabooCount++;
+
+						endtag = chptr;
+						if (*endtag == ',')
+							endtag++;
+						while (*endtag && isspace((unsigned char)*endtag))
+							endtag++;
+					}
 				} else if (!strcmp(key, "include")) {
 					free(key);
-					if ((key = isolateValue(configFile, lineNum, "include", &start,
-							&buf, length)) != NULL) {
-
-						message(MESS_DEBUG, "including %s\n", key);
-						if (recursion_depth >= MAX_NESTING) {
-							message(MESS_ERROR, "%s:%d include nesting too deep\n",
-									configFile, lineNum);
-							logerror = 1;
-							continue;
-						}
-
-						++recursion_depth;
-						rv = readConfigPath(key, newlog);
-						--recursion_depth;
-
-						if (rv) {
-							logerror = 1;
-							continue;
-						}
+					key = isolateValue(configFile, lineNum, "include", &start,
+							&buf, length);
+					if (key == NULL)
+						continue;
+					message(MESS_DEBUG, "including %s\n", key);
+					if (recursion_depth >= MAX_NESTING) {
+						message(MESS_ERROR, "%s:%d include nesting too deep\n",
+								configFile, lineNum);
+						logerror = 1;
+						continue;
 					}
-					else continue;
+
+					++recursion_depth;
+					rv = readConfigPath(key, newlog);
+					--recursion_depth;
+
+					if (rv) {
+						logerror = 1;
+						continue;
+					}
 				} else if (!strcmp(key, "olddir")) {
 					freeLogItem (oldDir);
 
@@ -1463,28 +1458,23 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 					}
 					message(MESS_DEBUG, "olddir is now %s\n", newlog->oldDir);
 				} else if (!strcmp(key, "extension")) {
-					if ((key = isolateValue
-						(configFile, lineNum, "extension name", &start,
-							&buf, length)) != NULL) {
-						freeLogItem (extension);
-						newlog->extension = key;
-						key = NULL;
-					}
-					else continue;
-
-					message(MESS_DEBUG, "extension is now %s\n",
-						newlog->extension);
+					key = isolateValue(configFile, lineNum, "extension name", &start,
+							&buf, length);
+					if (key == NULL)
+						continue;
+					freeLogItem (extension);
+					newlog->extension = key;
+					key = NULL;
+					message(MESS_DEBUG, "extension is now %s\n", newlog->extension);
 
 				} else if (!strcmp(key, "addextension")) {
-					if ((key = isolateValue
-						(configFile, lineNum, "addextension name", &start,
-							&buf, length)) != NULL) {
-						freeLogItem (addextension);
-						newlog->addextension = key;
-						key = NULL;
-					}
-					else continue;
-
+					key = isolateValue(configFile, lineNum, "addextension name", &start,
+							&buf, length);
+					if (key == NULL)
+						continue;
+					freeLogItem (addextension);
+					newlog->addextension = key;
+					key = NULL;
 					message(MESS_DEBUG, "addextension is now %s\n",
 						newlog->addextension);
 
@@ -1832,7 +1822,8 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 			break;
 		case STATE_LOAD_SCRIPT:
 		case STATE_LOAD_SCRIPT | STATE_SKIP_CONFIG:
-			if ((key = isolateWord(&start, &buf, length)) == NULL)
+			key = isolateWord(&start, &buf, length);
+			if (key == NULL)
 				continue;
 
 			if (strcmp(key, "endscript") == 0) {
@@ -1867,7 +1858,8 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 				newlog = defConfig;
 			}
 			else {
-				if ((key = isolateWord(&start, &buf, length)) == NULL)
+				key = isolateWord(&start, &buf, length);
+				if (key == NULL)
 					continue;
 				if (
 					(strcmp(key, "postrotate") == 0) ||
