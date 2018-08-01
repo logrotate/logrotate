@@ -1025,10 +1025,6 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 
 	start = buf;
     for (start = buf; start - buf < length; start++) {
-	if (key) {
-		free(key);
-		key = NULL;
-	}
 	switch (state) {
 		case STATE_DEFAULT:
 			if (isblank((unsigned char)*start))
@@ -1040,6 +1036,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 			}
 
 			if (isalpha((unsigned char)*start)) {
+				free(key);
 				key = isolateWord(&start, &buf, length);
 				if (key == NULL)
 					continue;
@@ -1458,6 +1455,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 					}
 					message(MESS_DEBUG, "olddir is now %s\n", newlog->oldDir);
 				} else if (!strcmp(key, "extension")) {
+				    	free(key);
 					key = isolateValue(configFile, lineNum, "extension name", &start,
 							&buf, length);
 					if (key == NULL)
@@ -1468,6 +1466,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 					message(MESS_DEBUG, "extension is now %s\n", newlog->extension);
 
 				} else if (!strcmp(key, "addextension")) {
+				    	free(key);
 					key = isolateValue(configFile, lineNum, "addextension name", &start,
 							&buf, length);
 					if (key == NULL)
@@ -1560,8 +1559,6 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 					if (*start != '\n')
 						state = STATE_SKIP_LINE;
 				}
-				free(key);
-				key = NULL;
 			} else if (*start == '/' || *start == '"' || *start == '\''
 #ifdef GLOB_TILDE
                                                                            || *start == '~'
@@ -1822,6 +1819,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 			break;
 		case STATE_LOAD_SCRIPT:
 		case STATE_LOAD_SCRIPT | STATE_SKIP_CONFIG:
+			free(key);
 			key = isolateWord(&start, &buf, length);
 			if (key == NULL)
 				continue;
@@ -1858,6 +1856,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 				newlog = defConfig;
 			}
 			else {
+			    	free(key);
 				key = isolateWord(&start, &buf, length);
 				if (key == NULL)
 					continue;
@@ -1889,18 +1888,12 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 						state = STATE_SKIP_LINE | STATE_SKIP_CONFIG;
 					}
 				}
-				free(key);
-				key = NULL;
 			}
 			break;
 		default:
 			message(MESS_DEBUG,
 				"%s: %d: readConfigFile() unknown state\n",
 				configFile, lineNum);
-	}
-	if (key) {
-		free(key);
-		key = NULL;
 	}
 	if (*start == '\n') {
 	    lineNum++;
@@ -1914,6 +1907,8 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 		configFile);
 	goto error;
     }
+
+    free(key);
 
 	munmap(buf, (size_t) length);
 	close(fd);
