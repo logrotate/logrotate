@@ -1412,7 +1412,7 @@ static int prerotateSingleLog(struct logInfo *log, int logNum,
 			      struct logState *state, struct logNames *rotNames)
 {
     struct tm now = *localtime(&nowSecs);
-    char *oldName, *newName = NULL;
+    char *oldName = NULL;
     const char *compext = "";
     const char *fileext = "";
     int hasErrors = 0;
@@ -1728,6 +1728,7 @@ static int prerotateSingleLog(struct logInfo *log, int logNum,
 	free(glob_pattern);
     } else {
 	int i;
+	char *newName = NULL;
 	if (log->rotateAge) {
 	    struct stat fst_buf;
 	    /* we will not enter the loop in case rotateCount == -1 */
@@ -1765,7 +1766,6 @@ static int prerotateSingleLog(struct logInfo *log, int logNum,
 		compext) < 0) {
 	    message(MESS_FATAL, "could not allocate disposeName memory\n");
 	}
-	newName = strdup(oldName);
 
 	if (log->rotateCount != -1)
 	    rotNames->disposeName = strdup(oldName);
@@ -1780,6 +1780,8 @@ static int prerotateSingleLog(struct logInfo *log, int logNum,
 		if (asprintf(&oldName, "%s/%s.%d%s%s", rotNames->dirName,
 		    rotNames->baseName, i, fileext, compext) < 0) {
 		    message(MESS_FATAL, "could not allocate oldName memory\n");
+		    oldName = NULL;
+		    break;
 		}
 
 	    message(MESS_DEBUG,
@@ -1796,11 +1798,9 @@ static int prerotateSingleLog(struct logInfo *log, int logNum,
 		    hasErrors = 1;
 		}
 	    }
-	    if (hasErrors || i - 1 < 0)
-		    free(oldName);
-
 	}
 	free(newName);
+	free(oldName);
     }				/* !LOG_FLAG_DATEEXT */
 
 	if (log->flags & LOG_FLAG_DATEEXT) {
