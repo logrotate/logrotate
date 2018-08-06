@@ -87,6 +87,10 @@ Prints a short usage message.
 \fB\-v\fR, \fB\-\-verbose\fR
 Turns on verbose mode, for example to display messages during rotation.
 
+.TP
+\fB\-\-version\fR
+Display version information.
+
 .SH CONFIGURATION FILE
 
 \fBlogrotate\fR reads everything about the log files it should be handling
