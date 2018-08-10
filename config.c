@@ -55,31 +55,31 @@
 
 int asprintf(char **string_ptr, const char *format, ...)
 {
-	va_list arg;
-	char *str;
-	int size;
-	int rv;
+    va_list arg;
+    char *str;
+    int size;
+    int rv;
 
-	va_start(arg, format);
-	size = vsnprintf(NULL, 0, format, arg);
-	size++;
+    va_start(arg, format);
+    size = vsnprintf(NULL, 0, format, arg);
+    size++;
+    va_end(arg);
+    va_start(arg, format);
+    str = malloc(size);
+    if (str == NULL) {
 	va_end(arg);
-	va_start(arg, format);
-	str = malloc(size);
-	if (str == NULL) {
-		va_end(arg);
-		/*
-		 * Strictly speaking, GNU asprintf doesn't do this,
-		 * but the caller isn't checking the return value.
-		 */
-		fprintf(stderr, "failed to allocate memory\\n");
-		exit(1);
-	}
-	rv = vsnprintf(str, size, format, arg);
-	va_end(arg);
+	/*
+	 * Strictly speaking, GNU asprintf doesn't do this,
+	 * but the caller isn't checking the return value.
+	 */
+	fprintf(stderr, "failed to allocate memory\\n");
+	exit(1);
+    }
+    rv = vsnprintf(str, size, format, arg);
+    va_end(arg);
 
-	*string_ptr = str;
-	return (rv);
+    *string_ptr = str;
+    return (rv);
 }
 
 #endif
@@ -87,23 +87,23 @@ int asprintf(char **string_ptr, const char *format, ...)
 #if !defined(HAVE_STRNDUP)
 char *strndup(const char *s, size_t n)
 {
-       size_t nAvail;
-       char *p;
+    size_t nAvail;
+    char *p;
 
-       if(!s)
-               return NULL;
+    if(!s)
+	return NULL;
 
-       /* min() */
-       nAvail = strlen(s) + 1;
-       if ( (n + 1) < nAvail)
-               nAvail = n + 1;
+    /* min() */
+    nAvail = strlen(s) + 1;
+    if ( (n + 1) < nAvail)
+	nAvail = n + 1;
 
-       p = malloc(nAvail);
-       if (!p)
-               return NULL;
-       memcpy(p, s, nAvail);
-       p[nAvail - 1] = 0;
-       return p;
+    p = malloc(nAvail);
+    if (!p)
+	return NULL;
+    memcpy(p, s, nAvail);
+    p[nAvail - 1] = 0;
+    return p;
 }
 #endif
 
@@ -123,33 +123,33 @@ static const int compress_cmd_list_size = sizeof(compress_cmd_list)
     / sizeof(compress_cmd_list[0]);
 
 enum {
-	STATE_DEFAULT = 2,
-	STATE_SKIP_LINE = 4,
-	STATE_DEFINITION_END = 8,
-	STATE_SKIP_CONFIG = 16,
-	STATE_LOAD_SCRIPT = 32,
-	STATE_ERROR = 64,
+    STATE_DEFAULT = 2,
+    STATE_SKIP_LINE = 4,
+    STATE_DEFINITION_END = 8,
+    STATE_SKIP_CONFIG = 16,
+    STATE_LOAD_SCRIPT = 32,
+    STATE_ERROR = 64,
 };
 
 static const char *defTabooExts[] = {
-	",v",
-	".cfsaved",
-	".disabled",
-	".dpkg-bak",
-	".dpkg-del",
-	".dpkg-dist",
-	".dpkg-new",
-	".dpkg-old",
-	".dpkg-tmp",
-	".rhn-cfg-tmp-*",
-	".rpmnew",
-	".rpmorig",
-	".rpmsave",
-	".swp",
-	".ucf-dist",
-	".ucf-new",
-	".ucf-old",
-	"~"
+    ",v",
+    ".cfsaved",
+    ".disabled",
+    ".dpkg-bak",
+    ".dpkg-del",
+    ".dpkg-dist",
+    ".dpkg-new",
+    ".dpkg-old",
+    ".dpkg-tmp",
+    ".rhn-cfg-tmp-*",
+    ".rpmnew",
+    ".rpmorig",
+    ".rpmsave",
+    ".swp",
+    ".ucf-dist",
+    ".ucf-new",
+    ".ucf-old",
+    "~"
 };
 static const int defTabooCount = sizeof(defTabooExts) / sizeof(char *);
 
@@ -162,26 +162,26 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig);
 static int globerr(const char *pathname, int theerr);
 
 static char *isolateLine(char **strt, char **buf, size_t length) {
-	char *endtag, *start, *tmp;
-	const char *max = *buf + length;
-	char *key;
+    char *endtag, *start, *tmp;
+    const char *max = *buf + length;
+    char *key;
 
-	start = *strt;
-	endtag = start;
-	while (endtag < max && *endtag != '\n') {
-		endtag++;}
-	if (max < endtag)
-		return NULL;
-	tmp = endtag - 1;
-	while (isspace((unsigned char)*endtag))
-		endtag--;
-	key = strndup(start, endtag - start + 1);
-	*strt = tmp;
-	return key;
+    start = *strt;
+    endtag = start;
+    while (endtag < max && *endtag != '\n') {
+	endtag++;}
+    if (max < endtag)
+	return NULL;
+    tmp = endtag - 1;
+    while (isspace((unsigned char)*endtag))
+	endtag--;
+    key = strndup(start, endtag - start + 1);
+    *strt = tmp;
+    return key;
 }
 
 static char *isolateValue(const char *fileName, int lineNum, const char *key,
-			char **startPtr, char **buf, size_t length)
+			  char **startPtr, char **buf, size_t length)
 {
     char *chptr = *startPtr;
     const char *max = *startPtr + length;
@@ -195,30 +195,30 @@ static char *isolateValue(const char *fileName, int lineNum, const char *key,
     }
 
     if (chptr < max && *chptr == '\n') {
-		message(MESS_ERROR, "%s:%d argument expected after %s\n",
-			fileName, lineNum, key);
-		return NULL;
+	message(MESS_ERROR, "%s:%d argument expected after %s\n",
+		fileName, lineNum, key);
+	return NULL;
     }
 
-	*startPtr = chptr;
-	return isolateLine(startPtr, buf, length);
+    *startPtr = chptr;
+    return isolateLine(startPtr, buf, length);
 }
 
 static char *isolateWord(char **strt, char **buf, size_t length) {
-	char *endtag, *start;
-	const char *max = *buf + length;
-	char *key;
-	start = *strt;
-	while (start < max && isblank((unsigned char)*start))
-		start++;
-	endtag = start;
-	while (endtag < max && isalpha((unsigned char)*endtag)) {
-		endtag++;}
-	if (max < endtag)
-		return NULL;
-	key = strndup(start, endtag - start);
-	*strt = endtag;
-	return key;
+    char *endtag, *start;
+    const char *max = *buf + length;
+    char *key;
+    start = *strt;
+    while (start < max && isblank((unsigned char)*start))
+	start++;
+    endtag = start;
+    while (endtag < max && isalpha((unsigned char)*endtag)) {
+	endtag++;}
+    if (max < endtag)
+	return NULL;
+    key = strndup(start, endtag - start);
+    *strt = endtag;
+    return key;
 }
 
 static char *readPath(const char *configFile, int lineNum, const char *key,
@@ -246,90 +246,90 @@ static char *readPath(const char *configFile, int lineNum, const char *key,
 /* set *pUid to UID of the given user, return non-zero on failure */
 static int resolveUid(const char *userName, uid_t *pUid)
 {
-	struct passwd *pw;
+    struct passwd *pw;
 #ifdef __CYGWIN__
-	if (strcmp(userName, "root") == 0) {
-		*pUid = 0;
-		return 0;
-	}
-#endif
-	pw = getpwnam(userName);
-	if (!pw)
-		return -1;
-	*pUid = pw->pw_uid;
-	endpwent();
+    if (strcmp(userName, "root") == 0) {
+	*pUid = 0;
 	return 0;
+    }
+#endif
+    pw = getpwnam(userName);
+    if (!pw)
+	return -1;
+    *pUid = pw->pw_uid;
+    endpwent();
+    return 0;
 }
 
 /* set *pGid to GID of the given group, return non-zero on failure */
 static int resolveGid(const char *groupName, gid_t *pGid)
 {
-	struct group *gr;
+    struct group *gr;
 #ifdef __CYGWIN__
-	if (strcmp(groupName, "root") == 0) {
-		*pGid = 0;
-		return 0;
-	}
-#endif
-	gr = getgrnam(groupName);
-	if (!gr)
-		return -1;
-	*pGid = gr->gr_gid;
-	endgrent();
+    if (strcmp(groupName, "root") == 0) {
+	*pGid = 0;
 	return 0;
+    }
+#endif
+    gr = getgrnam(groupName);
+    if (!gr)
+	return -1;
+    *pGid = gr->gr_gid;
+    endgrent();
+    return 0;
 }
 
 static int readModeUidGid(const char *configFile, int lineNum, char *key,
 			  const char *directive, mode_t *mode, uid_t *pUid,
 			  gid_t *pGid)
 {
-	char u[200], g[200];
-	unsigned int m;
-	char tmp;
-	int rc;
+    char u[200], g[200];
+    unsigned int m;
+    char tmp;
+    int rc;
 
-	if (!strcmp("su", directive))
-	    /* do not read <mode> for the 'su' directive */
-	    rc = 0;
-	else
-	    rc = sscanf(key, "%o %199s %199s%c", &m, u, g, &tmp);
+    if (!strcmp("su", directive))
+	/* do not read <mode> for the 'su' directive */
+	rc = 0;
+    else
+	rc = sscanf(key, "%o %199s %199s%c", &m, u, g, &tmp);
 
-	/* We support 'key <owner> <group> notation now */
-	if (rc == 0) {
-		rc = sscanf(key, "%199s %199s%c", u, g, &tmp);
-		/* Simulate that we have read mode and keep the default value. */
-		if (rc > 0) {
-			m = *mode;
-			rc += 1;
-		}
-	}
-
-	if (rc == 4) {
-		message(MESS_ERROR, "%s:%d extra arguments for "
-			"%s\n", configFile, lineNum, directive);
-		return -1;
-	}
-
+    /* We support 'key <owner> <group> notation now */
+    if (rc == 0) {
+	rc = sscanf(key, "%199s %199s%c", u, g, &tmp);
+	/* Simulate that we have read mode and keep the default value. */
 	if (rc > 0) {
-		*mode = m;
+	    m = *mode;
+	    rc += 1;
 	}
+    }
 
-	if (rc > 1) {
-		if (resolveUid(u, pUid) != 0) {
-			message(MESS_ERROR, "%s:%d unknown user '%s'\n",
-				configFile, lineNum, u);
-			return -1;
-		}
-	}
-	if (rc > 2) {
-		if (resolveGid(g, pGid) != 0) {
-			message(MESS_ERROR, "%s:%d unknown group '%s'\n",
-				configFile, lineNum, g);
-			return -1;
-		}
-	}
+    if (rc == 4) {
+	message(MESS_ERROR, "%s:%d extra arguments for "
+		"%s\n", configFile, lineNum, directive);
+	return -1;
+    }
 
-	return 0;
+    if (rc > 0) {
+	*mode = m;
+    }
+
+    if (rc > 1) {
+	if (resolveUid(u, pUid) != 0) {
+	    message(MESS_ERROR, "%s:%d unknown user '%s'\n",
+		    configFile, lineNum, u);
+	    return -1;
+	}
+    }
+    if (rc > 2) {
+	if (resolveGid(g, pGid) != 0) {
+	    message(MESS_ERROR, "%s:%d unknown group '%s'\n",
+		    configFile, lineNum, g);
+	    return -1;
+	}
+    }
+
+    return 0;
 }
 
 static char *readAddress(const char *configFile, int lineNum, const char *key,
@@ -390,48 +390,48 @@ static int do_mkdir(const char *path, mode_t mode, uid_t uid, gid_t gid) {
 }
 
 static int mkpath(const char *path, mode_t mode, uid_t uid, gid_t gid) {
-	char *pp;
-	char *sp;
-	int rv;
-	char *copypath = strdup(path);
+    char *pp;
+    char *sp;
+    int rv;
+    char *copypath = strdup(path);
 
-	rv = 0;
-	pp = copypath;
-	while (rv == 0 && (sp = strchr(pp, '/')) != NULL) {
-		if (sp != pp) {
-			*sp = '\0';
-			rv = do_mkdir(copypath, mode, uid, gid);
-			*sp = '/';
-		}
-		pp = sp + 1;
+    rv = 0;
+    pp = copypath;
+    while (rv == 0 && (sp = strchr(pp, '/')) != NULL) {
+	if (sp != pp) {
+	    *sp = '\0';
+	    rv = do_mkdir(copypath, mode, uid, gid);
+	    *sp = '/';
 	}
-	if (rv == 0) {
-		rv = do_mkdir(path, mode, uid, gid);
-	}
-	free(copypath);
-	return rv;
+	pp = sp + 1;
+    }
+    if (rv == 0) {
+	rv = do_mkdir(path, mode, uid, gid);
+    }
+    free(copypath);
+    return rv;
 }
 
 static int checkFile(const char *fname)
 {
-	int i;
+    int i;
 
-	/* Check if fname is '.' or '..'; if so, return false */
-	if (fname[0] == '.' && (!fname[1] || (fname[1] == '.' && !fname[2])))
-		return 0;
+    /* Check if fname is '.' or '..'; if so, return false */
+    if (fname[0] == '.' && (!fname[1] || (fname[1] == '.' && !fname[2])))
+	return 0;
 
-	/* Check if fname is ending in a taboo-extension; if so, return false */
-	for (i = 0; i < tabooCount; i++) {
-		const char *pattern = tabooPatterns[i];
-		if (!fnmatch(pattern, fname, FNM_PERIOD))
-		{
-			message(MESS_DEBUG, "Ignoring %s, because of %s pattern match\n",
-					fname, pattern);
-			return 0;
-		}
+    /* Check if fname is ending in a taboo-extension; if so, return false */
+    for (i = 0; i < tabooCount; i++) {
+	const char *pattern = tabooPatterns[i];
+	if (!fnmatch(pattern, fname, FNM_PERIOD))
+	{
+	    message(MESS_DEBUG, "Ignoring %s, because of %s pattern match\n",
+		    fname, pattern);
+	    return 0;
 	}
-	/* All checks have been passed; return true */
-	return 1;
+    }
+    /* All checks have been passed; return true */
+    return 1;
 }
 
 /* Used by qsort to sort filelist */
@@ -484,7 +484,7 @@ static void copyLogInfo(struct logInfo *to, struct logInfo *from)
     if (from->compress_ext)
 	to->compress_ext = strdup(from->compress_ext);
     to->flags = from->flags;
-	to->shred_cycles = from->shred_cycles;
+    to->shred_cycles = from->shred_cycles;
     to->createMode = from->createMode;
     to->createUid = from->createUid;
     to->createGid = from->createGid;
@@ -494,62 +494,62 @@ static void copyLogInfo(struct logInfo *to, struct logInfo *from)
     to->olddirUid = from->olddirUid;
     to->olddirGid = from->olddirGid;
     if (from->compress_options_count) {
-        poptDupArgv(from->compress_options_count, from->compress_options_list,
-                    &to->compress_options_count,  &to->compress_options_list);
+	poptDupArgv(from->compress_options_count, from->compress_options_list,
+		&to->compress_options_count,  &to->compress_options_list);
     }
-	if (from->dateformat)
-		to->dateformat = strdup(from->dateformat);
+    if (from->dateformat)
+	to->dateformat = strdup(from->dateformat);
 }
 
 static void freeLogInfo(struct logInfo *log)
 {
-	free(log->pattern);
-	free_2d_array(log->files, log->numFiles);
-	free(log->oldDir);
-	free(log->pre);
-	free(log->post);
-	free(log->first);
-	free(log->last);
-	free(log->preremove);
-	free(log->logAddress);
-	free(log->extension);
-	free(log->compress_prog);
-	free(log->uncompress_prog);
-	free(log->compress_ext);
-	free(log->compress_options_list);
-	free(log->dateformat);
+    free(log->pattern);
+    free_2d_array(log->files, log->numFiles);
+    free(log->oldDir);
+    free(log->pre);
+    free(log->post);
+    free(log->first);
+    free(log->last);
+    free(log->preremove);
+    free(log->logAddress);
+    free(log->extension);
+    free(log->compress_prog);
+    free(log->uncompress_prog);
+    free(log->compress_ext);
+    free(log->compress_options_list);
+    free(log->dateformat);
 }
 
 static struct logInfo *newLogInfo(struct logInfo *template)
 {
-	struct logInfo *new;
+    struct logInfo *new;
 
-	if ((new = malloc(sizeof(*new))) == NULL)
-		return NULL;
+    if ((new = malloc(sizeof(*new))) == NULL)
+	return NULL;
 
-	copyLogInfo(new, template);
-	TAILQ_INSERT_TAIL(&logs, new, list);
-	numLogs++;
+    copyLogInfo(new, template);
+    TAILQ_INSERT_TAIL(&logs, new, list);
+    numLogs++;
 
-	return new;
+    return new;
 }
 
 static void removeLogInfo(struct logInfo *log)
 {
-	if (log == NULL)
-		return;
+    if (log == NULL)
+	return;
 
-	freeLogInfo(log);
-	TAILQ_REMOVE(&logs, log, list);
-	numLogs--;
+    freeLogInfo(log);
+    TAILQ_REMOVE(&logs, log, list);
+    numLogs--;
 }
 
 static void freeTailLogs(int num)
 {
-	message(MESS_DEBUG, "removing last %d log configs\n", num);
+    message(MESS_DEBUG, "removing last %d log configs\n", num);
 
-	while (num--)
-		removeLogInfo(TAILQ_LAST(&logs, logInfoHead));
+    while (num--)
+	removeLogInfo(TAILQ_LAST(&logs, logInfoHead));
 
 }
 
@@ -625,8 +625,7 @@ static int readConfigPath(const char *path, struct logInfo *defConfig)
 		    }
 		}
 		/* Alloc memory for file name */
-		if ((namelist[files_count] =
-		     (char *) malloc(strlen(dp->d_name) + 1))) {
+		if ((namelist[files_count] = (char *) malloc(strlen(dp->d_name) + 1))) {
 		    strcpy(namelist[files_count], dp->d_name);
 		    files_count++;
 		} else {
@@ -671,7 +670,7 @@ static int readConfigPath(const char *path, struct logInfo *defConfig)
 	}
 
 	if (fchdir(here) < 0) {
-		message(MESS_ERROR, "could not change directory to '.'");
+	    message(MESS_ERROR, "could not change directory to '.'");
 	}
 	close(here);
 	free_2d_array(namelist, files_count);
@@ -693,42 +692,42 @@ int readAllConfigPaths(const char **paths)
     int i, result = 0;
     const char **file;
     struct logInfo defConfig = {
-		.pattern = NULL,
-		.files = NULL,
-		.numFiles = 0,
-		.oldDir = NULL,
-		.criterium = ROT_SIZE,
-		.threshold = 1024 * 1024,
-		.minsize = 0,
-		.maxsize = 0,
-		.rotateCount = 0,
-		.rotateMinAge = 0,
-		.rotateAge = 0,
-		.logStart = -1,
-		.pre = NULL,
-		.post = NULL,
-		.first = NULL,
-		.last = NULL,
-		.preremove = NULL,
-		.logAddress = NULL,
-		.extension = NULL,
-		.addextension = NULL,
-		.compress_prog = NULL,
-		.uncompress_prog = NULL,
-		.compress_ext = NULL,
-		.dateformat = NULL,
-		.flags = LOG_FLAG_IFEMPTY,
-		.shred_cycles = 0,
-		.createMode = NO_MODE,
-		.createUid = NO_UID,
-		.createGid = NO_GID,
-		.olddirMode = NO_MODE,
-		.olddirUid = NO_UID,
-		.olddirGid = NO_GID,
-		.suUid = NO_UID,
-		.suGid = NO_GID,
-		.compress_options_list = NULL,
-		.compress_options_count = 0
+	.pattern = NULL,
+	.files = NULL,
+	.numFiles = 0,
+	.oldDir = NULL,
+	.criterium = ROT_SIZE,
+	.threshold = 1024 * 1024,
+	.minsize = 0,
+	.maxsize = 0,
+	.rotateCount = 0,
+	.rotateMinAge = 0,
+	.rotateAge = 0,
+	.logStart = -1,
+	.pre = NULL,
+	.post = NULL,
+	.first = NULL,
+	.last = NULL,
+	.preremove = NULL,
+	.logAddress = NULL,
+	.extension = NULL,
+	.addextension = NULL,
+	.compress_prog = NULL,
+	.uncompress_prog = NULL,
+	.compress_ext = NULL,
+	.dateformat = NULL,
+	.flags = LOG_FLAG_IFEMPTY,
+	.shred_cycles = 0,
+	.createMode = NO_MODE,
+	.createUid = NO_UID,
+	.createGid = NO_GID,
+	.olddirMode = NO_MODE,
+	.olddirUid = NO_UID,
+	.olddirGid = NO_GID,
+	.suUid = NO_UID,
+	.suGid = NO_GID,
+	.compress_options_list = NULL,
+	.compress_options_count = 0
     };
 
     tabooPatterns = malloc(sizeof(*tabooPatterns) * defTabooCount);
@@ -837,7 +836,7 @@ static int globerr(const char *pathname, int theerr)
 
     /* A missing directory is not an error, so return 0 */
     if (theerr == ENOTDIR)
-        return 0;
+	return 0;
 
     glob_errno = theerr;
 
@@ -846,17 +845,17 @@ static int globerr(const char *pathname, int theerr)
 }
 
 #define freeLogItem(what) \
-	do { \
-		free(newlog->what); \
-		newlog->what = NULL; \
-	} while (0);
+    do { \
+	free(newlog->what); \
+	newlog->what = NULL; \
+    } while (0);
 #define RAISE_ERROR() \
-	if (newlog != defConfig) { \
-		state = STATE_ERROR; \
-		continue; \
-	} else { \
-		goto error; \
-	}
+    if (newlog != defConfig) { \
+	state = STATE_ERROR; \
+	continue; \
+    } else { \
+	goto error; \
+    }
 #define MAX_NESTING 16U
 
 static int readConfigFile(const char *configFile, struct logInfo *defConfig)
@@ -878,52 +877,52 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
     glob_t globResult;
     const char **argv;
     int argc, argNum;
-	int flags;
-	int state = STATE_DEFAULT;
+    int flags;
+    int state = STATE_DEFAULT;
     int logerror = 0;
     struct logInfo *log;
     /* to check if incompatible criteria are specified */
     int criterium_set = 0;
-	static unsigned recursion_depth = 0U;
-	char *globerr_msg = NULL;
-	int in_config = 0;
-	int rv;
-	struct flock fd_lock = {
-		.l_start = 0,
-		.l_len = 0,
-		.l_whence = SEEK_SET,
-		.l_type = F_RDLCK
-	};
+    static unsigned recursion_depth = 0U;
+    char *globerr_msg = NULL;
+    int in_config = 0;
+    int rv;
+    struct flock fd_lock = {
+	.l_start = 0,
+	.l_len = 0,
+	.l_whence = SEEK_SET,
+	.l_type = F_RDLCK
+    };
 
     /* FIXME: createOwner and createGroup probably shouldn't be fixed
        length arrays -- of course, if we aren't run setuid it doesn't
        matter much */
 
-	fd = open(configFile, O_RDONLY);
-	if (fd < 0) {
-		message(MESS_ERROR, "failed to open config file %s: %s\n",
-			configFile, strerror(errno));
-		return 1;
-	}
-	if ((flags = fcntl(fd, F_GETFD)) == -1) {
-		message(MESS_ERROR, "Could not retrieve flags from file %s\n",
-				configFile);
-		close(fd);
-		return 1;
-	}
-	flags |= FD_CLOEXEC;
-	if (fcntl(fd, F_SETFD, flags) == -1) {
-		message(MESS_ERROR, "Could not set flags on file %s\n",
-				configFile);
-		close(fd);
-		return 1;
-	}
-	/* We don't want anybody to change the file while we parse it,
-	 * let's try to lock it for reading. */
-	if (fcntl(fd, F_SETLK, &fd_lock) == -1) {
+    fd = open(configFile, O_RDONLY);
+    if (fd < 0) {
+	message(MESS_ERROR, "failed to open config file %s: %s\n",
+		configFile, strerror(errno));
+	return 1;
+    }
+    if ((flags = fcntl(fd, F_GETFD)) == -1) {
+	message(MESS_ERROR, "Could not retrieve flags from file %s\n",
+		configFile);
+	close(fd);
+	return 1;
+    }
+    flags |= FD_CLOEXEC;
+    if (fcntl(fd, F_SETFD, flags) == -1) {
+	message(MESS_ERROR, "Could not set flags on file %s\n",
+		configFile);
+	close(fd);
+	return 1;
+    }
+    /* We don't want anybody to change the file while we parse it,
+     * let's try to lock it for reading. */
+    if (fcntl(fd, F_SETLK, &fd_lock) == -1) {
 	message(MESS_ERROR, "Could not lock file %s for reading\n",
-			configFile);
-	}
+		configFile);
+    }
     if (fstat(fd, &sb)) {
 	message(MESS_ERROR, "fstat of %s failed: %s\n", configFile,
 		strerror(errno));
@@ -938,962 +937,962 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 	return 0;
     }
 
-	if (!(pw = getpwuid(getuid()))) {
-		message(MESS_ERROR, "Logrotate UID is not in passwd file.\n");
-		close(fd);
-		return 1;
+    if (!(pw = getpwuid(getuid()))) {
+	message(MESS_ERROR, "Logrotate UID is not in passwd file.\n");
+	close(fd);
+	return 1;
+    }
+
+    if (getuid() == ROOT_UID) {
+	if ((sb.st_mode & 07533) != 0400) {
+	    message(MESS_DEBUG,
+		    "Potentially dangerous mode on %s: 0%o\n",
+		    configFile, (unsigned) (sb.st_mode & 07777));
 	}
 
-	if (getuid() == ROOT_UID) {
-		if ((sb.st_mode & 07533) != 0400) {
-			message(MESS_DEBUG,
-				"Potentially dangerous mode on %s: 0%o\n",
-				configFile, (unsigned) (sb.st_mode & 07777));
-		}
-
-		if (sb.st_mode & 0022) {
-			message(MESS_ERROR,
-				"Ignoring %s because it is writable by group or others.\n",
-				configFile);
-			close(fd);
-			return 0;
-		}
-
-		if ((pw = getpwuid(ROOT_UID)) == NULL) {
-			message(MESS_ERROR,
-				"Ignoring %s because there's no password entry for the owner.\n",
-				configFile);
-			close(fd);
-			return 0;
-		}
-
-		if (sb.st_uid != ROOT_UID && (pw == NULL ||
-				sb.st_uid != pw->pw_uid ||
-				pw->pw_uid != ROOT_UID)) {
-			message(MESS_ERROR,
-				"Ignoring %s because the file owner is wrong (should be root or user with uid 0).\n",
-				configFile);
-			close(fd);
-			return 0;
-		}
+	if (sb.st_mode & 0022) {
+	    message(MESS_ERROR,
+		    "Ignoring %s because it is writable by group or others.\n",
+		    configFile);
+	    close(fd);
+	    return 0;
 	}
 
-	length = sb.st_size;
-
-	if (length > 0xffffff) {
-		message(MESS_ERROR, "file %s too large, probably not a config file.\n",
-				configFile);
-		close(fd);
-		return 1;
+	if ((pw = getpwuid(ROOT_UID)) == NULL) {
+	    message(MESS_ERROR,
+		    "Ignoring %s because there's no password entry for the owner.\n",
+		    configFile);
+	    close(fd);
+	    return 0;
 	}
 
-	/* We can't mmap empty file... */
-	if (length == 0) {
-		message(MESS_DEBUG,
-			"Ignoring %s because it's empty.\n",
-			configFile);
-		close(fd);
-		return 0;
+	if (sb.st_uid != ROOT_UID && (pw == NULL ||
+		    sb.st_uid != pw->pw_uid ||
+		    pw->pw_uid != ROOT_UID)) {
+	    message(MESS_ERROR,
+		    "Ignoring %s because the file owner is wrong (should be root or user with uid 0).\n",
+		    configFile);
+	    close(fd);
+	    return 0;
 	}
+    }
+
+    length = sb.st_size;
+
+    if (length > 0xffffff) {
+	message(MESS_ERROR, "file %s too large, probably not a config file.\n",
+		configFile);
+	close(fd);
+	return 1;
+    }
+
+    /* We can't mmap empty file... */
+    if (length == 0) {
+	message(MESS_DEBUG,
+		"Ignoring %s because it's empty.\n",
+		configFile);
+	close(fd);
+	return 0;
+    }
 
 #ifdef MAP_POPULATE
- 	buf = mmap(NULL, (size_t) length, PROT_READ,
- 			MAP_PRIVATE | MAP_POPULATE, fd, (off_t) 0);
+    buf = mmap(NULL, (size_t) length, PROT_READ,
+	    MAP_PRIVATE | MAP_POPULATE, fd, (off_t) 0);
 #else /* MAP_POPULATE */
-	buf = mmap(NULL, (size_t) length, PROT_READ,
-			MAP_PRIVATE, fd, (off_t) 0);
+    buf = mmap(NULL, (size_t) length, PROT_READ,
+	    MAP_PRIVATE, fd, (off_t) 0);
 #endif /* MAP_POPULATE */
 
-	if (buf == MAP_FAILED) {
-		message(MESS_ERROR, "Error mapping config file %s: %s\n",
-				configFile, strerror(errno));
-		close(fd);
-		return 1;
-	}
+    if (buf == MAP_FAILED) {
+	message(MESS_ERROR, "Error mapping config file %s: %s\n",
+		configFile, strerror(errno));
+	close(fd);
+	return 1;
+    }
 
 #ifdef HAVE_MADVISE
 #ifdef MADV_DONTFORK
-	madvise(buf, (size_t)(length + 2),
-			MADV_SEQUENTIAL | MADV_WILLNEED | MADV_DONTFORK);
+    madvise(buf, (size_t)(length + 2),
+	    MADV_SEQUENTIAL | MADV_WILLNEED | MADV_DONTFORK);
 #else /* MADV_DONTFORK */
-	madvise(buf, (size_t)(length + 2),
-			MADV_SEQUENTIAL | MADV_WILLNEED);
+    madvise(buf, (size_t)(length + 2),
+	    MADV_SEQUENTIAL | MADV_WILLNEED);
 #endif /* MADV_DONTFORK */
 #endif /* HAVE_MADVISE */
 
     message(MESS_DEBUG, "reading config file %s\n", configFile);
 
-	start = buf;
+    start = buf;
     for (start = buf; start - buf < length; start++) {
 	switch (state) {
-		case STATE_DEFAULT:
-			if (isblank((unsigned char)*start))
-				continue;
-			/* Skip comment */
-			if (*start == '#') {
-				state = STATE_SKIP_LINE;
-				continue;
-			}
+	    case STATE_DEFAULT:
+		if (isblank((unsigned char)*start))
+		    continue;
+		/* Skip comment */
+		if (*start == '#') {
+		    state = STATE_SKIP_LINE;
+		    continue;
+		}
 
-			if (isalpha((unsigned char)*start)) {
-				free(key);
-				key = isolateWord(&start, &buf, length);
-				if (key == NULL)
-					continue;
-				if (!strcmp(key, "compress")) {
-					newlog->flags |= LOG_FLAG_COMPRESS;
-				} else if (!strcmp(key, "nocompress")) {
-					newlog->flags &= ~LOG_FLAG_COMPRESS;
-				} else if (!strcmp(key, "delaycompress")) {
-					newlog->flags |= LOG_FLAG_DELAYCOMPRESS;
-				} else if (!strcmp(key, "nodelaycompress")) {
-					newlog->flags &= ~LOG_FLAG_DELAYCOMPRESS;
-				} else if (!strcmp(key, "shred")) {
-					newlog->flags |= LOG_FLAG_SHRED;
-				} else if (!strcmp(key, "noshred")) {
-					newlog->flags &= ~LOG_FLAG_SHRED;
-				} else if (!strcmp(key, "sharedscripts")) {
-					newlog->flags |= LOG_FLAG_SHAREDSCRIPTS;
-				} else if (!strcmp(key, "nosharedscripts")) {
-					newlog->flags &= ~LOG_FLAG_SHAREDSCRIPTS;
-				} else if (!strcmp(key, "copytruncate")) {
-					newlog->flags |= LOG_FLAG_COPYTRUNCATE;
-				} else if (!strcmp(key, "nocopytruncate")) {
-					newlog->flags &= ~LOG_FLAG_COPYTRUNCATE;
-				} else if (!strcmp(key, "renamecopy")) {
-					newlog->flags |= LOG_FLAG_TMPFILENAME;
-				} else if (!strcmp(key, "norenamecopy")) {
-					newlog->flags &= ~LOG_FLAG_TMPFILENAME;
-				} else if (!strcmp(key, "copy")) {
-					newlog->flags |= LOG_FLAG_COPY;
-				} else if (!strcmp(key, "nocopy")) {
-					newlog->flags &= ~LOG_FLAG_COPY;
-				} else if (!strcmp(key, "ifempty")) {
-					newlog->flags |= LOG_FLAG_IFEMPTY;
-				} else if (!strcmp(key, "notifempty")) {
-					newlog->flags &= ~LOG_FLAG_IFEMPTY;
-				} else if (!strcmp(key, "dateext")) {
-					newlog->flags |= LOG_FLAG_DATEEXT;
-				} else if (!strcmp(key, "nodateext")) {
-					newlog->flags &= ~LOG_FLAG_DATEEXT;
-				} else if (!strcmp(key, "dateyesterday")) {
-					newlog->flags |= LOG_FLAG_DATEYESTERDAY;
-				} else if (!strcmp(key, "datehourago")) {
-					newlog->flags |= LOG_FLAG_DATEHOURAGO;
-				} else if (!strcmp(key, "dateformat")) {
-					freeLogItem(dateformat);
-					newlog->dateformat = isolateLine(&start, &buf, length);
-					if (newlog->dateformat == NULL)
-						continue;
-				} else if (!strcmp(key, "noolddir")) {
-					newlog->oldDir = NULL;
-				} else if (!strcmp(key, "mailfirst")) {
-					newlog->flags |= LOG_FLAG_MAILFIRST;
-				} else if (!strcmp(key, "maillast")) {
-					newlog->flags &= ~LOG_FLAG_MAILFIRST;
-				} else if (!strcmp(key, "su")) {
-					mode_t tmp_mode = NO_MODE;
-					free(key);
-					key = isolateLine(&start, &buf, length);
-					if (key == NULL)
-						continue;
-
-					rv = readModeUidGid(configFile, lineNum, key, "su",
-								   &tmp_mode, &newlog->suUid,
-								   &newlog->suGid);
-					if (rv == -1) {
-						RAISE_ERROR();
-					}
-					else if (tmp_mode != NO_MODE) {
-						message(MESS_ERROR, "%s:%d extra arguments for "
-								"su\n", configFile, lineNum);
-						RAISE_ERROR();
-					}
-
-					newlog->flags |= LOG_FLAG_SU;
-				} else if (!strcmp(key, "create")) {
-					free(key);
-					key = isolateLine(&start, &buf, length);
-					if (key == NULL)
-						continue;
-
-					rv = readModeUidGid(configFile, lineNum, key, "create",
-								   &newlog->createMode, &newlog->createUid,
-								   &newlog->createGid);
-					if (rv == -1) {
-						RAISE_ERROR();
-					}
-
-					newlog->flags |= LOG_FLAG_CREATE;
-				} else if (!strcmp(key, "createolddir")) {
-					free(key);
-					key = isolateLine(&start, &buf, length);
-					if (key == NULL)
-						continue;
-
-					rv = readModeUidGid(configFile, lineNum, key, "createolddir",
-								   &newlog->olddirMode, &newlog->olddirUid,
-								   &newlog->olddirGid);
-					if (rv == -1) {
-						RAISE_ERROR();
-					}
-
-					newlog->flags |= LOG_FLAG_OLDDIRCREATE;
-				} else if (!strcmp(key, "nocreateolddir")) {
-					newlog->flags &= ~LOG_FLAG_OLDDIRCREATE;
-				} else if (!strcmp(key, "nocreate")) {
-					newlog->flags &= ~LOG_FLAG_CREATE;
-				} else if (!strcmp(key, "size") || !strcmp(key, "minsize") ||
-							!strcmp(key, "maxsize")) {
-					unsigned long long size = 0;
-					char *opt = key;
-
-					key = isolateValue(configFile, lineNum, opt, &start, &buf, length);
-					if (key && key[0]) {
-						int l = strlen(key) - 1;
-						if (key[l] == 'k' || key[l] == 'K') {
-							key[l] = '\0';
-							multiplier = 1024;
-						} else if (key[l] == 'M') {
-							key[l] = '\0';
-							multiplier = 1024 * 1024;
-						} else if (key[l] == 'G') {
-							key[l] = '\0';
-							multiplier = 1024 * 1024 * 1024;
-						} else if (!isdigit((unsigned char)key[l])) {
-							free(opt);
-							message(MESS_ERROR, "%s:%d unknown unit '%c'\n",
-								configFile, lineNum, key[l]);
-							RAISE_ERROR();
-						} else {
-							multiplier = 1;
-						}
-
-						size = multiplier * strtoull(key, &chptr, 0);
-						if (*chptr) {
-							message(MESS_ERROR, "%s:%d bad size '%s'\n",
-								configFile, lineNum, key);
-							free(opt);
-							RAISE_ERROR();
-						}
-						if (!strncmp(opt, "size", 4)) {
-						  set_criterium(&newlog->criterium, ROT_SIZE, &criterium_set);
-						  newlog->threshold = size;
-						} else if (!strncmp(opt, "maxsize", 7)) {
-						  newlog->maxsize = size;
-						} else {
-						  newlog->minsize = size;
-						}
-						free(opt);
-					}
-					else {
-						free(opt);
-						continue;
-					}
-				} else if (!strcmp(key, "shredcycles")) {
-					free(key);
-					key = isolateValue(configFile, lineNum, "shred cycles",
-							&start, &buf, length);
-					if (key == NULL)
-						continue;
-					newlog->shred_cycles = strtoul(key, &chptr, 0);
-					if (*chptr || newlog->shred_cycles < 0) {
-						message(MESS_ERROR, "%s:%d bad shred cycles '%s'\n",
-								configFile, lineNum, key);
-						goto error;
-					}
-				} else if (!strcmp(key, "hourly")) {
-					set_criterium(&newlog->criterium, ROT_HOURLY, &criterium_set);
-				} else if (!strcmp(key, "daily")) {
-					set_criterium(&newlog->criterium, ROT_DAYS, &criterium_set);
-					newlog->threshold = 1;
-				} else if (!strcmp(key, "monthly")) {
-					set_criterium(&newlog->criterium, ROT_MONTHLY, &criterium_set);
-				} else if (!strcmp(key, "weekly")) {
-					unsigned weekday;
-					char tmp;
-					set_criterium(&newlog->criterium, ROT_WEEKLY, &criterium_set);
-					free(key);
-					key = isolateLine(&start, &buf, length);
-					if (key == NULL || key[0] == '\0') {
-						/* default to Sunday if no argument was given */
-						newlog->weekday = 0;
-						continue;
-					}
-
-					if (1 == sscanf(key, "%u%c", &weekday, &tmp) && weekday <= 7) {
-						/* use the selected weekday, 7 means "once per week" */
-						newlog->weekday = weekday;
-						continue;
-					}
-					message(MESS_ERROR, "%s:%d bad weekly directive '%s'\n",
-							configFile, lineNum, key);
-					goto error;
-				} else if (!strcmp(key, "yearly")) {
-					set_criterium(&newlog->criterium, ROT_YEARLY, &criterium_set);
-				} else if (!strcmp(key, "rotate")) {
-					free(key);
-					key = isolateValue(configFile, lineNum, "rotate count", &start,
-						&buf, length);
-					if (key == NULL)
-						continue;
-					newlog->rotateCount = strtol(key, &chptr, 0);
-					if (*chptr || newlog->rotateCount < -1) {
-						message(MESS_ERROR,
-							"%s:%d bad rotation count '%s'\n",
-							configFile, lineNum, key);
-						RAISE_ERROR();
-					}
-				} else if (!strcmp(key, "start")) {
-					free(key);
-					key = isolateValue(configFile, lineNum, "start count", &start,
-						&buf, length);
-					if (key == NULL)
-						continue;
-					newlog->logStart = strtoul(key, &chptr, 0);
-					if (*chptr || newlog->logStart < 0) {
-						message(MESS_ERROR, "%s:%d bad start count '%s'\n",
-							configFile, lineNum, key);
-						RAISE_ERROR();
-					}
-				} else if (!strcmp(key, "minage")) {
-					free(key);
-					key = isolateValue(configFile, lineNum, "minage count", &start,
-						&buf, length);
-					if (key == NULL)
-						continue;
-					newlog->rotateMinAge = strtoul(key, &chptr, 0);
-					if (*chptr || newlog->rotateMinAge < 0) {
-						message(MESS_ERROR, "%s:%d bad minimum age '%s'\n",
-							configFile, lineNum, start);
-						RAISE_ERROR();
-					}
-				} else if (!strcmp(key, "maxage")) {
-					free(key);
-					key = isolateValue(configFile, lineNum, "maxage count", &start,
-						&buf, length);
-					if (key == NULL)
-						continue;
-					newlog->rotateAge = strtoul(key, &chptr, 0);
-					if (*chptr || newlog->rotateAge < 0) {
-						message(MESS_ERROR, "%s:%d bad maximum age '%s'\n",
-							configFile, lineNum, start);
-						RAISE_ERROR();
-					}
-				} else if (!strcmp(key, "errors")) {
-					message(MESS_DEBUG,
-						"%s: %d: the errors directive is deprecated and no longer used.\n",
-						configFile, lineNum);
-				} else if (!strcmp(key, "mail")) {
-					freeLogItem(logAddress);
-					if (!(newlog->logAddress = readAddress(configFile, lineNum,
-										"mail", &start, &buf, length))) {
-						RAISE_ERROR();
-					}
-					else continue;
-				} else if (!strcmp(key, "nomail")) {
-					freeLogItem(logAddress);
-				} else if (!strcmp(key, "missingok")) {
-					newlog->flags |= LOG_FLAG_MISSINGOK;
-				} else if (!strcmp(key, "nomissingok")) {
-					newlog->flags &= ~LOG_FLAG_MISSINGOK;
-				} else if (!strcmp(key, "prerotate")) {
-					freeLogItem (pre);
-					scriptStart = start;
-					scriptDest = &newlog->pre;
-					state = STATE_LOAD_SCRIPT;
-				} else if (!strcmp(key, "firstaction")) {
-					freeLogItem (first);
-					scriptStart = start;
-					scriptDest = &newlog->first;
-					state = STATE_LOAD_SCRIPT;
-				} else if (!strcmp(key, "postrotate")) {
-					freeLogItem (post);
-					scriptStart = start;
-					scriptDest = &newlog->post;
-					state = STATE_LOAD_SCRIPT;
-				} else if (!strcmp(key, "lastaction")) {
-					freeLogItem (last);
-					scriptStart = start;
-					scriptDest = &newlog->last;
-					state = STATE_LOAD_SCRIPT;
-				} else if (!strcmp(key, "preremove")) {
-					freeLogItem (preremove);
-					scriptStart = start;
-					scriptDest = &newlog->preremove;
-					state = STATE_LOAD_SCRIPT;
-				} else if (!strcmp(key, "tabooext")) {
-					if (newlog != defConfig) {
-						message(MESS_ERROR,
-							"%s:%d tabooext may not appear inside "
-							"of log file definition\n", configFile,
-							lineNum);
-						state = STATE_ERROR;
-						continue;
-					}
-					free(key);
-					key = isolateValue(configFile, lineNum, "tabooext", &start,
-							&buf, length);
-					if (key == NULL)
-						continue;
-					endtag = key;
-					if (*endtag == '+') {
-						endtag++;
-						while (isspace((unsigned char)*endtag) && *endtag)
-							endtag++;
-					} else {
-						free_2d_array(tabooPatterns, tabooCount);
-						tabooCount = 0;
-						/* realloc of NULL is safe by definition */
-						tabooPatterns = NULL;
-					}
-
-					while (*endtag) {
-						int bytes;
-						char *pattern = NULL;
-
-						chptr = endtag;
-						while (!isspace((unsigned char)*chptr) && *chptr != ',' && *chptr)
-							chptr++;
-
-						/* accept only non-empty patterns to avoid exclusion of everything */
-						if (endtag < chptr) {
-							tabooPatterns = realloc(tabooPatterns, sizeof(*tabooPatterns) *
-										(tabooCount + 1));
-							bytes = asprintf(&pattern, "*%.*s", (int)(chptr - endtag), endtag);
-
-							/* should test for malloc() failure */
-							assert(bytes != -1);
-							tabooPatterns[tabooCount] = pattern;
-							tabooCount++;
-						}
-
-						endtag = chptr;
-						if (*endtag == ',')
-							endtag++;
-						while (*endtag && isspace((unsigned char)*endtag))
-							endtag++;
-					}
-				} else if (!strcmp(key, "taboopat")) {
-					if (newlog != defConfig) {
-						message(MESS_ERROR,
-							"%s:%d taboopat may not appear inside "
-							"of log file definition\n", configFile,
-							lineNum);
-						state = STATE_ERROR;
-						continue;
-					}
-					free(key);
-					key = isolateValue(configFile, lineNum, "taboopat", &start,
-							&buf, length);
-					if (key == NULL)
-						continue;
-
-					endtag = key;
-					if (*endtag == '+') {
-						endtag++;
-						while (isspace((unsigned char)*endtag) && *endtag)
-							endtag++;
-					} else {
-						free_2d_array(tabooPatterns, tabooCount);
-						tabooCount = 0;
-						/* realloc of NULL is safe by definition */
-						tabooPatterns = NULL;
-					}
-
-					while (*endtag) {
-						int bytes;
-						char *pattern = NULL;
-
-						chptr = endtag;
-						while (!isspace((unsigned char)*chptr) && *chptr != ',' && *chptr)
-							chptr++;
-
-						tabooPatterns = realloc(tabooPatterns, sizeof(*tabooPatterns) *
-									(tabooCount + 1));
-						bytes = asprintf(&pattern, "%.*s", (int)(chptr - endtag), endtag);
-
-						/* should test for malloc() failure */
-						assert(bytes != -1);
-						tabooPatterns[tabooCount] = pattern;
-						tabooCount++;
-
-						endtag = chptr;
-						if (*endtag == ',')
-							endtag++;
-						while (*endtag && isspace((unsigned char)*endtag))
-							endtag++;
-					}
-				} else if (!strcmp(key, "include")) {
-					free(key);
-					key = isolateValue(configFile, lineNum, "include", &start,
-							&buf, length);
-					if (key == NULL)
-						continue;
-					message(MESS_DEBUG, "including %s\n", key);
-					if (recursion_depth >= MAX_NESTING) {
-						message(MESS_ERROR, "%s:%d include nesting too deep\n",
-								configFile, lineNum);
-						logerror = 1;
-						continue;
-					}
-
-					++recursion_depth;
-					rv = readConfigPath(key, newlog);
-					--recursion_depth;
-
-					if (rv) {
-						logerror = 1;
-						continue;
-					}
-				} else if (!strcmp(key, "olddir")) {
-					freeLogItem (oldDir);
-
-					if (!(newlog->oldDir = readPath(configFile, lineNum,
-									"olddir", &start, &buf, length))) {
-						RAISE_ERROR();
-					}
-					message(MESS_DEBUG, "olddir is now %s\n", newlog->oldDir);
-				} else if (!strcmp(key, "extension")) {
-				    	free(key);
-					key = isolateValue(configFile, lineNum, "extension name", &start,
-							&buf, length);
-					if (key == NULL)
-						continue;
-					freeLogItem (extension);
-					newlog->extension = key;
-					key = NULL;
-					message(MESS_DEBUG, "extension is now %s\n", newlog->extension);
-
-				} else if (!strcmp(key, "addextension")) {
-				    	free(key);
-					key = isolateValue(configFile, lineNum, "addextension name", &start,
-							&buf, length);
-					if (key == NULL)
-						continue;
-					freeLogItem (addextension);
-					newlog->addextension = key;
-					key = NULL;
-					message(MESS_DEBUG, "addextension is now %s\n",
-						newlog->addextension);
-
-				} else if (!strcmp(key, "compresscmd")) {
-					char *compresscmd_base;
-					freeLogItem (compress_prog);
-
-					if (!
-						(newlog->compress_prog =
-							readPath(configFile, lineNum, "compress", &start, &buf, length))) {
-						RAISE_ERROR();
-					}
-
-					message(MESS_DEBUG, "compress_prog is now %s\n",
-						newlog->compress_prog);
-
-					compresscmd_base = strdup(basename(newlog->compress_prog));
-					/* we check whether we changed the compress_cmd. In case we use the appropriate extension
-					   as listed in compress_cmd_list */
-					for(i = 0; i < compress_cmd_list_size; i++) {
-						if (!strcmp(compress_cmd_list[i].cmd, compresscmd_base)) {
-							freeLogItem (compress_ext);
-							newlog->compress_ext = strdup((char *)compress_cmd_list[i].ext);
-							message(MESS_DEBUG, "compress_ext was changed to %s\n", newlog->compress_ext);
-							break;
-						}
-					}
-					free(compresscmd_base);
-				} else if (!strcmp(key, "uncompresscmd")) {
-					freeLogItem (uncompress_prog);
-
-					if (!
-						(newlog->uncompress_prog =
-							readPath(configFile, lineNum, "uncompress",
-								&start, &buf, length))) {
-						RAISE_ERROR();
-					}
-
-					message(MESS_DEBUG, "uncompress_prog is now %s\n",
-						newlog->uncompress_prog);
-
-				} else if (!strcmp(key, "compressoptions")) {
-					char *options;
-
-					if (newlog->compress_options_list) {
-						free(newlog->compress_options_list);
-						newlog->compress_options_list = NULL;
-						newlog->compress_options_count = 0;
-					}
-
-					if (!(options = isolateLine(&start, &buf, length))) {
-						RAISE_ERROR();
-					}
-
-					if (poptParseArgvString(options,
-								&newlog->compress_options_count,
-								&newlog->compress_options_list)) {
-						message(MESS_ERROR,
-							"%s:%d invalid compression options\n",
-							configFile, lineNum);
-						free(options);
-						RAISE_ERROR();
-					}
-
-					message(MESS_DEBUG, "compress_options is now %s\n",
-						options);
-					free(options);
-				} else if (!strcmp(key, "compressext")) {
-					freeLogItem (compress_ext);
-
-					if (!
-						(newlog->compress_ext =
-							readPath(configFile, lineNum, "compress-ext",
-								&start, &buf, length))) {
-						RAISE_ERROR();
-					}
-
-					message(MESS_DEBUG, "compress_ext is now %s\n",
-						newlog->compress_ext);
-				} else {
-					message(MESS_ERROR, "%s:%d unknown option '%s' "
-						"-- ignoring line\n", configFile, lineNum, key);
-					if (*start != '\n')
-						state = STATE_SKIP_LINE;
-				}
-			} else if (*start == '/' || *start == '"' || *start == '\''
-#ifdef GLOB_TILDE
-                                                                           || *start == '~'
-#endif
-                                                                           ) {
-				char *glob_string;
-				size_t glob_count;
-				in_config = 0;
-				if (newlog != defConfig) {
-					message(MESS_ERROR, "%s:%d unexpected log filename\n",
-						configFile, lineNum);
-					state = STATE_ERROR;
-					continue;
-				}
-
-				/* If no compression options were found in config file, set
-				default values */
-				if (!newlog->compress_prog)
-					newlog->compress_prog = strdup(COMPRESS_COMMAND);
-				if (!newlog->uncompress_prog)
-					newlog->uncompress_prog = strdup(UNCOMPRESS_COMMAND);
-				if (!newlog->compress_ext)
-					newlog->compress_ext = strdup(COMPRESS_EXT);
-
-				/* Allocate a new logInfo structure and insert it into the logs
-				queue, copying the actual values from defConfig */
-				if ((newlog = newLogInfo(defConfig)) == NULL)
-					goto error;
-
-				glob_string = parseGlobString(configFile, lineNum, buf, length, &start);
-				if (glob_string)
-				    	in_config = 1;
-				else
-				    	/* error already printed */
-				    	goto error;
-
-				if (poptParseArgvString(glob_string, &argc, &argv)) {
-				message(MESS_ERROR, "%s:%d error parsing filename\n",
-					configFile, lineNum);
-				free(glob_string);
-				goto error;
-				} else if (argc < 1) {
-				message(MESS_ERROR,
-					"%s:%d { expected after log file name(s)\n",
-					configFile, lineNum);
-				free(glob_string);
-				goto error;
-				}
-
-				newlog->files = NULL;
-				newlog->numFiles = 0;
-				for (argNum = 0; argNum < argc; argNum++) {
-				if (globerr_msg) {
-					free(globerr_msg);
-					globerr_msg = NULL;
-				}
-
-				rc = glob(argv[argNum], GLOB_NOCHECK
-#ifdef GLOB_TILDE
-                                                        | GLOB_TILDE
-#endif
-                                                    , globerr, &globResult);
-				if (rc == GLOB_ABORTED) {
-					if (newlog->flags & LOG_FLAG_MISSINGOK) {
-						continue;
-					}
-
-				/* We don't yet know whether this stanza has "missingok"
-					* set, so store the error message for later. */
-					rc = asprintf(&globerr_msg, "%s:%d glob failed for %s: %s\n",
-						configFile, lineNum, argv[argNum], strerror(glob_errno));
-					if (rc == -1)
-					globerr_msg = NULL;
-
-					globResult.gl_pathc = 0;
-				}
-
-				newlog->files =
-					realloc(newlog->files,
-						sizeof(*newlog->files) * (newlog->numFiles +
-									globResult.
-									gl_pathc));
-
-				for (glob_count = 0; glob_count < globResult.gl_pathc; glob_count++) {
-					/* if we glob directories we can get false matches */
-					if (!lstat(globResult.gl_pathv[glob_count], &sb) &&
-					S_ISDIR(sb.st_mode)) {
-						continue;
-					}
-
-					for (log = logs.tqh_first; log != NULL;
-						log = log->list.tqe_next) {
-					for (k = 0; k < log->numFiles; k++) {
-						if (!strcmp(log->files[k],
-							globResult.gl_pathv[glob_count])) {
-						message(MESS_ERROR,
-							"%s:%d duplicate log entry for %s\n",
-							configFile, lineNum,
-							globResult.gl_pathv[glob_count]);
-						logerror = 1;
-						goto duperror;
-						}
-					}
-					}
-
-					newlog->files[newlog->numFiles] =
-					strdup(globResult.gl_pathv[glob_count]);
-					newlog->numFiles++;
-				}
-		duperror:
-				globfree(&globResult);
-				}
-
-				newlog->pattern = glob_string;
-
-				free(argv);
-
-			} else if (*start == '}') {
-				if (newlog == defConfig) {
-					message(MESS_ERROR, "%s:%d unexpected }\n", configFile,
-						lineNum);
-					goto error;
-				}
-				if (!in_config) {
-					message(MESS_ERROR, "%s:%d unexpected } (missing previous '{')\n", configFile,
-						lineNum);
-					goto error;
-				}
-				in_config = 0;
-			if (globerr_msg) {
-				if (!(newlog->flags & LOG_FLAG_MISSINGOK))
-					message(MESS_ERROR, "%s", globerr_msg);
-				free(globerr_msg);
-				globerr_msg = NULL;
-				if (!(newlog->flags & LOG_FLAG_MISSINGOK))
-					goto error;
-			}
-
-			if (newlog->oldDir) {
-				for (i = 0; i < newlog->numFiles; i++) {
-					char *ld;
-					char *dirpath;
-
-					dirpath = strdup(newlog->files[i]);
-					dirName = dirname(dirpath);
-					if (stat(dirName, &sb2)) {
-						if (!(newlog->flags & LOG_FLAG_MISSINGOK)) {
-							message(MESS_ERROR,
-								"%s:%d error verifying log file "
-								"path %s: %s\n", configFile, lineNum,
-								dirName, strerror(errno));
-							free(dirpath);
-							goto error;
-						}
-						else {
-							message(MESS_DEBUG,
-								"%s:%d verifying log file "
-								"path failed %s: %s, log is probably missing, "
-								"but missingok is set, so this is not an error.\n",
-								configFile, lineNum,
-								dirName, strerror(errno));
-							free(dirpath);
-							continue;
-						}
-					}
-					ld = alloca(strlen(dirName) + strlen(newlog->oldDir) + 2);
-					sprintf(ld, "%s/%s", dirName, newlog->oldDir);
-					free(dirpath);
-
-					if (newlog->oldDir[0] != '/') {
-						dirName = ld;
-					}
-					else {
-						dirName = newlog->oldDir;
-					}
-
-					if (stat(dirName, &sb)) {
-						if (errno == ENOENT && newlog->flags & LOG_FLAG_OLDDIRCREATE) {
-							int ret;
-							if (newlog->flags & LOG_FLAG_SU) {
-								if (switch_user(newlog->suUid, newlog->suGid) != 0) {
-									goto error;
-								}
-							}
-							ret = mkpath(dirName, newlog->olddirMode,
-								newlog->olddirUid, newlog->olddirGid);
-							if (newlog->flags & LOG_FLAG_SU) {
-								if (switch_user_back() != 0) {
-									goto error;
-								}
-							}
-							if (ret) {
-								goto error;
-							}
-						}
-						else {
-							message(MESS_ERROR, "%s:%d error verifying olddir "
-								"path %s: %s\n", configFile, lineNum,
-								dirName, strerror(errno));
-							goto error;
-						}
-					}
-
-					if (sb.st_dev != sb2.st_dev
-						&& !(newlog->flags & (LOG_FLAG_COPYTRUNCATE | LOG_FLAG_COPY | LOG_FLAG_TMPFILENAME))) {
-						message(MESS_ERROR,
-							"%s:%d olddir %s and log file %s "
-							"are on different devices\n", configFile,
-							lineNum, newlog->oldDir, newlog->files[i]);
-						goto error;
-					}
-				}
-			}
-
-				criterium_set = 0;
-				newlog = defConfig;
-				state = STATE_DEFINITION_END;
-			} else if (*start != '\n') {
-				message(MESS_ERROR, "%s:%d lines must begin with a keyword "
-					"or a filename (possibly in double quotes)\n",
-					configFile, lineNum);
-					state = STATE_SKIP_LINE;
-			}
-			break;
-		case STATE_SKIP_LINE:
-		case STATE_SKIP_LINE | STATE_SKIP_CONFIG:
-			if (*start == '\n')
-				state = state & STATE_SKIP_CONFIG ? STATE_SKIP_CONFIG : STATE_DEFAULT;
-			break;
-		case STATE_SKIP_LINE | STATE_LOAD_SCRIPT:
-			if (*start == '\n')
-				state = STATE_LOAD_SCRIPT;
-			break;
-		case STATE_SKIP_LINE | STATE_LOAD_SCRIPT | STATE_SKIP_CONFIG:
-			if (*start == '\n')
-				state = STATE_LOAD_SCRIPT | STATE_SKIP_CONFIG;
-			break;
-		case STATE_DEFINITION_END:
-		case STATE_DEFINITION_END | STATE_SKIP_CONFIG:
-			if (isblank((unsigned char)*start))
-				continue;
-			if (*start != '\n') {
-				message(MESS_ERROR, "%s:%d, unexpected text after }\n",
-					configFile, lineNum);
-				state = STATE_SKIP_LINE | (state & STATE_SKIP_CONFIG ? STATE_SKIP_CONFIG : 0);
-			}
-			else
-				state = state & STATE_SKIP_CONFIG ? STATE_SKIP_CONFIG : STATE_DEFAULT;
-			break;
-		case STATE_ERROR:
-			assert(newlog != defConfig);
-
-			message(MESS_ERROR, "found error in %s, skipping\n",
-				newlog->pattern ? newlog->pattern : "log config");
-
-			logerror = 1;
-			state = STATE_SKIP_CONFIG;
-			break;
-		case STATE_LOAD_SCRIPT:
-		case STATE_LOAD_SCRIPT | STATE_SKIP_CONFIG:
+		if (isalpha((unsigned char)*start)) {
+		    free(key);
+		    key = isolateWord(&start, &buf, length);
+		    if (key == NULL)
+			continue;
+		    if (!strcmp(key, "compress")) {
+			newlog->flags |= LOG_FLAG_COMPRESS;
+		    } else if (!strcmp(key, "nocompress")) {
+			newlog->flags &= ~LOG_FLAG_COMPRESS;
+		    } else if (!strcmp(key, "delaycompress")) {
+			newlog->flags |= LOG_FLAG_DELAYCOMPRESS;
+		    } else if (!strcmp(key, "nodelaycompress")) {
+			newlog->flags &= ~LOG_FLAG_DELAYCOMPRESS;
+		    } else if (!strcmp(key, "shred")) {
+			newlog->flags |= LOG_FLAG_SHRED;
+		    } else if (!strcmp(key, "noshred")) {
+			newlog->flags &= ~LOG_FLAG_SHRED;
+		    } else if (!strcmp(key, "sharedscripts")) {
+			newlog->flags |= LOG_FLAG_SHAREDSCRIPTS;
+		    } else if (!strcmp(key, "nosharedscripts")) {
+			newlog->flags &= ~LOG_FLAG_SHAREDSCRIPTS;
+		    } else if (!strcmp(key, "copytruncate")) {
+			newlog->flags |= LOG_FLAG_COPYTRUNCATE;
+		    } else if (!strcmp(key, "nocopytruncate")) {
+			newlog->flags &= ~LOG_FLAG_COPYTRUNCATE;
+		    } else if (!strcmp(key, "renamecopy")) {
+			newlog->flags |= LOG_FLAG_TMPFILENAME;
+		    } else if (!strcmp(key, "norenamecopy")) {
+			newlog->flags &= ~LOG_FLAG_TMPFILENAME;
+		    } else if (!strcmp(key, "copy")) {
+			newlog->flags |= LOG_FLAG_COPY;
+		    } else if (!strcmp(key, "nocopy")) {
+			newlog->flags &= ~LOG_FLAG_COPY;
+		    } else if (!strcmp(key, "ifempty")) {
+			newlog->flags |= LOG_FLAG_IFEMPTY;
+		    } else if (!strcmp(key, "notifempty")) {
+			newlog->flags &= ~LOG_FLAG_IFEMPTY;
+		    } else if (!strcmp(key, "dateext")) {
+			newlog->flags |= LOG_FLAG_DATEEXT;
+		    } else if (!strcmp(key, "nodateext")) {
+			newlog->flags &= ~LOG_FLAG_DATEEXT;
+		    } else if (!strcmp(key, "dateyesterday")) {
+			newlog->flags |= LOG_FLAG_DATEYESTERDAY;
+		    } else if (!strcmp(key, "datehourago")) {
+			newlog->flags |= LOG_FLAG_DATEHOURAGO;
+		    } else if (!strcmp(key, "dateformat")) {
+			freeLogItem(dateformat);
+			newlog->dateformat = isolateLine(&start, &buf, length);
+			if (newlog->dateformat == NULL)
+			    continue;
+		    } else if (!strcmp(key, "noolddir")) {
+			newlog->oldDir = NULL;
+		    } else if (!strcmp(key, "mailfirst")) {
+			newlog->flags |= LOG_FLAG_MAILFIRST;
+		    } else if (!strcmp(key, "maillast")) {
+			newlog->flags &= ~LOG_FLAG_MAILFIRST;
+		    } else if (!strcmp(key, "su")) {
+			mode_t tmp_mode = NO_MODE;
 			free(key);
-			key = isolateWord(&start, &buf, length);
+			key = isolateLine(&start, &buf, length);
 			if (key == NULL)
-				continue;
+			    continue;
 
-			if (strcmp(key, "endscript") == 0) {
-				if (state & STATE_SKIP_CONFIG) {
-					state = STATE_SKIP_CONFIG;
-				}
-				else {
-					endtag = start - 9;
-					while (*endtag != '\n')
-					endtag--;
-					endtag++;
-					*scriptDest = malloc(endtag - scriptStart + 1);
-					strncpy(*scriptDest, scriptStart,
-						endtag - scriptStart);
-					(*scriptDest)[endtag - scriptStart] = '\0';
+			rv = readModeUidGid(configFile, lineNum, key, "su",
+				&tmp_mode, &newlog->suUid,
+				&newlog->suGid);
+			if (rv == -1) {
+			    RAISE_ERROR();
+			}
+			else if (tmp_mode != NO_MODE) {
+			    message(MESS_ERROR, "%s:%d extra arguments for "
+				    "su\n", configFile, lineNum);
+			    RAISE_ERROR();
+			}
 
-					scriptDest = NULL;
-					scriptStart = NULL;
-				}
-				state = state & STATE_SKIP_CONFIG ? STATE_SKIP_CONFIG : STATE_DEFAULT;
+			newlog->flags |= LOG_FLAG_SU;
+		    } else if (!strcmp(key, "create")) {
+			free(key);
+			key = isolateLine(&start, &buf, length);
+			if (key == NULL)
+			    continue;
+
+			rv = readModeUidGid(configFile, lineNum, key, "create",
+				&newlog->createMode, &newlog->createUid,
+				&newlog->createGid);
+			if (rv == -1) {
+			    RAISE_ERROR();
+			}
+
+			newlog->flags |= LOG_FLAG_CREATE;
+		    } else if (!strcmp(key, "createolddir")) {
+			free(key);
+			key = isolateLine(&start, &buf, length);
+			if (key == NULL)
+			    continue;
+
+			rv = readModeUidGid(configFile, lineNum, key, "createolddir",
+				&newlog->olddirMode, &newlog->olddirUid,
+				&newlog->olddirGid);
+			if (rv == -1) {
+			    RAISE_ERROR();
+			}
+
+			newlog->flags |= LOG_FLAG_OLDDIRCREATE;
+		    } else if (!strcmp(key, "nocreateolddir")) {
+			newlog->flags &= ~LOG_FLAG_OLDDIRCREATE;
+		    } else if (!strcmp(key, "nocreate")) {
+			newlog->flags &= ~LOG_FLAG_CREATE;
+		    } else if (!strcmp(key, "size") || !strcmp(key, "minsize") ||
+			    !strcmp(key, "maxsize")) {
+			unsigned long long size = 0;
+			char *opt = key;
+
+			key = isolateValue(configFile, lineNum, opt, &start, &buf, length);
+			if (key && key[0]) {
+			    int l = strlen(key) - 1;
+			    if (key[l] == 'k' || key[l] == 'K') {
+				key[l] = '\0';
+				multiplier = 1024;
+			    } else if (key[l] == 'M') {
+				key[l] = '\0';
+				multiplier = 1024 * 1024;
+			    } else if (key[l] == 'G') {
+				key[l] = '\0';
+				multiplier = 1024 * 1024 * 1024;
+			    } else if (!isdigit((unsigned char)key[l])) {
+				free(opt);
+				message(MESS_ERROR, "%s:%d unknown unit '%c'\n",
+					configFile, lineNum, key[l]);
+				RAISE_ERROR();
+			    } else {
+				multiplier = 1;
+			    }
+
+			    size = multiplier * strtoull(key, &chptr, 0);
+			    if (*chptr) {
+				message(MESS_ERROR, "%s:%d bad size '%s'\n",
+					configFile, lineNum, key);
+				free(opt);
+				RAISE_ERROR();
+			    }
+			    if (!strncmp(opt, "size", 4)) {
+				set_criterium(&newlog->criterium, ROT_SIZE, &criterium_set);
+				newlog->threshold = size;
+			    } else if (!strncmp(opt, "maxsize", 7)) {
+				newlog->maxsize = size;
+			    } else {
+				newlog->minsize = size;
+			    }
+			    free(opt);
 			}
 			else {
-				state = (*start == '\n' ? 0 : STATE_SKIP_LINE) |
-					STATE_LOAD_SCRIPT |
-					(state & STATE_SKIP_CONFIG ? STATE_SKIP_CONFIG : 0);
+			    free(opt);
+			    continue;
 			}
-			break;
-		case STATE_SKIP_CONFIG:
-			if (*start == '}') {
-				state = STATE_DEFAULT;
-				freeTailLogs(1);
-				newlog = defConfig;
+		    } else if (!strcmp(key, "shredcycles")) {
+			free(key);
+			key = isolateValue(configFile, lineNum, "shred cycles",
+				&start, &buf, length);
+			if (key == NULL)
+			    continue;
+			newlog->shred_cycles = strtoul(key, &chptr, 0);
+			if (*chptr || newlog->shred_cycles < 0) {
+			    message(MESS_ERROR, "%s:%d bad shred cycles '%s'\n",
+				    configFile, lineNum, key);
+			    goto error;
 			}
-			else {
-			    	free(key);
-				key = isolateWord(&start, &buf, length);
-				if (key == NULL)
-					continue;
-				if (
-					(strcmp(key, "postrotate") == 0) ||
-					(strcmp(key, "prerotate") == 0) ||
-					(strcmp(key, "firstaction") == 0) ||
-					(strcmp(key, "lastaction") == 0) ||
-					(strcmp(key, "preremove") == 0)
-					) {
-					state = STATE_LOAD_SCRIPT | STATE_SKIP_CONFIG;
-				}
-				else {
-					/* isolateWord moves the "start" pointer.
-					 * If we have a line like
-					 *    rotate 5
-					 * after isolateWord "start" points to "5" and it
-					 * is OK to skip the line, but if we have a line
-					 * like the following
-					 *    nocompress
-					 * after isolateWord "start" points to "\n". In
-					 * this case if we skip a line, we skip the next
-					 * line, not the current "nocompress" one,
-					 * because in the for cycle the "start"
-					 * pointer is increased by one and, after this,
-					 * "start" points to the beginning of the next line.
-					*/
-					if (*start != '\n') {
-						state = STATE_SKIP_LINE | STATE_SKIP_CONFIG;
-					}
-				}
+		    } else if (!strcmp(key, "hourly")) {
+			set_criterium(&newlog->criterium, ROT_HOURLY, &criterium_set);
+		    } else if (!strcmp(key, "daily")) {
+			set_criterium(&newlog->criterium, ROT_DAYS, &criterium_set);
+			newlog->threshold = 1;
+		    } else if (!strcmp(key, "monthly")) {
+			set_criterium(&newlog->criterium, ROT_MONTHLY, &criterium_set);
+		    } else if (!strcmp(key, "weekly")) {
+			unsigned weekday;
+			char tmp;
+			set_criterium(&newlog->criterium, ROT_WEEKLY, &criterium_set);
+			free(key);
+			key = isolateLine(&start, &buf, length);
+			if (key == NULL || key[0] == '\0') {
+			    /* default to Sunday if no argument was given */
+			    newlog->weekday = 0;
+			    continue;
 			}
-			break;
-		default:
+
+			if (1 == sscanf(key, "%u%c", &weekday, &tmp) && weekday <= 7) {
+			    /* use the selected weekday, 7 means "once per week" */
+			    newlog->weekday = weekday;
+			    continue;
+			}
+			message(MESS_ERROR, "%s:%d bad weekly directive '%s'\n",
+				configFile, lineNum, key);
+			goto error;
+		    } else if (!strcmp(key, "yearly")) {
+			set_criterium(&newlog->criterium, ROT_YEARLY, &criterium_set);
+		    } else if (!strcmp(key, "rotate")) {
+			free(key);
+			key = isolateValue(configFile, lineNum, "rotate count", &start,
+				&buf, length);
+			if (key == NULL)
+			    continue;
+			newlog->rotateCount = strtol(key, &chptr, 0);
+			if (*chptr || newlog->rotateCount < -1) {
+			    message(MESS_ERROR,
+				    "%s:%d bad rotation count '%s'\n",
+				    configFile, lineNum, key);
+			    RAISE_ERROR();
+			}
+		    } else if (!strcmp(key, "start")) {
+			free(key);
+			key = isolateValue(configFile, lineNum, "start count", &start,
+				&buf, length);
+			if (key == NULL)
+			    continue;
+			newlog->logStart = strtoul(key, &chptr, 0);
+			if (*chptr || newlog->logStart < 0) {
+			    message(MESS_ERROR, "%s:%d bad start count '%s'\n",
+				    configFile, lineNum, key);
+			    RAISE_ERROR();
+			}
+		    } else if (!strcmp(key, "minage")) {
+			free(key);
+			key = isolateValue(configFile, lineNum, "minage count", &start,
+				&buf, length);
+			if (key == NULL)
+			    continue;
+			newlog->rotateMinAge = strtoul(key, &chptr, 0);
+			if (*chptr || newlog->rotateMinAge < 0) {
+			    message(MESS_ERROR, "%s:%d bad minimum age '%s'\n",
+				    configFile, lineNum, start);
+			    RAISE_ERROR();
+			}
+		    } else if (!strcmp(key, "maxage")) {
+			free(key);
+			key = isolateValue(configFile, lineNum, "maxage count", &start,
+				&buf, length);
+			if (key == NULL)
+			    continue;
+			newlog->rotateAge = strtoul(key, &chptr, 0);
+			if (*chptr || newlog->rotateAge < 0) {
+			    message(MESS_ERROR, "%s:%d bad maximum age '%s'\n",
+				    configFile, lineNum, start);
+			    RAISE_ERROR();
+			}
+		    } else if (!strcmp(key, "errors")) {
 			message(MESS_DEBUG,
-				"%s: %d: readConfigFile() unknown state\n",
+				"%s: %d: the errors directive is deprecated and no longer used.\n",
 				configFile, lineNum);
+		    } else if (!strcmp(key, "mail")) {
+			freeLogItem(logAddress);
+			if (!(newlog->logAddress = readAddress(configFile, lineNum,
+					"mail", &start, &buf, length))) {
+			    RAISE_ERROR();
+			}
+			else continue;
+		    } else if (!strcmp(key, "nomail")) {
+			freeLogItem(logAddress);
+		    } else if (!strcmp(key, "missingok")) {
+			newlog->flags |= LOG_FLAG_MISSINGOK;
+		    } else if (!strcmp(key, "nomissingok")) {
+			newlog->flags &= ~LOG_FLAG_MISSINGOK;
+		    } else if (!strcmp(key, "prerotate")) {
+			freeLogItem (pre);
+			scriptStart = start;
+			scriptDest = &newlog->pre;
+			state = STATE_LOAD_SCRIPT;
+		    } else if (!strcmp(key, "firstaction")) {
+			freeLogItem (first);
+			scriptStart = start;
+			scriptDest = &newlog->first;
+			state = STATE_LOAD_SCRIPT;
+		    } else if (!strcmp(key, "postrotate")) {
+			freeLogItem (post);
+			scriptStart = start;
+			scriptDest = &newlog->post;
+			state = STATE_LOAD_SCRIPT;
+		    } else if (!strcmp(key, "lastaction")) {
+			freeLogItem (last);
+			scriptStart = start;
+			scriptDest = &newlog->last;
+			state = STATE_LOAD_SCRIPT;
+		    } else if (!strcmp(key, "preremove")) {
+			freeLogItem (preremove);
+			scriptStart = start;
+			scriptDest = &newlog->preremove;
+			state = STATE_LOAD_SCRIPT;
+		    } else if (!strcmp(key, "tabooext")) {
+			if (newlog != defConfig) {
+			    message(MESS_ERROR,
+				    "%s:%d tabooext may not appear inside "
+				    "of log file definition\n", configFile,
+				    lineNum);
+			    state = STATE_ERROR;
+			    continue;
+			}
+			free(key);
+			key = isolateValue(configFile, lineNum, "tabooext", &start,
+				&buf, length);
+			if (key == NULL)
+			    continue;
+			endtag = key;
+			if (*endtag == '+') {
+			    endtag++;
+			    while (isspace((unsigned char)*endtag) && *endtag)
+				endtag++;
+			} else {
+			    free_2d_array(tabooPatterns, tabooCount);
+			    tabooCount = 0;
+			    /* realloc of NULL is safe by definition */
+			    tabooPatterns = NULL;
+			}
+
+			while (*endtag) {
+			    int bytes;
+			    char *pattern = NULL;
+
+			    chptr = endtag;
+			    while (!isspace((unsigned char)*chptr) && *chptr != ',' && *chptr)
+				chptr++;
+
+			    /* accept only non-empty patterns to avoid exclusion of everything */
+			    if (endtag < chptr) {
+				tabooPatterns = realloc(tabooPatterns, sizeof(*tabooPatterns) *
+					(tabooCount + 1));
+				bytes = asprintf(&pattern, "*%.*s", (int)(chptr - endtag), endtag);
+
+				/* should test for malloc() failure */
+				assert(bytes != -1);
+				tabooPatterns[tabooCount] = pattern;
+				tabooCount++;
+			    }
+
+			    endtag = chptr;
+			    if (*endtag == ',')
+				endtag++;
+			    while (*endtag && isspace((unsigned char)*endtag))
+				endtag++;
+			}
+		    } else if (!strcmp(key, "taboopat")) {
+			if (newlog != defConfig) {
+			    message(MESS_ERROR,
+				    "%s:%d taboopat may not appear inside "
+				    "of log file definition\n", configFile,
+				    lineNum);
+			    state = STATE_ERROR;
+			    continue;
+			}
+			free(key);
+			key = isolateValue(configFile, lineNum, "taboopat", &start,
+				&buf, length);
+			if (key == NULL)
+			    continue;
+
+			endtag = key;
+			if (*endtag == '+') {
+			    endtag++;
+			    while (isspace((unsigned char)*endtag) && *endtag)
+				endtag++;
+			} else {
+			    free_2d_array(tabooPatterns, tabooCount);
+			    tabooCount = 0;
+			    /* realloc of NULL is safe by definition */
+			    tabooPatterns = NULL;
+			}
+
+			while (*endtag) {
+			    int bytes;
+			    char *pattern = NULL;
+
+			    chptr = endtag;
+			    while (!isspace((unsigned char)*chptr) && *chptr != ',' && *chptr)
+				chptr++;
+
+			    tabooPatterns = realloc(tabooPatterns, sizeof(*tabooPatterns) *
+				    (tabooCount + 1));
+			    bytes = asprintf(&pattern, "%.*s", (int)(chptr - endtag), endtag);
+
+			    /* should test for malloc() failure */
+			    assert(bytes != -1);
+			    tabooPatterns[tabooCount] = pattern;
+			    tabooCount++;
+
+			    endtag = chptr;
+			    if (*endtag == ',')
+				endtag++;
+			    while (*endtag && isspace((unsigned char)*endtag))
+				endtag++;
+			}
+		    } else if (!strcmp(key, "include")) {
+			free(key);
+			key = isolateValue(configFile, lineNum, "include", &start,
+				&buf, length);
+			if (key == NULL)
+			    continue;
+			message(MESS_DEBUG, "including %s\n", key);
+			if (recursion_depth >= MAX_NESTING) {
+			    message(MESS_ERROR, "%s:%d include nesting too deep\n",
+				    configFile, lineNum);
+			    logerror = 1;
+			    continue;
+			}
+
+			++recursion_depth;
+			rv = readConfigPath(key, newlog);
+			--recursion_depth;
+
+			if (rv) {
+			    logerror = 1;
+			    continue;
+			}
+		    } else if (!strcmp(key, "olddir")) {
+			freeLogItem (oldDir);
+
+			if (!(newlog->oldDir = readPath(configFile, lineNum,
+					"olddir", &start, &buf, length))) {
+			    RAISE_ERROR();
+			}
+			message(MESS_DEBUG, "olddir is now %s\n", newlog->oldDir);
+		    } else if (!strcmp(key, "extension")) {
+			free(key);
+			key = isolateValue(configFile, lineNum, "extension name", &start,
+				&buf, length);
+			if (key == NULL)
+			    continue;
+			freeLogItem (extension);
+			newlog->extension = key;
+			key = NULL;
+			message(MESS_DEBUG, "extension is now %s\n", newlog->extension);
+
+		    } else if (!strcmp(key, "addextension")) {
+			free(key);
+			key = isolateValue(configFile, lineNum, "addextension name", &start,
+				&buf, length);
+			if (key == NULL)
+			    continue;
+			freeLogItem (addextension);
+			newlog->addextension = key;
+			key = NULL;
+			message(MESS_DEBUG, "addextension is now %s\n",
+				newlog->addextension);
+
+		    } else if (!strcmp(key, "compresscmd")) {
+			char *compresscmd_base;
+			freeLogItem (compress_prog);
+
+			if (!
+				(newlog->compress_prog =
+				 readPath(configFile, lineNum, "compress", &start, &buf, length))) {
+			    RAISE_ERROR();
+			}
+
+			message(MESS_DEBUG, "compress_prog is now %s\n",
+				newlog->compress_prog);
+
+			compresscmd_base = strdup(basename(newlog->compress_prog));
+			/* we check whether we changed the compress_cmd. In case we use the appropriate extension
+			   as listed in compress_cmd_list */
+			for(i = 0; i < compress_cmd_list_size; i++) {
+			    if (!strcmp(compress_cmd_list[i].cmd, compresscmd_base)) {
+				freeLogItem (compress_ext);
+				newlog->compress_ext = strdup((char *)compress_cmd_list[i].ext);
+				message(MESS_DEBUG, "compress_ext was changed to %s\n", newlog->compress_ext);
+				break;
+			    }
+			}
+			free(compresscmd_base);
+		    } else if (!strcmp(key, "uncompresscmd")) {
+			freeLogItem (uncompress_prog);
+
+			if (!
+				(newlog->uncompress_prog =
+				 readPath(configFile, lineNum, "uncompress",
+				     &start, &buf, length))) {
+			    RAISE_ERROR();
+			}
+
+			message(MESS_DEBUG, "uncompress_prog is now %s\n",
+				newlog->uncompress_prog);
+
+		    } else if (!strcmp(key, "compressoptions")) {
+			char *options;
+
+			if (newlog->compress_options_list) {
+			    free(newlog->compress_options_list);
+			    newlog->compress_options_list = NULL;
+			    newlog->compress_options_count = 0;
+			}
+
+			if (!(options = isolateLine(&start, &buf, length))) {
+			    RAISE_ERROR();
+			}
+
+			if (poptParseArgvString(options,
+				    &newlog->compress_options_count,
+				    &newlog->compress_options_list)) {
+			    message(MESS_ERROR,
+				    "%s:%d invalid compression options\n",
+				    configFile, lineNum);
+			    free(options);
+			    RAISE_ERROR();
+			}
+
+			message(MESS_DEBUG, "compress_options is now %s\n",
+				options);
+			free(options);
+		    } else if (!strcmp(key, "compressext")) {
+			freeLogItem (compress_ext);
+
+			if (!
+				(newlog->compress_ext =
+				 readPath(configFile, lineNum, "compress-ext",
+				     &start, &buf, length))) {
+			    RAISE_ERROR();
+			}
+
+			message(MESS_DEBUG, "compress_ext is now %s\n",
+				newlog->compress_ext);
+		    } else {
+			message(MESS_ERROR, "%s:%d unknown option '%s' "
+				"-- ignoring line\n", configFile, lineNum, key);
+			if (*start != '\n')
+			    state = STATE_SKIP_LINE;
+		    }
+		} else if (*start == '/' || *start == '"' || *start == '\''
+#ifdef GLOB_TILDE
+			|| *start == '~'
+#endif
+			) {
+		    char *glob_string;
+		    size_t glob_count;
+		    in_config = 0;
+		    if (newlog != defConfig) {
+			message(MESS_ERROR, "%s:%d unexpected log filename\n",
+				configFile, lineNum);
+			state = STATE_ERROR;
+			continue;
+		    }
+
+		    /* If no compression options were found in config file, set
+		       default values */
+		    if (!newlog->compress_prog)
+			newlog->compress_prog = strdup(COMPRESS_COMMAND);
+		    if (!newlog->uncompress_prog)
+			newlog->uncompress_prog = strdup(UNCOMPRESS_COMMAND);
+		    if (!newlog->compress_ext)
+			newlog->compress_ext = strdup(COMPRESS_EXT);
+
+		    /* Allocate a new logInfo structure and insert it into the logs
+		       queue, copying the actual values from defConfig */
+		    if ((newlog = newLogInfo(defConfig)) == NULL)
+			goto error;
+
+		    glob_string = parseGlobString(configFile, lineNum, buf, length, &start);
+		    if (glob_string)
+			in_config = 1;
+		    else
+			/* error already printed */
+			goto error;
+
+		    if (poptParseArgvString(glob_string, &argc, &argv)) {
+			message(MESS_ERROR, "%s:%d error parsing filename\n",
+				configFile, lineNum);
+			free(glob_string);
+			goto error;
+		    } else if (argc < 1) {
+			message(MESS_ERROR,
+				"%s:%d { expected after log file name(s)\n",
+				configFile, lineNum);
+			free(glob_string);
+			goto error;
+		    }
+
+		    newlog->files = NULL;
+		    newlog->numFiles = 0;
+		    for (argNum = 0; argNum < argc; argNum++) {
+			if (globerr_msg) {
+			    free(globerr_msg);
+			    globerr_msg = NULL;
+			}
+
+			rc = glob(argv[argNum], GLOB_NOCHECK
+#ifdef GLOB_TILDE
+				| GLOB_TILDE
+#endif
+				, globerr, &globResult);
+			if (rc == GLOB_ABORTED) {
+			    if (newlog->flags & LOG_FLAG_MISSINGOK) {
+				continue;
+			    }
+
+			    /* We don't yet know whether this stanza has "missingok"
+			     * set, so store the error message for later. */
+			    rc = asprintf(&globerr_msg, "%s:%d glob failed for %s: %s\n",
+				    configFile, lineNum, argv[argNum], strerror(glob_errno));
+			    if (rc == -1)
+				globerr_msg = NULL;
+
+			    globResult.gl_pathc = 0;
+			}
+
+			newlog->files =
+			    realloc(newlog->files,
+				    sizeof(*newlog->files) * (newlog->numFiles +
+					globResult.
+					gl_pathc));
+
+			for (glob_count = 0; glob_count < globResult.gl_pathc; glob_count++) {
+			    /* if we glob directories we can get false matches */
+			    if (!lstat(globResult.gl_pathv[glob_count], &sb) &&
+				    S_ISDIR(sb.st_mode)) {
+				continue;
+			    }
+
+			    for (log = logs.tqh_first; log != NULL;
+				    log = log->list.tqe_next) {
+				for (k = 0; k < log->numFiles; k++) {
+				    if (!strcmp(log->files[k],
+						globResult.gl_pathv[glob_count])) {
+					message(MESS_ERROR,
+						"%s:%d duplicate log entry for %s\n",
+						configFile, lineNum,
+						globResult.gl_pathv[glob_count]);
+					logerror = 1;
+					goto duperror;
+				    }
+				}
+			    }
+
+			    newlog->files[newlog->numFiles] =
+				strdup(globResult.gl_pathv[glob_count]);
+			    newlog->numFiles++;
+			}
+duperror:
+			globfree(&globResult);
+		    }
+
+		    newlog->pattern = glob_string;
+
+		    free(argv);
+
+		} else if (*start == '}') {
+		    if (newlog == defConfig) {
+			message(MESS_ERROR, "%s:%d unexpected }\n", configFile,
+				lineNum);
+			goto error;
+		    }
+		    if (!in_config) {
+			message(MESS_ERROR, "%s:%d unexpected } (missing previous '{')\n", configFile,
+				lineNum);
+			goto error;
+		    }
+		    in_config = 0;
+		    if (globerr_msg) {
+			if (!(newlog->flags & LOG_FLAG_MISSINGOK))
+			    message(MESS_ERROR, "%s", globerr_msg);
+			free(globerr_msg);
+			globerr_msg = NULL;
+			if (!(newlog->flags & LOG_FLAG_MISSINGOK))
+			    goto error;
+		    }
+
+		    if (newlog->oldDir) {
+			for (i = 0; i < newlog->numFiles; i++) {
+			    char *ld;
+			    char *dirpath;
+
+			    dirpath = strdup(newlog->files[i]);
+			    dirName = dirname(dirpath);
+			    if (stat(dirName, &sb2)) {
+				if (!(newlog->flags & LOG_FLAG_MISSINGOK)) {
+				    message(MESS_ERROR,
+					    "%s:%d error verifying log file "
+					    "path %s: %s\n", configFile, lineNum,
+					    dirName, strerror(errno));
+				    free(dirpath);
+				    goto error;
+				}
+				else {
+				    message(MESS_DEBUG,
+					    "%s:%d verifying log file "
+					    "path failed %s: %s, log is probably missing, "
+					    "but missingok is set, so this is not an error.\n",
+					    configFile, lineNum,
+					    dirName, strerror(errno));
+				    free(dirpath);
+				    continue;
+				}
+			    }
+			    ld = alloca(strlen(dirName) + strlen(newlog->oldDir) + 2);
+			    sprintf(ld, "%s/%s", dirName, newlog->oldDir);
+			    free(dirpath);
+
+			    if (newlog->oldDir[0] != '/') {
+				dirName = ld;
+			    }
+			    else {
+				dirName = newlog->oldDir;
+			    }
+
+			    if (stat(dirName, &sb)) {
+				if (errno == ENOENT && newlog->flags & LOG_FLAG_OLDDIRCREATE) {
+				    int ret;
+				    if (newlog->flags & LOG_FLAG_SU) {
+					if (switch_user(newlog->suUid, newlog->suGid) != 0) {
+					    goto error;
+					}
+				    }
+				    ret = mkpath(dirName, newlog->olddirMode,
+					    newlog->olddirUid, newlog->olddirGid);
+				    if (newlog->flags & LOG_FLAG_SU) {
+					if (switch_user_back() != 0) {
+					    goto error;
+					}
+				    }
+				    if (ret) {
+					goto error;
+				    }
+				}
+				else {
+				    message(MESS_ERROR, "%s:%d error verifying olddir "
+					    "path %s: %s\n", configFile, lineNum,
+					    dirName, strerror(errno));
+				    goto error;
+				}
+			    }
+
+			    if (sb.st_dev != sb2.st_dev
+				    && !(newlog->flags & (LOG_FLAG_COPYTRUNCATE | LOG_FLAG_COPY | LOG_FLAG_TMPFILENAME))) {
+				message(MESS_ERROR,
+					"%s:%d olddir %s and log file %s "
+					"are on different devices\n", configFile,
+					lineNum, newlog->oldDir, newlog->files[i]);
+				goto error;
+			    }
+			}
+		    }
+
+		    criterium_set = 0;
+		    newlog = defConfig;
+		    state = STATE_DEFINITION_END;
+		} else if (*start != '\n') {
+		    message(MESS_ERROR, "%s:%d lines must begin with a keyword "
+			    "or a filename (possibly in double quotes)\n",
+			    configFile, lineNum);
+		    state = STATE_SKIP_LINE;
+		}
+		break;
+	    case STATE_SKIP_LINE:
+	    case STATE_SKIP_LINE | STATE_SKIP_CONFIG:
+		if (*start == '\n')
+		    state = state & STATE_SKIP_CONFIG ? STATE_SKIP_CONFIG : STATE_DEFAULT;
+		break;
+	    case STATE_SKIP_LINE | STATE_LOAD_SCRIPT:
+		if (*start == '\n')
+		    state = STATE_LOAD_SCRIPT;
+		break;
+	    case STATE_SKIP_LINE | STATE_LOAD_SCRIPT | STATE_SKIP_CONFIG:
+		if (*start == '\n')
+		    state = STATE_LOAD_SCRIPT | STATE_SKIP_CONFIG;
+		break;
+	    case STATE_DEFINITION_END:
+	    case STATE_DEFINITION_END | STATE_SKIP_CONFIG:
+		if (isblank((unsigned char)*start))
+		    continue;
+		if (*start != '\n') {
+		    message(MESS_ERROR, "%s:%d, unexpected text after }\n",
+			    configFile, lineNum);
+		    state = STATE_SKIP_LINE | (state & STATE_SKIP_CONFIG ? STATE_SKIP_CONFIG : 0);
+		}
+		else
+		    state = state & STATE_SKIP_CONFIG ? STATE_SKIP_CONFIG : STATE_DEFAULT;
+		break;
+	    case STATE_ERROR:
+		assert(newlog != defConfig);
+
+		message(MESS_ERROR, "found error in %s, skipping\n",
+			newlog->pattern ? newlog->pattern : "log config");
+
+		logerror = 1;
+		state = STATE_SKIP_CONFIG;
+		break;
+	    case STATE_LOAD_SCRIPT:
+	    case STATE_LOAD_SCRIPT | STATE_SKIP_CONFIG:
+		free(key);
+		key = isolateWord(&start, &buf, length);
+		if (key == NULL)
+		    continue;
+
+		if (strcmp(key, "endscript") == 0) {
+		    if (state & STATE_SKIP_CONFIG) {
+			state = STATE_SKIP_CONFIG;
+		    }
+		    else {
+			endtag = start - 9;
+			while (*endtag != '\n')
+			    endtag--;
+			endtag++;
+			*scriptDest = malloc(endtag - scriptStart + 1);
+			strncpy(*scriptDest, scriptStart,
+				endtag - scriptStart);
+			(*scriptDest)[endtag - scriptStart] = '\0';
+
+			scriptDest = NULL;
+			scriptStart = NULL;
+		    }
+		    state = state & STATE_SKIP_CONFIG ? STATE_SKIP_CONFIG : STATE_DEFAULT;
+		}
+		else {
+		    state = (*start == '\n' ? 0 : STATE_SKIP_LINE) |
+			STATE_LOAD_SCRIPT |
+			(state & STATE_SKIP_CONFIG ? STATE_SKIP_CONFIG : 0);
+		}
+		break;
+	    case STATE_SKIP_CONFIG:
+		if (*start == '}') {
+		    state = STATE_DEFAULT;
+		    freeTailLogs(1);
+		    newlog = defConfig;
+		}
+		else {
+		    free(key);
+		    key = isolateWord(&start, &buf, length);
+		    if (key == NULL)
+			continue;
+		    if (
+			    (strcmp(key, "postrotate") == 0) ||
+			    (strcmp(key, "prerotate") == 0) ||
+			    (strcmp(key, "firstaction") == 0) ||
+			    (strcmp(key, "lastaction") == 0) ||
+			    (strcmp(key, "preremove") == 0)
+		       ) {
+			state = STATE_LOAD_SCRIPT | STATE_SKIP_CONFIG;
+		    }
+		    else {
+			/* isolateWord moves the "start" pointer.
+			 * If we have a line like
+			 *    rotate 5
+			 * after isolateWord "start" points to "5" and it
+			 * is OK to skip the line, but if we have a line
+			 * like the following
+			 *    nocompress
+			 * after isolateWord "start" points to "\n". In
+			 * this case if we skip a line, we skip the next
+			 * line, not the current "nocompress" one,
+			 * because in the for cycle the "start"
+			 * pointer is increased by one and, after this,
+			 * "start" points to the beginning of the next line.
+			 */
+			if (*start != '\n') {
+			    state = STATE_SKIP_LINE | STATE_SKIP_CONFIG;
+			}
+		    }
+		}
+		break;
+	    default:
+		message(MESS_DEBUG,
+			"%s: %d: readConfigFile() unknown state\n",
+			configFile, lineNum);
 	}
 	if (*start == '\n') {
 	    lineNum++;
@@ -1910,13 +1909,13 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 
     free(key);
 
-	munmap(buf, (size_t) length);
-	close(fd);
+    munmap(buf, (size_t) length);
+    close(fd);
     return logerror;
 error:
-	/* free is a NULL-safe operation */
-	free(key);
-	munmap(buf, (size_t) length);
-	close(fd);
+    /* free is a NULL-safe operation */
+    free(key);
+    munmap(buf, (size_t) length);
+    close(fd);
     return 1;
 }
