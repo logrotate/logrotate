@@ -62,7 +62,7 @@ for comp in gzip xz; do
         -T "$file" --fail --verbose \
         --header "Authorization: token $TOKEN" \
         --header "Content-Type: application/x-${comp}" \
-	|| exit $?
+        || exit $?
 done
 
 # upload signatures
@@ -71,5 +71,5 @@ for file in "${TAR_GZ}.asc" "${TAR_XZ}.asc"; do
         -T "$file" --fail --verbose \
         --header "Authorization: token $TOKEN" \
         --header "Content-Type: text/plain" \
-	|| exit $?
+        || exit $?
 done
