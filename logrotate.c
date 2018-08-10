@@ -68,12 +68,12 @@ extern int asprintf(char **str, const char *fmt, ...);
 #define DAY_SECONDS 86400
 
 struct logState {
-	char *fn;
-	struct tm lastRotated;	/* only tm_hour, tm_mday, tm_mon, tm_year are good! */
-	struct stat sb;
-	int doRotate;
-	int isUsed;	/* True if there is real log file in system for this state. */
-	LIST_ENTRY(logState) list;
+    char *fn;
+    struct tm lastRotated;	/* only tm_hour, tm_mday, tm_mon, tm_year are good! */
+    struct stat sb;
+    int doRotate;
+    int isUsed;	/* True if there is real log file in system for this state. */
+    LIST_ENTRY(logState) list;
 };
 
 struct logNames {
@@ -85,12 +85,12 @@ struct logNames {
 };
 
 struct compData {
-	int prefix_len;
-	const char *dformat;
+    int prefix_len;
+    const char *dformat;
 };
 
 static struct logStateList {
-	LIST_HEAD(stateSet, logState) head;
+    LIST_HEAD(stateSet, logState) head;
 } **states;
 
 int numLogs = 0;
@@ -118,166 +118,166 @@ static int globerr(const char *pathname, int theerr)
 static struct compData _compData;
 
 static int compGlobResult(const void *result1, const void *result2)  {
-	struct tm time_tmp;
-	time_t t1, t2;
-	const char *r1 = *(const char **)(result1);
-	const char *r2 = *(const char **)(result2);
+    struct tm time_tmp;
+    time_t t1, t2;
+    const char *r1 = *(const char **)(result1);
+    const char *r2 = *(const char **)(result2);
 
-	memset(&time_tmp, 0, sizeof(struct tm));
-	strptime(r1 + _compData.prefix_len, _compData.dformat, &time_tmp);
-	t1 = mktime(&time_tmp);
+    memset(&time_tmp, 0, sizeof(struct tm));
+    strptime(r1 + _compData.prefix_len, _compData.dformat, &time_tmp);
+    t1 = mktime(&time_tmp);
 
-	memset(&time_tmp, 0, sizeof(struct tm));
-	strptime(r2 + _compData.prefix_len, _compData.dformat, &time_tmp);
-	t2 = mktime(&time_tmp);
+    memset(&time_tmp, 0, sizeof(struct tm));
+    strptime(r2 + _compData.prefix_len, _compData.dformat, &time_tmp);
+    t2 = mktime(&time_tmp);
 
-	if (t1 < t2) return -1;
-	if (t1 > t2) return  1;
-	return 0;
+    if (t1 < t2) return -1;
+    if (t1 > t2) return  1;
+    return 0;
 }
 
 static void sortGlobResult(glob_t *result, int prefix_len, const char *dformat) {
-	if (!dformat || *dformat == '\0') {
-		return;
-	}
+    if (!dformat || *dformat == '\0') {
+	return;
+    }
 
-	_compData.prefix_len = prefix_len;
-	_compData.dformat = dformat;
-	qsort(result->gl_pathv, result->gl_pathc, sizeof(char *), compGlobResult);
+    _compData.prefix_len = prefix_len;
+    _compData.dformat = dformat;
+    qsort(result->gl_pathv, result->gl_pathc, sizeof(char *), compGlobResult);
 }
 #else
 static void sortGlobResult(glob_t *result, int prefix_len, const char *dformat) {
-	/* TODO */
+    /* TODO */
 }
 #endif
 
 int switch_user(uid_t user, gid_t group) {
-	save_egid = getegid();
-	save_euid = geteuid();
-	if (save_euid == user && save_egid == group)
-		return 0;
-	message(MESS_DEBUG, "switching euid to %u and egid to %u\n",
-		(unsigned) user, (unsigned) group);
-	if (setegid(group) || seteuid(user)) {
-		message(MESS_ERROR, "error switching euid to %u and egid to %u: %s\n",
-			(unsigned) user, (unsigned) group, strerror(errno));
-		return 1;
-	}
+    save_egid = getegid();
+    save_euid = geteuid();
+    if (save_euid == user && save_egid == group)
 	return 0;
+    message(MESS_DEBUG, "switching euid to %u and egid to %u\n",
+	    (unsigned) user, (unsigned) group);
+    if (setegid(group) || seteuid(user)) {
+	message(MESS_ERROR, "error switching euid to %u and egid to %u: %s\n",
+		(unsigned) user, (unsigned) group, strerror(errno));
+	return 1;
+    }
+    return 0;
 }
 
 static int switch_user_permanently(const struct logInfo *log) {
-	gid_t group = getegid();
-	uid_t user = geteuid();
-	if (!(log->flags & LOG_FLAG_SU)) {
-		return 0;
-	}
-	if (getuid() == user && getgid() == group)
-		return 0;
-	/* switch to full root first */
-	if (setgid(getgid()) || setuid(getuid())) {
-		message(MESS_ERROR, "error getting rid of euid != uid\n");
-		return 1;
-	}
-	message(MESS_DEBUG, "switching uid to %u and gid to %u\n",
-		(unsigned) user, (unsigned) group);
-	if (setgid(group) || setuid(user)) {
-		message(MESS_ERROR, "error switching euid to %u and egid to %u: %s\n",
-			(unsigned) user, (unsigned) group, strerror(errno));
-		return 1;
-	}
+    gid_t group = getegid();
+    uid_t user = geteuid();
+    if (!(log->flags & LOG_FLAG_SU)) {
 	return 0;
+    }
+    if (getuid() == user && getgid() == group)
+	return 0;
+    /* switch to full root first */
+    if (setgid(getgid()) || setuid(getuid())) {
+	message(MESS_ERROR, "error getting rid of euid != uid\n");
+	return 1;
+    }
+    message(MESS_DEBUG, "switching uid to %u and gid to %u\n",
+	    (unsigned) user, (unsigned) group);
+    if (setgid(group) || setuid(user)) {
+	message(MESS_ERROR, "error switching euid to %u and egid to %u: %s\n",
+		(unsigned) user, (unsigned) group, strerror(errno));
+	return 1;
+    }
+    return 0;
 }
 
 int switch_user_back(void) {
-	return switch_user(save_euid, save_egid);
+    return switch_user(save_euid, save_egid);
 }
 
 static int switch_user_back_permanently(void) {
-	gid_t tmp_egid = save_egid;
-	uid_t tmp_euid = save_euid;
-	int ret = switch_user(save_euid, save_egid);
-	save_euid = tmp_euid;
-	save_egid = tmp_egid;
-	return ret;
+    gid_t tmp_egid = save_egid;
+    uid_t tmp_euid = save_euid;
+    int ret = switch_user(save_euid, save_egid);
+    save_euid = tmp_euid;
+    save_egid = tmp_egid;
+    return ret;
 }
 
 static void unescape(char *arg)
 {
-	char *p = arg;
-	char *next;
-	char escaped;
-	while ((next = strchr(p, '\\')) != NULL) {
+    char *p = arg;
+    char *next;
+    char escaped;
+    while ((next = strchr(p, '\\')) != NULL) {
 
-		p = next;
+	p = next;
 
-		switch (p[1]) {
-		case 'n':
-			escaped = '\n';
-			break;
-		case '\\':
-			escaped = '\\';
-			break;
-		default:
-			++p;
-			continue;
-		}
-
-		/* Overwrite the backslash with the intended character,
-		 * and shift everything down one */
-		*p++ = escaped;
-		memmove(p, p+1, 1 + strlen(p+1));
+	switch (p[1]) {
+	    case 'n':
+		escaped = '\n';
+		break;
+	    case '\\':
+		escaped = '\\';
+		break;
+	    default:
+		++p;
+		continue;
 	}
+
+	/* Overwrite the backslash with the intended character,
+	 * and shift everything down one */
+	*p++ = escaped;
+	memmove(p, p+1, 1 + strlen(p+1));
+    }
 }
 
 #define HASH_SIZE_MIN 64
 static int allocateHash(unsigned int hs)
 {
-	unsigned int i;
+    unsigned int i;
 
-	/* Enforce some reasonable minimum hash size */
-	if (hs < HASH_SIZE_MIN)
-		hs = HASH_SIZE_MIN;
+    /* Enforce some reasonable minimum hash size */
+    if (hs < HASH_SIZE_MIN)
+	hs = HASH_SIZE_MIN;
 
-	message(MESS_DEBUG, "Allocating hash table for state file, size %u entries\n",
-			hs);
+    message(MESS_DEBUG, "Allocating hash table for state file, size %u entries\n",
+	    hs);
 
-	states = calloc(hs, sizeof(struct logStateList *));
-	if (states == NULL) {
-		message(MESS_ERROR, "could not allocate memory for "
-				"hash table\n");
-		return 1;
+    states = calloc(hs, sizeof(struct logStateList *));
+    if (states == NULL) {
+	message(MESS_ERROR, "could not allocate memory for "
+		"hash table\n");
+	return 1;
+    }
+
+    for (i = 0; i < hs; i++) {
+	states[i] = malloc(sizeof *states[0]);
+	if (states[i] == NULL) {
+	    message(MESS_ERROR, "could not allocate memory for "
+		    "hash element\n");
+	    return 1;
 	}
+	LIST_INIT(&(states[i]->head));
+    }
 
-	for (i = 0; i < hs; i++) {
-		states[i] = malloc(sizeof *states[0]);
-		if (states[i] == NULL) {
-			message(MESS_ERROR, "could not allocate memory for "
-				"hash element\n");
-			return 1;
-		}
-		LIST_INIT(&(states[i]->head));
-	}
+    hashSize = hs;
 
-	hashSize = hs;
-
-	return 0;
+    return 0;
 }
 
 #define HASH_CONST 13
 static int hashIndex(const char *fn)
 {
-	unsigned hash = 0;
-	if (!hashSize)
-	    /* hash table not yet allocated */
-	    return -1;
+    unsigned hash = 0;
+    if (!hashSize)
+	/* hash table not yet allocated */
+	return -1;
 
-	while (*fn) {
-		hash *= HASH_CONST;
-		hash += *fn++;
-	}
+    while (*fn) {
+	hash *= HASH_CONST;
+	hash += *fn++;
+    }
 
-	return hash % hashSize;
+    return hash % hashSize;
 }
 
 /* safe implementation of dup2(oldfd, nefd) followed by close(oldfd) */
@@ -381,101 +381,101 @@ static void restoreSecCtx(void **pPrevCtx)
 
 static struct logState *newState(const char *fn)
 {
-	struct tm now = *localtime(&nowSecs);
-	struct logState *new;
-	time_t lr_time;
+    struct tm now = *localtime(&nowSecs);
+    struct logState *new;
+    time_t lr_time;
 
-	message(MESS_DEBUG, "Creating new state\n");
+    message(MESS_DEBUG, "Creating new state\n");
 
-	if ((new = malloc(sizeof(*new))) == NULL)
-		return NULL;
+    if ((new = malloc(sizeof(*new))) == NULL)
+	return NULL;
 
-	if ((new->fn = strdup(fn)) == NULL) {
-		free(new);
-		return NULL;
-	}
+    if ((new->fn = strdup(fn)) == NULL) {
+	free(new);
+	return NULL;
+    }
 
-	new->doRotate = 0;
-	new->isUsed = 0;
+    new->doRotate = 0;
+    new->isUsed = 0;
 
-	memset(&new->lastRotated, 0, sizeof(new->lastRotated));
-	new->lastRotated.tm_hour = now.tm_hour;
-	new->lastRotated.tm_mday = now.tm_mday;
-	new->lastRotated.tm_mon = now.tm_mon;
-	new->lastRotated.tm_year = now.tm_year;
-	new->lastRotated.tm_isdst = now.tm_isdst;
+    memset(&new->lastRotated, 0, sizeof(new->lastRotated));
+    new->lastRotated.tm_hour = now.tm_hour;
+    new->lastRotated.tm_mday = now.tm_mday;
+    new->lastRotated.tm_mon = now.tm_mon;
+    new->lastRotated.tm_year = now.tm_year;
+    new->lastRotated.tm_isdst = now.tm_isdst;
 
-	/* fill in the rest of the new->lastRotated fields */
-	lr_time = mktime(&new->lastRotated);
-	new->lastRotated = *localtime(&lr_time);
+    /* fill in the rest of the new->lastRotated fields */
+    lr_time = mktime(&new->lastRotated);
+    new->lastRotated = *localtime(&lr_time);
 
-	return new;
+    return new;
 }
 
 static struct logState *findState(const char *fn)
 {
-	const int i = hashIndex(fn);
-	struct logState *p;
-	if (i < 0)
-	    /* hash table not yet allocated */
+    const int i = hashIndex(fn);
+    struct logState *p;
+    if (i < 0)
+	/* hash table not yet allocated */
+	return NULL;
+
+    for (p = states[i]->head.lh_first; p != NULL; p = p->list.le_next)
+	if (!strcmp(fn, p->fn))
+	    break;
+
+    /* new state */
+    if (p == NULL) {
+	if ((p = newState(fn)) == NULL)
 	    return NULL;
 
-	for (p = states[i]->head.lh_first; p != NULL; p = p->list.le_next)
-		if (!strcmp(fn, p->fn))
-			break;
+	LIST_INSERT_HEAD(&(states[i]->head), p, list);
+    }
 
-	/* new state */
-	if (p == NULL) {
-		if ((p = newState(fn)) == NULL)
-			return NULL;
-
-		LIST_INSERT_HEAD(&(states[i]->head), p, list);
-	}
-
-	return p;
+    return p;
 }
 
 static int runScript(struct logInfo *log, char *logfn, char *logrotfn, char *script)
 {
-	int rc;
+    int rc;
 
-	if (debug) {
-		message(MESS_DEBUG, "running script with args %s %s: \"%s\"\n",
-			logfn, logrotfn, script);
-		return 0;
-	}
+    if (debug) {
+	message(MESS_DEBUG, "running script with args %s %s: \"%s\"\n",
+		logfn, logrotfn, script);
+	return 0;
+    }
 
-	if (!fork()) {
-		if (log->flags & LOG_FLAG_SU) {
-			if (switch_user_back_permanently() != 0) {
-				exit(1);
-			}
-		}
-		execl("/bin/sh", "sh", "-c", script, "logrotate_script", logfn, logrotfn, (char *) NULL);
+    if (!fork()) {
+	if (log->flags & LOG_FLAG_SU) {
+	    if (switch_user_back_permanently() != 0) {
 		exit(1);
+	    }
 	}
+	execl("/bin/sh", "sh", "-c", script, "logrotate_script", logfn, logrotfn, (char *) NULL);
+	exit(1);
+    }
 
-	wait(&rc);
-	return rc;
+    wait(&rc);
+    return rc;
 }
 
 #ifdef WITH_ACL
 static int is_acl_well_supported(int err)
 {
-	switch (err) {
+    switch (err) {
 	case ENOTSUP:	/* no file system support */
 	case EINVAL:	/* acl does not point to a valid ACL */
 	case ENOSYS:	/* compatibility - acl_(g|s)et_fd(3) should never return this */
 	case EBUSY:	/* compatibility - acl_(g|s)et_fd(3) should never return this */
-		return 0;
+	    return 0;
 	default:
-		return 1;
-	}
+	    return 1;
+    }
 }
 #endif /* WITH_ACL */
 
 static int createOutputFile(char *fileName, int flags, struct stat *sb,
-			    acl_type acl, int force_mode)
+	acl_type acl, int force_mode)
 {
     int fd = -1;
     struct stat sb_create;
@@ -483,9 +483,9 @@ static int createOutputFile(char *fileName, int flags, struct stat *sb,
     int i;
 
     for (i = 0; i < 2; ++i) {
-    	struct tm now;
-    	size_t fileName_size, buf_size;
-    	char *backupName, *ptr;
+	struct tm now;
+	size_t fileName_size, buf_size;
+	char *backupName, *ptr;
 
 	fd = open(fileName, (flags | O_EXCL | O_NOFOLLOW),
 		(S_IRUSR | S_IWUSR) & sb->st_mode);
@@ -531,15 +531,15 @@ static int createOutputFile(char *fileName, int flags, struct stat *sb,
 	return -1;
     }
 
-	if (fstat(fd, &sb_create)) {
-		message(MESS_ERROR, "fstat of %s failed: %s\n", fileName,
-			strerror(errno));
-		close(fd);
-		return -1;
-	}
+    if (fstat(fd, &sb_create)) {
+	message(MESS_ERROR, "fstat of %s failed: %s\n", fileName,
+		strerror(errno));
+	close(fd);
+	return -1;
+    }
 
     if ((sb_create.st_uid != sb->st_uid || sb_create.st_gid != sb->st_gid) &&
-		fchown(fd, sb->st_uid, sb->st_gid)) {
+	    fchown(fd, sb->st_uid, sb->st_gid)) {
 	message(MESS_ERROR, "error setting owner of %s to uid %u and gid %u: %s\n",
 		fileName, (unsigned) sb->st_uid, (unsigned) sb->st_gid, strerror(errno));
 	close(fd);
@@ -547,32 +547,32 @@ static int createOutputFile(char *fileName, int flags, struct stat *sb,
     }
 
 #ifdef WITH_ACL
-	if (!force_mode && acl) {
-		if (acl_set_fd(fd, acl) == -1) {
-			if (is_acl_well_supported(errno)) {
-				message(MESS_ERROR, "setting ACL for %s: %s\n",
-				fileName, strerror(errno));
-				close(fd);
-				return -1;
-			}
-			acl_set = 0;
-		}
-		else {
-			acl_set = 1;
-		}
-	}
-#else
-	(void) acl_set;
-#endif
-
-	if (!acl_set || force_mode) {
-		if (fchmod(fd, sb->st_mode)) {
-		message(MESS_ERROR, "error setting mode of %s: %s\n",
+    if (!force_mode && acl) {
+	if (acl_set_fd(fd, acl) == -1) {
+	    if (is_acl_well_supported(errno)) {
+		message(MESS_ERROR, "setting ACL for %s: %s\n",
 			fileName, strerror(errno));
 		close(fd);
 		return -1;
-		}
+	    }
+	    acl_set = 0;
 	}
+	else {
+	    acl_set = 1;
+	}
+    }
+#else
+    (void) acl_set;
+#endif
+
+    if (!acl_set || force_mode) {
+	if (fchmod(fd, sb->st_mode)) {
+	    message(MESS_ERROR, "error setting mode of %s: %s\n",
+		    fileName, strerror(errno));
+	    close(fd);
+	    return -1;
+	}
+    }
 
     return fd;
 }
@@ -583,104 +583,104 @@ static int createOutputFile(char *fileName, int flags, struct stat *sb,
  * is enabled (in that case fd needs to be a valid file descriptor) */
 static int shred_file(int fd, char *filename, struct logInfo *log)
 {
-	char count[DIGITS];    /*  that's a lot of shredding :)  */
-	const char **fullCommand;
-	int id = 0;
-	int status;
+    char count[DIGITS];    /*  that's a lot of shredding :)  */
+    const char **fullCommand;
+    int id = 0;
+    int status;
 
-	if (log->preremove) {
-	    message(MESS_DEBUG, "running preremove script\n");
-	    if (runScript(log, filename, NULL, log->preremove)) {
-		    message(MESS_ERROR,
-			    "error running preremove script "
-			    "for %s of '%s'. Not removing this file.\n",
-			    filename, log->pattern);
-		    /* What ever was supposed to happen did not happen,
-		     * therefore do not unlink the file yet.  */
-		    return 1;
-	    }
+    if (log->preremove) {
+	message(MESS_DEBUG, "running preremove script\n");
+	if (runScript(log, filename, NULL, log->preremove)) {
+	    message(MESS_ERROR,
+		    "error running preremove script "
+		    "for %s of '%s'. Not removing this file.\n",
+		    filename, log->pattern);
+	    /* What ever was supposed to happen did not happen,
+	     * therefore do not unlink the file yet.  */
+	    return 1;
+	}
+    }
+
+    if (!(log->flags & LOG_FLAG_SHRED)) {
+	goto unlink_file;
+    }
+
+    message(MESS_DEBUG, "Using shred to remove the file %s\n", filename);
+
+    if (log->shred_cycles != 0) {
+	fullCommand = alloca(sizeof(*fullCommand) * 6);
+    }
+    else {
+	fullCommand = alloca(sizeof(*fullCommand) * 4);
+    }
+    fullCommand[id++] = "shred";
+    fullCommand[id++] = "-u";
+
+    if (log->shred_cycles != 0) {
+	fullCommand[id++] = "-n";
+	snprintf(count, DIGITS - 1, "%d", log->shred_cycles);
+	fullCommand[id++] = count;
+    }
+    fullCommand[id++] = "-";
+    fullCommand[id++] = NULL;
+
+    if (!fork()) {
+	movefd(fd, STDOUT_FILENO);
+
+	if (switch_user_permanently(log) != 0) {
+	    exit(1);
 	}
 
-	if (!(log->flags & LOG_FLAG_SHRED)) {
-		goto unlink_file;
-	}
+	execvp(fullCommand[0], (void *) fullCommand);
+	exit(1);
+    }
 
-	message(MESS_DEBUG, "Using shred to remove the file %s\n", filename);
+    wait(&status);
 
-	if (log->shred_cycles != 0) {
-		fullCommand = alloca(sizeof(*fullCommand) * 6);
-	}
-	else {
-		fullCommand = alloca(sizeof(*fullCommand) * 4);
-	}
-	fullCommand[id++] = "shred";
-	fullCommand[id++] = "-u";
+    if (!WIFEXITED(status) || WEXITSTATUS(status)) {
+	message(MESS_ERROR, "Failed to shred %s\n, trying unlink", filename);
+	return unlink(filename);
+    }
 
-	if (log->shred_cycles != 0) {
-		fullCommand[id++] = "-n";
-		snprintf(count, DIGITS - 1, "%d", log->shred_cycles);
-		fullCommand[id++] = count;
-	}
-	fullCommand[id++] = "-";
-	fullCommand[id++] = NULL;
-
-	if (!fork()) {
-	    	movefd(fd, STDOUT_FILENO);
-
-		if (switch_user_permanently(log) != 0) {
-			exit(1);
-		}
-
-		execvp(fullCommand[0], (void *) fullCommand);
-		exit(1);
-	}
-
-	wait(&status);
-
-	if (!WIFEXITED(status) || WEXITSTATUS(status)) {
-		message(MESS_ERROR, "Failed to shred %s\n, trying unlink", filename);
-		return unlink(filename);
-	}
-
-	/* We have to unlink it after shred anyway,
-	 * because it doesn't remove the file itself */
+    /* We have to unlink it after shred anyway,
+     * because it doesn't remove the file itself */
 
 unlink_file:
-	if (unlink(filename) == 0)
-		return 0;
-	if (errno != ENOENT)
-		return 1;
-
-	/* unlink of log file that no longer exists is not a fatal error */
-	message(MESS_ERROR, "error unlinking log file %s: %s\n", filename,
-			strerror(errno));
+    if (unlink(filename) == 0)
 	return 0;
+    if (errno != ENOENT)
+	return 1;
+
+    /* unlink of log file that no longer exists is not a fatal error */
+    message(MESS_ERROR, "error unlinking log file %s: %s\n", filename,
+	    strerror(errno));
+    return 0;
 }
 
 static int removeLogFile(char *name, struct logInfo *log)
 {
-	int fd = -1;
-	int result = 0;
-	message(MESS_DEBUG, "removing old log %s\n", name);
+    int fd = -1;
+    int result = 0;
+    message(MESS_DEBUG, "removing old log %s\n", name);
 
-	if (log->flags & LOG_FLAG_SHRED) {
-		fd = open(name, O_RDWR | O_NOFOLLOW);
-		if (fd < 0) {
-			message(MESS_ERROR, "error opening %s: %s\n",
-				name, strerror(errno));
-			return 1;
-		}
+    if (log->flags & LOG_FLAG_SHRED) {
+	fd = open(name, O_RDWR | O_NOFOLLOW);
+	if (fd < 0) {
+	    message(MESS_ERROR, "error opening %s: %s\n",
+		    name, strerror(errno));
+	    return 1;
 	}
+    }
 
-	if (!debug && shred_file(fd, name, log)) {
-		message(MESS_ERROR, "Failed to remove old log %s: %s\n",
-			name, strerror(errno));
-		result = 1;
-	}
+    if (!debug && shred_file(fd, name, log)) {
+	message(MESS_ERROR, "Failed to remove old log %s: %s\n",
+		name, strerror(errno));
+	result = 1;
+    }
 
-	if (fd != -1)
-		close(fd);
-	return result;
+    if (fd != -1)
+	close(fd);
+    return result;
 }
 
 static int compressLogFile(char *name, struct logInfo *log, struct stat *sb)
@@ -703,7 +703,7 @@ static int compressLogFile(char *name, struct logInfo *log, struct stat *sb)
 	return 0;
 
     fullCommand = alloca(sizeof(*fullCommand) *
-			 (log->compress_options_count + 2));
+	    (log->compress_options_count + 2));
     fullCommand[0] = log->compress_prog;
     for (i = 0; i < log->compress_options_count; i++)
 	fullCommand[i + 1] = log->compress_options_list[i];
@@ -724,25 +724,25 @@ static int compressLogFile(char *name, struct logInfo *log, struct stat *sb)
     }
 
 #ifdef WITH_ACL
-	if ((prev_acl = acl_get_fd(inFile)) == NULL) {
-		if (is_acl_well_supported(errno)) {
-			message(MESS_ERROR, "getting file ACL %s: %s\n",
-				name, strerror(errno));
-			restoreSecCtx(&prevCtx);
-			close(inFile);
-			return 1;
-		}
+    if ((prev_acl = acl_get_fd(inFile)) == NULL) {
+	if (is_acl_well_supported(errno)) {
+	    message(MESS_ERROR, "getting file ACL %s: %s\n",
+		    name, strerror(errno));
+	    restoreSecCtx(&prevCtx);
+	    close(inFile);
+	    return 1;
 	}
+    }
 #endif
 
     outFile =
 	createOutputFile(compressedName, O_RDWR | O_CREAT, sb, prev_acl, 0);
     restoreSecCtx(&prevCtx);
 #ifdef WITH_ACL
-	if (prev_acl) {
-		acl_free(prev_acl);
-		prev_acl = NULL;
-	}
+    if (prev_acl) {
+	acl_free(prev_acl);
+	prev_acl = NULL;
+    }
 #endif
     if (outFile < 0) {
 	close(inFile);
@@ -750,13 +750,13 @@ static int compressLogFile(char *name, struct logInfo *log, struct stat *sb)
     }
 
     /* pipe used to capture stderr of the compress process */
-	if (pipe(compressPipe) < 0) {
-		message(MESS_ERROR, "error opening pipe for compress: %s",
-				strerror(errno));
-		close(inFile);
-		close(outFile);
-		return 1;
-	}
+    if (pipe(compressPipe) < 0) {
+	message(MESS_ERROR, "error opening pipe for compress: %s",
+		strerror(errno));
+	close(inFile);
+	close(outFile);
+	return 1;
+    }
 
     if (!fork()) {
 	/* close read end of pipe in the child process */
@@ -766,7 +766,7 @@ static int compressLogFile(char *name, struct logInfo *log, struct stat *sb)
 	movefd(outFile, STDOUT_FILENO);
 
 	if (switch_user_permanently(log) != 0) {
-		exit(1);
+	    exit(1);
 	}
 
 	movefd(compressPipe[1], STDERR_FILENO);
@@ -832,33 +832,33 @@ static int mailLog(struct logInfo *log, char *logFile, const char *mailComm,
     }
 
     if (uncompressCommand) {
-		/* pipe used to capture ouput of the uncompress process */
-		if (pipe(uncompressPipe) < 0) {
-			message(MESS_ERROR, "error opening pipe for uncompress: %s",
-					strerror(errno));
-			close(mailInput);
-			return 1;
-		}
-		if (!(uncompressChild = fork())) {
-			/* uncompress child */
+	/* pipe used to capture ouput of the uncompress process */
+	if (pipe(uncompressPipe) < 0) {
+	    message(MESS_ERROR, "error opening pipe for uncompress: %s",
+		    strerror(errno));
+	    close(mailInput);
+	    return 1;
+	}
+	if (!(uncompressChild = fork())) {
+	    /* uncompress child */
 
-			/* close read end of pipe in the child process */
-			close(uncompressPipe[0]);
+	    /* close read end of pipe in the child process */
+	    close(uncompressPipe[0]);
 
-			movefd(mailInput, STDIN_FILENO);
-			movefd(uncompressPipe[1], STDOUT_FILENO);
+	    movefd(mailInput, STDIN_FILENO);
+	    movefd(uncompressPipe[1], STDOUT_FILENO);
 
-			if (switch_user_permanently(log) != 0) {
-				exit(1);
-			}
+	    if (switch_user_permanently(log) != 0) {
+		exit(1);
+	    }
 
-			execlp(uncompressCommand, uncompressCommand, (char *) NULL);
-			exit(1);
-		}
+	    execlp(uncompressCommand, uncompressCommand, (char *) NULL);
+	    exit(1);
+	}
 
-		close(mailInput);
-		mailInput = uncompressPipe[0];
-		close(uncompressPipe[1]);
+	close(mailInput);
+	mailInput = uncompressPipe[0];
+	close(uncompressPipe[1]);
     }
 
     if (!(mailChild = fork())) {
@@ -867,9 +867,9 @@ static int mailLog(struct logInfo *log, char *logFile, const char *mailComm,
 
 	/* mail command runs as root */
 	if (log->flags & LOG_FLAG_SU) {
-		if (switch_user_back_permanently() != 0) {
-			exit(1);
-		}
+	    if (switch_user_back_permanently() != 0) {
+		exit(1);
+	    }
 	}
 
 	execvp(mailArgv[0], mailArgv);
@@ -928,10 +928,10 @@ static int mailLogWrapper(char *mailFilename, const char *mailComm,
 static int is_probably_sparse(struct stat const *sb)
 {
 #if defined(HAVE_STRUCT_STAT_ST_BLOCKS) && defined(HAVE_STRUCT_STAT_ST_BLKSIZE)
-	return (S_ISREG (sb->st_mode)
-          && sb->st_blocks < sb->st_size / sb->st_blksize);
+    return (S_ISREG (sb->st_mode)
+	    && sb->st_blocks < sb->st_size / sb->st_blksize);
 #else
-	return 0;
+    return 0;
 #endif
 }
 
@@ -942,106 +942,106 @@ static int is_probably_sparse(struct stat const *sb)
 
 static int is_nul (void const *buf, size_t bufsize)
 {
-  char const *cbuf = buf;
-  char const *cp = buf;
+    char const *cbuf = buf;
+    char const *cp = buf;
 
-  /* Find the first nonzero *byte*, or the sentinel.  */
-  while (*cp++ == 0)
-    continue;
+    /* Find the first nonzero *byte*, or the sentinel.  */
+    while (*cp++ == 0)
+	continue;
 
-  return cbuf + bufsize < cp;
+    return cbuf + bufsize < cp;
 }
 
 static size_t full_write(int fd, const void *buf, size_t count)
 {
-  size_t total = 0;
-  const char *ptr = (const char *) buf;
+    size_t total = 0;
+    const char *ptr = (const char *) buf;
 
-  while (count > 0)
+    while (count > 0)
     {
-      size_t n_rw;
+	size_t n_rw;
 	for (;;)
 	{
-		n_rw = write (fd, buf, count);
-		if (errno == EINTR)
-			continue;
-		else
-			break;
+	    n_rw = write (fd, buf, count);
+	    if (errno == EINTR)
+		continue;
+	    else
+		break;
 	}
 	if (n_rw == (size_t) -1)
-		break;
+	    break;
 	if (n_rw == 0)
-		break;
+	    break;
 	total += n_rw;
 	ptr += n_rw;
 	count -= n_rw;
     }
 
-  return total;
+    return total;
 }
 
 static int sparse_copy(int src_fd, int dest_fd, struct stat *sb,
 		       const char *saveLog, const char *currLog)
 {
-	int make_holes = is_probably_sparse(sb);
-	size_t max_n_read = SIZE_MAX;
-	int last_write_made_hole = 0;
-	off_t total_n_read = 0;
-	char buf[BUFSIZ + 1];
+    int make_holes = is_probably_sparse(sb);
+    size_t max_n_read = SIZE_MAX;
+    int last_write_made_hole = 0;
+    off_t total_n_read = 0;
+    char buf[BUFSIZ + 1];
 
-	while (max_n_read) {
-		int make_hole = 0;
+    while (max_n_read) {
+	int make_hole = 0;
 
-		ssize_t n_read = read (src_fd, buf, MIN (max_n_read, BUFSIZ));
-		if (n_read < 0) {
-			if (errno == EINTR) {
-				continue;
-			}
-			message(MESS_ERROR, "error reading %s: %s\n",
-				currLog, strerror(errno));
-			return 0;
-		}
-
-		if (n_read == 0)
-			break;
-
-		max_n_read -= n_read;
-		total_n_read += n_read;
-
-		if (make_holes) {
-			/* Sentinel required by is_nul().  */
-			buf[n_read] = '\1';
-
-			if ((make_hole = is_nul(buf, n_read))) {
-				if (lseek (dest_fd, n_read, SEEK_CUR) < 0) {
-					message(MESS_ERROR, "error seeking %s: %s\n",
-						saveLog, strerror(errno));
-					return 0;
-				}
-			}
-		}
-
-		if (!make_hole) {
-			size_t n = n_read;
-			if (full_write (dest_fd, buf, n) != n) {
-				message(MESS_ERROR, "error writing to %s: %s\n",
-					saveLog, strerror(errno));
-				return 0;
-			}
-		}
-
-		last_write_made_hole = make_hole;
+	ssize_t n_read = read (src_fd, buf, MIN (max_n_read, BUFSIZ));
+	if (n_read < 0) {
+	    if (errno == EINTR) {
+		continue;
+	    }
+	    message(MESS_ERROR, "error reading %s: %s\n",
+		    currLog, strerror(errno));
+	    return 0;
 	}
 
-	if (last_write_made_hole) {
-		if (ftruncate(dest_fd, total_n_read) < 0) {
-			message(MESS_ERROR, "error ftruncate %s: %s\n",
+	if (n_read == 0)
+	    break;
+
+	max_n_read -= n_read;
+	total_n_read += n_read;
+
+	if (make_holes) {
+	    /* Sentinel required by is_nul().  */
+	    buf[n_read] = '\1';
+
+	    if ((make_hole = is_nul(buf, n_read))) {
+		if (lseek (dest_fd, n_read, SEEK_CUR) < 0) {
+		    message(MESS_ERROR, "error seeking %s: %s\n",
+			    saveLog, strerror(errno));
+		    return 0;
+		}
+	    }
+	}
+
+	if (!make_hole) {
+	    size_t n = n_read;
+	    if (full_write (dest_fd, buf, n) != n) {
+		message(MESS_ERROR, "error writing to %s: %s\n",
 			saveLog, strerror(errno));
-			return 0;
-		}
+		return 0;
+	    }
 	}
 
-	return 1;
+	last_write_made_hole = make_hole;
+    }
+
+    if (last_write_made_hole) {
+	if (ftruncate(dest_fd, total_n_read) < 0) {
+	    message(MESS_ERROR, "error ftruncate %s: %s\n",
+		    saveLog, strerror(errno));
+	    return 0;
+	}
+    }
+
+    return 1;
 }
 
 static int copyTruncate(char *currLog, char *saveLog, struct stat *sb,
@@ -1153,35 +1153,35 @@ static int findNeedRotating(struct logInfo *log, int logNum, int force)
 
     message(MESS_DEBUG, "considering log %s\n", log->files[logNum]);
 
-	/* Check if parent directory of this log has safe permissions */
-	if ((log->flags & LOG_FLAG_SU) == 0 && getuid() == 0) {
-		char *logpath = strdup(log->files[logNum]);
-		char *ld = dirname(logpath);
-		if (stat(ld, &sb)) {
-			/* If parent directory doesn't exist, it's not real error
-			  (unless nomissingok is specified)
-			  and rotation is not needed */
-			if (errno != ENOENT || (errno == ENOENT && (log->flags & LOG_FLAG_MISSINGOK) == 0)) {
-				message(MESS_ERROR, "stat of %s failed: %s\n", ld,
-					strerror(errno));
-				free(logpath);
-				return 1;
-			}
-			free(logpath);
-			return 0;
-		}
-		/* Don't rotate in directories writable by others or group which is not "root"  */
-		if ((sb.st_gid != 0 && sb.st_mode & S_IWGRP) || sb.st_mode & S_IWOTH) {
-			message(MESS_ERROR, "skipping \"%s\" because parent directory has insecure permissions"
-								" (It's world writable or writable by group which is not \"root\")"
-								" Set \"su\" directive in config file to tell logrotate which user/group"
-								" should be used for rotation.\n"
-								,log->files[logNum]);
-			free(logpath);
-			return 1;
-		}
+    /* Check if parent directory of this log has safe permissions */
+    if ((log->flags & LOG_FLAG_SU) == 0 && getuid() == 0) {
+	char *logpath = strdup(log->files[logNum]);
+	char *ld = dirname(logpath);
+	if (stat(ld, &sb)) {
+	    /* If parent directory doesn't exist, it's not real error
+	       (unless nomissingok is specified)
+	       and rotation is not needed */
+	    if (errno != ENOENT || (errno == ENOENT && (log->flags & LOG_FLAG_MISSINGOK) == 0)) {
+		message(MESS_ERROR, "stat of %s failed: %s\n", ld,
+			strerror(errno));
 		free(logpath);
+		return 1;
+	    }
+	    free(logpath);
+	    return 0;
 	}
+	/* Don't rotate in directories writable by others or group which is not "root"  */
+	if ((sb.st_gid != 0 && sb.st_mode & S_IWGRP) || sb.st_mode & S_IWOTH) {
+	    message(MESS_ERROR, "skipping \"%s\" because parent directory has insecure permissions"
+		    " (It's world writable or writable by group which is not \"root\")"
+		    " Set \"su\" directive in config file to tell logrotate which user/group"
+		    " should be used for rotation.\n"
+		    ,log->files[logNum]);
+	    free(logpath);
+	    return 1;
+	}
+	free(logpath);
+    }
 
     if (lstat(log->files[logNum], &sb)) {
 	if ((log->flags & LOG_FLAG_MISSINGOK) && (errno == ENOENT)) {
@@ -1202,12 +1202,12 @@ static int findNeedRotating(struct logInfo *log, int logNum, int force)
     state->sb = sb;
     state->isUsed = 1;
 
-	if ((sb.st_mode & S_IFMT) == S_IFLNK) {
-	    message(MESS_DEBUG, "  log %s is symbolic link. Rotation of symbolic"
-			" links is not allowed to avoid security issues -- skipping.\n",
-		    log->files[logNum]);
-		return 0;
-	}
+    if ((sb.st_mode & S_IFMT) == S_IFLNK) {
+	message(MESS_DEBUG, "  log %s is symbolic link. Rotation of symbolic"
+		" links is not allowed to avoid security issues -- skipping.\n",
+		log->files[logNum]);
+	return 0;
+    }
 
     message(MESS_DEBUG, "  Now: %d-%02d-%02d %02d:%02d\n", 1900 + now.tm_year,
 	    1 + now.tm_mon, now.tm_mday,
@@ -1222,97 +1222,97 @@ static int findNeedRotating(struct logInfo *log, int logNum, int force)
 	state->doRotate = 1;
     }
     else if (log->maxsize && sb.st_size > log->maxsize) {
-        state->doRotate = 1;
+	state->doRotate = 1;
     }
     else if (log->criterium == ROT_SIZE) {
 	state->doRotate = (sb.st_size >= log->threshold);
 	if (!state->doRotate) {
-	message(MESS_DEBUG, "  log does not need rotating "
-		"(log size is below the 'size' threshold)\n");
+	    message(MESS_DEBUG, "  log does not need rotating "
+		    "(log size is below the 'size' threshold)\n");
 	}
     } else if (mktime(&state->lastRotated) - mktime(&now) > (25 * 3600)) {
-        /* 25 hours allows for DST changes as well as geographical moves */
+	/* 25 hours allows for DST changes as well as geographical moves */
 	message(MESS_ERROR,
 		"log %s last rotated in the future -- rotation forced\n",
 		log->files[logNum]);
 	state->doRotate = 1;
     } else if (state->lastRotated.tm_year != now.tm_year ||
-	       state->lastRotated.tm_mon != now.tm_mon ||
-	       state->lastRotated.tm_mday != now.tm_mday ||
-	       state->lastRotated.tm_hour != now.tm_hour) {
+	    state->lastRotated.tm_mon != now.tm_mon ||
+	    state->lastRotated.tm_mday != now.tm_mday ||
+	    state->lastRotated.tm_hour != now.tm_hour) {
 	int days;
 	switch (log->criterium) {
-	case ROT_WEEKLY:
-	    days = daysElapsed(&now, &state->lastRotated);
-	    /* rotate if date is advanced by 7+ days (exact time is ignored) */
-	    state->doRotate = (days >= 7)
-		/* ... or if we have not yet rotated today */
-		|| (days >= 1
-			/* ... and the selected weekday is today */
-			&& now.tm_wday == log->weekday);
-	    if (!state->doRotate) {
-	    message(MESS_DEBUG, "  log does not need rotating "
-		    "(log has been rotated at %d-%d-%d %d:%d, "
-		    "that is not week ago yet)\n", 1900 + state->lastRotated.tm_year,
-		    1 + state->lastRotated.tm_mon, state->lastRotated.tm_mday,
-		    state->lastRotated.tm_hour, state->lastRotated.tm_min);
-	    }
-	    break;
-	case ROT_HOURLY:
-	    state->doRotate = ((now.tm_hour != state->lastRotated.tm_hour) ||
-			    (now.tm_mday != state->lastRotated.tm_mday) ||
-			    (now.tm_mon != state->lastRotated.tm_mon) ||
-			    (now.tm_year != state->lastRotated.tm_year));
-	    if (!state->doRotate) {
-	    message(MESS_DEBUG, "  log does not need rotating "
-		    "(log has been rotated at %d-%d-%d %d:%d, "
-		    "that is not hour ago yet)\n", 1900 + state->lastRotated.tm_year,
-		    1 + state->lastRotated.tm_mon, state->lastRotated.tm_mday,
-		    state->lastRotated.tm_hour, state->lastRotated.tm_min);
-	    }
-	    break;
-	case ROT_DAYS:
-	    /* FIXME: only days=1 is implemented!! */
-	    state->doRotate = ((now.tm_mday != state->lastRotated.tm_mday) ||
-			    (now.tm_mon != state->lastRotated.tm_mon) ||
-			    (now.tm_year != state->lastRotated.tm_year));
-	    if (!state->doRotate) {
-	    message(MESS_DEBUG, "  log does not need rotating "
-		    "(log has been rotated at %d-%d-%d %d:%d, "
-		    "that is not day ago yet)\n", 1900 + state->lastRotated.tm_year,
-		    1 + state->lastRotated.tm_mon, state->lastRotated.tm_mday,
-		    state->lastRotated.tm_hour, state->lastRotated.tm_min);
-	    }
-	    break;
-	case ROT_MONTHLY:
-	    /* rotate if the logs haven't been rotated this month or
-	       this year */
-	    state->doRotate = ((now.tm_mon != state->lastRotated.tm_mon) ||
-			    (now.tm_year != state->lastRotated.tm_year));
-	    if (!state->doRotate) {
-	    message(MESS_DEBUG, "  log does not need rotating "
-		    "(log has been rotated at %d-%d-%d %d:%d, "
-		    "that is not month ago yet)\n", 1900 + state->lastRotated.tm_year,
-		    1 + state->lastRotated.tm_mon, state->lastRotated.tm_mday,
-		    state->lastRotated.tm_hour, state->lastRotated.tm_min);
-	    }
-	    break;
-	case ROT_YEARLY:
-	    /* rotate if the logs haven't been rotated this year */
-	    state->doRotate = (now.tm_year != state->lastRotated.tm_year);
-	    if (!state->doRotate) {
-	    message(MESS_DEBUG, "  log does not need rotating "
-		    "(log has been rotated at %d-%d-%d %d:%d, "
-		    "that is not year ago yet)\n", 1900 + state->lastRotated.tm_year,
-		    1 + state->lastRotated.tm_mon, state->lastRotated.tm_mday,
-		    state->lastRotated.tm_hour, state->lastRotated.tm_min);
-	    }
-	    break;
-	case ROT_SIZE:
-	default:
-	    /* ack! */
-	    state->doRotate = 0;
-	    break;
+	    case ROT_WEEKLY:
+		days = daysElapsed(&now, &state->lastRotated);
+		/* rotate if date is advanced by 7+ days (exact time is ignored) */
+		state->doRotate = (days >= 7)
+		    /* ... or if we have not yet rotated today */
+		    || (days >= 1
+			    /* ... and the selected weekday is today */
+			    && now.tm_wday == log->weekday);
+		if (!state->doRotate) {
+		    message(MESS_DEBUG, "  log does not need rotating "
+			    "(log has been rotated at %d-%d-%d %d:%d, "
+			    "that is not week ago yet)\n", 1900 + state->lastRotated.tm_year,
+			    1 + state->lastRotated.tm_mon, state->lastRotated.tm_mday,
+			    state->lastRotated.tm_hour, state->lastRotated.tm_min);
+		}
+		break;
+	    case ROT_HOURLY:
+		state->doRotate = ((now.tm_hour != state->lastRotated.tm_hour) ||
+			(now.tm_mday != state->lastRotated.tm_mday) ||
+			(now.tm_mon != state->lastRotated.tm_mon) ||
+			(now.tm_year != state->lastRotated.tm_year));
+		if (!state->doRotate) {
+		    message(MESS_DEBUG, "  log does not need rotating "
+			    "(log has been rotated at %d-%d-%d %d:%d, "
+			    "that is not hour ago yet)\n", 1900 + state->lastRotated.tm_year,
+			    1 + state->lastRotated.tm_mon, state->lastRotated.tm_mday,
+			    state->lastRotated.tm_hour, state->lastRotated.tm_min);
+		}
+		break;
+	    case ROT_DAYS:
+		/* FIXME: only days=1 is implemented!! */
+		state->doRotate = ((now.tm_mday != state->lastRotated.tm_mday) ||
+			(now.tm_mon != state->lastRotated.tm_mon) ||
+			(now.tm_year != state->lastRotated.tm_year));
+		if (!state->doRotate) {
+		    message(MESS_DEBUG, "  log does not need rotating "
+			    "(log has been rotated at %d-%d-%d %d:%d, "
+			    "that is not day ago yet)\n", 1900 + state->lastRotated.tm_year,
+			    1 + state->lastRotated.tm_mon, state->lastRotated.tm_mday,
+			    state->lastRotated.tm_hour, state->lastRotated.tm_min);
+		}
+		break;
+	    case ROT_MONTHLY:
+		/* rotate if the logs haven't been rotated this month or
+		   this year */
+		state->doRotate = ((now.tm_mon != state->lastRotated.tm_mon) ||
+			(now.tm_year != state->lastRotated.tm_year));
+		if (!state->doRotate) {
+		    message(MESS_DEBUG, "  log does not need rotating "
+			    "(log has been rotated at %d-%d-%d %d:%d, "
+			    "that is not month ago yet)\n", 1900 + state->lastRotated.tm_year,
+			    1 + state->lastRotated.tm_mon, state->lastRotated.tm_mday,
+			    state->lastRotated.tm_hour, state->lastRotated.tm_min);
+		}
+		break;
+	    case ROT_YEARLY:
+		/* rotate if the logs haven't been rotated this year */
+		state->doRotate = (now.tm_year != state->lastRotated.tm_year);
+		if (!state->doRotate) {
+		    message(MESS_DEBUG, "  log does not need rotating "
+			    "(log has been rotated at %d-%d-%d %d:%d, "
+			    "that is not year ago yet)\n", 1900 + state->lastRotated.tm_year,
+			    1 + state->lastRotated.tm_mon, state->lastRotated.tm_mday,
+			    state->lastRotated.tm_hour, state->lastRotated.tm_min);
+		}
+		break;
+	    case ROT_SIZE:
+	    default:
+		/* ack! */
+		state->doRotate = 0;
+		break;
 	}
 	if (log->minsize && sb.st_size < log->minsize) {
 	    state->doRotate = 0;
@@ -1476,17 +1476,17 @@ static int prerotateSingleLog(struct logInfo *log, int logNum,
     }
 
     if (log->extension &&
-	strncmp(&
+	    strncmp(&
 		(rotNames->
 		 baseName[strlen(rotNames->baseName) -
-			  strlen(log->extension)]), log->extension,
+		 strlen(log->extension)]), log->extension,
 		strlen(log->extension)) == 0) {
 	char *tempstr;
 
 	fileext = log->extension;
 	tempstr =
 	    calloc(strlen(rotNames->baseName) - strlen(log->extension) + 1,
-		   sizeof(char));
+		    sizeof(char));
 	strncat(tempstr, rotNames->baseName,
 		strlen(rotNames->baseName) - strlen(log->extension));
 	free(rotNames->baseName);
@@ -1495,104 +1495,104 @@ static int prerotateSingleLog(struct logInfo *log, int logNum,
 
     /* Adjust "now" if we want yesterday's date */
     if (log->flags & LOG_FLAG_DATEYESTERDAY) {
-        now.tm_hour = 12; /* set hour to noon to work around DST issues */
-        now.tm_mday = now.tm_mday - 1;
-        mktime(&now);
+	now.tm_hour = 12; /* set hour to noon to work around DST issues */
+	now.tm_mday = now.tm_mday - 1;
+	mktime(&now);
     }
 
     if (log->flags & LOG_FLAG_DATEHOURAGO) {
-        now.tm_hour -= 1;
-        mktime(&now);
+	now.tm_hour -= 1;
+	mktime(&now);
     }
 
-	/* Construct the glob pattern corresponding to the date format */
-	dext_str[0] = '\0';
-	if (log->dateformat) {
-		size_t i = 0, j = 0;
-		memset(dext_pattern, 0, sizeof(dext_pattern));
-		dext = log->dateformat;
-		while (*dext == ' ')
-			dext++;
-		while ((*dext != '\0') && (!hasErrors)) {
-			/* Will there be a space for a char and '\0'? */
+    /* Construct the glob pattern corresponding to the date format */
+    dext_str[0] = '\0';
+    if (log->dateformat) {
+	size_t i = 0, j = 0;
+	memset(dext_pattern, 0, sizeof(dext_pattern));
+	dext = log->dateformat;
+	while (*dext == ' ')
+	    dext++;
+	while ((*dext != '\0') && (!hasErrors)) {
+	    /* Will there be a space for a char and '\0'? */
+	    if (j >= (sizeof(dext_pattern) - 1)) {
+		message(MESS_ERROR, "Date format %s is too long\n",
+			log->dateformat);
+		hasErrors = 1;
+		break;
+	    }
+	    if (*dext == '%') {
+		switch (*(dext + 1)) {
+		    case 'Y':
+			strncat(dext_pattern, "[0-9][0-9]",
+				sizeof(dext_pattern) - strlen(dext_pattern) - 1);
+			j += 10; /* strlen("[0-9][0-9]") */
+			/* FALLTHRU */
+		    case 'm':
+		    case 'd':
+		    case 'H':
+		    case 'M':
+		    case 'S':
+		    case 'V':
+			strncat(dext_pattern, "[0-9][0-9]",
+				sizeof(dext_pattern) - strlen(dext_pattern) - 1);
+			j += 10;
 			if (j >= (sizeof(dext_pattern) - 1)) {
-				message(MESS_ERROR, "Date format %s is too long\n",
-						log->dateformat);
-				hasErrors = 1;
-				break;
+			    message(MESS_ERROR, "Date format %s is too long\n",
+				    log->dateformat);
+			    hasErrors = 1;
+			    break;
 			}
-			if (*dext == '%') {
-				switch (*(dext + 1)) {
-					case 'Y':
-						strncat(dext_pattern, "[0-9][0-9]",
-								sizeof(dext_pattern) - strlen(dext_pattern) - 1);
-						j += 10; /* strlen("[0-9][0-9]") */
-						/* FALLTHRU */
-					case 'm':
-					case 'd':
-					case 'H':
-					case 'M':
-					case 'S':
-					case 'V':
-						strncat(dext_pattern, "[0-9][0-9]",
-								sizeof(dext_pattern) - strlen(dext_pattern) - 1);
-						j += 10;
-						if (j >= (sizeof(dext_pattern) - 1)) {
-							message(MESS_ERROR, "Date format %s is too long\n",
-									log->dateformat);
-							hasErrors = 1;
-							break;
-						}
-						dformat[i++] = *(dext++);
-						dformat[i] = *dext;
-						break;
-					case 's':
-						/* End of year 2293 this pattern does not work. */
-						strncat(dext_pattern,
-								"[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]",
-								sizeof(dext_pattern) - strlen(dext_pattern) - 1);
-						j += 50;
-						if (j >= (sizeof(dext_pattern) - 1)) {
-							message(MESS_ERROR, "Date format %s is too long\n",
-									log->dateformat);
-							hasErrors = 1;
-							break;
-						}
-						dformat[i++] = *(dext++);
-						dformat[i] = *dext;
-						break;
-					default:
-						dformat[i++] = *dext;
-						dformat[i] = '%';
-						dext_pattern[j++] = *dext;
-						break;
-				}
-			} else {
-				dformat[i] = *dext;
-				dext_pattern[j++] = *dext;
+			dformat[i++] = *(dext++);
+			dformat[i] = *dext;
+			break;
+		    case 's':
+			/* End of year 2293 this pattern does not work. */
+			strncat(dext_pattern,
+				"[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]",
+				sizeof(dext_pattern) - strlen(dext_pattern) - 1);
+			j += 50;
+			if (j >= (sizeof(dext_pattern) - 1)) {
+			    message(MESS_ERROR, "Date format %s is too long\n",
+				    log->dateformat);
+			    hasErrors = 1;
+			    break;
 			}
-			++i;
-			++dext;
+			dformat[i++] = *(dext++);
+			dformat[i] = *dext;
+			break;
+		    default:
+			dformat[i++] = *dext;
+			dformat[i] = '%';
+			dext_pattern[j++] = *dext;
+			break;
 		}
-		dformat[i] = '\0';
-		message(MESS_DEBUG, "Converted '%s' -> '%s'\n", log->dateformat, dformat);
-		strftime(dext_str, sizeof(dext_str), dformat, &now);
-	} else {
-		if (log->criterium == ROT_HOURLY) {
-			/* hourly adds another two digits */
-			strftime(dext_str, sizeof(dext_str), "-%Y%m%d%H", &now);
-			strncpy(dext_pattern, "-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]",
-					sizeof(dext_pattern));
-		} else {
-			/* The default dateformat and glob pattern */
-			strftime(dext_str, sizeof(dext_str), "-%Y%m%d", &now);
-			strncpy(dext_pattern, "-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]",
-					sizeof(dext_pattern));
-		}
-		dext_pattern[PATTERN_LEN - 1] = '\0';
+	    } else {
+		dformat[i] = *dext;
+		dext_pattern[j++] = *dext;
+	    }
+	    ++i;
+	    ++dext;
 	}
-	message(MESS_DEBUG, "dateext suffix '%s'\n", dext_str);
-	message(MESS_DEBUG, "glob pattern '%s'\n", dext_pattern);
+	dformat[i] = '\0';
+	message(MESS_DEBUG, "Converted '%s' -> '%s'\n", log->dateformat, dformat);
+	strftime(dext_str, sizeof(dext_str), dformat, &now);
+    } else {
+	if (log->criterium == ROT_HOURLY) {
+	    /* hourly adds another two digits */
+	    strftime(dext_str, sizeof(dext_str), "-%Y%m%d%H", &now);
+	    strncpy(dext_pattern, "-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]",
+		    sizeof(dext_pattern));
+	} else {
+	    /* The default dateformat and glob pattern */
+	    strftime(dext_str, sizeof(dext_str), "-%Y%m%d", &now);
+	    strncpy(dext_pattern, "-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]",
+		    sizeof(dext_pattern));
+	}
+	dext_pattern[PATTERN_LEN - 1] = '\0';
+    }
+    message(MESS_DEBUG, "dateext suffix '%s'\n", dext_str);
+    message(MESS_DEBUG, "glob pattern '%s'\n", dext_pattern);
 
     if (setSecCtxByName(log->files[logNum], &prev_context) != 0) {
 	/* error msg already printed */
@@ -1601,13 +1601,13 @@ static int prerotateSingleLog(struct logInfo *log, int logNum,
 
     /* First compress the previous log when necessary */
     if (log->flags & LOG_FLAG_COMPRESS &&
-	log->flags & LOG_FLAG_DELAYCOMPRESS) {
+	    log->flags & LOG_FLAG_DELAYCOMPRESS) {
 	if (log->flags & LOG_FLAG_DATEEXT) {
-		/* glob for uncompressed files with our pattern */
-		if (asprintf(&glob_pattern, "%s/%s%s%s", rotNames->dirName,
-					rotNames->baseName, dext_pattern, fileext) < 0) {
-			message(MESS_FATAL, "could not allocate glob pattern memory\n");
-		}
+	    /* glob for uncompressed files with our pattern */
+	    if (asprintf(&glob_pattern, "%s/%s%s%s", rotNames->dirName,
+			rotNames->baseName, dext_pattern, fileext) < 0) {
+		message(MESS_FATAL, "could not allocate glob pattern memory\n");
+	    }
 	    rc = glob(glob_pattern, 0, globerr, &globResult);
 	    if (!rc && globResult.gl_pathc > 0) {
 		size_t glob_count;
@@ -1615,10 +1615,10 @@ static int prerotateSingleLog(struct logInfo *log, int logNum,
 		for (glob_count = 0; glob_count < globResult.gl_pathc && !hasErrors; glob_count++) {
 		    struct stat sbprev;
 
-			if (asprintf(&oldName, "%s", (globResult.gl_pathv)[glob_count]) < 0) {
-				message(MESS_FATAL, "could not allocate glob result memory\n");
-			}
-			if (stat(oldName, &sbprev)) {
+		    if (asprintf(&oldName, "%s", (globResult.gl_pathv)[glob_count]) < 0) {
+			message(MESS_FATAL, "could not allocate glob result memory\n");
+		    }
+		    if (stat(oldName, &sbprev)) {
 			message(MESS_DEBUG,
 				"previous log %s does not exist\n",
 				oldName);
@@ -1632,9 +1632,9 @@ static int prerotateSingleLog(struct logInfo *log, int logNum,
 			"glob finding logs to compress failed\n");
 		/* fallback to old behaviour */
 		if (asprintf(&oldName, "%s/%s.%d%s", rotNames->dirName,
-			rotNames->baseName, logStart, fileext) < 0) {
-				message(MESS_FATAL, "could not allocate oldName memory\n");
-			}
+			    rotNames->baseName, logStart, fileext) < 0) {
+		    message(MESS_FATAL, "could not allocate oldName memory\n");
+		}
 		free(oldName);
 	    }
 	    globfree(&globResult);
@@ -1642,8 +1642,8 @@ static int prerotateSingleLog(struct logInfo *log, int logNum,
 	} else {
 	    struct stat sbprev;
 	    if (asprintf(&oldName, "%s/%s.%d%s", rotNames->dirName,
-		    rotNames->baseName, logStart, fileext) < 0) {
-			message(MESS_FATAL, "could not allocate oldName memory\n");
+			rotNames->baseName, logStart, fileext) < 0) {
+		message(MESS_FATAL, "could not allocate oldName memory\n");
 	    }
 	    if (stat(oldName, &sbprev)) {
 		message(MESS_DEBUG, "previous log %s does not exist\n",
@@ -1658,14 +1658,14 @@ static int prerotateSingleLog(struct logInfo *log, int logNum,
     /* adding 2 due to / and \0 being added by snprintf */
     rotNames->firstRotated =
 	malloc(strlen(rotNames->dirName) + strlen(rotNames->baseName) +
-	       strlen(fileext) + strlen(compext) + DATEEXT_LEN + 2 );
+		strlen(fileext) + strlen(compext) + DATEEXT_LEN + 2 );
 
     if (log->flags & LOG_FLAG_DATEEXT) {
 	/* glob for compressed files with our pattern
 	 * and compress ext */
 	if (asprintf(&glob_pattern, "%s/%s%s%s%s", rotNames->dirName,
-				rotNames->baseName, dext_pattern, fileext, compext) < 0) {
-		message(MESS_ERROR, "could not allocate glob pattern memory\n");
+		    rotNames->baseName, dext_pattern, fileext, compext) < 0) {
+	    message(MESS_ERROR, "could not allocate glob pattern memory\n");
 	}
 	rc = glob(glob_pattern, 0, globerr, &globResult);
 	if (!rc) {
@@ -1678,26 +1678,26 @@ static int prerotateSingleLog(struct logInfo *log, int logNum,
 	    /* Remove the first (n - rotateCount) matches no real rotation
 	     * needed, since the files have the date in their name. Note that
 	     * (size_t)-1 == SIZE_T_MAX in rotateCount */
-		sortGlobResult(&globResult, strlen(rotNames->dirName) + 1 + strlen(rotNames->baseName), dformat);
+	    sortGlobResult(&globResult, strlen(rotNames->dirName) + 1 + strlen(rotNames->baseName), dformat);
 	    for (glob_count = 0; glob_count < globResult.gl_pathc; glob_count++) {
 		if (!stat((globResult.gl_pathv)[glob_count], &fst_buf)) {
 		    if (((globResult.gl_pathc >= (size_t)rotateCount) && (glob_count <= (globResult.gl_pathc - rotateCount)))
-			|| ((log->rotateAge > 0)
-			    &&
-			    (((nowSecs - fst_buf.st_mtime) / DAY_SECONDS)
-			     > log->rotateAge))) {
+			    || ((log->rotateAge > 0)
+				&&
+				(((nowSecs - fst_buf.st_mtime) / DAY_SECONDS)
+				 > log->rotateAge))) {
 			if (mail_out != -1) {
 			    char *mailFilename =
 				(globResult.gl_pathv)[mail_out];
 			    if (!hasErrors && log->logAddress)
 				hasErrors =
 				    mailLogWrapper(mailFilename,
-						   mailCommand, logNum,
-						   log);
+					    mailCommand, logNum,
+					    log);
 			    if (!hasErrors) {
 				message(MESS_DEBUG, "removing %s\n", mailFilename);
 				hasErrors = removeLogFile(mailFilename, log);
-				}
+			    }
 			}
 			mail_out = glob_count;
 		    }
@@ -1734,17 +1734,17 @@ static int prerotateSingleLog(struct logInfo *log, int logNum,
 	    /* we will not enter the loop in case rotateCount == -1 */
 	    for (i = 1; i <= rotateCount + 1; i++) {
 		if (asprintf(&oldName, "%s/%s.%d%s%s", rotNames->dirName,
-			rotNames->baseName, i, fileext, compext) < 0) {
+			    rotNames->baseName, i, fileext, compext) < 0) {
 		    message(MESS_FATAL, "could not allocate mailFilename memory\n");
 		}
 		if (!stat(oldName, &fst_buf)
-		    && (((nowSecs - fst_buf.st_mtime) / DAY_SECONDS)
-			> log->rotateAge)) {
+			&& (((nowSecs - fst_buf.st_mtime) / DAY_SECONDS)
+			    > log->rotateAge)) {
 		    char *mailFilename = oldName;
 		    if (!hasErrors && log->logAddress)
 			hasErrors =
 			    mailLogWrapper(mailFilename, mailCommand,
-					   logNum, log);
+				    logNum, log);
 		    if (!hasErrors)
 			hasErrors = removeLogFile(mailFilename, log);
 		}
@@ -1762,8 +1762,8 @@ static int prerotateSingleLog(struct logInfo *log, int logNum,
 	}
 
 	if (asprintf(&oldName, "%s/%s.%d%s%s", rotNames->dirName,
-		rotNames->baseName, logStart + rotateCount, fileext,
-		compext) < 0) {
+		    rotNames->baseName, logStart + rotateCount, fileext,
+		    compext) < 0) {
 	    message(MESS_FATAL, "could not allocate disposeName memory\n");
 	}
 
@@ -1775,14 +1775,14 @@ static int prerotateSingleLog(struct logInfo *log, int logNum,
 		(log->flags & LOG_FLAG_DELAYCOMPRESS) ? "" : compext);
 
 	for (i = rotateCount + logStart - 1; (i >= 0) && !hasErrors; i--) {
-		free(newName);
-		newName = oldName;
-		if (asprintf(&oldName, "%s/%s.%d%s%s", rotNames->dirName,
-		    rotNames->baseName, i, fileext, compext) < 0) {
-		    message(MESS_FATAL, "could not allocate oldName memory\n");
-		    oldName = NULL;
-		    break;
-		}
+	    free(newName);
+	    newName = oldName;
+	    if (asprintf(&oldName, "%s/%s.%d%s%s", rotNames->dirName,
+			rotNames->baseName, i, fileext, compext) < 0) {
+		message(MESS_FATAL, "could not allocate oldName memory\n");
+		oldName = NULL;
+		break;
+	    }
 
 	    message(MESS_DEBUG,
 		    "renaming %s to %s (rotatecount %d, logstart %d, i %d), \n",
@@ -1803,31 +1803,31 @@ static int prerotateSingleLog(struct logInfo *log, int logNum,
 	free(oldName);
     }				/* !LOG_FLAG_DATEEXT */
 
-	if (log->flags & LOG_FLAG_DATEEXT) {
-		char *destFile;
-		struct stat fst_buf;
+    if (log->flags & LOG_FLAG_DATEEXT) {
+	char *destFile;
+	struct stat fst_buf;
 
-		if (asprintf(&(rotNames->finalName), "%s/%s%s%s", rotNames->dirName,
-					rotNames->baseName, dext_str, fileext) < 0) {
-			message(MESS_FATAL, "could not allocate finalName memory\n");
-		}
-		if (asprintf(&destFile, "%s%s", rotNames->finalName, compext) < 0) {
-			message(MESS_FATAL, "could not allocate destFile memory\n");
-		}
-		if (!stat(destFile, &fst_buf)) {
-			message(MESS_ERROR,
-					"destination %s already exists, skipping rotation\n",
-					rotNames->firstRotated);
-			hasErrors = 1;
-		}
-		free(destFile);
-	} else {
-		/* note: the gzip extension is *not* used here! */
-		if (asprintf(&(rotNames->finalName), "%s/%s.%d%s", rotNames->dirName,
-					rotNames->baseName, logStart, fileext) < 0) {
-			message(MESS_ERROR, "could not allocate finalName memory\n");
-		}
+	if (asprintf(&(rotNames->finalName), "%s/%s%s%s", rotNames->dirName,
+		    rotNames->baseName, dext_str, fileext) < 0) {
+	    message(MESS_FATAL, "could not allocate finalName memory\n");
 	}
+	if (asprintf(&destFile, "%s%s", rotNames->finalName, compext) < 0) {
+	    message(MESS_FATAL, "could not allocate destFile memory\n");
+	}
+	if (!stat(destFile, &fst_buf)) {
+	    message(MESS_ERROR,
+		    "destination %s already exists, skipping rotation\n",
+		    rotNames->firstRotated);
+	    hasErrors = 1;
+	}
+	free(destFile);
+    } else {
+	/* note: the gzip extension is *not* used here! */
+	if (asprintf(&(rotNames->finalName), "%s/%s.%d%s", rotNames->dirName,
+		    rotNames->baseName, logStart, fileext) < 0) {
+	    message(MESS_ERROR, "could not allocate finalName memory\n");
+	}
+    }
 
     /* if the last rotation doesn't exist, that's okay */
     if (rotNames->disposeName && access(rotNames->disposeName, F_OK)) {
@@ -1861,40 +1861,40 @@ static int rotateSingleLog(struct logInfo *log, int logNum,
 		return 1;
 	    }
 #ifdef WITH_ACL
-		if ((prev_acl = acl_get_file(log->files[logNum], ACL_TYPE_ACCESS)) == NULL) {
-			if (is_acl_well_supported(errno)) {
-				message(MESS_ERROR, "getting file ACL %s: %s\n",
-					log->files[logNum], strerror(errno));
-				hasErrors = 1;
-			}
+	    if ((prev_acl = acl_get_file(log->files[logNum], ACL_TYPE_ACCESS)) == NULL) {
+		if (is_acl_well_supported(errno)) {
+		    message(MESS_ERROR, "getting file ACL %s: %s\n",
+			    log->files[logNum], strerror(errno));
+		    hasErrors = 1;
 		}
+	    }
 #endif /* WITH_ACL */
-		if (log->flags & LOG_FLAG_TMPFILENAME) {
-			if (asprintf(&tmpFilename, "%s%s", log->files[logNum], ".tmp") < 0) {
-				message(MESS_FATAL, "could not allocate tmpFilename memory\n");
-				restoreSecCtx(&savedContext);
-				return 1;
-			}
-
-			message(MESS_DEBUG, "renaming %s to %s\n", log->files[logNum],
-				tmpFilename);
-			if (!debug && !hasErrors && rename(log->files[logNum], tmpFilename)) {
-			message(MESS_ERROR, "failed to rename %s to %s: %s\n",
-				log->files[logNum], tmpFilename,
-				strerror(errno));
-				hasErrors = 1;
-			}
+	    if (log->flags & LOG_FLAG_TMPFILENAME) {
+		if (asprintf(&tmpFilename, "%s%s", log->files[logNum], ".tmp") < 0) {
+		    message(MESS_FATAL, "could not allocate tmpFilename memory\n");
+		    restoreSecCtx(&savedContext);
+		    return 1;
 		}
-		else {
-			message(MESS_DEBUG, "renaming %s to %s\n", log->files[logNum],
-				rotNames->finalName);
-			if (!debug && !hasErrors &&
+
+		message(MESS_DEBUG, "renaming %s to %s\n", log->files[logNum],
+			tmpFilename);
+		if (!debug && !hasErrors && rename(log->files[logNum], tmpFilename)) {
+		    message(MESS_ERROR, "failed to rename %s to %s: %s\n",
+			    log->files[logNum], tmpFilename,
+			    strerror(errno));
+		    hasErrors = 1;
+		}
+	    }
+	    else {
+		message(MESS_DEBUG, "renaming %s to %s\n", log->files[logNum],
+			rotNames->finalName);
+		if (!debug && !hasErrors &&
 			rename(log->files[logNum], rotNames->finalName)) {
-				message(MESS_ERROR, "failed to rename %s to %s: %s\n",
-					log->files[logNum], rotNames->finalName,
-					strerror(errno));
-					hasErrors = 1;
-			}
+		    message(MESS_ERROR, "failed to rename %s to %s: %s\n",
+			    log->files[logNum], rotNames->finalName,
+			    strerror(errno));
+		    hasErrors = 1;
+		}
 	    }
 
 	    if (!log->rotateCount) {
@@ -1913,7 +1913,7 @@ static int rotateSingleLog(struct logInfo *log, int logNum,
 	}
 
 	if (!hasErrors && log->flags & LOG_FLAG_CREATE &&
-	    !(log->flags & (LOG_FLAG_COPYTRUNCATE | LOG_FLAG_COPY))) {
+		!(log->flags & (LOG_FLAG_COPYTRUNCATE | LOG_FLAG_COPY))) {
 	    int have_create_mode = 0;
 
 	    if (log->createUid == NO_UID)
@@ -1937,38 +1937,38 @@ static int rotateSingleLog(struct logInfo *log, int logNum,
 		    (int) sb.st_uid, (int) sb.st_gid);
 
 	    if (!debug) {
-			if (!hasErrors) {
-			fd = createOutputFile(log->files[logNum], O_CREAT | O_RDWR,
-						  &sb, prev_acl, have_create_mode);
+		if (!hasErrors) {
+		    fd = createOutputFile(log->files[logNum], O_CREAT | O_RDWR,
+			    &sb, prev_acl, have_create_mode);
 #ifdef WITH_ACL
-			if (prev_acl) {
-				acl_free(prev_acl);
-				prev_acl = NULL;
-			}
+		    if (prev_acl) {
+			acl_free(prev_acl);
+			prev_acl = NULL;
+		    }
 #endif
-			if (fd < 0)
-				hasErrors = 1;
-			else {
-				close(fd);
-			}
-			}
+		    if (fd < 0)
+			hasErrors = 1;
+		    else {
+			close(fd);
+		    }
+		}
 	    }
 	}
 
 	restoreSecCtx(&savedContext);
 
 	if (!hasErrors
-	    && log->flags & (LOG_FLAG_COPYTRUNCATE | LOG_FLAG_COPY)
+		&& log->flags & (LOG_FLAG_COPYTRUNCATE | LOG_FLAG_COPY)
 		&& !(log->flags & LOG_FLAG_TMPFILENAME)) {
 	    hasErrors =
 		copyTruncate(log->files[logNum], rotNames->finalName,
-			     &state->sb, log->flags, !log->rotateCount);
+			&state->sb, log->flags, !log->rotateCount);
 	}
 
 #ifdef WITH_ACL
 	if (prev_acl) {
-		acl_free(prev_acl);
-		prev_acl = NULL;
+	    acl_free(prev_acl);
+	    prev_acl = NULL;
 	}
 #endif /* WITH_ACL */
 
@@ -1987,22 +1987,22 @@ static int postrotateSingleLog(struct logInfo *log, int logNum,
     }
 
     if (!hasErrors && log->flags & LOG_FLAG_TMPFILENAME) {
-		char *tmpFilename = NULL;
-		if (asprintf(&tmpFilename, "%s%s", log->files[logNum], ".tmp") < 0) {
-			message(MESS_FATAL, "could not allocate tmpFilename memory\n");
-			return 1;
-		}
-	    hasErrors =
-		copyTruncate(tmpFilename, rotNames->finalName,
-			     &state->sb, LOG_FLAG_COPY, /* skip_copy */ 0);
-		message(MESS_DEBUG, "removing tmp log %s \n", tmpFilename);
-		if (!debug && !hasErrors) {
-			unlink(tmpFilename);
-		}
+	char *tmpFilename = NULL;
+	if (asprintf(&tmpFilename, "%s%s", log->files[logNum], ".tmp") < 0) {
+	    message(MESS_FATAL, "could not allocate tmpFilename memory\n");
+	    return 1;
 	}
+	hasErrors =
+	    copyTruncate(tmpFilename, rotNames->finalName,
+		    &state->sb, LOG_FLAG_COPY, /* skip_copy */ 0);
+	message(MESS_DEBUG, "removing tmp log %s \n", tmpFilename);
+	if (!debug && !hasErrors) {
+	    unlink(tmpFilename);
+	}
+    }
 
     if (!hasErrors && (log->flags & LOG_FLAG_COMPRESS) &&
-	!(log->flags & LOG_FLAG_DELAYCOMPRESS)) {
+	    !(log->flags & LOG_FLAG_DELAYCOMPRESS)) {
 	hasErrors = compressLogFile(rotNames->finalName, log, &state->sb);
     }
 
@@ -2037,38 +2037,38 @@ static int rotateLogSet(struct logInfo *log, int force)
 
     logHasErrors = calloc(log->numFiles, sizeof(int));
     if (!logHasErrors) {
-        message(MESS_ERROR, "could not allocate memory for "
-                "logHasErrors\n");
-        return 1;
+	message(MESS_ERROR, "could not allocate memory for "
+		"logHasErrors\n");
+	return 1;
     }
     message(MESS_DEBUG, "\nrotating pattern: %s ", log->pattern);
     if (force) {
-        message(MESS_DEBUG, "forced from command line ");
+	message(MESS_DEBUG, "forced from command line ");
     }
     else {
-        switch (log->criterium) {
-        case ROT_HOURLY:
-        message(MESS_DEBUG, "hourly ");
-        break;
-        case ROT_DAYS:
-        message(MESS_DEBUG, "after %jd days ", (intmax_t)log->threshold);
-        break;
-        case ROT_WEEKLY:
-        message(MESS_DEBUG, "weekly ");
-        break;
-        case ROT_MONTHLY:
-        message(MESS_DEBUG, "monthly ");
-        break;
-        case ROT_YEARLY:
-        message(MESS_DEBUG, "yearly ");
-        break;
-        case ROT_SIZE:
-        message(MESS_DEBUG, "%jd bytes ", (intmax_t)log->threshold);
-        break;
-        default:
-        message(MESS_DEBUG, "rotateLogSet() does not have case for: %u ",
-                (unsigned) log->criterium);
-        }
+	switch (log->criterium) {
+	    case ROT_HOURLY:
+		message(MESS_DEBUG, "hourly ");
+		break;
+	    case ROT_DAYS:
+		message(MESS_DEBUG, "after %jd days ", (intmax_t)log->threshold);
+		break;
+	    case ROT_WEEKLY:
+		message(MESS_DEBUG, "weekly ");
+		break;
+	    case ROT_MONTHLY:
+		message(MESS_DEBUG, "monthly ");
+		break;
+	    case ROT_YEARLY:
+		message(MESS_DEBUG, "yearly ");
+		break;
+	    case ROT_SIZE:
+		message(MESS_DEBUG, "%jd bytes ", (intmax_t)log->threshold);
+		break;
+	    default:
+		message(MESS_DEBUG, "rotateLogSet() does not have case for: %u ",
+			(unsigned) log->criterium);
+	}
     }
 
     if (log->rotateCount > 0)
@@ -2091,7 +2091,7 @@ static int rotateLogSet(struct logInfo *log, int force)
 	message(MESS_DEBUG, "log files >= %jd are rotated earlier, ", (intmax_t)log->maxsize);
 
     if (log->rotateMinAge)
-        message(MESS_DEBUG, "only log files older than %d days are rotated, ", log->rotateMinAge);
+	message(MESS_DEBUG, "only log files older than %d days are rotated, ", log->rotateMinAge);
 
     if (log->logAddress) {
 	message(MESS_DEBUG, "old logs mailed to %s\n", log->logAddress);
@@ -2099,18 +2099,18 @@ static int rotateLogSet(struct logInfo *log, int force)
 	message(MESS_DEBUG, "old logs are removed\n");
     }
 
-	if (log->numFiles == 0) {
-		message(MESS_DEBUG, "No logs found. Rotation not needed.\n");
-		free(logHasErrors);
-		return 0;
-	}
+    if (log->numFiles == 0) {
+	message(MESS_DEBUG, "No logs found. Rotation not needed.\n");
+	free(logHasErrors);
+	return 0;
+    }
 
-	if (log->flags & LOG_FLAG_SU) {
-		if (switch_user(log->suUid, log->suGid) != 0) {
-			free(logHasErrors);
-			return 1;
-		}
+    if (log->flags & LOG_FLAG_SU) {
+	if (switch_user(log->suUid, log->suGid) != 0) {
+	    free(logHasErrors);
+	    return 1;
 	}
+    }
 
     for (i = 0; i < log->numFiles; i++) {
 	struct logState *logState;
@@ -2133,10 +2133,10 @@ static int rotateLogSet(struct logInfo *log, int force)
 			"for %s\n", log->pattern);
 		hasErrors = 1;
 		if (log->flags & LOG_FLAG_SU) {
-			if (switch_user_back() != 0) {
-				free(logHasErrors);
-				return 1;
-			}
+		    if (switch_user_back() != 0) {
+			free(logHasErrors);
+			return 1;
+		    }
 		}
 		/* finish early, firstaction failed, affects all logs in set */
 		free(logHasErrors);
@@ -2149,12 +2149,12 @@ static int rotateLogSet(struct logInfo *log, int force)
     rotNames = malloc(log->numFiles * sizeof(struct logNames *));
 
     for (j = 0;
-	 (!(log->flags & LOG_FLAG_SHAREDSCRIPTS) && j < log->numFiles)
-	 || ((log->flags & LOG_FLAG_SHAREDSCRIPTS) && j < 1); j++) {
+	    (!(log->flags & LOG_FLAG_SHAREDSCRIPTS) && j < log->numFiles)
+	    || ((log->flags & LOG_FLAG_SHAREDSCRIPTS) && j < 1); j++) {
 
 	for (i = j;
-	     ((log->flags & LOG_FLAG_SHAREDSCRIPTS) && i < log->numFiles)
-	     || (!(log->flags & LOG_FLAG_SHAREDSCRIPTS) && i == j); i++) {
+		((log->flags & LOG_FLAG_SHAREDSCRIPTS) && i < log->numFiles)
+		|| (!(log->flags & LOG_FLAG_SHAREDSCRIPTS) && i == j); i++) {
 	    state[i] = findState(log->files[i]);
 	    if (!state[i])
 		logHasErrors[i] = 1;
@@ -2171,8 +2171,8 @@ static int rotateLogSet(struct logInfo *log, int force)
 		&& (!(
 			((logHasErrors[j] || !state[j]->doRotate) && !(log->flags & LOG_FLAG_SHAREDSCRIPTS))
 			|| (hasErrors && (log->flags & LOG_FLAG_SHAREDSCRIPTS))
-		))
-	) {
+		     ))
+	   ) {
 	    if (!numRotated) {
 		message(MESS_DEBUG, "not running prerotate script, "
 			"since no logs will be rotated\n");
@@ -2195,10 +2195,10 @@ static int rotateLogSet(struct logInfo *log, int force)
 	}
 
 	for (i = j;
-	     ((log->flags & LOG_FLAG_SHAREDSCRIPTS) && i < log->numFiles)
-	     || (!(log->flags & LOG_FLAG_SHAREDSCRIPTS) && i == j); i++) {
+		((log->flags & LOG_FLAG_SHAREDSCRIPTS) && i < log->numFiles)
+		|| (!(log->flags & LOG_FLAG_SHAREDSCRIPTS) && i == j); i++) {
 	    if (! ( (logHasErrors[i] && !(log->flags & LOG_FLAG_SHAREDSCRIPTS))
-		   || (hasErrors && (log->flags & LOG_FLAG_SHAREDSCRIPTS)) ) ) {
+			|| (hasErrors && (log->flags & LOG_FLAG_SHAREDSCRIPTS)) ) ) {
 		logHasErrors[i] |=
 		    rotateSingleLog(log, i, state[i], rotNames[i]);
 		hasErrors |= logHasErrors[i];
@@ -2209,8 +2209,8 @@ static int rotateLogSet(struct logInfo *log, int force)
 		&& (!(
 			((logHasErrors[j] || !state[j]->doRotate) && !(log->flags & LOG_FLAG_SHAREDSCRIPTS))
 			|| (hasErrors && (log->flags & LOG_FLAG_SHAREDSCRIPTS))
-		))
-	) {
+		     ))
+	   ) {
 	    if (!numRotated) {
 		message(MESS_DEBUG, "not running postrotate script, "
 			"since no logs were rotated\n");
@@ -2238,10 +2238,10 @@ static int rotateLogSet(struct logInfo *log, int force)
 	}
 
 	for (i = j;
-	     ((log->flags & LOG_FLAG_SHAREDSCRIPTS) && i < log->numFiles)
-	     || (!(log->flags & LOG_FLAG_SHAREDSCRIPTS) && i == j); i++) {
+		((log->flags & LOG_FLAG_SHAREDSCRIPTS) && i < log->numFiles)
+		|| (!(log->flags & LOG_FLAG_SHAREDSCRIPTS) && i == j); i++) {
 	    if (! ( (logHasErrors[i] && !(log->flags & LOG_FLAG_SHAREDSCRIPTS))
-		   || (hasErrors && (log->flags & LOG_FLAG_SHAREDSCRIPTS)) ) ) {
+			|| (hasErrors && (log->flags & LOG_FLAG_SHAREDSCRIPTS)) ) ) {
 		logHasErrors[i] |=
 		    postrotateSingleLog(log, i, state[i], rotNames[i]);
 		hasErrors |= logHasErrors[i];
@@ -2275,190 +2275,190 @@ static int rotateLogSet(struct logInfo *log, int force)
 	}
     }
 
-	if (log->flags & LOG_FLAG_SU) {
-		if (switch_user_back() != 0) {
-			free(logHasErrors);
-			return 1;
-		}
+    if (log->flags & LOG_FLAG_SU) {
+	if (switch_user_back() != 0) {
+	    free(logHasErrors);
+	    return 1;
 	}
+    }
     free(logHasErrors);
     return hasErrors;
 }
 
 static int writeState(const char *stateFilename)
 {
-	struct logState *p;
-	FILE *f;
-	char *chptr;
-	unsigned int i = 0;
-	int error = 0;
-	int bytes = 0;
-	int fdcurr;
-	int fdsave;
-	struct stat sb;
-	char *tmpFilename = NULL;
-	struct tm now = *localtime(&nowSecs);
-	time_t now_time, last_time;
-	void *prevCtx;
+    struct logState *p;
+    FILE *f;
+    char *chptr;
+    unsigned int i = 0;
+    int error = 0;
+    int bytes = 0;
+    int fdcurr;
+    int fdsave;
+    struct stat sb;
+    char *tmpFilename = NULL;
+    struct tm now = *localtime(&nowSecs);
+    time_t now_time, last_time;
+    void *prevCtx;
 
-	tmpFilename = malloc(strlen(stateFilename) + 5 );
-	if (tmpFilename == NULL) {
-		message(MESS_ERROR, "could not allocate memory for "
-			"tmp state filename\n");
-		return 1;
-	}
-	strcpy(tmpFilename, stateFilename);
-	strcat(tmpFilename, ".tmp");
-	/* Remove possible tmp state file from previous run */
-	unlink(tmpFilename);
+    tmpFilename = malloc(strlen(stateFilename) + 5 );
+    if (tmpFilename == NULL) {
+	message(MESS_ERROR, "could not allocate memory for "
+		"tmp state filename\n");
+	return 1;
+    }
+    strcpy(tmpFilename, stateFilename);
+    strcat(tmpFilename, ".tmp");
+    /* Remove possible tmp state file from previous run */
+    unlink(tmpFilename);
 
 
-	if ((fdcurr = open(stateFilename, O_RDONLY)) < 0) {
-	    message(MESS_ERROR, "error opening %s: %s\n", stateFilename,
-		    strerror(errno));
-		free(tmpFilename);
-	    return 1;
-	}
+    if ((fdcurr = open(stateFilename, O_RDONLY)) < 0) {
+	message(MESS_ERROR, "error opening %s: %s\n", stateFilename,
+		strerror(errno));
+	free(tmpFilename);
+	return 1;
+    }
 
-	if (setSecCtx(fdcurr, stateFilename, &prevCtx) != 0) {
-	    /* error msg already printed */
+    if (setSecCtx(fdcurr, stateFilename, &prevCtx) != 0) {
+	/* error msg already printed */
+	free(tmpFilename);
+	close(fdcurr);
+	return 1;
+    }
+
+#ifdef WITH_ACL
+    if ((prev_acl = acl_get_fd(fdcurr)) == NULL) {
+	if (is_acl_well_supported(errno)) {
+	    message(MESS_ERROR, "getting file ACL %s: %s\n",
+		    stateFilename, strerror(errno));
+	    restoreSecCtx(&prevCtx);
 	    free(tmpFilename);
 	    close(fdcurr);
 	    return 1;
 	}
-
-#ifdef WITH_ACL
-	if ((prev_acl = acl_get_fd(fdcurr)) == NULL) {
-		if (is_acl_well_supported(errno)) {
-			message(MESS_ERROR, "getting file ACL %s: %s\n",
-				stateFilename, strerror(errno));
-			restoreSecCtx(&prevCtx);
-			free(tmpFilename);
-			close(fdcurr);
-			return 1;
-		}
-	}
+    }
 #endif
 
-	close(fdcurr);
-	stat(stateFilename, &sb);
+    close(fdcurr);
+    stat(stateFilename, &sb);
 
-	fdsave = createOutputFile(tmpFilename, O_RDWR | O_CREAT | O_TRUNC, &sb, prev_acl, 0);
+    fdsave = createOutputFile(tmpFilename, O_RDWR | O_CREAT | O_TRUNC, &sb, prev_acl, 0);
 #ifdef WITH_ACL
-	if (prev_acl) {
-		acl_free(prev_acl);
-		prev_acl = NULL;
-	}
+    if (prev_acl) {
+	acl_free(prev_acl);
+	prev_acl = NULL;
+    }
 #endif
-	restoreSecCtx(&prevCtx);
+    restoreSecCtx(&prevCtx);
 
-	if (fdsave < 0) {
-	    free(tmpFilename);
-	    return 1;
-	}
+    if (fdsave < 0) {
+	free(tmpFilename);
+	return 1;
+    }
 
-	f = fdopen(fdsave, "w");
-	if (!f) {
-		message(MESS_ERROR, "error creating temp state file %s: %s\n",
-			tmpFilename, strerror(errno));
-		free(tmpFilename);
-		return 1;
-	}
+    f = fdopen(fdsave, "w");
+    if (!f) {
+	message(MESS_ERROR, "error creating temp state file %s: %s\n",
+		tmpFilename, strerror(errno));
+	free(tmpFilename);
+	return 1;
+    }
 
-	bytes =  fprintf(f, "logrotate state -- version 2\n");
-	if (bytes < 0)
-		error = bytes;
+    bytes =  fprintf(f, "logrotate state -- version 2\n");
+    if (bytes < 0)
+	error = bytes;
 
-/*
- * Time in seconds it takes earth to go around sun.  The value is
- * astronomical measurement (solar year) rather than something derived from
- * a convention (calendar year).
- */
+    /*
+     * Time in seconds it takes earth to go around sun.  The value is
+     * astronomical measurement (solar year) rather than something derived from
+     * a convention (calendar year).
+     */
 #define SECONDS_IN_YEAR 31556926
 
-	for (i = 0; i < hashSize && error == 0; i++) {
-		for (p = states[i]->head.lh_first; p != NULL && error == 0;
-				p = p->list.le_next) {
+    for (i = 0; i < hashSize && error == 0; i++) {
+	for (p = states[i]->head.lh_first; p != NULL && error == 0;
+		p = p->list.le_next) {
 
-			/* Skip states which are not used for more than a year. */
-			now_time = mktime(&now);
-			last_time = mktime(&p->lastRotated);
-			if (!p->isUsed && difftime(now_time, last_time) > SECONDS_IN_YEAR) {
-				message(MESS_DEBUG, "Removing %s from state file, "
-					"because it does not exist and has not been rotated for one year\n",
-					p->fn);
-				continue;
-			}
+	    /* Skip states which are not used for more than a year. */
+	    now_time = mktime(&now);
+	    last_time = mktime(&p->lastRotated);
+	    if (!p->isUsed && difftime(now_time, last_time) > SECONDS_IN_YEAR) {
+		message(MESS_DEBUG, "Removing %s from state file, "
+			"because it does not exist and has not been rotated for one year\n",
+			p->fn);
+		continue;
+	    }
 
-			error = fputc('"', f) == EOF;
-			for (chptr = p->fn; *chptr && error == 0; chptr++) {
-				switch (*chptr) {
-				case '"':
-				case '\\':
-					error = fputc('\\', f) == EOF;
-					break;
-				case '\n':
-					error = fputc('\\', f) == EOF;
-					if (error == 0) {
-						error = fputc('n', f) == EOF;
-					}
-					continue;
-				default:
-					break;
-				}
-				if (error == 0 && fputc(*chptr, f) == EOF) {
-					error = 1;
-				}
-			}
-
-			if (error == 0 && fputc('"', f) == EOF)
-				error = 1;
-
+	    error = fputc('"', f) == EOF;
+	    for (chptr = p->fn; *chptr && error == 0; chptr++) {
+		switch (*chptr) {
+		    case '"':
+		    case '\\':
+			error = fputc('\\', f) == EOF;
+			break;
+		    case '\n':
+			error = fputc('\\', f) == EOF;
 			if (error == 0) {
-				bytes = fprintf(f, " %d-%d-%d-%d:%d:%d\n",
-					p->lastRotated.tm_year + 1900,
-					p->lastRotated.tm_mon + 1,
-					p->lastRotated.tm_mday,
-					p->lastRotated.tm_hour,
-					p->lastRotated.tm_min,
-					p->lastRotated.tm_sec);
-				if (bytes < 0)
-					error = bytes;
+			    error = fputc('n', f) == EOF;
 			}
+			continue;
+		    default:
+			break;
 		}
+		if (error == 0 && fputc(*chptr, f) == EOF) {
+		    error = 1;
+		}
+	    }
+
+	    if (error == 0 && fputc('"', f) == EOF)
+		error = 1;
+
+	    if (error == 0) {
+		bytes = fprintf(f, " %d-%d-%d-%d:%d:%d\n",
+			p->lastRotated.tm_year + 1900,
+			p->lastRotated.tm_mon + 1,
+			p->lastRotated.tm_mday,
+			p->lastRotated.tm_hour,
+			p->lastRotated.tm_min,
+			p->lastRotated.tm_sec);
+		if (bytes < 0)
+		    error = bytes;
+	    }
 	}
+    }
 
-	if (error == 0)
-		error = fflush(f);
+    if (error == 0)
+	error = fflush(f);
 
-	if (error == 0)
-		error = fsync(fdsave);
+    if (error == 0)
+	error = fsync(fdsave);
 
-	if (error == 0)
-		error = fclose(f);
+    if (error == 0)
+	error = fclose(f);
+    else
+	fclose(f);
+
+    if (error == 0) {
+	if (rename(tmpFilename, stateFilename)) {
+	    unlink(tmpFilename);
+	    error = 1;
+	    message(MESS_ERROR, "error renaming temp state file %s\n",
+		    tmpFilename);
+	}
+    }
+    else {
+	unlink(tmpFilename);
+	if (errno)
+	    message(MESS_ERROR, "error creating temp state file %s: %s\n",
+		    tmpFilename, strerror(errno));
 	else
-		fclose(f);
-
-	if (error == 0) {
-		if (rename(tmpFilename, stateFilename)) {
-			unlink(tmpFilename);
-			error = 1;
-			message(MESS_ERROR, "error renaming temp state file %s\n",
-				tmpFilename);
-		}
-	}
-	else {
-		unlink(tmpFilename);
-		if (errno)
-			message(MESS_ERROR, "error creating temp state file %s: %s\n",
-			tmpFilename, strerror(errno));
-		else
-			message(MESS_ERROR, "error creating temp state file %s%s\n",
-				tmpFilename, error == ENOMEM ?
-				": Insufficient storage space is available." : "" );
-	}
-	free(tmpFilename);
-	return error;
+	    message(MESS_ERROR, "error creating temp state file %s%s\n",
+		    tmpFilename, error == ENOMEM ?
+		    ": Insufficient storage space is available." : "" );
+    }
+    free(tmpFilename);
+    return error;
 }
 
 static int readState(const char *stateFilename)
@@ -2534,7 +2534,7 @@ static int readState(const char *stateFilename)
     }
 
     if (strcmp(buf, "logrotate state -- version 1\n") &&
-	strcmp(buf, "logrotate state -- version 2\n")) {
+	    strcmp(buf, "logrotate state -- version 2\n")) {
 	fclose(f);
 	message(MESS_ERROR, "bad top line in state file %s\n",
 		stateFilename);
@@ -2561,10 +2561,10 @@ static int readState(const char *stateFilename)
 
 	year = month = day = hour = minute = second = 0;
 	if (poptParseArgvString(buf, &argc, &argv) || (argc != 2) ||
-	    (sscanf(argv[1], "%d-%d-%d-%d:%d:%d", &year, &month, &day, &hour, &minute, &second) < 3)) {
+		(sscanf(argv[1], "%d-%d-%d-%d:%d:%d", &year, &month, &day, &hour, &minute, &second) < 3)) {
 	    message(MESS_ERROR, "bad line %d in state file %s\n",
 		    line, stateFilename);
-		free(argv);
+	    free(argv);
 	    fclose(f);
 	    return 1;
 	}
@@ -2631,10 +2631,10 @@ static int readState(const char *stateFilename)
 	unescape(filename);
 
 	if ((st = findState(filename)) == NULL) {
-		free(argv);
-		free(filename);
-		fclose(f);
-		return 1;
+	    free(argv);
+	    free(filename);
+	    fclose(f);
+	    return 1;
 	}
 
 	memset(&st->lastRotated, 0, sizeof(st->lastRotated));
@@ -2668,21 +2668,21 @@ int main(int argc, const char **argv)
     int arg;
     const char **files;
     poptContext optCon;
-	struct logInfo *log;
+    struct logInfo *log;
 
     struct poptOption options[] = {
-    	{"debug", 'd', 0, NULL, 'd',
-	 "Don't do anything, just test and print debug messages", NULL},
+	{"debug", 'd', 0, NULL, 'd',
+	    "Don't do anything, just test and print debug messages", NULL},
 	{"force", 'f', 0, &force, 0, "Force file rotation", NULL},
 	{"mail", 'm', POPT_ARG_STRING, &mailCommand, 0,
-	 "Command to send mail (instead of `" DEFAULT_MAIL_COMMAND "')",
-	 "command"},
+	    "Command to send mail (instead of `" DEFAULT_MAIL_COMMAND "')",
+	    "command"},
 	{"state", 's', POPT_ARG_STRING, &stateFile, 0,
-	 "Path of state file",
-	 "statefile"},
+	    "Path of state file",
+	    "statefile"},
 	{"verbose", 'v', 0, NULL, 'v', "Display messages during rotation", NULL},
 	{"log", 'l', POPT_ARG_STRING, &logFile, 'l', "Log file or 'syslog' to log to syslog",
-	 "logfile"},
+	    "logfile"},
 	{"version", '\0', POPT_ARG_NONE, NULL, 'V', "Display version information", NULL},
 	POPT_AUTOHELP { NULL, 0, 0, NULL, 0, NULL, NULL }
     };
@@ -2696,50 +2696,50 @@ int main(int argc, const char **argv)
 
     while ((arg = poptGetNextOpt(optCon)) >= 0) {
 	switch (arg) {
-	case 'd':
-	    debug = 1;
-	    message(MESS_NORMAL, "WARNING: logrotate in debug mode does nothing"
-		    " except printing debug messages!  Consider using verbose"
-		    " mode (-v) instead if this is not what you want.\n\n");
-	    /* fallthrough */
-	case 'v':
-	    logSetLevel(MESS_DEBUG);
-	    break;
-	case 'l':
+	    case 'd':
+		debug = 1;
+		message(MESS_NORMAL, "WARNING: logrotate in debug mode does nothing"
+			" except printing debug messages!  Consider using verbose"
+			" mode (-v) instead if this is not what you want.\n\n");
+		/* fallthrough */
+	    case 'v':
+		logSetLevel(MESS_DEBUG);
+		break;
+	    case 'l':
 		if (strcmp(logFile, "syslog") == 0) {
-			logToSyslog(1);
+		    logToSyslog(1);
 		}
 		else {
-			logFd = fopen(logFile, "w");
-			if (!logFd) {
-				message(MESS_ERROR, "error opening log file %s: %s\n",
-					logFile, strerror(errno));
-				break;
-			}
-			logSetMessageFile(logFd);
+		    logFd = fopen(logFile, "w");
+		    if (!logFd) {
+			message(MESS_ERROR, "error opening log file %s: %s\n",
+				logFile, strerror(errno));
+			break;
+		    }
+		    logSetMessageFile(logFd);
 		}
 		break;
-	case 'V':
-	    printf("logrotate %s\n", VERSION);
-	    printf("\n");
-	    printf("    Default mail command:       %s\n", DEFAULT_MAIL_COMMAND);
-	    printf("    Default compress command:   %s\n", COMPRESS_COMMAND);
-	    printf("    Default uncompress command: %s\n", UNCOMPRESS_COMMAND);
-	    printf("    Default compress extension: %s\n", COMPRESS_EXT);
-	    printf("    Default state file path:    %s\n", STATEFILE);
+	    case 'V':
+		printf("logrotate %s\n", VERSION);
+		printf("\n");
+		printf("    Default mail command:       %s\n", DEFAULT_MAIL_COMMAND);
+		printf("    Default compress command:   %s\n", COMPRESS_COMMAND);
+		printf("    Default uncompress command: %s\n", UNCOMPRESS_COMMAND);
+		printf("    Default compress extension: %s\n", COMPRESS_EXT);
+		printf("    Default state file path:    %s\n", STATEFILE);
 #ifdef WITH_ACL
-	    printf("    ACL support:                yes\n");
+		printf("    ACL support:                yes\n");
 #else
-	    printf("    ACL support:                no\n");
+		printf("    ACL support:                no\n");
 #endif
 #ifdef WITH_SELINUX
-	    printf("    SELinux support:            yes\n");
+		printf("    SELinux support:            yes\n");
 #else
-	    printf("    SELinux support:            no\n");
+		printf("    SELinux support:            no\n");
 #endif
-	    poptFreeContext(optCon);
-	    exit(0);
-	default:
+		poptFreeContext(optCon);
+		exit(0);
+	    default:
 		break;
 	}
     }
@@ -2781,11 +2781,11 @@ int main(int argc, const char **argv)
 
     message(MESS_DEBUG, "\nHandling %d logs\n", numLogs);
 
-	for (log = logs.tqh_first; log != NULL; log = log->list.tqe_next)
-		rc |= rotateLogSet(log, force);
+    for (log = logs.tqh_first; log != NULL; log = log->list.tqe_next)
+	rc |= rotateLogSet(log, force);
 
-	if (!debug)
-		rc |= writeState(stateFile);
+    if (!debug)
+	rc |= writeState(stateFile);
 
-	return (rc != 0);
+    return (rc != 0);
 }
