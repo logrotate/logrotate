@@ -69,10 +69,10 @@ extern int asprintf(char **str, const char *fmt, ...);
 
 struct logState {
     char *fn;
-    struct tm lastRotated;	/* only tm_hour, tm_mday, tm_mon, tm_year are good! */
+    struct tm lastRotated;  /* only tm_hour, tm_mday, tm_mon, tm_year are good! */
     struct stat sb;
     int doRotate;
-    int isUsed;	/* True if there is real log file in system for this state. */
+    int isUsed;     /* True if there is real log file in system for this state. */
     LIST_ENTRY(logState) list;
 };
 
@@ -463,10 +463,10 @@ static int runScript(struct logInfo *log, char *logfn, char *logrotfn, char *scr
 static int is_acl_well_supported(int err)
 {
     switch (err) {
-        case ENOTSUP:	/* no file system support */
-        case EINVAL:	/* acl does not point to a valid ACL */
-        case ENOSYS:	/* compatibility - acl_(g|s)et_fd(3) should never return this */
-        case EBUSY:	/* compatibility - acl_(g|s)et_fd(3) should never return this */
+        case ENOTSUP:   /* no file system support */
+        case EINVAL:    /* acl does not point to a valid ACL */
+        case ENOSYS:    /* compatibility - acl_(g|s)et_fd(3) should never return this */
+        case EBUSY:     /* compatibility - acl_(g|s)et_fd(3) should never return this */
             return 0;
         default:
             return 1;
@@ -1799,7 +1799,7 @@ static int prerotateSingleLog(struct logInfo *log, int logNum,
         }
         free(newName);
         free(oldName);
-    }				/* !LOG_FLAG_DATEEXT */
+    } /* !LOG_FLAG_DATEEXT */
 
     if (log->flags & LOG_FLAG_DATEEXT) {
         char *destFile;

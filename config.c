@@ -36,13 +36,13 @@
 #define GLOB_ABORTED GLOB_ABEND
 #endif
 
-#define REALLOC_STEP    10
-#define GLOB_STR_REALLOC_STEP	0x100
+#define REALLOC_STEP            10
+#define GLOB_STR_REALLOC_STEP   0x100
 
 #if defined(SunOS)
 #include <limits.h>
 #if !defined(isblank)
-#define isblank(c) 	( (c) == ' ' || (c) == '\t' ) ? 1 : 0
+#define isblank(c) ( (c) == ' ' || (c) == '\t' ) ? 1 : 0
 #endif
 #endif
 
@@ -556,13 +556,13 @@ static void freeTailLogs(int num)
 static const char *crit_to_string(enum criterium crit)
 {
     switch (crit) {
-        case ROT_HOURLY:	return "hourly";
-        case ROT_DAYS:		return "daily";
-        case ROT_WEEKLY:	return "weekly";
-        case ROT_MONTHLY:	return "montly";
-        case ROT_YEARLY:	return "yearly";
-        case ROT_SIZE:		return "size";
-        default:		return "XXX";
+        case ROT_HOURLY:    return "hourly";
+        case ROT_DAYS:      return "daily";
+        case ROT_WEEKLY:    return "weekly";
+        case ROT_MONTHLY:   return "montly";
+        case ROT_YEARLY:    return "yearly";
+        case ROT_SIZE:      return "size";
+        default:            return "XXX";
     }
 }
 
@@ -767,9 +767,9 @@ static char* parseGlobString(const char *configFile, int lineNum,
     size_t globStringPos = 0;
     size_t globStringAlloc = 0;
     enum {
-        PGS_INIT,	/* picking blanks, looking for '#' */
-        PGS_DATA,	/* picking data, looking for end of line */
-        PGS_COMMENT	/* skipping comment, looking for end of line */
+        PGS_INIT,   /* picking blanks, looking for '#' */
+        PGS_DATA,   /* picking data, looking for end of line */
+        PGS_COMMENT /* skipping comment, looking for end of line */
     } state = PGS_INIT;
 
     /* move the cursor at caller's side while going through the input */
