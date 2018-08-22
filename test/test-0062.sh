@@ -27,7 +27,15 @@ if [ $SIZE_OLD != $SIZE_NEW ]; then
 	exit 3
 fi
 
-if [ $SIZE_SPARSE_OLD -gt 100 ] || [ $SIZE_SPARSE_NEW -gt 100 ]; then
+PAGESIZE="$(getconf PAGESIZE)"
+if [ -z "$PAGESIZE" ] || [ "$PAGESIZE" -lt 32768 ] ; then
+	LIMIT1=100
+	LIMIT2=100
+else
+	LIMIT1=200
+	LIMIT2=20000
+fi
+if [ $SIZE_SPARSE_OLD -gt $LIMIT1 ] || [ $SIZE_SPARSE_NEW -gt $LIMIT2 ]; then
 	echo "Bad size of sparse logs"
 	echo "test.log: $SIZE_SPARSE_OLD"
 	echo "test.log.1: $SIZE_SPARSE_NEW"
