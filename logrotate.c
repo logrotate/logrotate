@@ -1320,7 +1320,7 @@ static int findNeedRotating(struct logInfo *log, int logNum, int force)
 		    "('minsize' directive is used and the log "
 		    "size is smaller than the minsize value)\n");
 	}
-	if (log->rotateMinAge && log->rotateMinAge >= (nowSecs - sb.st_mtime) / DAY_SECONDS) {
+	if (log->rotateMinAge && log->rotateMinAge * DAY_SECONDS >= nowSecs - sb.st_mtime) {
 	    state->doRotate = 0;
 	    message(MESS_DEBUG, "  log does not need rotating "
 		    "('minage' directive is used and the log "
