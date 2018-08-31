@@ -104,3 +104,5 @@ void message(int level, const char *format, ...)
     if (level == MESS_FATAL)
         exit(1);
 }
+
+/* vim: set et sw=4 ts=4: */

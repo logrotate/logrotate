@@ -102,3 +102,5 @@ int asprintf(char **string_ptr, const char *format, ...);
 #endif
 
 #endif
+
+/* vim: set et sw=4 ts=4: */

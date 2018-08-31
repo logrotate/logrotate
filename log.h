@@ -23,3 +23,5 @@ void logToSyslog(int enable);
 void logSetLevel(int level);
 
 #endif
+
+/* vim: set et sw=4 ts=4: */

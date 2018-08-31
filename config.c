@@ -1920,3 +1920,5 @@ error:
     close(fd);
     return 1;
 }
+
+/* vim: set et sw=4 ts=4: */

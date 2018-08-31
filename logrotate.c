@@ -2784,3 +2784,5 @@ int main(int argc, const char **argv)
 
     return (rc != 0);
 }
+
+/* vim: set et sw=4 ts=4: */
