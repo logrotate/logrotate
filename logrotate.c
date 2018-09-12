@@ -683,12 +683,31 @@ static int removeLogFile(char *name, struct logInfo *log)
 	return result;
 }
 
+static void setAtimeMtime(const char *filename, const struct stat *sb)
+{
+    /* If we can't change atime/mtime, it's not a disaster.  It might
+       possibly fail under SELinux. But do try to preserve the
+       fractional part if we have utimensat(). */
+#ifdef HAVE_UTIMENSAT
+    struct timespec ts[2];
+
+    ts[0] = sb->st_atim;
+    ts[1] = sb->st_mtim;
+    utimensat(AT_FDCWD, filename, ts, 0);
+#else
+    struct utimbuf utim;
+
+    utim.actime = sb->st_atime;
+    utim.modtime = sb->st_mtime;
+    utime(filename, &utim);
+#endif
+}
+
 static int compressLogFile(char *name, struct logInfo *log, struct stat *sb)
 {
     char *compressedName;
     char *envInFilename;
     const char **fullCommand;
-    struct utimbuf utim;
     int inFile;
     int outFile;
     int i;
@@ -803,12 +822,7 @@ static int compressLogFile(char *name, struct logInfo *log, struct stat *sb)
 	return 1;
     }
 
-    utim.actime = sb->st_atime;
-    utim.modtime = sb->st_mtime;
-    utime(compressedName,&utim);
-    /* If we can't change atime/mtime, it's not a disaster.
-       It might possibly fail under SELinux. */
-
+    setAtimeMtime(compressedName, sb);
     shred_file(inFile, name, log);
     close(inFile);
 
