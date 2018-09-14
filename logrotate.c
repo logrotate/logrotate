@@ -1633,9 +1633,13 @@ static int prerotateSingleLog(struct logInfo *log, int logNum,
                         message(MESS_FATAL, "could not allocate glob result memory\n");
                     }
                     if (stat(oldName, &sbprev)) {
-                        message(MESS_DEBUG,
-                                "previous log %s does not exist\n",
-                                oldName);
+                        if (errno == ENOENT)
+                            message(MESS_DEBUG,
+                                    "previous log %s does not exist\n",
+                                    oldName);
+                        else
+                            message(MESS_ERROR, "cannot stat %s: %s\n",
+                                    oldName, strerror(errno));
                     } else {
                         hasErrors = compressLogFile(oldName, log, &sbprev);
                     }
@@ -1660,8 +1664,12 @@ static int prerotateSingleLog(struct logInfo *log, int logNum,
                 message(MESS_FATAL, "could not allocate oldName memory\n");
             }
             if (stat(oldName, &sbprev)) {
-                message(MESS_DEBUG, "previous log %s does not exist\n",
-                        oldName);
+                if (errno == ENOENT)
+                    message(MESS_DEBUG, "previous log %s does not exist\n",
+                            oldName);
+                else
+                    message(MESS_ERROR, "cannot stat %s: %s\n",
+                            oldName, strerror(errno));
             } else {
                 hasErrors = compressLogFile(oldName, log, &sbprev);
             }
