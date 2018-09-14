@@ -2350,7 +2350,15 @@ static int writeState(const char *stateFilename)
 #endif
 
     close(fdcurr);
-    stat(stateFilename, &sb);
+    if (stat(stateFilename, &sb) == -1) {
+        message(MESS_ERROR, "error stating %s: %s\n", stateFilename, strerror(errno));
+        free(tmpFilename);
+#ifdef WITH_ACL
+        if (prev_acl)
+            acl_free(prev_acl);
+#endif
+        return 1;
+    }
 
     fdsave = createOutputFile(tmpFilename, O_RDWR | O_CREAT | O_TRUNC, &sb, prev_acl, 0);
 #ifdef WITH_ACL
