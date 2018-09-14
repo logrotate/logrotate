@@ -580,7 +580,7 @@ static void set_criterium(enum criterium *pDst, enum criterium src, int *pSet)
 static int readConfigPath(const char *path, struct logInfo *defConfig)
 {
     struct stat sb;
-    int here, result = 0;
+    int result = 0;
     struct logInfo defConfigBackup;
 
     if (stat(path, &sb)) {
@@ -591,10 +591,14 @@ static int readConfigPath(const char *path, struct logInfo *defConfig)
     if (S_ISDIR(sb.st_mode)) {
         char **namelist, **p;
         struct dirent *dp;
-        int files_count, i;
+        int files_count, here, i;
         DIR *dirp;
 
-        here = open(".", O_RDONLY);
+        if ((here = open(".", O_RDONLY)) == -1) {
+            message(MESS_ERROR, "cannot open current directory: %s\n",
+                    strerror(errno));
+            return 1;
+        }
 
         if ((dirp = opendir(path)) == NULL) {
             message(MESS_ERROR, "cannot open directory %s: %s\n", path,

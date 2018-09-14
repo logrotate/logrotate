@@ -1633,9 +1633,13 @@ static int prerotateSingleLog(struct logInfo *log, int logNum,
                         message(MESS_FATAL, "could not allocate glob result memory\n");
                     }
                     if (stat(oldName, &sbprev)) {
-                        message(MESS_DEBUG,
-                                "previous log %s does not exist\n",
-                                oldName);
+                        if (errno == ENOENT)
+                            message(MESS_DEBUG,
+                                    "previous log %s does not exist\n",
+                                    oldName);
+                        else
+                            message(MESS_ERROR, "cannot stat %s: %s\n",
+                                    oldName, strerror(errno));
                     } else {
                         hasErrors = compressLogFile(oldName, log, &sbprev);
                     }
@@ -1660,8 +1664,12 @@ static int prerotateSingleLog(struct logInfo *log, int logNum,
                 message(MESS_FATAL, "could not allocate oldName memory\n");
             }
             if (stat(oldName, &sbprev)) {
-                message(MESS_DEBUG, "previous log %s does not exist\n",
-                        oldName);
+                if (errno == ENOENT)
+                    message(MESS_DEBUG, "previous log %s does not exist\n",
+                            oldName);
+                else
+                    message(MESS_ERROR, "cannot stat %s: %s\n",
+                            oldName, strerror(errno));
             } else {
                 hasErrors = compressLogFile(oldName, log, &sbprev);
             }
@@ -2350,7 +2358,15 @@ static int writeState(const char *stateFilename)
 #endif
 
     close(fdcurr);
-    stat(stateFilename, &sb);
+    if (stat(stateFilename, &sb) == -1) {
+        message(MESS_ERROR, "error stating %s: %s\n", stateFilename, strerror(errno));
+        free(tmpFilename);
+#ifdef WITH_ACL
+        if (prev_acl)
+            acl_free(prev_acl);
+#endif
+        return 1;
+    }
 
     fdsave = createOutputFile(tmpFilename, O_RDWR | O_CREAT | O_TRUNC, &sb, prev_acl, 0);
 #ifdef WITH_ACL
