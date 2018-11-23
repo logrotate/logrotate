@@ -1,6 +1,7 @@
 [Unit]
 Description=Rotate log files
 Documentation=man:logrotate(8) man:logrotate.conf(5)
+RequiresMountsFor=/var/log
 ConditionACPower=true
 
 [Service]
