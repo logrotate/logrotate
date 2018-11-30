@@ -4,7 +4,7 @@ Documentation=man:logrotate(8) man:logrotate.conf(5)
 
 [Timer]
 OnCalendar=daily
-AccuracySec=12h
+AccuracySec=1h
 Persistent=true
 
 [Install]
