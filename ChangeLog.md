@@ -4,9 +4,23 @@ All notable changes to this project will be documented in this file.
 
 ## [UNRELEASED]
 
-[UNRELEASED]: https://github.com/logrotate/logrotate/compare/3.14.0...master
+[UNRELEASED]: https://github.com/logrotate/logrotate/compare/3.15.0...master
+
+## [3.15.0] - 2018-12-04
+  - timer unit: change trigger fuzz from 12h to 1h (#230)
+  - service unit: only run if `/var/log` is mounted (#230)
+  - preserve fractional part of timestamps when compressing (#226)
+  - re-indent source code using spaces only (#188)
+  - minage: avoid rounding issue while comparing the amount of seconds (#36)
+  - never remove old log files if `rotate -1` is specified (#202)
+  - return non-zero exit status if a config file contains an error (#199)
+  - make `copytruncate` work with `rotate 0` (#191)
+  - warn user if both size and the time interval options are used (#192)
   - pass rotated log file name as the 2nd argument of the `postrotate` script
     when sharedscript is not enabled (#193)
+  - rename `logrotate-default` to `logrotate.conf` (#187)
+
+[3.15.0]: https://github.com/logrotate/logrotate/compare/3.14.0...3.15.0
 
 ## [3.14.0] - 2018-03-09
 
