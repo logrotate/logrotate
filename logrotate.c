@@ -481,11 +481,33 @@ static int createOutputFile(char *fileName, int flags, struct stat *sb,
     struct stat sb_create;
     int acl_set = 0;
     int i;
+    struct stat sb_linkcheck;
+    char *dirName;
 
     for (i = 0; i < 2; ++i) {
         struct tm now;
         size_t fileName_size, buf_size;
         char *backupName, *ptr;
+        char *fn;
+
+        if (fileName == NULL) {
+                message(MESS_ERROR, "fileName %s must not be NULL\n", fileName);
+                return -1;
+        }
+
+        fn = strdup(fileName);
+        dirName = dirname(fn);
+
+        if(lstat(dirName,&sb_linkcheck) != 0) {
+            message(MESS_ERROR, "stat of %s failed: %s\n", dirName,
+                    strerror(errno));
+            return -1;
+        }
+
+        if(S_ISLNK(sb_linkcheck.st_mode)) {
+            message(MESS_ERROR, "parent directory %s must not be a symbolik link\n", dirName);
+            return -1;
+        }
 
         fd = open(fileName, (flags | O_EXCL | O_NOFOLLOW),
                 (S_IRUSR | S_IWUSR) & sb->st_mode);
