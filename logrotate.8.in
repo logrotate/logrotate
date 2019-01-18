@@ -584,7 +584,9 @@ user/group (usually root). \fIuser\fR specifies the user name used for
 rotation and \fIgroup\fR specifies the group used for rotation. If the
 user/group you specify here does not have sufficient privilege to make 
 files with the ownership you've specified in a \fIcreate\fR instruction, 
-it will cause an error.
+it will cause an error.  If logrotate runs with root privileges, it is
+recommended to use the \fBsu\fR directive to rotate files in directories
+that are directly or indirectly in control of non-privileged users.
 
 .TP
 \fBtabooext\fR [+] \fIlist\fR
