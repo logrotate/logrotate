@@ -33,6 +33,7 @@
 
 #include "log.h"
 #include "logrotate.h"
+#include "trustdir.h"
 
 static void *prev_context;
 #ifdef WITH_SELINUX
@@ -1167,6 +1168,7 @@ static int findNeedRotating(struct logInfo *log, int logNum, int force)
 
     message(MESS_DEBUG, "considering log %s\n", log->files[logNum]);
 
+
     /* Check if parent directory of this log has safe permissions */
     if ((log->flags & LOG_FLAG_SU) == 0 && getuid() == 0) {
         char *logpath = strdup(log->files[logNum]);
@@ -1207,6 +1209,13 @@ static int findNeedRotating(struct logInfo *log, int logNum, int force)
                 strerror(errno));
         return 1;
     }
+
+    if (is_trusted_dir(log->files[logNum]) != TRUSTED) {
+        message(MESS_ERROR, "Skipping \"%s\" because its directory path is untrusted due "
+                "to insecure permissions\n",log->files[logNum]);
+        return 1;
+    }
+
 
     state = findState(log->files[logNum]);
     if (!state)

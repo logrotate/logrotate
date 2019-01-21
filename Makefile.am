@@ -10,8 +10,8 @@
 #
 AM_CPPFLAGS = -include config.h
 sbin_PROGRAMS = logrotate
-logrotate_SOURCES = config.c log.c logrotate.c \
-		    log.h logrotate.h queue.h
+logrotate_SOURCES = config.c log.c trustdir.c logrotate.c \
+		    log.h trustdir.h logrotate.h queue.h
 
 dist_man_MANS = logrotate.8 logrotate.conf.5
 

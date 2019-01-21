@@ -111,6 +111,9 @@ script:
   - $COMPILER --version
   - ./autogen.sh
   - ./configure --enable-werror CC=$COMPILER
+  - chmod g-w -R $HOME
+  - chmod g-w -R $TRAVIS_BUILD_DIR
+  - umask 022
   - make
   - make -j9 check
   - make -j9 distcheck
@@ -118,7 +121,7 @@ script:
   - make rpm RPM_FLAGS="--nodeps"
   - sed 's|/bin/bash|/bin/dash|' -i test/*.sh && make -j9 check
   # make sure that no tabs appear in the source code files
-  - grep -P '\t' config.c log.{c,h} logrotate.{c,h}; test $? -eq 1
+  - grep -P '\t' config.c log.{c,h} logrotate.{c,h} trustdir.{c,h}; test $? -eq 1
 
 notifications:
   email:
