@@ -2807,6 +2807,9 @@ int main(int argc, const char **argv)
     if (!debug)
         rc |= writeState(stateFile);
 
+    if (debug && rc)
+        message(MESS_ERROR, "logrotate has had %d errors",  rc);
+
     return (rc != 0);
 }
 
