@@ -1881,7 +1881,7 @@ static int rotateSingleLog(struct logInfo *log, int logNum,
                     message(MESS_ERROR, "error getting file ACL %s: %s\n",
                             log->files[logNum], strerror(errno));
                     hasErrors = 1;
-		  }
+                }
             }
 #endif /* WITH_ACL */
             if (log->flags & LOG_FLAG_TMPFILENAME) {
