@@ -284,7 +284,7 @@ static int readModeUidGid(const char *configFile, int lineNum, char *key,
                           gid_t *pGid)
 {
     char u[200], g[200];
-    unsigned int m;
+    unsigned int m = 0;
     char tmp;
     int rc;
 
