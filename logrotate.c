@@ -451,7 +451,7 @@ static int runScript(struct logInfo *log, char *logfn, char *logrotfn, char *scr
                 exit(1);
             }
         }
-        execl("/bin/sh", "sh", "-c", script, "logrotate_script", logfn, logrotfn, (char *) NULL);
+        execl("/bin/sh", "sh", script, logfn, logrotfn, (char *) NULL);
         exit(1);
     }
 
