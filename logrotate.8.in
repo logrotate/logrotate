@@ -7,11 +7,11 @@ logrotate \(hy rotates, compresses, and mails system logs
 .SH SYNOPSIS
 
 \fBlogrotate\fR
+\fR[\fB\-\-force\fR]
 \fR[\fB\-\-debug\fR]
+\fR[\fB\-\-state\fR \fIfile\fR]
 \fR[\fB\-\-verbose\fR]
 \fR[\fB\-\-log\fR \fIfile\fR]
-\fR[\fB\-\-force\fR]
-\fR[\fB\-\-state\fR \fIfile\fR]
 \fR[\fB\-\-mail\fR \fIcommand\fR]
 \fIconfig_file\fR
 \fR[\fIconfig_file2 ...\fR]
@@ -19,7 +19,7 @@ logrotate \(hy rotates, compresses, and mails system logs
 .SH DESCRIPTION
 
 \fBlogrotate\fR is designed to ease administration of systems that generate
-large numbers of log files.  It allows automatic rotation, compression, 
+large numbers of log files.  It allows automatic rotation, compression,
 removal, and mailing of log files.  Each log file may be handled daily,
 weekly, monthly, or when it grows too large.
 .P
@@ -43,14 +43,6 @@ any errors occur while rotating logs, \fBlogrotate\fR will exit with
 non-zero status.
 
 .SH OPTIONS
-.TP
-\fB\-?\fR, \fB\-\-help\fR
-Prints help message.
-
-.TP
-\fB\-d\fR, \fB\-\-debug\fR
-Turn on debug mode, which means that no changes are made to the logs and the
-\fBlogrotate\fR state file is not updated.  Only debug messages are printed.
 
 .TP
 \fB\-f\fR, \fB\-\-force\fR
@@ -59,6 +51,21 @@ this is necessary.  Sometimes this is useful after adding new entries to
 a \fBlogrotate\fR config file, or if old log files have been removed
 by hand, as the new files will be created, and logging will continue
 correctly.
+
+.TP
+\fB\-d\fR, \fB\-\-debug\fR
+Turn on debug mode, which means that no changes are made to the logs and the
+\fBlogrotate\fR state file is not updated.  Only debug messages are printed.
+
+.TP
+\fB\-s\fR, \fB\-\-state\fR \fIstatefile\fR
+Tells \fBlogrotate\fR to use an alternate state file.  This is useful
+if logrotate is being run as a different user for various sets of
+log files.  The default state file is \fI@STATE_FILE_PATH@\fR.
+
+.TP
+\fB\-v\fR, \fB\-\-verbose\fR
+Turns on verbose mode, for example to display messages during rotation.
 
 .TP
 \fB\-l\fR, \fB\-\-log\fR \fIfile\fR
@@ -80,18 +87,12 @@ and mail it to the recipient. The default mail command is
 \fI@DEFAULT_MAIL_COMMAND@\fR.
 
 .TP
-\fB\-s\fR, \fB\-\-state\fR \fIstatefile\fR
-Tells \fBlogrotate\fR to use an alternate state file.  This is useful
-if logrotate is being run as a different user for various sets of
-log files.  The default state file is \fI@STATE_FILE_PATH@\fR.
-
-.TP
 \fB\-\-usage\fR
 Prints a short usage message.
 
 .TP
-\fB\-v\fR, \fB\-\-verbose\fR
-Turns on verbose mode, for example to display messages during rotation.
+\fB\-?\fR, \fB\-\-help\fR
+Prints help message.
 
 .TP
 \fB\-\-version\fR
