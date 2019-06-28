@@ -82,6 +82,7 @@ TEST_CASES = \
 	test-0081.sh \
 	test-0082.sh \
 	test-0083.sh \
+	test-0084.sh \
 	test-0100.sh \
 	test-0101.sh
 

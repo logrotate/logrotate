@@ -839,9 +839,19 @@ static int globerr(const char *pathname, int theerr)
 {
     (void) pathname;
 
-    /* A missing directory is not an error, so return 0 */
-    if (theerr == ENOTDIR)
-        return 0;
+    /* prevent glob() from being aborted in certain cases */
+    switch (theerr) {
+        case ENOTDIR:
+            /* non-directory where directory was expected by the glob */
+            return 0;
+
+        case ENOENT:
+            /* most likely symlink with non-existent target */
+            return 0;
+
+        default:
+            break;
+    }
 
     glob_errno = theerr;
 
