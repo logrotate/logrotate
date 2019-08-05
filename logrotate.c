@@ -1913,17 +1913,15 @@ static int rotateSingleLog(struct logInfo *log, int logNum,
             }
 
             if (!log->rotateCount) {
-                rotNames->disposeName =
-                    realloc(rotNames->disposeName,
-                            strlen(rotNames->dirName) +
-                            strlen(rotNames->baseName) +
-                            strlen(log->files[logNum]) + 10);
-                sprintf(rotNames->disposeName, "%s%s", rotNames->finalName,
-                        (log->compress_ext
-                         && (log->flags & LOG_FLAG_COMPRESS)) ?
-                        log->compress_ext : "");
-                message(MESS_DEBUG, "disposeName will be %s\n",
-                        rotNames->disposeName);
+                const char *ext = "";
+                if (log->compress_ext && (log->flags & LOG_FLAG_COMPRESS))
+                    ext = log->compress_ext;
+
+                free(rotNames->disposeName);
+                if (asprintf(&rotNames->disposeName, "%s%s", rotNames->finalName, ext) < 0)
+                    message(MESS_FATAL, "could not allocate disposeName memory\n");
+
+                message(MESS_DEBUG, "disposeName will be %s\n", rotNames->disposeName);
             }
         }
 
