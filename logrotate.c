@@ -1438,7 +1438,7 @@ static int prerotateSingleLog(struct logInfo *log, int logNum,
 #define DATEEXT_LEN 64
 #define PATTERN_LEN (DATEEXT_LEN * 2)
     char dext_str[DATEEXT_LEN];
-    char dformat[DATEEXT_LEN] = "";
+    char dformat[PATTERN_LEN] = "";
     char dext_pattern[PATTERN_LEN];
     char *dext;
 
