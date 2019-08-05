@@ -99,8 +99,10 @@ EXTRA_DIST = \
 DISTCLEANFILES = \
 	test.ACL \
 	test.SELINUX \
-	test.example \
-	test-????/*
+	test.example
+
+distclean-local:
+	rm -rf test-????/
 
 # this needs to run exactly once even if tests run in parallel
 all:
