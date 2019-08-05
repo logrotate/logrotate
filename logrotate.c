@@ -1451,7 +1451,7 @@ static int prerotateSingleLog(struct logInfo *log, int logNum,
     message(MESS_DEBUG, "rotating log %s, log->rotateCount is %d\n",
             log->files[logNum], log->rotateCount);
 
-    if (log->flags & LOG_FLAG_COMPRESS)
+    if (log->compress_ext && (log->flags & LOG_FLAG_COMPRESS))
         compext = log->compress_ext;
 
     state->lastRotated = now;
