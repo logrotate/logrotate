@@ -1,5 +1,5 @@
 sudo: required
-dist: precise
+dist: trusty
 language: c
 
 matrix:
@@ -12,14 +12,6 @@ matrix:
           packages:
             - gcc-4.4
       env: COMPILER=gcc-4.4
-    - compiler: gcc
-      addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-          packages:
-            - gcc-4.5
-      env: COMPILER=gcc-4.5
     - compiler: gcc
       addons:
         apt:
@@ -68,6 +60,14 @@ matrix:
           packages:
             - gcc-6
       env: COMPILER=gcc-6
+    - compiler: gcc
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - gcc-8
+      env: COMPILER=gcc-8
     - compiler: clang
       addons:
         apt:
