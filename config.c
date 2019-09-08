@@ -559,7 +559,7 @@ static const char *crit_to_string(enum criterium crit)
         case ROT_HOURLY:    return "hourly";
         case ROT_DAYS:      return "daily";
         case ROT_WEEKLY:    return "weekly";
-        case ROT_MONTHLY:   return "montly";
+        case ROT_MONTHLY:   return "monthly";
         case ROT_YEARLY:    return "yearly";
         case ROT_SIZE:      return "size";
         default:            return "XXX";
