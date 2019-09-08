@@ -1479,10 +1479,9 @@ static int prerotateSingleLog(struct logInfo *log, int logNum,
         if (baseLen >= extLen &&
                 strncmp(&(rotNames->baseName[baseLen - extLen]),
                     log->addextension, extLen) == 0) {
-            char *tempstr;
 
-            tempstr = calloc(baseLen - extLen + 1, sizeof(char));
-            strncat(tempstr, rotNames->baseName, baseLen - extLen);
+            char *tempstr = strndup(rotNames->baseName, baseLen - extLen);
+
             free(rotNames->baseName);
             rotNames->baseName = tempstr;
         }
@@ -1498,12 +1497,7 @@ static int prerotateSingleLog(struct logInfo *log, int logNum,
         char *tempstr;
 
         fileext = log->extension;
-        tempstr =
-            calloc(strlen(rotNames->baseName) - strlen(log->extension) + 1,
-                   sizeof(char));
-        strncat(tempstr, rotNames->baseName,
-                strlen(rotNames->baseName) - strlen(log->extension));
-        free(rotNames->baseName);
+        tempstr = strndup(rotNames->baseName, strlen(rotNames->baseName) - strlen(log->extension));
         rotNames->baseName = tempstr;
     }
 
