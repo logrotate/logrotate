@@ -28,7 +28,7 @@ a log more than once in one day unless the criterion for that log is
 based on the log's size and \fBlogrotate\fR is being run more than once
 each day, or unless the \fB\-f\fR or \fB\-\-force\fR option is used.
 .P
-Any number of config files may be given on the command line. Later config
+Any number of config files may be given on the command line.  Later config
 files may override the options given in earlier files, so the order
 in which the \fBlogrotate\fR config files are listed is important.
 Normally, a single config file which includes any other config files
@@ -69,13 +69,13 @@ Turns on verbose mode, for example to display messages during rotation.
 
 .TP
 \fB\-l\fR, \fB\-\-log\fR \fIfile\fR
-Tells \fBlogrotate\fR to log verbose output into the log_file. The verbose
+Tells \fBlogrotate\fR to log verbose output into the log_file.  The verbose
 output logged to that file is the same as when running \fBlogrotate\fR with
-\fB-v\fR switch. The log file is overwritten on every logrotate execution.
+\fB-v\fR switch.  The log file is overwritten on every logrotate execution.
 
 .TP
 \fB\-m\fR, \fB\-\-mail\fR \fIcommand\fR
-Tells \fBlogrotate\fR which command to use when mailing logs. This
+Tells \fBlogrotate\fR which command to use when mailing logs.  This
 command should accept the following arguments:
 .IP
 1) the subject of the message given with '-s subject'
@@ -83,7 +83,7 @@ command should accept the following arguments:
 2) the recipient.
 .IP
 The command must then read a message on standard input
-and mail it to the recipient. The default mail command is
+and mail it to the recipient.  The default mail command is
 \fI@DEFAULT_MAIL_COMMAND@\fR.
 
 .TP
@@ -105,7 +105,7 @@ Display version information.
 from the series of configuration files specified on the command line.  Each
 configuration file can set global options (local definitions override
 global ones, and later definitions override earlier ones) and specify
-logfiles to rotate. A simple configuration file looks like this:
+logfiles to rotate.  A simple configuration file looks like this:
 
 .nf
 .ta +8n
@@ -152,24 +152,24 @@ anywhere in the config file as long as the first non-whitespace
 character on the line is a \fB#\fR.
 
 Values are separated from directives by whitespace and/or an optional =.
-Numbers must be specified in a format understood by \fBstrtoul(3)\fR.
+Numbers must be specified in a format understood by \fBstrtoul\fR(3).
 
 The next section of the config file defines how to handle the log file
-\fI/var/log/messages\fR. The log will go through five weekly rotations before
-being removed. After the log file has been rotated (but before the old
+\fI/var/log/messages\fR.  The log will go through five weekly rotations before
+being removed.  After the log file has been rotated (but before the old
 version of the log has been compressed), the command
 \fI/usr/bin/killall \-HUP syslogd\fR will be executed.
 
 The next section defines the parameters for both
 \fI/var/log/httpd/access.log\fR and \fI/var/log/httpd/error.log\fR.
-Each is rotated whenever it grows over 100k in size, and the old logs
+Each is rotated whenever it grows over 100\ kilobytes in size, and the old logs
 files are mailed (uncompressed) to recipient@\:example.org after going through 5
-rotations, rather than being removed. The \fBsharedscripts\fR means that
+rotations, rather than being removed.  The \fBsharedscripts\fR means that
 the \fBpostrotate\fR script will only be run once (after the old logs have
 been compressed), not once for each log which is rotated.
 Note that log file names may be enclosed in
 quotes (and that quotes are required if the name contains spaces).
-Normal shell quoting rules apply, with \fB'\fR, \fB"\fR, and \fB\\\fR
+Normal shell quoting rules apply, with \fB'\fR, \fB"\fR, and \fB\e\fR
 characters supported.
 
 The next section defines the parameters for all of the files in
@@ -178,8 +178,8 @@ considered a single rotation directive and if errors occur for more than
 one file, the log files are not compressed.
 
 The last section uses tilde expansion to rotate log files in the home
-directory of the current user. This is only available, if your glob
-library supports tilde expansion. GNU glob does support this.
+directory of the current user.  This is only available, if your glob
+library supports tilde expansion.  GNU glob does support this.
 
 Please use wildcards with caution.  If you specify *, \fBlogrotate\fR will
 rotate all files, including previously rotated ones.  A way around this
@@ -196,17 +196,17 @@ These directives may be included in a \fBlogrotate\fR configuration file:
 .TP
 \fBrotate \fIcount\fR
 Log files are rotated \fIcount\fR times before being removed or mailed to the
-address specified in a \fBmail\fR directive. If \fIcount\fR is 0, old versions
-are removed rather than rotated. If \fIcount\fR is -1, old logs are not removed
+address specified in a \fBmail\fR directive.  If \fIcount\fR is 0, old versions
+are removed rather than rotated.  If \fIcount\fR is -1, old logs are not removed
 at all (use with caution, may waste performance and disk space). Default is 0.
 
 .TP
 \fBolddir \fIdirectory\fR
-Logs are moved into \fIdirectory\fR for rotation. The \fIdirectory\fR must be
+Logs are moved into \fIdirectory\fR for rotation.  The \fIdirectory\fR must be
 on the same physical device as the log file being rotated, unless \fBcopy\fR,
-\fBcopytruncate\fR or \fBrenamecopy\fR option is used. The \fIdirectory\fR
+\fBcopytruncate\fR or \fBrenamecopy\fR option is used.  The \fIdirectory\fR
 is assumed to be relative to the directory holding the log file
-unless an absolute path name is specified. When this option is used all
+unless an absolute path name is specified.  When this option is used all
 old versions of the log end up in \fIdirectory\fR.  This option may be
 overridden by the \fBnoolddir\fR option.
 
@@ -218,8 +218,8 @@ overrides the \fBolddir\fR option).
 .TP
 \fBsu \fIuser\fR \fIgroup\fR
 Rotate log files set under this user and group instead of using default
-user/group (usually root). \fIuser\fR specifies the user name used for
-rotation and \fIgroup\fR specifies the group used for rotation. If the
+user/group (usually root).  \fIuser\fR specifies the user name used for
+rotation and \fIgroup\fR specifies the group used for rotation.  If the
 user/group you specify here does not have sufficient privilege to make
 files with the ownership you've specified in a \fIcreate\fR instruction,
 it will cause an error.  If logrotate runs with root privileges, it is
@@ -230,8 +230,8 @@ that are directly or indirectly in control of non-privileged users.
 
 .TP
 \fBhourly\fR
-Log files are rotated every hour. Note that usually \fIlogrotate\fR is
-configured to be run by cron daily. You have to change this configuration
+Log files are rotated every hour.  Note that usually \fIlogrotate\fR is
+configured to be run by cron daily.  You have to change this configuration
 and run \fIlogrotate\fR hourly to be able to really rotate logs hourly.
 
 .TP
@@ -242,9 +242,10 @@ Log files are rotated every day.
 \fBweekly\fR [\fIweekday\fR]
 Log files are rotated once each \fIweekday\fR, or if the date is advanced by at
 least 7 days since the last rotation (while ignoring the exact time).  The
-\fIweekday\fR interpretation is following:  0 means Sunday, 1 means Monday, ...,
-6 means Saturday; the special value 7 means each 7 days, irrespectively of
-weekday.  Defaults to 0 if the \fIweekday\fR argument is omitted.
+\fIweekday\fR interpretation is following: 0 means Sunday, 1 means Monday,
+\&.\|.\|.\|\&, 6 means Saturday; the special value 7 means each 7 days,
+irrespectively of weekday.
+Defaults to 0 if the \fIweekday\fR argument is omitted.
 
 .TP
 \fBmonthly\fR
@@ -257,11 +258,11 @@ Log files are rotated if the current year is not the same as the last rotation.
 
 .TP
 \fBsize \fIsize\fR
-Log files are rotated only if they grow bigger than \fIsize\fR bytes. If
+Log files are rotated only if they grow bigger than \fIsize\fR bytes.  If
 \fIsize\fR is followed by \fIk\fR, the size is assumed to be in kilobytes.
 If the \fIM\fR is used, the size is in megabytes, and if \fIG\fR is used, the
 size is in gigabytes. So \fIsize 100\fR, \fIsize 100k\fR, \fIsize 100M\fR and
-\fIsize 100G\fR are all valid. This option is mutually exclusive with the time
+\fIsize 100G\fR are all valid.  This option is mutually exclusive with the time
 interval options, and it causes log files to be rotated without regard for the
 last rotation time, if specified after the time criteria (the last specified
 option takes the precedence).
@@ -271,11 +272,11 @@ option takes the precedence).
 .TP
 \fBmissingok\fR
 If the log file is missing, go on to the next one without issuing an error
-message. See also \fBnomissingok\fR.
+message.  See also \fBnomissingok\fR.
 
 .TP
 \fBnomissingok\fR
-If a log file does not exist, issue an error. This is the default.
+If a log file does not exist, issue an error.  This is the default.
 
 .TP
 \fBifempty\fR
@@ -293,7 +294,7 @@ Do not rotate logs which are less than <count> days old.
 .TP
 \fBmaxage\fR \fIcount\fR
 Remove rotated logs older than <count> days. The age is only checked
-if the logfile is to be rotated. The files are mailed to the
+if the logfile is to be rotated.  The files are mailed to the
 configured address if \fBmaillast\fR and \fBmail\fR are configured.
 
 .TP
@@ -304,7 +305,7 @@ before the additionally specified time interval (\fBdaily\fR, \fBweekly\fR,
 except that it is mutually exclusive with the time interval options, and it
 causes log files to be rotated without regard for the last rotation time,
 if specified after the time criteria (the last specified option takes the
-precedence). When \fBminsize\fR is used, both the size and timestamp of a
+precedence).  When \fBminsize\fR is used, both the size and timestamp of a
 log file are considered.
 
 .TP
@@ -315,15 +316,15 @@ before the additionally specified time interval (\fBdaily\fR, \fBweekly\fR,
 except that it is mutually exclusive with the time interval options, and it
 causes log files to be rotated without regard for the last rotation time,
 if specified after the time criteria (the last specified option takes the
-precedence). When \fBmaxsize\fR is used, both the size and timestamp of a
+precedence).  When \fBmaxsize\fR is used, both the size and timestamp of a
 log file are considered.
 
 .TP
 \fBtabooext\fR [+] \fIlist\fR
 The current taboo extension list is changed (see the \fBinclude\fR directive
-for information on the taboo extensions). If a + precedes the list of
+for information on the taboo extensions).  If a + precedes the list of
 extensions, the current taboo extension list is augmented, otherwise it
-is replaced. At startup, the taboo extension list
+is replaced.  At startup, the taboo extension list
 .IR ,v ,
 .IR .cfsaved ,
 .IR .disabled ,
@@ -340,14 +341,14 @@ is replaced. At startup, the taboo extension list
 .IR .ucf\-dist ,
 .IR .ucf\-new ,
 .IR .ucf\-old ,
-.IR ~
+.I ~
 
 .TP
 \fBtaboopat\fR [+] \fIlist\fR
 The current taboo glob pattern list is changed (see the \fBinclude\fR directive
-for information on the taboo extensions and patterns). If a + precedes the list of
-patterns, the current taboo pattern list is augmented, otherwise it
-is replaced. At startup, the taboo pattern list is empty.
+for information on the taboo extensions and patterns).  If a + precedes the list
+of patterns, the current taboo pattern list is augmented, otherwise it
+is replaced.  At startup, the taboo pattern list is empty.
 
 .SS Files and Folders
 
@@ -358,9 +359,9 @@ the log file is created (with the same name as the log file just rotated).
 \fImode\fR specifies the mode for the log file in octal (the same
 as \fBchmod\fR(2)), \fIowner\fR specifies the user name who will own the
 log file, and \fIgroup\fR specifies the group the log file will belong
-to. Any of the log file attributes may be omitted, in which case those
+to.  Any of the log file attributes may be omitted, in which case those
 attributes for the new file will use the same values as the original log
-file for the omitted attributes. This option can be disabled using the
+file for the omitted attributes.  This option can be disabled using the
 \fBnocreate\fR option.
 
 .TP
@@ -373,8 +374,8 @@ If the directory specified by \fBolddir\fR directive does not exist, it is
 created. \fImode\fR specifies the mode for the \fBolddir\fR directory
 in octal (the same as \fBchmod\fR(2)), \fIowner\fR specifies the user name
 who will own the \fBolddir\fR directory, and \fIgroup\fR specifies the group
-the \fBolddir\fR directory will belong to. This option can be disabled using the
-\fBnocreateolddir\fR option.
+the \fBolddir\fR directory will belong to.  This option can be disabled using
+the \fBnocreateolddir\fR option.
 
 .TP
 \fBnocreateolddir\fR
@@ -412,8 +413,8 @@ Do not truncate the original log file in place after creating a copy
 .TP
 \fBrenamecopy\fR
 Log file is renamed to temporary filename in the same directory by adding
-".tmp" extension to it. After that, \fBpostrotate\fR script is run
-and log file is copied from temporary filename to final filename. This allows
+".tmp" extension to it.  After that, \fBpostrotate\fR script is run
+and log file is copied from temporary filename to final filename.  This allows
 storing rotated log files on the different devices using \fBolddir\fR
 directive. In the end, temporary filename is removed.
 
@@ -425,7 +426,7 @@ off by default.  See also \fBnoshred\fR.
 
 .TP
 \fBnoshred\fR
-Do not use \fBshred\fR when deleting old log files. See also \fBshred\fR.
+Do not use \fBshred\fR when deleting old log files.  See also \fBshred\fR.
 
 .TP
 \fBshredcycles\fR \fIcount\fR
@@ -436,12 +437,12 @@ deletion.  Without this option, \fBshred\fR's default will be used.
 
 .TP
 \fBcompress\fR
-Old versions of log files are compressed with \fBgzip\fR(1) by default. See also
-\fBnocompress\fR.
+Old versions of log files are compressed with \fBgzip\fR(1) by default.
+See also \fBnocompress\fR.
 
 .TP
 \fBnocompress\fR
-Old versions of log files are not compressed. See also \fBcompress\fR.
+Old versions of log files are not compressed.  See also \fBcompress\fR.
 
 .TP
 \fBcompresscmd\fR
@@ -485,30 +486,30 @@ Do not postpone compression of the previous log file to the next rotation cycle
 \fBextension \fIext\fR
 Log files with \fIext\fR extension can keep it after the rotation.
 If compression is used, the compression extension (normally \fI.gz\fR)
-appears after \fIext\fR. For example you have a logfile named mylog.foo
+appears after \fIext\fR.  For example you have a logfile named mylog.foo
 and want to rotate it to mylog.1.foo.gz instead of mylog.foo.1.gz.
 
 .TP
 \fBaddextension \fIext\fR
-Log files are given the final extension \fIext\fR after rotation. If
+Log files are given the final extension \fIext\fR after rotation.  If
 the original file already ends with \fIext\fR, the extension is not
 duplicated, but merely moved to the end, that is both \fBfilename\fR and
-\fBfilename\fIext\fR would get rotated to filename.1\fIext\fR. If
+\fBfilename\fIext\fR would get rotated to filename.1\fIext\fR.  If
 compression is used, the compression extension (normally \fB.gz\fR)
 appears after \fIext\fR.
 
 .TP
 \fBstart \fIcount\fR
-This is the number to use as the base for rotation. For example, if
+This is the number to use as the base for rotation.  For example, if
 you specify 0, the logs will be created with a .0 extension as they are
 rotated from the original log files.  If you specify 9, log files will
-be created with a .9, skipping 0-8.  Files will still be rotated the
+be created with a .9, skipping 0\(en8.  Files will still be rotated the
 number of times specified with the \fBrotate\fR directive.
 
 .TP
 \fBdateext\fR
 Archive old versions of log files adding a date extension like YYYYMMDD
-instead of simply adding a number. The extension may be configured using
+instead of simply adding a number.  The extension may be configured using
 the \fBdateformat\fR and \fBdateyesterday\fR options.
 
 .TP
@@ -519,15 +520,15 @@ Do not archive old versions of log files with date extension
 .TP
 \fBdateformat\fR \fIformat_string\fR
 Specify the extension for \fBdateext\fR using the notation similar to
-\fBstrftime\fR(3) function. Only %Y %m %d %H %M %S %V and %s specifiers are
+\fBstrftime\fR(3) function.  Only %Y %m %d %H %M %S %V and %s specifiers are
 allowed.
 The default value is \-%Y%m%d except hourly, which uses \-%Y%m%d%H as default
 value.  Note that also the character separating log name from the extension is
-part of the dateformat string. The system clock must be set past Sep 9th 2001
+part of the dateformat string.  The system clock must be set past Sep 9th 2001
 for %s to work correctly.
 Note that the datestamps generated by this format must be lexically sortable
-(that is first the year, then the month then the day. For example 2001/12/01 is ok,
-but 01/12/2001 is not, since 01/11/2002 would sort lower while it is later).
+(that is first the year, then the month then the day.  For example 2001/12/01 is
+ok, but 01/12/2001 is not, since 01/11/2002 would sort lower while it is later).
 This is because when using the \fBrotate\fR option, logrotate sorts all
 rotated filenames to find out which logfiles are older and should be removed.
 
@@ -547,7 +548,7 @@ timestamps within it.  Useful with rotate \fBhourly\fR.
 
 .TP
 \fBmail \fIaddress\fR
-When a log is rotated out of existence, it is mailed to \fIaddress\fR. If
+When a log is rotated out of existence, it is mailed to \fIaddress\fR.  If
 no mail should be generated by a particular log, the \fBnomail\fR directive
 may be used.
 
@@ -570,9 +571,9 @@ instead of the just-rotated file (this is the default).
 .TP
 \fBinclude \fIfile_or_directory\fR
 Reads the file given as an argument as if it was included inline
-where the \fBinclude\fR directive appears. If a directory is given,
+where the \fBinclude\fR directive appears.  If a directory is given,
 most of the files in that directory are read in alphabetic order
-before processing of the including file continues. The only files
+before processing of the including file continues.  The only files
 which are ignored are files which are not regular files (such as
 directories and named pipes) and files whose names end with one of
 the taboo extensions or patterns, as specified by the \fBtabooext\fR
@@ -582,23 +583,23 @@ or \fBtaboopat\fR directives, respectively.
 \fBsharedscripts\fR
 Normally, \fBprerotate\fR and \fBpostrotate\fR scripts are run for each
 log which is rotated and the absolute path to the log file is passed as first
-argument to the script. That means a single script may be run multiple
+argument to the script.  That means a single script may be run multiple
 times for log file entries which match multiple files (such as the
-\fI/var/log/news/*\fR example). If \fBsharedscripts\fR is specified, the scripts
-are only run once, no matter how many logs match the wildcarded pattern,
+\fI/var/log/news/*\fR example).  If \fBsharedscripts\fR is specified, the
+scripts are only run once, no matter how many logs match the wildcarded pattern,
 and whole pattern is passed to them.
 However, if none of the logs in the pattern require rotating, the scripts
-will not be run at all. If the scripts exit with error, the remaining
-actions will not be executed for any logs. This option overrides the
+will not be run at all.  If the scripts exit with error, the remaining
+actions will not be executed for any logs.  This option overrides the
 \fBnosharedscripts\fR option and implies \fBcreate\fR option.
 
 .TP
 \fBnosharedscripts\fR
 Run \fBprerotate\fR and \fBpostrotate\fR scripts for every log file which
 is rotated (this is the default, and overrides the \fBsharedscripts\fR
-option). The absolute path to the log file is passed as first argument
-to the script. The absolute path to the final rotated log file is passed as
-the second argument to the \fBpostrotate\fR script. If the scripts exit with
+option).  The absolute path to the log file is passed as first argument
+to the script.  The absolute path to the final rotated log file is passed as
+the second argument to the \fBpostrotate\fR script.  If the scripts exit with
 error, the remaining actions will not be executed for the affected log only.
 
 .TP
@@ -607,27 +608,27 @@ The lines between \fBfirstaction\fR and \fBendscript\fR (both of which
 must appear on lines by themselves) are executed (using \fB/bin/sh\fR) once
 before all log files that match the wildcarded pattern are rotated, before
 prerotate script is run and only if at least one log will actually be rotated.
-These directives may only appear inside a log file definition. Whole pattern is
+These directives may only appear inside a log file definition.  Whole pattern is
 passed to the script as first argument. If the script exits with error,
-no further processing is done. See also \fBlastaction\fR.
+no further processing is done.  See also \fBlastaction\fR.
 
 .TP
 \fBlastaction\fR/\fBendscript\fR
 The lines between \fBlastaction\fR and \fBendscript\fR (both of which
 must appear on lines by themselves) are executed (using \fB/bin/sh\fR) once
 after all log files that match the wildcarded pattern are rotated, after
-postrotate script is run and only if at least one log is rotated. These
-directives may only appear inside a log file definition. Whole pattern is
-passed to the script as first argument. If the script exits
+postrotate script is run and only if at least one log is rotated.  These
+directives may only appear inside a log file definition.  Whole pattern is
+passed to the script as first argument.  If the script exits
 with error, just an error message is shown (as this is the last
-action). See also \fBfirstaction\fR.
+action).  See also \fBfirstaction\fR.
 
 .TP
 \fBprerotate\fR/\fBendscript\fR
 The lines between \fBprerotate\fR and \fBendscript\fR (both of which
 must appear on lines by themselves) are executed (using \fB/bin/sh\fR) before
-the log file is rotated and only if the log will actually be rotated. These
-directives may only appear inside a log file definition. Normally,
+the log file is rotated and only if the log will actually be rotated.  These
+directives may only appear inside a log file definition.  Normally,
 the absolute path to the log file is passed as first argument to the script.
 If \fBsharedscripts\fR is specified, whole pattern is passed to the script.
 See also \fBpostrotate\fR.
@@ -637,13 +638,13 @@ See \fBsharedscripts\fR and \fBnosharedscripts\fR for error handling.
 \fBpostrotate\fR/\fBendscript\fR
 The lines between \fBpostrotate\fR and \fBendscript\fR (both of which
 must appear on lines by themselves) are executed (using \fB/bin/sh\fR)
-after the log file is rotated. These directives may only appear inside
-a log file definition. Normally, the absolute path to the log file is
+after the log file is rotated.  These directives may only appear inside
+a log file definition.  Normally, the absolute path to the log file is
 passed as first argument to the script and the absolute path to the final
-rotated log file is passed as the second argument to the script. If
+rotated log file is passed as the second argument to the script.  If
 \fBsharedscripts\fR is specified, the whole pattern is passed as the first
 argument to the script, and the second argument is omitted.
-See also \fBprerotate\fR. See \fBsharedscripts\fR and \fBnosharedscripts\fR
+See also \fBprerotate\fR.  See \fBsharedscripts\fR and \fBnosharedscripts\fR
 for error handling.
 
 .TP
@@ -658,7 +659,7 @@ the name of file which is soon to be removed. See also \fBfirstaction\fR.
 
 .TS
 tab(:);
-left l l.
+l l l.
 \fI@STATE_FILE_PATH@\fR:Default state file.
 \fI/etc/logrotate.conf\fR:Configuration options.
 .TE
