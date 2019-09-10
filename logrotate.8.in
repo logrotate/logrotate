@@ -576,7 +576,8 @@ before processing of the including file continues. The only files
 which are ignored are files which are not regular files (such as
 directories and named pipes) and files whose names end with one of
 the taboo extensions or patterns, as specified by the \fBtabooext\fR
-or \fBtaboopat\fR directives, respectively.
+or \fBtaboopat\fR directives, respectively.  For security reasons
+configuration files must not be group-writable nor world-writable.
 
 .TP
 \fBsharedscripts\fR
