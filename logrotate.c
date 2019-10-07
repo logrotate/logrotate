@@ -2764,7 +2764,7 @@ int main(int argc, const char **argv)
         return 2;
     }
 
-    files = poptGetArgs((poptContext) optCon);
+    files = poptGetArgs(optCon);
     if (!files) {
         fprintf(stderr, "logrotate " VERSION
                 " - Copyright (C) 1995-2001 Red Hat, Inc.\n");
