@@ -2674,7 +2674,7 @@ int main(int argc, const char **argv)
 {
     int force = 0;
     const char *stateFile = STATEFILE;
-    char *logFile = NULL;
+    const char *logFile = NULL;
     FILE *logFd = NULL;
     int rc = 0;
     int arg;
