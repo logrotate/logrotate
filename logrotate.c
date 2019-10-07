@@ -1293,7 +1293,6 @@ static int findNeedRotating(struct logInfo *log, int logNum, int force)
                 }
                 break;
             case ROT_DAYS:
-                /* FIXME: only days=1 is implemented!! */
                 state->doRotate = ((now.tm_mday != state->lastRotated.tm_mday) ||
                         (now.tm_mon != state->lastRotated.tm_mon) ||
                         (now.tm_year != state->lastRotated.tm_year));
