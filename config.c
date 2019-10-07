@@ -912,10 +912,6 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
         .l_type = F_RDLCK
     };
 
-    /* FIXME: createOwner and createGroup probably shouldn't be fixed
-       length arrays -- of course, if we aren't run setuid it doesn't
-       matter much */
-
     fd = open(configFile, O_RDONLY);
     if (fd < 0) {
         message(MESS_ERROR, "failed to open config file %s: %s\n",
