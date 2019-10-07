@@ -1,8 +1,4 @@
 #include "queue.h"
-/* Alloca is defined in stdlib.h in NetBSD/FreeBSD */
-#if !defined(__NetBSD__) && !defined(__FreeBSD__)
-#include <alloca.h>
-#endif
 #include <limits.h>
 #include <ctype.h>
 #include <dirent.h>
@@ -888,7 +884,6 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
     char **scriptDest = NULL;
     struct logInfo *newlog = defConfig;
     char *start, *chptr;
-    char *dirName;
     struct passwd *pw = NULL;
     int rc;
     struct stat sb, sb2;
@@ -1714,6 +1709,7 @@ duperror:
                         for (i = 0; i < newlog->numFiles; i++) {
                             char *ld;
                             char *dirpath;
+                            const char *dirName;
 
                             dirpath = strdup(newlog->files[i]);
                             dirName = dirname(dirpath);
@@ -1737,7 +1733,7 @@ duperror:
                                     continue;
                                 }
                             }
-                            ld = alloca(strlen(dirName) + strlen(newlog->oldDir) + 2);
+                            ld = malloc(strlen(dirName) + strlen(newlog->oldDir) + 2);
                             sprintf(ld, "%s/%s", dirName, newlog->oldDir);
                             free(dirpath);
 
@@ -1753,6 +1749,7 @@ duperror:
                                     int ret;
                                     if (newlog->flags & LOG_FLAG_SU) {
                                         if (switch_user(newlog->suUid, newlog->suGid) != 0) {
+                                            free(ld);
                                             goto error;
                                         }
                                     }
@@ -1760,10 +1757,12 @@ duperror:
                                             newlog->olddirUid, newlog->olddirGid);
                                     if (newlog->flags & LOG_FLAG_SU) {
                                         if (switch_user_back() != 0) {
+                                            free(ld);
                                             goto error;
                                         }
                                     }
                                     if (ret) {
+                                        free(ld);
                                         goto error;
                                     }
                                 }
@@ -1771,9 +1770,12 @@ duperror:
                                     message(MESS_ERROR, "%s:%d error verifying olddir "
                                             "path %s: %s\n", configFile, lineNum,
                                             dirName, strerror(errno));
+                                    free(ld);
                                     goto error;
                                 }
                             }
+
+                            free(ld);
 
                             if (sb.st_dev != sb2.st_dev
                                     && !(newlog->flags & (LOG_FLAG_COPYTRUNCATE | LOG_FLAG_COPY | LOG_FLAG_TMPFILENAME))) {
