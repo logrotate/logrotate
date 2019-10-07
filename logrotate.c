@@ -1491,18 +1491,20 @@ static int prerotateSingleLog(struct logInfo *log, int logNum,
         fileext = log->addextension;
     }
 
-    if (log->extension &&
-            strncmp(&
-                (rotNames->
-                 baseName[strlen(rotNames->baseName) -
-                 strlen(log->extension)]), log->extension,
-                strlen(log->extension)) == 0) {
-        char *tempstr;
+    if (log->extension) {
+        const size_t baseLen = strlen(rotNames->baseName);
+        const size_t extLen = strlen(log->extension);
 
-        fileext = log->extension;
-        tempstr = strndup(rotNames->baseName, strlen(rotNames->baseName) - strlen(log->extension));
-        free(rotNames->baseName);
-        rotNames->baseName = tempstr;
+        if (baseLen >= extLen &&
+                strncmp(&(rotNames->baseName[baseLen - extLen]),
+                    log->extension, extLen) == 0) {
+            char *tempstr;
+
+            fileext = log->extension;
+            tempstr = strndup(rotNames->baseName, baseLen - extLen);
+            free(rotNames->baseName);
+            rotNames->baseName = tempstr;
+        }
     }
 
     /* Adjust "now" if we want yesterday's date */
