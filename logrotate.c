@@ -384,11 +384,13 @@ static void restoreSecCtx(void **pPrevCtx)
 
 static struct logState *newState(const char *fn)
 {
-    struct tm now = *localtime(&nowSecs);
+    struct tm now;
     struct logState *new;
     time_t lr_time;
 
     message(MESS_DEBUG, "Creating new state\n");
+
+    localtime_r(&nowSecs, &now);
 
     if ((new = malloc(sizeof(*new))) == NULL)
         return NULL;
@@ -410,7 +412,7 @@ static struct logState *newState(const char *fn)
 
     /* fill in the rest of the new->lastRotated fields */
     lr_time = mktime(&new->lastRotated);
-    new->lastRotated = *localtime(&lr_time);
+    localtime_r(&lr_time, &new->lastRotated);
 
     return new;
 }
@@ -497,7 +499,7 @@ static int createOutputFile(char *fileName, int flags, struct stat *sb,
             break;
 
         /* the destination file already exists, while it should not */
-        now = *localtime(&nowSecs);
+        localtime_r(&nowSecs, &now);
         fileName_size = strlen(fileName);
         buf_size = fileName_size + sizeof("-YYYYMMDDHH.backup");
         backupName = alloca(buf_size);
@@ -1166,9 +1168,11 @@ static int findNeedRotating(struct logInfo *log, int logNum, int force)
 {
     struct stat sb;
     struct logState *state = NULL;
-    struct tm now = *localtime(&nowSecs);
+    struct tm now;
 
     message(MESS_DEBUG, "considering log %s\n", log->files[logNum]);
+
+    localtime_r(&nowSecs, &now);
 
     /* Check if parent directory of this log has safe permissions */
     if ((log->flags & LOG_FLAG_SU) == 0 && getuid() == 0) {
@@ -1428,7 +1432,7 @@ static int findLastRotated(const struct logNames *rotNames,
 static int prerotateSingleLog(struct logInfo *log, int logNum,
                               struct logState *state, struct logNames *rotNames)
 {
-    struct tm now = *localtime(&nowSecs);
+    struct tm now;
     char *oldName = NULL;
     const char *compext = "";
     const char *fileext = "";
@@ -1457,6 +1461,7 @@ static int prerotateSingleLog(struct logInfo *log, int logNum,
     if (log->compress_ext && (log->flags & LOG_FLAG_COMPRESS))
         compext = log->compress_ext;
 
+    localtime_r(&nowSecs, &now);
     state->lastRotated = now;
 
     {
@@ -2307,9 +2312,11 @@ static int writeState(const char *stateFilename)
     int fdsave;
     struct stat sb;
     char *tmpFilename = NULL;
-    struct tm now = *localtime(&nowSecs);
+    struct tm now;
     time_t now_time, last_time;
     void *prevCtx;
+
+    localtime_r(&nowSecs, &now);
 
     tmpFilename = malloc(strlen(stateFilename) + 5 );
     if (tmpFilename == NULL) {
@@ -2666,7 +2673,7 @@ static int readState(const char *stateFilename)
 
         /* fill in the rest of the st->lastRotated fields */
         lr_time = mktime(&st->lastRotated);
-        st->lastRotated = *localtime(&lr_time);
+        localtime_r(&lr_time, &st->lastRotated);
 
         free(argv);
         free(filename);
