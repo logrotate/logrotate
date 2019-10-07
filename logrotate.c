@@ -1501,6 +1501,7 @@ static int prerotateSingleLog(struct logInfo *log, int logNum,
 
         fileext = log->extension;
         tempstr = strndup(rotNames->baseName, strlen(rotNames->baseName) - strlen(log->extension));
+        free(rotNames->baseName);
         rotNames->baseName = tempstr;
     }
 
