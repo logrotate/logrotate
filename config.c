@@ -499,6 +499,8 @@ static void copyLogInfo(struct logInfo *to, struct logInfo *from)
     }
     if (from->dateformat)
         to->dateformat = strdup(from->dateformat);
+
+    to->list = from->list;
 }
 
 static void freeLogInfo(struct logInfo *log)
