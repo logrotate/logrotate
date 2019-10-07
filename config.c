@@ -541,6 +541,7 @@ static void removeLogInfo(struct logInfo *log)
 
     freeLogInfo(log);
     TAILQ_REMOVE(&logs, log, list);
+    free(log);
     numLogs--;
 }
 
