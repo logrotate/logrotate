@@ -265,6 +265,9 @@ static int allocateHash(unsigned int hs)
 }
 
 #define HASH_CONST 13
+#if defined(__clang__) && defined(__clang_major__) && (__clang_major__ >= 4)
+__attribute__((no_sanitize("unsigned-integer-overflow")))
+#endif
 static int hashIndex(const char *fn)
 {
     unsigned hash = 0;
