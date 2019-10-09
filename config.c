@@ -789,7 +789,7 @@ static char* parseGlobString(const char *configFile, int lineNum,
             default:
                 if ('\n' == **ppos)
                     state = PGS_INIT;
-        };
+        }
 
         if (PGS_COMMENT == state)
             /* skip comment */
@@ -862,7 +862,7 @@ static int globerr(const char *pathname, int theerr)
     do { \
         free(newlog->what); \
         newlog->what = NULL; \
-    } while (0);
+    } while (0)
 #define RAISE_ERROR() \
     if (newlog != defConfig) { \
         state = STATE_ERROR; \

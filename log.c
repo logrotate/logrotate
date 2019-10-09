@@ -93,7 +93,7 @@ void message(int level, const char *format, ...)
             default:
                 priority |= LOG_INFO;
                 break;
-        };
+        }
 
         va_start(args, format);
         vsyslog(priority, format, args);
