@@ -1857,10 +1857,7 @@ duperror:
                         while (*endtag != '\n')
                             endtag--;
                         endtag++;
-                        *scriptDest = malloc(endtag - scriptStart + 1);
-                        strncpy(*scriptDest, scriptStart,
-                                endtag - scriptStart);
-                        (*scriptDest)[endtag - scriptStart] = '\0';
+                        *scriptDest = strndup(scriptStart, endtag - scriptStart);
 
                         scriptDest = NULL;
                         scriptStart = NULL;
