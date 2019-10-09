@@ -2183,7 +2183,7 @@ static int rotateLogSet(struct logInfo *log, int force)
 
         if (log->pre
                 && (!(
-                        ((logHasErrors[j] || !state[j]->doRotate) && !(log->flags & LOG_FLAG_SHAREDSCRIPTS))
+                        (!(log->flags & LOG_FLAG_SHAREDSCRIPTS) && (logHasErrors[j] || !state[j]->doRotate))
                         || (hasErrors && (log->flags & LOG_FLAG_SHAREDSCRIPTS))
                      ))
            ) {
@@ -2221,7 +2221,7 @@ static int rotateLogSet(struct logInfo *log, int force)
 
         if (log->post
                 && (!(
-                        ((logHasErrors[j] || !state[j]->doRotate) && !(log->flags & LOG_FLAG_SHAREDSCRIPTS))
+                        (!(log->flags & LOG_FLAG_SHAREDSCRIPTS) && (logHasErrors[j] || !state[j]->doRotate))
                         || (hasErrors && (log->flags & LOG_FLAG_SHAREDSCRIPTS))
                      ))
            ) {
