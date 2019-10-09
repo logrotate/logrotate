@@ -1117,6 +1117,16 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                                     "su\n", configFile, lineNum);
                             RAISE_ERROR();
                         }
+                        else if (newlog->suUid == NO_UID) {
+                            message(MESS_ERROR, "%s:%d no user for "
+                                    "su\n", configFile, lineNum);
+                            RAISE_ERROR();
+                        }
+                        else if (newlog->suGid == NO_GID) {
+                            message(MESS_ERROR, "%s:%d no group for "
+                                    "su\n", configFile, lineNum);
+                            RAISE_ERROR();
+                        }
 
                         newlog->flags |= LOG_FLAG_SU;
                     } else if (!strcmp(key, "create")) {
