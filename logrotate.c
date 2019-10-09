@@ -2649,7 +2649,8 @@ static int readState(const char *stateFilename)
             return 1;
         }
 
-        year -= 1900, month -= 1;
+        year -= 1900;
+        month -= 1;
 
         filename = strdup(argv[0]);
         unescape(filename);
