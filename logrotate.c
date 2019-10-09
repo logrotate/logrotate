@@ -120,8 +120,8 @@ static struct compData _compData;
 static int compGlobResult(const void *result1, const void *result2)  {
     struct tm time_tmp;
     time_t t1, t2;
-    const char *r1 = *(const char **)(result1);
-    const char *r2 = *(const char **)(result2);
+    const char *r1 = *(char * const*)(result1);
+    const char *r2 = *(char * const*)(result2);
 
     memset(&time_tmp, 0, sizeof(struct tm));
     strptime(r1 + _compData.prefix_len, _compData.dformat, &time_tmp);
