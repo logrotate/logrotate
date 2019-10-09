@@ -2080,7 +2080,7 @@ static int rotateLogSet(struct logInfo *log, int force)
                 message(MESS_DEBUG, "%jd bytes ", (intmax_t)log->threshold);
                 break;
             default:
-                message(MESS_DEBUG, "rotateLogSet() does not have case for: %u ",
+                message(MESS_FATAL, "rotateLogSet() does not have case for: %u ",
                         (unsigned) log->criterium);
         }
     }
