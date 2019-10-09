@@ -1727,8 +1727,7 @@ static int prerotateSingleLog(struct logInfo *log, int logNum,
                 if (asprintf(&oldName, "%s", (globResult.gl_pathv)[mail_out]) < 0) {
                     message(MESS_FATAL, "could not allocate mailout memory\n");
                 }
-                rotNames->disposeName = malloc(strlen(oldName)+1);
-                strcpy(rotNames->disposeName, oldName);
+                rotNames->disposeName = strdup(oldName);
                 free(oldName);
             } else {
                 free(rotNames->disposeName);
