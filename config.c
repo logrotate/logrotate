@@ -628,9 +628,8 @@ static int readConfigPath(const char *path, struct logInfo *defConfig)
                     }
                 }
                 /* Alloc memory for file name */
-                if ((namelist[files_count] =
-                            (char *) malloc(strlen(dp->d_name) + 1))) {
-                    strcpy(namelist[files_count], dp->d_name);
+                namelist[files_count] = strdup(dp->d_name);
+                if (namelist[files_count] != NULL) {
                     files_count++;
                 } else {
                     free_2d_array(namelist, files_count);
