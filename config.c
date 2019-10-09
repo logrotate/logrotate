@@ -433,7 +433,7 @@ static int checkFile(const char *fname)
 /* Used by qsort to sort filelist */
 static int compar(const void *p, const void *q)
 {
-    return strcoll(*((char **) p), *((char **) q));
+    return strcoll(*((char * const*) p), *((char * const*) q));
 }
 
 /* Free memory blocks pointed to by pointers in a 2d array and the array itself */
@@ -1514,7 +1514,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                         for(i = 0; i < compress_cmd_list_size; i++) {
                             if (!strcmp(compress_cmd_list[i].cmd, compresscmd_base)) {
                                 freeLogItem (compress_ext);
-                                newlog->compress_ext = strdup((char *)compress_cmd_list[i].ext);
+                                newlog->compress_ext = strdup(compress_cmd_list[i].ext);
                                 message(MESS_DEBUG, "compress_ext was changed to %s\n", newlog->compress_ext);
                                 break;
                             }
