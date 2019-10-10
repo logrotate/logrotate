@@ -816,7 +816,7 @@ static char* parseGlobString(const char *configFile, int lineNum,
             globStringAlloc += GLOB_STR_REALLOC_STEP;
             ptr = realloc(globString, globStringAlloc);
             if (!ptr) {
-                /* out of memory */
+                message(MESS_ERROR, "can not realloc\n");
                 free(globString);
                 return NULL;
             }
