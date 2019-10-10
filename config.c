@@ -391,6 +391,11 @@ static int mkpath(const char *path, mode_t mode, uid_t uid, gid_t gid) {
     int rv;
     char *copypath = strdup(path);
 
+    if (!copypath) {
+        message(MESS_ERROR, "can not allocate memory\n");
+        return 1;
+    }
+
     rv = 0;
     pp = copypath;
     while (rv == 0 && (sp = strchr(pp, '/')) != NULL) {
