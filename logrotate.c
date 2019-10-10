@@ -101,6 +101,7 @@ static const char *mailCommand = DEFAULT_MAIL_COMMAND;
 static time_t nowSecs = 0;
 static uid_t save_euid;
 static gid_t save_egid;
+static const char *stateHeaderV2 = "logrotate state -- version 2\n";
 
 static int globerr(const char *pathname, int theerr)
 {
@@ -2395,7 +2396,7 @@ static int writeState(const char *stateFilename)
         return 1;
     }
 
-    bytes =  fprintf(f, "logrotate state -- version 2\n");
+    bytes =  fprintf(f, "%s", stateHeaderV2);
     if (bytes < 0)
         error = bytes;
 
@@ -2499,9 +2500,9 @@ static int readState(const char *stateFilename)
     const char **argv;
     int argc;
     int year, month, day, hour, minute, second;
+    int fd;
     int i;
     int line = 0;
-    int error;
     struct logState *st;
     time_t lr_time;
     struct stat f_stat;
@@ -2509,28 +2510,61 @@ static int readState(const char *stateFilename)
 
     message(MESS_DEBUG, "Reading state from file: %s\n", stateFilename);
 
-    error = stat(stateFilename, &f_stat);
-    if (error) {
-        /* treat non-statable file as an empty file */
-        f_stat.st_size = 0;
-        if (errno != ENOENT) {
-            message(MESS_ERROR, "error stat()ing state file %s: %s\n",
+    /* initialize for allocateHash() */
+    f_stat.st_size = 0;
+
+    fd = open(stateFilename, O_RDONLY);
+    if (fd != -1) {
+        /* statefile exists */
+
+        if (fstat(fd, &f_stat) == -1) {
+            message(MESS_ERROR, "can not stat() state file %s: %s\n",
                     stateFilename, strerror(errno));
+
+            /* set fallback for allocateHash() */
+            f_stat.st_size = 0;
 
             /* do not return until the hash table is allocated */
             rc = 1;
-        }
-    }
+        } else if (getuid() == ROOT_UID) {
+            /* check statefile permissions */
 
-    if (!debug && (f_stat.st_size == 0)) {
-        /* create the file before continuing to ensure we have write
-           access to the file */
-        f = fopen(stateFilename, "w");
-        if (f) {
-            fprintf(f, "logrotate state -- version 2\n");
-            fclose(f);
+            if (f_stat.st_uid != geteuid()) {
+                message(MESS_ERROR, "state file %s is not owned by executing user %d (owned by %d)\n",
+                        stateFilename, geteuid(), f_stat.st_uid);
+                rc = 1;
+            }
+            if (f_stat.st_mode & (S_IWGRP | S_IWOTH)) {
+                message(MESS_ERROR, "state file %s is writable by group or others\n",
+                        stateFilename);
+                rc = 1;
+            }
+        }
+    } else {
+        /* error opening statefile, might not exist */
+
+        if (errno == ENOENT) {
+            if (!debug) {
+                /* create stub statefile */
+
+                int fd2 = open(stateFilename, O_WRONLY | O_CREAT | O_EXCL, S_IWUSR | S_IRUSR | S_IRGRP);
+                if (fd2 == -1) {
+                    message(MESS_ERROR, "can not creat state file %s: %s\n",
+                    stateFilename, strerror(errno));
+
+                    /* do not return until the hash table is allocated */
+                    rc = 1;
+                } else {
+                    const ssize_t n = write(fd2, stateHeaderV2, strlen(stateHeaderV2));
+                    if (n < 0 || (size_t)n != strlen(stateHeaderV2)) {
+                        message(MESS_ERROR, "can not write header to new state file %s: %s\n", stateFilename, strerror(errno));
+                        rc = 1;
+                    }
+                    close(fd2);
+                }
+            }
         } else {
-            message(MESS_ERROR, "error creating state file %s: %s\n",
+            message(MESS_ERROR, "can not open state file %s: %s\n",
                     stateFilename, strerror(errno));
 
             /* do not return until the hash table is allocated */
@@ -2542,17 +2576,23 @@ static int readState(const char *stateFilename)
      * We expect single entry to have around 80 characters (Of course this is
      * just an estimation). During the testing I've found out that 200 entries
      * per single hash entry gives good mem/performance ratio. */
-    if (allocateHash(f_stat.st_size / 80 / 200))
-        return 1;
+    if (allocateHash(f_stat.st_size / 80 / 200)) {
+        rc = 1;
+    }
 
-    if (rc || (f_stat.st_size == 0))
+    if (rc || (f_stat.st_size == 0)) {
+        if (fd != -1) {
+            close(fd);
+        }
         /* error already occurred, or we have no state file to read from */
         return rc;
+    }
 
-    f = fopen(stateFilename, "r");
+    f = fdopen(fd, "r");
     if (!f) {
         message(MESS_ERROR, "error opening state file %s: %s\n",
                 stateFilename, strerror(errno));
+        close(fd);
         return 1;
     }
 
@@ -2564,10 +2604,10 @@ static int readState(const char *stateFilename)
     }
 
     if (strcmp(buf, "logrotate state -- version 1\n") &&
-            strcmp(buf, "logrotate state -- version 2\n")) {
-        fclose(f);
+            strcmp(buf, stateHeaderV2)) {
         message(MESS_ERROR, "bad top line in state file %s\n",
                 stateFilename);
+        fclose(f);
         return 1;
     }
 
