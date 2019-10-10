@@ -1389,8 +1389,13 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 
                             /* accept only non-empty patterns to avoid exclusion of everything */
                             if (endtag < chptr) {
-                                tabooPatterns = realloc(tabooPatterns, sizeof(*tabooPatterns) *
+                                char **tmp = realloc(tabooPatterns, sizeof(*tabooPatterns) *
                                         (tabooCount + 1));
+                                if (tmp == NULL) {
+                                    message(MESS_ERROR, "can not allocate memory\n");
+                                    RAISE_ERROR();
+                                }
+                                tabooPatterns = tmp;
                                 bytes = asprintf(&pattern, "*%.*s", (int)(chptr - endtag), endtag);
 
                                 /* should test for malloc() failure */
@@ -1435,13 +1440,19 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                         while (*endtag) {
                             int bytes;
                             char *pattern = NULL;
+                            char **tmp;
 
                             chptr = endtag;
                             while (!isspace((unsigned char)*chptr) && *chptr != ',' && *chptr)
                                 chptr++;
 
-                            tabooPatterns = realloc(tabooPatterns, sizeof(*tabooPatterns) *
+                            tmp = realloc(tabooPatterns, sizeof(*tabooPatterns) *
                                     (tabooCount + 1));
+                            if (tmp == NULL) {
+                                message(MESS_ERROR, "can not allocate memory\n");
+                                RAISE_ERROR();
+                            }
+                            tabooPatterns = tmp;
                             bytes = asprintf(&pattern, "%.*s", (int)(chptr - endtag), endtag);
 
                             /* should test for malloc() failure */
@@ -1522,12 +1533,21 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                                 newlog->compress_prog);
 
                         compresscmd_base = strdup(basename(newlog->compress_prog));
+                        if (compresscmd_base == NULL) {
+                            message(MESS_ERROR, "can not allocate memory\n");
+                            RAISE_ERROR();
+                        }
                         /* we check whether we changed the compress_cmd. In case we use the appropriate extension
                            as listed in compress_cmd_list */
                         for(i = 0; i < compress_cmd_list_size; i++) {
                             if (!strcmp(compress_cmd_list[i].cmd, compresscmd_base)) {
                                 freeLogItem (compress_ext);
                                 newlog->compress_ext = strdup(compress_cmd_list[i].ext);
+                                if (newlog->compress_ext == NULL) {
+                                    message(MESS_ERROR, "can not allocate memory\n");
+                                    free(compresscmd_base);
+                                    RAISE_ERROR();
+                                }
                                 message(MESS_DEBUG, "compress_ext was changed to %s\n", newlog->compress_ext);
                                 break;
                             }
@@ -1614,6 +1634,11 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                     if (!newlog->compress_ext)
                         newlog->compress_ext = strdup(COMPRESS_EXT);
 
+                    if (!newlog->compress_prog || !newlog->uncompress_prog || !newlog->compress_ext) {
+                        message(MESS_ERROR, "can not allocate memory\n");
+                        goto error;
+                    }
+
                     /* Allocate a new logInfo structure and insert it into the logs
                        queue, copying the actual values from defConfig */
                     if ((newlog = newLogInfo(defConfig)) == NULL)
@@ -1642,6 +1667,8 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                     newlog->files = NULL;
                     newlog->numFiles = 0;
                     for (argNum = 0; argNum < argc; argNum++) {
+                        char **tmp;
+
                         if (globerr_msg) {
                             free(globerr_msg);
                             globerr_msg = NULL;
@@ -1667,11 +1694,17 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                             globResult.gl_pathc = 0;
                         }
 
-                        newlog->files =
-                            realloc(newlog->files,
+                        tmp = realloc(newlog->files,
                                     sizeof(*newlog->files) * (newlog->numFiles +
                                         globResult.
                                         gl_pathc));
+                        if (tmp == NULL) {
+                            message(MESS_ERROR, "can not allocate memory\n");
+                            logerror = 1;
+                            goto duperror;
+                        }
+
+                        newlog->files = tmp;
 
                         for (glob_count = 0; glob_count < globResult.gl_pathc; glob_count++) {
                             /* if we glob directories we can get false matches */
@@ -1697,6 +1730,11 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 
                             newlog->files[newlog->numFiles] =
                                 strdup(globResult.gl_pathv[glob_count]);
+                            if (newlog->files[newlog->numFiles] == NULL) {
+                                message(MESS_ERROR, "can not allocate memory\n");
+                                logerror = 1;
+                                goto duperror;
+                            }
                             newlog->numFiles++;
                         }
 duperror:
@@ -1735,6 +1773,11 @@ duperror:
                             const char *dirName;
 
                             dirpath = strdup(newlog->files[i]);
+                            if (dirpath == NULL) {
+                                message(MESS_ERROR, "can not allocate memory\n");
+                                goto error;
+                            }
+
                             dirName = dirname(dirpath);
                             if (stat(dirName, &sb2)) {
                                 if (!(newlog->flags & LOG_FLAG_MISSINGOK)) {
@@ -1757,6 +1800,11 @@ duperror:
                                 }
                             }
                             ld = malloc(strlen(dirName) + strlen(newlog->oldDir) + 2);
+                            if (ld == NULL) {
+                                message(MESS_ERROR, "can not allocate memory\n");
+                                free(dirpath);
+                                goto error;
+                            }
                             sprintf(ld, "%s/%s", dirName, newlog->oldDir);
                             free(dirpath);
 
@@ -1872,6 +1920,10 @@ duperror:
                             endtag--;
                         endtag++;
                         *scriptDest = strndup(scriptStart, endtag - scriptStart);
+                        if (*scriptDest == NULL) {
+                            message(MESS_ERROR, "can not allocate memory\n");
+                            goto error;
+                        }
 
                         scriptDest = NULL;
                         scriptStart = NULL;
