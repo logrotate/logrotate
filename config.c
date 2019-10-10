@@ -445,7 +445,7 @@ static void free_2d_array(char **array, int lines_count)
     free(array);
 }
 
-static void copyLogInfo(struct logInfo *to, struct logInfo *from)
+static void copyLogInfo(struct logInfo *to, const struct logInfo *from)
 {
     memset(to, 0, sizeof(*to));
     if (from->oldDir)
@@ -518,7 +518,7 @@ static void freeLogInfo(struct logInfo *log)
     free(log->dateformat);
 }
 
-static struct logInfo *newLogInfo(struct logInfo *template)
+static struct logInfo *newLogInfo(const struct logInfo *template)
 {
     struct logInfo *new;
 
