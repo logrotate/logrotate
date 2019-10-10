@@ -1457,8 +1457,15 @@ static int prerotateSingleLog(struct logInfo *log, int logNum,
     message(MESS_DEBUG, "rotating log %s, log->rotateCount is %d\n",
             log->files[logNum], log->rotateCount);
 
-    if (log->compress_ext && (log->flags & LOG_FLAG_COMPRESS))
+    if (log->flags & LOG_FLAG_COMPRESS) {
+        if (!log->compress_ext) {
+            message(MESS_ERROR, "log %s: compression enabled, but compression "
+                "extension is not set\n", log->files[logNum]);
+            return 1;
+        }
+
         compext = log->compress_ext;
+    }
 
     localtime_r(&nowSecs, &now);
     state->lastRotated = now;
