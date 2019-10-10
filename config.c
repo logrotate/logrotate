@@ -527,8 +527,11 @@ static struct logInfo *newLogInfo(const struct logInfo *template)
 {
     struct logInfo *new;
 
-    if ((new = malloc(sizeof(*new))) == NULL)
+    new = malloc(sizeof(*new));
+    if (new == NULL) {
+        message(MESS_ERROR, "can not allocate memory\n");
         return NULL;
+    }
 
     copyLogInfo(new, template);
     TAILQ_INSERT_TAIL(&logs, new, list);
