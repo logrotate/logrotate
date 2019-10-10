@@ -187,6 +187,12 @@ static int switch_user_permanently(const struct logInfo *log) {
                 (unsigned) user, (unsigned) group, strerror(errno));
         return 1;
     }
+
+    if (setuid(0) != -1) {
+        message(MESS_ERROR, "failed to switch user permanently, able to switch back\n");
+        return 1;
+    }
+
     return 0;
 }
 
