@@ -770,6 +770,12 @@ int readAllConfigPaths(const char **paths)
     };
 
     tabooPatterns = malloc(sizeof(*tabooPatterns) * defTabooCount);
+    if (tabooPatterns == NULL) {
+        message(MESS_ERROR, "can not allocate memory\n");
+        return 1;
+    }
+
+
     for (i = 0; i < defTabooCount; i++) {
         int bytes;
         char *pattern = NULL;
