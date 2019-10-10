@@ -154,7 +154,7 @@ static char **tabooPatterns = NULL;
 static int tabooCount = 0;
 static int glob_errno = 0;
 
-static int readConfigFile(const char *configFile, struct logInfo *defConfig);
+static int readConfigFile(int fd, const char *configFile, struct logInfo *defConfig);
 static int globerr(const char *pathname, int theerr);
 
 static char *isolateLine(char **strt, char **buf, size_t length) {
@@ -580,10 +580,18 @@ static int readConfigPath(const char *path, struct logInfo *defConfig)
 {
     struct stat sb;
     int result = 0;
+    int fd;
     struct logInfo defConfigBackup;
 
-    if (stat(path, &sb)) {
-        message(MESS_ERROR, "cannot stat %s: %s\n", path, strerror(errno));
+    fd = open(path, O_RDONLY);
+    if (fd == -1) {
+        message(MESS_ERROR, "can not open %s: %s\n", path, strerror(errno));
+        return 1;
+    }
+
+    if (fstat(fd, &sb)) {
+        message(MESS_ERROR, "can not stat %s: %s\n", path, strerror(errno));
+        close(fd);
         return 1;
     }
 
@@ -596,13 +604,23 @@ static int readConfigPath(const char *path, struct logInfo *defConfig)
         if ((here = open(".", O_RDONLY)) == -1) {
             message(MESS_ERROR, "cannot open current directory: %s\n",
                     strerror(errno));
+            close(fd);
             return 1;
         }
 
-        if ((dirp = opendir(path)) == NULL) {
+        if (fchdir(fd)) {
+            message(MESS_ERROR, "error in chdir(\"%s\"): %s\n", path,
+                    strerror(errno));
+            close(here);
+            close(fd);
+            return 1;
+        }
+
+        if ((dirp = fdopendir(fd)) == NULL) {
             message(MESS_ERROR, "cannot open directory %s: %s\n", path,
                     strerror(errno));
             close(here);
+            close(fd);
             return 1;
         }
         files_count = 0;
@@ -641,6 +659,7 @@ static int readConfigPath(const char *path, struct logInfo *defConfig)
                 }
             }
         }
+
         closedir(dirp);
 
         if (files_count > 0) {
@@ -650,26 +669,34 @@ static int readConfigPath(const char *path, struct logInfo *defConfig)
             return 0;
         }
 
-        if (chdir(path)) {
-            message(MESS_ERROR, "error in chdir(\"%s\"): %s\n", path,
-                    strerror(errno));
-            close(here);
-            free_2d_array(namelist, files_count);
-            return 1;
-        }
+
 
         for (i = 0; i < files_count; ++i) {
+            int fd_i;
+
             assert(namelist[i] != NULL);
+
+            fd_i = open(namelist[i], O_RDONLY);
+            if (fd_i < 0) {
+                message(MESS_ERROR, "failed to open config file %s: %s\n",
+                        namelist[i], strerror(errno));
+                result = 1;
+                continue;
+            }
+
             copyLogInfo(&defConfigBackup, defConfig);
-            if (readConfigFile(namelist[i], defConfig)) {
+
+            if (readConfigFile(fd_i, namelist[i], defConfig)) {
                 message(MESS_ERROR, "found error in file %s, skipping\n", namelist[i]);
                 freeLogInfo(defConfig);
                 copyLogInfo(defConfig, &defConfigBackup);
                 freeLogInfo(&defConfigBackup);
+                close(fd_i);
                 result = 1;
                 continue;
             }
             freeLogInfo(&defConfigBackup);
+            close(fd_i);
         }
 
         if (fchdir(here) < 0) {
@@ -677,14 +704,15 @@ static int readConfigPath(const char *path, struct logInfo *defConfig)
         }
         close(here);
         free_2d_array(namelist, files_count);
-    } else {
+    } else { /* !S_ISDIR(sb.st_mode) */
         copyLogInfo(&defConfigBackup, defConfig);
-        if (readConfigFile(path, defConfig)) {
+        if (readConfigFile(fd, path, defConfig)) {
             freeLogInfo(defConfig);
             copyLogInfo(defConfig, &defConfigBackup);
             result = 1;
         }
         freeLogInfo(&defConfigBackup);
+        close(fd);
     }
 
     return result;
@@ -871,9 +899,8 @@ static int globerr(const char *pathname, int theerr)
     }
 #define MAX_NESTING 16U
 
-static int readConfigFile(const char *configFile, struct logInfo *defConfig)
+static int readConfigFile(int fd, const char *configFile, struct logInfo *defConfig)
 {
-    int fd;
     char *buf, *endtag, *key = NULL;
     off_t length;
     int lineNum = 1;
@@ -906,23 +933,15 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
         .l_type = F_RDLCK
     };
 
-    fd = open(configFile, O_RDONLY);
-    if (fd < 0) {
-        message(MESS_ERROR, "failed to open config file %s: %s\n",
-                configFile, strerror(errno));
-        return 1;
-    }
     if ((flags = fcntl(fd, F_GETFD)) == -1) {
         message(MESS_ERROR, "Could not retrieve flags from file %s\n",
                 configFile);
-        close(fd);
         return 1;
     }
     flags |= FD_CLOEXEC;
     if (fcntl(fd, F_SETFD, flags) == -1) {
         message(MESS_ERROR, "Could not set flags on file %s\n",
                 configFile);
-        close(fd);
         return 1;
     }
     /* We don't want anybody to change the file while we parse it,
@@ -934,20 +953,17 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
     if (fstat(fd, &sb)) {
         message(MESS_ERROR, "fstat of %s failed: %s\n", configFile,
                 strerror(errno));
-        close(fd);
         return 1;
     }
     if (!S_ISREG(sb.st_mode)) {
         message(MESS_DEBUG,
                 "Ignoring %s because it's not a regular file.\n",
                 configFile);
-        close(fd);
         return 0;
     }
 
     if (!(pw = getpwuid(getuid()))) {
         message(MESS_ERROR, "Logrotate UID is not in passwd file.\n");
-        close(fd);
         return 1;
     }
 
@@ -962,7 +978,6 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
             message(MESS_ERROR,
                     "Ignoring %s because it is writable by group or others.\n",
                     configFile);
-            close(fd);
             return 0;
         }
 
@@ -970,7 +985,6 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
             message(MESS_ERROR,
                     "Ignoring %s because there's no password entry for the owner.\n",
                     configFile);
-            close(fd);
             return 0;
         }
 
@@ -980,7 +994,6 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
             message(MESS_ERROR,
                     "Ignoring %s because the file owner is wrong (should be root or user with uid 0).\n",
                     configFile);
-            close(fd);
             return 0;
         }
     }
@@ -990,7 +1003,6 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
     if (length > 0xffffff) {
         message(MESS_ERROR, "file %s too large, probably not a config file.\n",
                 configFile);
-        close(fd);
         return 1;
     }
 
@@ -999,7 +1011,6 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
         message(MESS_DEBUG,
                 "Ignoring %s because it's empty.\n",
                 configFile);
-        close(fd);
         return 0;
     }
 
@@ -1014,7 +1025,6 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
     if (buf == MAP_FAILED) {
         message(MESS_ERROR, "Error mapping config file %s: %s\n",
                 configFile, strerror(errno));
-        close(fd);
         return 1;
     }
 
@@ -1932,13 +1942,11 @@ duperror:
     free(key);
 
     munmap(buf, (size_t) length);
-    close(fd);
     return logerror;
 error:
     /* free is a NULL-safe operation */
     free(key);
     munmap(buf, (size_t) length);
-    close(fd);
     return 1;
 }
 
