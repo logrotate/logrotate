@@ -399,10 +399,15 @@ static struct logState *newState(const char *fn)
 
     localtime_r(&nowSecs, &now);
 
-    if ((new = malloc(sizeof(*new))) == NULL)
+    new = malloc(sizeof(*new));
+    if (new == NULL) {
+        message(MESS_ERROR, "can not allocate memory\n");
         return NULL;
+    }
 
-    if ((new->fn = strdup(fn)) == NULL) {
+    new->fn = strdup(fn);
+    if (new->fn  == NULL) {
+        message(MESS_ERROR, "can not allocate memory\n");
         free(new);
         return NULL;
     }
@@ -1230,8 +1235,13 @@ static int findNeedRotating(struct logInfo *log, int logNum, int force)
 
     /* Check if parent directory of this log has safe permissions */
     if ((log->flags & LOG_FLAG_SU) == 0 && getuid() == 0) {
+        char *ld;
         char *logpath = strdup(log->files[logNum]);
-        char *ld = dirname(logpath);
+        if (logpath == NULL) {
+            message(MESS_ERROR, "can not allocate memory\n");
+            return 1;
+        }
+        ld = dirname(logpath);
         if (stat(ld, &sb)) {
             /* If parent directory doesn't exist, it's not real error
                (unless nomissingok is specified)
@@ -1524,8 +1534,13 @@ static int prerotateSingleLog(struct logInfo *log, int logNum,
     state->lastRotated = now;
 
     {
+        char *ld;
         char *logpath = strdup(log->files[logNum]);
-        char *ld = dirname(logpath);
+        if (logpath == NULL) {
+            message(MESS_ERROR, "can not allocate memory\n");
+            return 1;
+        }
+        ld = dirname(logpath);
         if (log->oldDir) {
             if (log->oldDir[0] != '/') {
                 rotNames->dirName =
@@ -1536,9 +1551,18 @@ static int prerotateSingleLog(struct logInfo *log, int logNum,
         } else
             rotNames->dirName = strdup(ld);
         free(logpath);
+
+        if (rotNames->dirName == NULL) {
+            message(MESS_ERROR, "can not allocate memory\n");
+            return 1;
+        }
     }
 
     rotNames->baseName = strdup(basename(log->files[logNum]));
+    if (rotNames->baseName == NULL) {
+        message(MESS_ERROR, "can not allocate memory\n");
+        return 1;
+    }
 
     if (log->addextension) {
         size_t baseLen = strlen(rotNames->baseName);
@@ -1548,6 +1572,10 @@ static int prerotateSingleLog(struct logInfo *log, int logNum,
                     log->addextension, extLen) == 0) {
 
             char *tempstr = strndup(rotNames->baseName, baseLen - extLen);
+            if (tempstr == NULL) {
+                message(MESS_ERROR, "can not allocate memory\n");
+                return 1;
+            }
 
             free(rotNames->baseName);
             rotNames->baseName = tempstr;
@@ -1566,6 +1594,10 @@ static int prerotateSingleLog(struct logInfo *log, int logNum,
 
             fileext = log->extension;
             tempstr = strndup(rotNames->baseName, baseLen - extLen);
+            if (tempstr == NULL) {
+                message(MESS_ERROR, "can not allocate memory\n");
+                return 1;
+            }
             free(rotNames->baseName);
             rotNames->baseName = tempstr;
         }
@@ -1741,6 +1773,10 @@ static int prerotateSingleLog(struct logInfo *log, int logNum,
     rotNames->firstRotated =
         malloc(strlen(rotNames->dirName) + strlen(rotNames->baseName) +
                 strlen(fileext) + strlen(compext) + DATEEXT_LEN + 2 );
+    if (rotNames->firstRotated == NULL) {
+        message(MESS_ERROR, "can not allocate memory: %s\n", strerror(errno));
+        return 1;
+    }
 
     if (log->flags & LOG_FLAG_DATEEXT) {
         /* glob for compressed files with our pattern
@@ -1789,6 +1825,9 @@ static int prerotateSingleLog(struct logInfo *log, int logNum,
                     message(MESS_FATAL, "could not allocate mailout memory\n");
                 }
                 rotNames->disposeName = strdup(oldName);
+                if (rotNames->disposeName == NULL) {
+                    message(MESS_ERROR, "can not allocate memory\n");
+                }
                 free(oldName);
             } else {
                 free(rotNames->disposeName);
@@ -1846,8 +1885,12 @@ static int prerotateSingleLog(struct logInfo *log, int logNum,
             message(MESS_FATAL, "could not allocate disposeName memory\n");
         }
 
-        if (log->rotateCount != -1)
+        if (log->rotateCount != -1) {
             rotNames->disposeName = strdup(oldName);
+            if (rotNames->disposeName == NULL) {
+                message(MESS_ERROR, "can not allocate memory\n");
+            }
+        }
 
         sprintf(rotNames->firstRotated, "%s/%s.%d%s%s", rotNames->dirName,
                 rotNames->baseName, logStart, fileext,
@@ -2221,6 +2264,14 @@ static int rotateLogSet(struct logInfo *log, int force)
     state = malloc(log->numFiles * sizeof(struct logState *));
     rotNames = malloc(log->numFiles * sizeof(struct logNames *));
 
+    if (state == NULL || rotNames == NULL) {
+        message(MESS_ERROR, "can not allocate memory\n");
+        free(rotNames);
+        free(state);
+        free(logHasErrors);
+        return 1;
+    }
+
     for (j = 0;
             (!(log->flags & LOG_FLAG_SHAREDSCRIPTS) && j < log->numFiles)
             || ((log->flags & LOG_FLAG_SHAREDSCRIPTS) && j < 1); j++) {
@@ -2233,6 +2284,13 @@ static int rotateLogSet(struct logInfo *log, int force)
                 logHasErrors[i] = 1;
 
             rotNames[i] = malloc(sizeof(struct logNames));
+            if (rotNames[i] == NULL) {
+                message(MESS_ERROR, "can not allocate memory: %s\n", strerror(errno));
+                free(rotNames);
+                free(state);
+                free(logHasErrors);
+                return 1;
+            }
             memset(rotNames[i], 0, sizeof(struct logNames));
 
             logHasErrors[i] |=
@@ -2773,6 +2831,12 @@ static int readState(const char *stateFilename)
         month -= 1;
 
         filename = strdup(argv[0]);
+        if (filename == NULL) {
+            message(MESS_ERROR, "can not allocate memory\n");
+            free(argv);
+            fclose(f);
+            return 1;
+        }
         unescape(filename);
 
         if ((st = findState(filename)) == NULL) {
