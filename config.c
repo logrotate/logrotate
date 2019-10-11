@@ -1076,7 +1076,6 @@ static int readConfigFile(int fd, const char *configFile, struct logInfo *defCon
 
     message(MESS_DEBUG, "reading config file %s\n", configFile);
 
-    start = buf;
     for (start = buf; start - buf < length; start++) {
         switch (state) {
             case STATE_DEFAULT:
