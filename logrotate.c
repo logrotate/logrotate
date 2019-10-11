@@ -1235,7 +1235,7 @@ static int findNeedRotating(struct logInfo *log, int logNum, int force)
             /* If parent directory doesn't exist, it's not real error
                (unless nomissingok is specified)
                and rotation is not needed */
-            if (errno != ENOENT || (errno == ENOENT && (log->flags & LOG_FLAG_MISSINGOK) == 0)) {
+            if (errno != ENOENT || (log->flags & LOG_FLAG_MISSINGOK) == 0) {
                 message(MESS_ERROR, "stat of %s failed: %s\n", ld,
                         strerror(errno));
                 free(logpath);
