@@ -1500,7 +1500,6 @@ static int prerotateSingleLog(struct logInfo *log, int logNum,
     char dext_str[DATEEXT_LEN];
     char dformat[PATTERN_LEN] = "";
     char dext_pattern[PATTERN_LEN];
-    char *dext;
 
     if (!state->doRotate)
         return 0;
@@ -1587,6 +1586,7 @@ static int prerotateSingleLog(struct logInfo *log, int logNum,
     /* Construct the glob pattern corresponding to the date format */
     dext_str[0] = '\0';
     if (log->dateformat) {
+        char *dext;
         size_t i = 0, j = 0;
         memset(dext_pattern, 0, sizeof(dext_pattern));
         dext = log->dateformat;
@@ -1925,7 +1925,6 @@ static int rotateSingleLog(struct logInfo *log, int logNum,
 {
     int hasErrors = 0;
     struct stat sb;
-    int fd;
     void *savedContext = NULL;
     char *tmpFilename = NULL;
 
@@ -2015,7 +2014,7 @@ static int rotateSingleLog(struct logInfo *log, int logNum,
 
             if (!debug) {
                 if (!hasErrors) {
-                    fd = createOutputFile(log->files[logNum], O_CREAT | O_RDWR,
+                    int fd = createOutputFile(log->files[logNum], O_CREAT | O_RDWR,
                             &sb, prev_acl, have_create_mode);
 #ifdef WITH_ACL
                     if (prev_acl) {
