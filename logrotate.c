@@ -2551,7 +2551,6 @@ static int readState(const char *stateFilename)
     const char **argv;
     int argc;
     int year, month, day, hour, minute, second;
-    int i;
     int line = 0;
     int error;
     struct logState *st;
@@ -2626,9 +2625,15 @@ static int readState(const char *stateFilename)
     line++;
 
     while (fgets(buf, sizeof(buf) - 1, f)) {
+        const size_t i = strlen(buf);
         argv = NULL;
         line++;
-        i = strlen(buf);
+        if (i == 0) {
+            message(MESS_ERROR, "line %d not parsable in state file %s\n",
+                    line, stateFilename);
+            fclose(f);
+            return 1;
+        }
         if (buf[i - 1] != '\n') {
             message(MESS_ERROR, "line %d too long in state file %s\n",
                     line, stateFilename);
