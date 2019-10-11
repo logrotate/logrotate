@@ -2002,7 +2002,7 @@ duperror:
                 }
                 break;
             default:
-                message(MESS_DEBUG,
+                message(MESS_FATAL,
                         "%s: %d: readConfigFile() unknown state\n",
                         configFile, lineNum);
         }
