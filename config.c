@@ -1845,7 +1845,7 @@ duperror:
                             }
 
                             if (stat(dirName, &sb)) {
-                                if (errno == ENOENT && newlog->flags & LOG_FLAG_OLDDIRCREATE) {
+                                if (errno == ENOENT && (newlog->flags & LOG_FLAG_OLDDIRCREATE)) {
                                     int ret;
                                     if (newlog->flags & LOG_FLAG_SU) {
                                         if (switch_user(newlog->suUid, newlog->suGid) != 0) {
@@ -1901,7 +1901,7 @@ duperror:
             case STATE_SKIP_LINE:
             case STATE_SKIP_LINE | STATE_SKIP_CONFIG:
                 if (*start == '\n')
-                    state = state & STATE_SKIP_CONFIG ? STATE_SKIP_CONFIG : STATE_DEFAULT;
+                    state = (state & STATE_SKIP_CONFIG) ? STATE_SKIP_CONFIG : STATE_DEFAULT;
                 break;
             case STATE_SKIP_LINE | STATE_LOAD_SCRIPT:
                 if (*start == '\n')
@@ -1918,10 +1918,10 @@ duperror:
                 if (*start != '\n') {
                     message(MESS_ERROR, "%s:%d, unexpected text after }\n",
                             configFile, lineNum);
-                    state = STATE_SKIP_LINE | (state & STATE_SKIP_CONFIG ? STATE_SKIP_CONFIG : 0);
+                    state = STATE_SKIP_LINE | ((state & STATE_SKIP_CONFIG) ? STATE_SKIP_CONFIG : 0);
                 }
                 else
-                    state = state & STATE_SKIP_CONFIG ? STATE_SKIP_CONFIG : STATE_DEFAULT;
+                    state = (state & STATE_SKIP_CONFIG) ? STATE_SKIP_CONFIG : STATE_DEFAULT;
                 break;
             case STATE_ERROR:
                 assert(newlog != defConfig);
@@ -1957,12 +1957,12 @@ duperror:
                         scriptDest = NULL;
                         scriptStart = NULL;
                     }
-                    state = state & STATE_SKIP_CONFIG ? STATE_SKIP_CONFIG : STATE_DEFAULT;
+                    state = (state & STATE_SKIP_CONFIG) ? STATE_SKIP_CONFIG : STATE_DEFAULT;
                 }
                 else {
                     state = (*start == '\n' ? 0 : STATE_SKIP_LINE) |
                         STATE_LOAD_SCRIPT |
-                        (state & STATE_SKIP_CONFIG ? STATE_SKIP_CONFIG : 0);
+                        ((state & STATE_SKIP_CONFIG) ? STATE_SKIP_CONFIG : 0);
                 }
                 break;
             case STATE_SKIP_CONFIG:
