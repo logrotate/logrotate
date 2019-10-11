@@ -449,6 +449,7 @@ static struct logState *findState(const char *fn)
 static int runScript(struct logInfo *log, char *logfn, char *logrotfn, char *script)
 {
     int rc;
+    pid_t pid;
 
     if (debug) {
         message(MESS_DEBUG, "running script with args %s %s: \"%s\"\n",
@@ -456,7 +457,14 @@ static int runScript(struct logInfo *log, char *logfn, char *logrotfn, char *scr
         return 0;
     }
 
-    if (!fork()) {
+    pid = fork();
+
+    if (pid == -1) {
+        message(MESS_ERROR, "can not fork: %s\n", strerror(errno));
+        return 1;
+    }
+
+    if (pid == 0) {
         if (log->flags & LOG_FLAG_SU) {
             if (switch_user_back_permanently() != 0) {
                 exit(1);
@@ -598,6 +606,7 @@ static int shred_file(int fd, char *filename, struct logInfo *log)
     const char **fullCommand;
     int id = 0;
     int status;
+    pid_t pid;
 
     if (log->preremove) {
         message(MESS_DEBUG, "running preremove script\n");
@@ -635,7 +644,14 @@ static int shred_file(int fd, char *filename, struct logInfo *log)
     fullCommand[id++] = "-";
     fullCommand[id++] = NULL;
 
-    if (!fork()) {
+    pid = fork();
+
+    if (pid == -1) {
+        message(MESS_ERROR, "can not fork: %s\n", strerror(errno));
+        return 1;
+    }
+
+    if (pid == 0) {
         movefd(fd, STDOUT_FILENO);
 
         if (switch_user_permanently(log) != 0) {
@@ -727,6 +743,7 @@ static int compressLogFile(char *name, struct logInfo *log, struct stat *sb)
     char buff[4092];
     int error_printed = 0;
     void *prevCtx;
+    pid_t pid;
 
     message(MESS_DEBUG, "compressing log with: %s\n", log->compress_prog);
     if (debug)
@@ -788,7 +805,18 @@ static int compressLogFile(char *name, struct logInfo *log, struct stat *sb)
         return 1;
     }
 
-    if (!fork()) {
+    pid = fork();
+
+    if (pid == -1) {
+        message(MESS_ERROR, "can not fork: %s\n", strerror(errno));
+        close(inFile);
+        close(outFile);
+        close(compressPipe[1]);
+        close(compressPipe[0]);
+        return 1;
+    }
+
+    if (pid == 0) {
         /* close read end of pipe in the child process */
         close(compressPipe[0]);
 
@@ -864,7 +892,18 @@ static int mailLog(struct logInfo *log, char *logFile, const char *mailComm,
             close(mailInput);
             return 1;
         }
-        if (!(uncompressChild = fork())) {
+
+        uncompressChild = fork();
+
+        if (uncompressChild == -1) {
+            message(MESS_ERROR, "can not fork: %s \n", strerror(errno));
+            close(mailInput);
+            close(uncompressPipe[1]);
+            close(uncompressPipe[0]);
+            return 1;
+        }
+
+        if (uncompressChild == 0) {
             /* uncompress child */
 
             /* close read end of pipe in the child process */
@@ -886,7 +925,15 @@ static int mailLog(struct logInfo *log, char *logFile, const char *mailComm,
         close(uncompressPipe[1]);
     }
 
-    if (!(mailChild = fork())) {
+    mailChild = fork();
+
+    if (mailChild == -1) {
+        message(MESS_ERROR, "can not fork: %s\n", strerror(errno));
+        close(mailInput);
+        return 1;
+    }
+
+    if (mailChild == 0) {
         movefd(mailInput, STDIN_FILENO);
         close(STDOUT_FILENO);
 
