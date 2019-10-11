@@ -1245,7 +1245,7 @@ static int findNeedRotating(struct logInfo *log, int logNum, int force)
             return 0;
         }
         /* Don't rotate in directories writable by others or group which is not "root"  */
-        if ((sb.st_gid != 0 && sb.st_mode & S_IWGRP) || sb.st_mode & S_IWOTH) {
+        if ((sb.st_gid != 0 && (sb.st_mode & S_IWGRP)) || (sb.st_mode & S_IWOTH)) {
             message(MESS_ERROR, "skipping \"%s\" because parent directory has insecure permissions"
                     " (It's world writable or writable by group which is not \"root\")"
                     " Set \"su\" directive in config file to tell logrotate which user/group"
@@ -1678,8 +1678,8 @@ static int prerotateSingleLog(struct logInfo *log, int logNum,
     }
 
     /* First compress the previous log when necessary */
-    if (log->flags & LOG_FLAG_COMPRESS &&
-            log->flags & LOG_FLAG_DELAYCOMPRESS) {
+    if ((log->flags & LOG_FLAG_COMPRESS) &&
+            (log->flags & LOG_FLAG_DELAYCOMPRESS)) {
         if (log->flags & LOG_FLAG_DATEEXT) {
             /* glob for uncompressed files with our pattern */
             if (asprintf(&glob_pattern, "%s/%s%s%s", rotNames->dirName,
@@ -1987,7 +1987,7 @@ static int rotateSingleLog(struct logInfo *log, int logNum,
             }
         }
 
-        if (!hasErrors && log->flags & LOG_FLAG_CREATE &&
+        if (!hasErrors && (log->flags & LOG_FLAG_CREATE) &&
                 !(log->flags & (LOG_FLAG_COPYTRUNCATE | LOG_FLAG_COPY))) {
             int have_create_mode = 0;
 
@@ -2033,7 +2033,7 @@ static int rotateSingleLog(struct logInfo *log, int logNum,
         restoreSecCtx(&savedContext);
 
         if (!hasErrors
-                && log->flags & (LOG_FLAG_COPYTRUNCATE | LOG_FLAG_COPY)
+                && (log->flags & (LOG_FLAG_COPYTRUNCATE | LOG_FLAG_COPY))
                 && !(log->flags & LOG_FLAG_TMPFILENAME)) {
             hasErrors = copyTruncate(log->files[logNum], rotNames->finalName,
                                      &state->sb, log->flags, !log->rotateCount);
@@ -2060,7 +2060,7 @@ static int postrotateSingleLog(struct logInfo *log, int logNum,
         return 0;
     }
 
-    if (!hasErrors && log->flags & LOG_FLAG_TMPFILENAME) {
+    if (!hasErrors && (log->flags & LOG_FLAG_TMPFILENAME)) {
         char *tmpFilename = NULL;
         if (asprintf(&tmpFilename, "%s%s", log->files[logNum], ".tmp") < 0) {
             message(MESS_FATAL, "could not allocate tmpFilename memory\n");
@@ -2250,7 +2250,7 @@ static int rotateLogSet(struct logInfo *log, int force)
                         "since no logs will be rotated\n");
             } else {
                 message(MESS_DEBUG, "running prerotate script\n");
-                if (runScript(log, log->flags & LOG_FLAG_SHAREDSCRIPTS ? log->pattern : log->files[j], NULL, log->pre)) {
+                if (runScript(log, (log->flags & LOG_FLAG_SHAREDSCRIPTS) ? log->pattern : log->files[j], NULL, log->pre)) {
                     if (log->flags & LOG_FLAG_SHAREDSCRIPTS)
                         message(MESS_ERROR,
                                 "error running shared prerotate script "
