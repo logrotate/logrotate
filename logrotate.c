@@ -2395,6 +2395,31 @@ static int writeState(const char *stateFilename)
         return 1;
     }
 
+    if (fstat(fdcurr, &sb) == -1) {
+        message(MESS_ERROR, "error stating %s: %s\n", stateFilename, strerror(errno));
+        free(tmpFilename);
+        close(fdcurr);
+        return 1;
+    }
+
+    if (getuid() == ROOT_UID) {
+        /* check permissions of old state file */
+        if (sb.st_uid != geteuid()) {
+            message(MESS_ERROR, "state file %s is not owned by executing user %d (owned by %d)\n",
+                    stateFilename, geteuid(), sb.st_uid);
+            free(tmpFilename);
+            close(fdcurr);
+            return 1;
+        }
+        if (sb.st_mode & (S_IWGRP | S_IWOTH)) {
+            message(MESS_ERROR, "state file %s is writable by group or others\n",
+                    stateFilename);
+            free(tmpFilename);
+            close(fdcurr);
+            return 1;
+        }
+    }
+
     if (setSecCtx(fdcurr, stateFilename, &prevCtx) != 0) {
         /* error msg already printed */
         free(tmpFilename);
@@ -2416,15 +2441,6 @@ static int writeState(const char *stateFilename)
 #endif
 
     close(fdcurr);
-    if (stat(stateFilename, &sb) == -1) {
-        message(MESS_ERROR, "error stating %s: %s\n", stateFilename, strerror(errno));
-        free(tmpFilename);
-#ifdef WITH_ACL
-        if (prev_acl)
-            acl_free(prev_acl);
-#endif
-        return 1;
-    }
 
     fdsave = createOutputFile(tmpFilename, O_RDWR | O_CREAT | O_TRUNC, &sb, prev_acl, 0);
 #ifdef WITH_ACL
