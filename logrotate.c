@@ -1234,7 +1234,8 @@ static int findNeedRotating(struct logInfo *log, int logNum, int force)
     localtime_r(&nowSecs, &now);
 
     /* Check if parent directory of this log has safe permissions */
-    if ((log->flags & LOG_FLAG_SU) == 0 && getuid() == 0) {
+    if ((log->flags & LOG_FLAG_SU) == 0 && getuid() == ROOT_UID) {
+        int secure;
         char *ld;
         char *logpath = strdup(log->files[logNum]);
         if (logpath == NULL) {
@@ -1255,17 +1256,23 @@ static int findNeedRotating(struct logInfo *log, int logNum, int force)
             free(logpath);
             return 0;
         }
-        /* Don't rotate in directories writable by others or group which is not "root"  */
-        if ((sb.st_gid != 0 && (sb.st_mode & S_IWGRP)) || (sb.st_mode & S_IWOTH)) {
+        free(logpath);
+
+        /* Don't rotate in directories writable by others or group which is not "root" */
+        secure = check_file_in_secure_dir(log->files[logNum]);
+        if (secure == CHK_ERROR) {
+            /* error message already printed */
+            return 1;
+        }
+        /* Accept directories not owned by user root */
+        if (secure != CHK_SECURE && secure != CHK_FAIL_OWNER) {
             message(MESS_ERROR, "skipping \"%s\" because parent directory has insecure permissions"
                     " (It's world writable or writable by group which is not \"root\")"
                     " Set \"su\" directive in config file to tell logrotate which user/group"
                     " should be used for rotation.\n"
                     ,log->files[logNum]);
-            free(logpath);
             return 1;
         }
-        free(logpath);
     }
 
     if (lstat(log->files[logNum], &sb)) {
@@ -2434,6 +2441,20 @@ static int writeState(const char *stateFilename)
 
     localtime_r(&nowSecs, &now);
 
+    if (getuid() == ROOT_UID) {
+        int secure = check_file_in_secure_dir(stateFilename);
+        if (secure == CHK_ERROR) {
+            /* error message already printed */
+            return 1;
+        }
+        if (secure != CHK_SECURE) {
+            message(MESS_ERROR, "state file %s is not inside a secure directory; "
+                    "some of it parents might be world writable or "
+                    "writable by a group which is not \"root\"\n", stateFilename);
+            return 1;
+        }
+    }
+
     tmpFilename = malloc(strlen(stateFilename) + 5 );
     if (tmpFilename == NULL) {
         message(MESS_ERROR, "could not allocate memory for "
@@ -2626,7 +2647,7 @@ static int readState(const char *stateFilename)
     const char **argv;
     int argc;
     int year, month, day, hour, minute, second;
-    int fd;
+    int fd = -1;
     int line = 0;
     struct logState *st;
     time_t lr_time;
@@ -2637,6 +2658,22 @@ static int readState(const char *stateFilename)
 
     /* initialize for allocateHash() */
     f_stat.st_size = 0;
+
+    if (getuid() == ROOT_UID) {
+        int secure = check_file_in_secure_dir(stateFilename);
+        if (secure == CHK_ERROR) {
+            /* error message already printed */
+            rc = 1;
+            goto allocate;
+        }
+        if (secure != CHK_SECURE) {
+            message(MESS_ERROR, "state file %s is not inside a secure directory; "
+                    "some of it parents might be world writable or "
+                    "writable by a group which is not \"root\"\n", stateFilename);
+            rc = 1;
+            goto allocate;
+        }
+    }
 
     fd = open(stateFilename, O_RDONLY);
     if (fd != -1) {
@@ -2697,6 +2734,7 @@ static int readState(const char *stateFilename)
         }
     }
 
+allocate:
     /* Try to estimate how many state entries we have in the state file.
      * We expect single entry to have around 80 characters (Of course this is
      * just an estimation). During the testing I've found out that 200 entries

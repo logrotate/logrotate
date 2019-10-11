@@ -97,6 +97,12 @@ extern int debug;
 int switch_user(uid_t user, gid_t group);
 int switch_user_back(void);
 int readAllConfigPaths(const char **paths);
+
+enum check_result { CHK_SECURE = 0, CHK_ERROR = 1, CHK_NOTDIR, CHK_FAIL_OWNER, CHK_FAIL_GROUP, CHK_FAIL_OTHER };
+int check_dir_secure(const char *fullpath);
+int check_file_in_secure_dir(const char *filepath);
+int check_path_secure(const char *path);
+
 #if !defined(asprintf) && !defined(_FORTIFY_SOURCE)
 int asprintf(char **string_ptr, const char *format, ...);
 #endif

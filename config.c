@@ -607,6 +607,20 @@ static int readConfigPath(const char *path, struct logInfo *defConfig)
     int fd;
     struct logInfo defConfigBackup;
 
+    if (getuid() == ROOT_UID) {
+        int secure = check_path_secure(path);
+        if (secure == CHK_ERROR) {
+            /* error message already printed */
+            return 1;
+        }
+        if (secure != CHK_SECURE) {
+            message(MESS_ERROR, "configuration path %s is not secure; "
+                    "itself or some of it parents might be world writable or "
+                    "writable by a group which is not \"root\"\n", path);
+            return 1;
+        }
+    }
+
     fd = open(path, O_RDONLY);
     if (fd == -1) {
         message(MESS_ERROR, "can not open %s: %s\n", path, strerror(errno));
