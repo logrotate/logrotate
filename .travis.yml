@@ -110,9 +110,9 @@ install:
 script:
   - $COMPILER --version
   - ./autogen.sh
-  - ./configure --enable-werror CC=$COMPILER
+  - ./configure --enable-werror CC=$COMPILER --disable-silent-rules
   - make
-  - make -j9 check
+  - make -j9 check || ( cat test/test-suite.log; exit 1; )
   - make -j9 distcheck
   # nodeps because rpm build deps can not be installed on debian system
   - make rpm RPM_FLAGS="--nodeps"
