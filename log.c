@@ -40,29 +40,29 @@ void logToSyslog(int enable) {
 __attribute__((format (printf, 3, 0)))
 static void log_once(FILE *where, int level, const char *format, va_list args)
 {
-    int size = 512;
-    char *decorated_format = (char *)malloc(sizeof(char) * size);
     switch (level)
     {
     case MESS_DEBUG:
-        sprintf(decorated_format, "debug: %s", format);
+        fprintf(where, "debug: ");
         break;
     case MESS_NORMAL:
+        fprintf(where, "info: ");
         break;
     case MESS_VERBOSE:
-        sprintf(decorated_format, "verbose: %s", format);
+        fprintf(where, "verbose: ");
         break;
     case MESS_ERROR:
-        sprintf(decorated_format, "error: %s", format);
+        fprintf(where, "error: ");
         break;
     case MESS_FATAL:
-        sprintf(decorated_format, "fatal: %s", format);
+        fprintf(where, "fatal: ");
         break;
     default:
+        fprintf(where, "unknown: ");
         break;
     }
 
-    vfprintf(where, decorated_format, args);
+    vfprintf(where, format, args);
     fflush(where);
 }
 
