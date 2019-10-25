@@ -40,43 +40,36 @@ void logToSyslog(int enable) {
 __attribute__((format (printf, 3, 0)))
 static void log_once(FILE *where, int level, const char *format, va_list args)
 {
-    switch (level) {
-        case MESS_DEBUG:
-        case MESS_NORMAL:
-        case MESS_VERBOSE:
-            break;
-        default:
-            fprintf(where, "error: ");
-            break;
+    int size = 512;
+    char *decorated_format = (char *)malloc(sizeof(char) * size);
+    switch (level)
+    {
+    case MESS_DEBUG:
+        sprintf(decorated_format, "debug: %s", format);
+        break;
+    case MESS_NORMAL:
+        break;
+    case MESS_VERBOSE:
+        sprintf(decorated_format, "verbose: %s", format);
+        break;
+    case MESS_ERROR:
+        sprintf(decorated_format, "error: %s", format);
+        break;
+    case MESS_FATAL:
+        sprintf(decorated_format, "fatal: %s", format);
+        break;
+    default:
+        break;
     }
 
-    vfprintf(where, format, args);
+    vfprintf(where, decorated_format, args);
     fflush(where);
 }
 
 __attribute__((format (printf, 2, 3)))
-void message(int level, char *format, ...)
+void message(int level, const char *format, ...)
 {
     va_list args;
-    switch (level) {
-        case MESS_DEBUG:
-            sprintf(format, "debug: %s", format);
-            break;
-        case MESS_NORMAL:
-            break;
-        case MESS_VERBOSE:
-            sprintf(format, "verbose: %s", format);
-            break;
-        case MESS_ERROR:
-            sprintf(format, "error: %s", format);
-            break;
-        case MESS_FATAL:
-            sprintf(format, "fatal: %s", format);
-            break;
-        default:
-            break;
-    }
-
     if (level >= logLevel) {
         va_start(args, format);
         log_once(stderr, level, format, args);
