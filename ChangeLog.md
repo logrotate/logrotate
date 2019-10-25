@@ -4,7 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ## [UNRELEASED]
 
-[UNRELEASED]: https://github.com/logrotate/logrotate/compare/3.15.0...master
+[UNRELEASED]: https://github.com/logrotate/logrotate/compare/3.15.1...master
+
+## [3.15.1] - 2019-08-30
+  - use correct `create` mode in examples/btmp (#257)
+  - fix several bugs found by fuzzing (#254)
+  - do not abort globbing on a broken symlink (#251)
+  - rearrange `logrotate.8` man page to improve readability (#248)
+  - encourage admins to use the `su` directive in `logrotate.8` man page (#236)
+
+[3.15.1]: https://github.com/logrotate/logrotate/compare/3.15.0...3.15.1
 
 ## [3.15.0] - 2018-12-04
   - timer unit: change trigger fuzz from 12h to 1h (#230)

@@ -17,11 +17,11 @@ IOSchedulingPriority=7
 #  details: https://www.freedesktop.org/software/systemd/man/systemd.exec.html
 #  no ProtectHome for userdir logs
 #  no PrivateNetwork for mail deliviery
-#  no ProtectKernelTunables for working SELinux with systemd older than 235
 MemoryDenyWriteExecute=true
 PrivateDevices=true
 PrivateTmp=true
 ProtectControlGroups=true
 ProtectKernelModules=true
+ProtectKernelTunables=true
 ProtectSystem=full
 RestrictRealtime=true

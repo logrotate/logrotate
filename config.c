@@ -1,8 +1,4 @@
 #include "queue.h"
-/* Alloca is defined in stdlib.h in NetBSD/FreeBSD */
-#if !defined(__NetBSD__) && !defined(__FreeBSD__)
-#include <alloca.h>
-#endif
 #include <limits.h>
 #include <ctype.h>
 #include <dirent.h>
@@ -284,7 +280,7 @@ static int readModeUidGid(const char *configFile, int lineNum, char *key,
                           gid_t *pGid)
 {
     char u[200], g[200];
-    unsigned int m;
+    unsigned int m = 0;
     char tmp;
     int rc;
 
@@ -499,6 +495,8 @@ static void copyLogInfo(struct logInfo *to, struct logInfo *from)
     }
     if (from->dateformat)
         to->dateformat = strdup(from->dateformat);
+
+    to->list = from->list;
 }
 
 static void freeLogInfo(struct logInfo *log)
@@ -541,6 +539,7 @@ static void removeLogInfo(struct logInfo *log)
 
     freeLogInfo(log);
     TAILQ_REMOVE(&logs, log, list);
+    free(log);
     numLogs--;
 }
 
@@ -559,7 +558,7 @@ static const char *crit_to_string(enum criterium crit)
         case ROT_HOURLY:    return "hourly";
         case ROT_DAYS:      return "daily";
         case ROT_WEEKLY:    return "weekly";
-        case ROT_MONTHLY:   return "montly";
+        case ROT_MONTHLY:   return "monthly";
         case ROT_YEARLY:    return "yearly";
         case ROT_SIZE:      return "size";
         default:            return "XXX";
@@ -839,9 +838,19 @@ static int globerr(const char *pathname, int theerr)
 {
     (void) pathname;
 
-    /* A missing directory is not an error, so return 0 */
-    if (theerr == ENOTDIR)
-        return 0;
+    /* prevent glob() from being aborted in certain cases */
+    switch (theerr) {
+        case ENOTDIR:
+            /* non-directory where directory was expected by the glob */
+            return 0;
+
+        case ENOENT:
+            /* most likely symlink with non-existent target */
+            return 0;
+
+        default:
+            break;
+    }
 
     glob_errno = theerr;
 
@@ -875,7 +884,6 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
     char **scriptDest = NULL;
     struct logInfo *newlog = defConfig;
     char *start, *chptr;
-    char *dirName;
     struct passwd *pw = NULL;
     int rc;
     struct stat sb, sb2;
@@ -898,10 +906,6 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
         .l_whence = SEEK_SET,
         .l_type = F_RDLCK
     };
-
-    /* FIXME: createOwner and createGroup probably shouldn't be fixed
-       length arrays -- of course, if we aren't run setuid it doesn't
-       matter much */
 
     fd = open(configFile, O_RDONLY);
     if (fd < 0) {
@@ -1110,6 +1114,16 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                         }
                         else if (tmp_mode != NO_MODE) {
                             message(MESS_ERROR, "%s:%d extra arguments for "
+                                    "su\n", configFile, lineNum);
+                            RAISE_ERROR();
+                        }
+                        else if (newlog->suUid == NO_UID) {
+                            message(MESS_ERROR, "%s:%d no user for "
+                                    "su\n", configFile, lineNum);
+                            RAISE_ERROR();
+                        }
+                        else if (newlog->suGid == NO_GID) {
+                            message(MESS_ERROR, "%s:%d no group for "
                                     "su\n", configFile, lineNum);
                             RAISE_ERROR();
                         }
@@ -1705,6 +1719,7 @@ duperror:
                         for (i = 0; i < newlog->numFiles; i++) {
                             char *ld;
                             char *dirpath;
+                            const char *dirName;
 
                             dirpath = strdup(newlog->files[i]);
                             dirName = dirname(dirpath);
@@ -1728,7 +1743,7 @@ duperror:
                                     continue;
                                 }
                             }
-                            ld = alloca(strlen(dirName) + strlen(newlog->oldDir) + 2);
+                            ld = malloc(strlen(dirName) + strlen(newlog->oldDir) + 2);
                             sprintf(ld, "%s/%s", dirName, newlog->oldDir);
                             free(dirpath);
 
@@ -1744,6 +1759,7 @@ duperror:
                                     int ret;
                                     if (newlog->flags & LOG_FLAG_SU) {
                                         if (switch_user(newlog->suUid, newlog->suGid) != 0) {
+                                            free(ld);
                                             goto error;
                                         }
                                     }
@@ -1751,10 +1767,12 @@ duperror:
                                             newlog->olddirUid, newlog->olddirGid);
                                     if (newlog->flags & LOG_FLAG_SU) {
                                         if (switch_user_back() != 0) {
+                                            free(ld);
                                             goto error;
                                         }
                                     }
                                     if (ret) {
+                                        free(ld);
                                         goto error;
                                     }
                                 }
@@ -1762,9 +1780,12 @@ duperror:
                                     message(MESS_ERROR, "%s:%d error verifying olddir "
                                             "path %s: %s\n", configFile, lineNum,
                                             dirName, strerror(errno));
+                                    free(ld);
                                     goto error;
                                 }
                             }
+
+                            free(ld);
 
                             if (sb.st_dev != sb2.st_dev
                                     && !(newlog->flags & (LOG_FLAG_COPYTRUNCATE | LOG_FLAG_COPY | LOG_FLAG_TMPFILENAME))) {

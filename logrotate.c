@@ -265,6 +265,9 @@ static int allocateHash(unsigned int hs)
 }
 
 #define HASH_CONST 13
+#if defined(__clang__) && defined(__clang_major__) && (__clang_major__ >= 4)
+__attribute__((no_sanitize("unsigned-integer-overflow")))
+#endif
 static int hashIndex(const char *fn)
 {
     unsigned hash = 0;
@@ -381,11 +384,13 @@ static void restoreSecCtx(void **pPrevCtx)
 
 static struct logState *newState(const char *fn)
 {
-    struct tm now = *localtime(&nowSecs);
+    struct tm now;
     struct logState *new;
     time_t lr_time;
 
     message(MESS_DEBUG, "Creating new state\n");
+
+    localtime_r(&nowSecs, &now);
 
     if ((new = malloc(sizeof(*new))) == NULL)
         return NULL;
@@ -407,7 +412,7 @@ static struct logState *newState(const char *fn)
 
     /* fill in the rest of the new->lastRotated fields */
     lr_time = mktime(&new->lastRotated);
-    new->lastRotated = *localtime(&lr_time);
+    localtime_r(&lr_time, &new->lastRotated);
 
     return new;
 }
@@ -494,7 +499,7 @@ static int createOutputFile(char *fileName, int flags, struct stat *sb,
             break;
 
         /* the destination file already exists, while it should not */
-        now = *localtime(&nowSecs);
+        localtime_r(&nowSecs, &now);
         fileName_size = strlen(fileName);
         buf_size = fileName_size + sizeof("-YYYYMMDDHH.backup");
         backupName = alloca(buf_size);
@@ -688,7 +693,7 @@ static void setAtimeMtime(const char *filename, const struct stat *sb)
     /* If we can't change atime/mtime, it's not a disaster.  It might
        possibly fail under SELinux. But do try to preserve the
        fractional part if we have utimensat(). */
-#ifdef HAVE_UTIMENSAT
+#if defined HAVE_UTIMENSAT && !defined(__APPLE__)
     struct timespec ts[2];
 
     ts[0] = sb->st_atim;
@@ -1163,9 +1168,11 @@ static int findNeedRotating(struct logInfo *log, int logNum, int force)
 {
     struct stat sb;
     struct logState *state = NULL;
-    struct tm now = *localtime(&nowSecs);
+    struct tm now;
 
     message(MESS_DEBUG, "considering log %s\n", log->files[logNum]);
+
+    localtime_r(&nowSecs, &now);
 
     /* Check if parent directory of this log has safe permissions */
     if ((log->flags & LOG_FLAG_SU) == 0 && getuid() == 0) {
@@ -1266,8 +1273,8 @@ static int findNeedRotating(struct logInfo *log, int logNum, int force)
                             && now.tm_wday == log->weekday);
                 if (!state->doRotate) {
                     message(MESS_DEBUG, "  log does not need rotating "
-                            "(log has been rotated at %d-%d-%d %d:%d, "
-                            "that is not week ago yet)\n", 1900 + state->lastRotated.tm_year,
+                            "(log has been rotated at %d-%02d-%02d %02d:%02d, "
+                            "which is less than a week ago)\n", 1900 + state->lastRotated.tm_year,
                             1 + state->lastRotated.tm_mon, state->lastRotated.tm_mday,
                             state->lastRotated.tm_hour, state->lastRotated.tm_min);
                 }
@@ -1279,21 +1286,20 @@ static int findNeedRotating(struct logInfo *log, int logNum, int force)
                         (now.tm_year != state->lastRotated.tm_year));
                 if (!state->doRotate) {
                     message(MESS_DEBUG, "  log does not need rotating "
-                            "(log has been rotated at %d-%d-%d %d:%d, "
-                            "that is not hour ago yet)\n", 1900 + state->lastRotated.tm_year,
+                            "(log has been rotated at %d-%02d-%02d %02d:%02d, "
+                            "which is less than an hour ago)\n", 1900 + state->lastRotated.tm_year,
                             1 + state->lastRotated.tm_mon, state->lastRotated.tm_mday,
                             state->lastRotated.tm_hour, state->lastRotated.tm_min);
                 }
                 break;
             case ROT_DAYS:
-                /* FIXME: only days=1 is implemented!! */
                 state->doRotate = ((now.tm_mday != state->lastRotated.tm_mday) ||
                         (now.tm_mon != state->lastRotated.tm_mon) ||
                         (now.tm_year != state->lastRotated.tm_year));
                 if (!state->doRotate) {
                     message(MESS_DEBUG, "  log does not need rotating "
-                            "(log has been rotated at %d-%d-%d %d:%d, "
-                            "that is not day ago yet)\n", 1900 + state->lastRotated.tm_year,
+                            "(log has been rotated at %d-%02d-%02d %02d:%02d, "
+                            "which is less than a day ago)\n", 1900 + state->lastRotated.tm_year,
                             1 + state->lastRotated.tm_mon, state->lastRotated.tm_mday,
                             state->lastRotated.tm_hour, state->lastRotated.tm_min);
                 }
@@ -1305,8 +1311,8 @@ static int findNeedRotating(struct logInfo *log, int logNum, int force)
                         (now.tm_year != state->lastRotated.tm_year));
                 if (!state->doRotate) {
                     message(MESS_DEBUG, "  log does not need rotating "
-                            "(log has been rotated at %d-%d-%d %d:%d, "
-                            "that is not month ago yet)\n", 1900 + state->lastRotated.tm_year,
+                            "(log has been rotated at %d-%02d-%02d %02d:%02d, "
+                            "which is less than a month ago)\n", 1900 + state->lastRotated.tm_year,
                             1 + state->lastRotated.tm_mon, state->lastRotated.tm_mday,
                             state->lastRotated.tm_hour, state->lastRotated.tm_min);
                 }
@@ -1316,8 +1322,8 @@ static int findNeedRotating(struct logInfo *log, int logNum, int force)
                 state->doRotate = (now.tm_year != state->lastRotated.tm_year);
                 if (!state->doRotate) {
                     message(MESS_DEBUG, "  log does not need rotating "
-                            "(log has been rotated at %d-%d-%d %d:%d, "
-                            "that is not year ago yet)\n", 1900 + state->lastRotated.tm_year,
+                            "(log has been rotated at %d-%02d-%02d %02d:%02d, "
+                            "which is less than a year ago)\n", 1900 + state->lastRotated.tm_year,
                             1 + state->lastRotated.tm_mon, state->lastRotated.tm_mday,
                             state->lastRotated.tm_hour, state->lastRotated.tm_min);
                 }
@@ -1343,7 +1349,7 @@ static int findNeedRotating(struct logInfo *log, int logNum, int force)
     }
     else if (!state->doRotate) {
         message(MESS_DEBUG, "  log does not need rotating "
-                "(log has been already rotated)\n");
+                "(log has already been rotated)\n");
     }
 
     /* The notifempty flag overrides the normal criteria */
@@ -1425,7 +1431,7 @@ static int findLastRotated(const struct logNames *rotNames,
 static int prerotateSingleLog(struct logInfo *log, int logNum,
                               struct logState *state, struct logNames *rotNames)
 {
-    struct tm now = *localtime(&nowSecs);
+    struct tm now;
     char *oldName = NULL;
     const char *compext = "";
     const char *fileext = "";
@@ -1438,7 +1444,7 @@ static int prerotateSingleLog(struct logInfo *log, int logNum,
 #define DATEEXT_LEN 64
 #define PATTERN_LEN (DATEEXT_LEN * 2)
     char dext_str[DATEEXT_LEN];
-    char dformat[DATEEXT_LEN] = "";
+    char dformat[PATTERN_LEN] = "";
     char dext_pattern[PATTERN_LEN];
     char *dext;
 
@@ -1451,9 +1457,10 @@ static int prerotateSingleLog(struct logInfo *log, int logNum,
     message(MESS_DEBUG, "rotating log %s, log->rotateCount is %d\n",
             log->files[logNum], log->rotateCount);
 
-    if (log->flags & LOG_FLAG_COMPRESS)
+    if (log->compress_ext && (log->flags & LOG_FLAG_COMPRESS))
         compext = log->compress_ext;
 
+    localtime_r(&nowSecs, &now);
     state->lastRotated = now;
 
     {
@@ -1479,32 +1486,29 @@ static int prerotateSingleLog(struct logInfo *log, int logNum,
         if (baseLen >= extLen &&
                 strncmp(&(rotNames->baseName[baseLen - extLen]),
                     log->addextension, extLen) == 0) {
-            char *tempstr;
 
-            tempstr = calloc(baseLen - extLen + 1, sizeof(char));
-            strncat(tempstr, rotNames->baseName, baseLen - extLen);
+            char *tempstr = strndup(rotNames->baseName, baseLen - extLen);
+
             free(rotNames->baseName);
             rotNames->baseName = tempstr;
         }
         fileext = log->addextension;
     }
 
-    if (log->extension &&
-            strncmp(&
-                (rotNames->
-                 baseName[strlen(rotNames->baseName) -
-                 strlen(log->extension)]), log->extension,
-                strlen(log->extension)) == 0) {
-        char *tempstr;
+    if (log->extension) {
+        const size_t baseLen = strlen(rotNames->baseName);
+        const size_t extLen = strlen(log->extension);
 
-        fileext = log->extension;
-        tempstr =
-            calloc(strlen(rotNames->baseName) - strlen(log->extension) + 1,
-                   sizeof(char));
-        strncat(tempstr, rotNames->baseName,
-                strlen(rotNames->baseName) - strlen(log->extension));
-        free(rotNames->baseName);
-        rotNames->baseName = tempstr;
+        if (baseLen >= extLen &&
+                strncmp(&(rotNames->baseName[baseLen - extLen]),
+                    log->extension, extLen) == 0) {
+            char *tempstr;
+
+            fileext = log->extension;
+            tempstr = strndup(rotNames->baseName, baseLen - extLen);
+            free(rotNames->baseName);
+            rotNames->baseName = tempstr;
+        }
     }
 
     /* Adjust "now" if we want yesterday's date */
@@ -1913,17 +1917,15 @@ static int rotateSingleLog(struct logInfo *log, int logNum,
             }
 
             if (!log->rotateCount) {
-                rotNames->disposeName =
-                    realloc(rotNames->disposeName,
-                            strlen(rotNames->dirName) +
-                            strlen(rotNames->baseName) +
-                            strlen(log->files[logNum]) + 10);
-                sprintf(rotNames->disposeName, "%s%s", rotNames->finalName,
-                        (log->compress_ext
-                         && (log->flags & LOG_FLAG_COMPRESS)) ?
-                        log->compress_ext : "");
-                message(MESS_DEBUG, "disposeName will be %s\n",
-                        rotNames->disposeName);
+                const char *ext = "";
+                if (log->compress_ext && (log->flags & LOG_FLAG_COMPRESS))
+                    ext = log->compress_ext;
+
+                free(rotNames->disposeName);
+                if (asprintf(&rotNames->disposeName, "%s%s", rotNames->finalName, ext) < 0)
+                    message(MESS_FATAL, "could not allocate disposeName memory\n");
+
+                message(MESS_DEBUG, "disposeName will be %s\n", rotNames->disposeName);
             }
         }
 
@@ -2309,9 +2311,11 @@ static int writeState(const char *stateFilename)
     int fdsave;
     struct stat sb;
     char *tmpFilename = NULL;
-    struct tm now = *localtime(&nowSecs);
+    struct tm now;
     time_t now_time, last_time;
     void *prevCtx;
+
+    localtime_r(&nowSecs, &now);
 
     tmpFilename = malloc(strlen(stateFilename) + 5 );
     if (tmpFilename == NULL) {
@@ -2668,7 +2672,7 @@ static int readState(const char *stateFilename)
 
         /* fill in the rest of the st->lastRotated fields */
         lr_time = mktime(&st->lastRotated);
-        st->lastRotated = *localtime(&lr_time);
+        localtime_r(&lr_time, &st->lastRotated);
 
         free(argv);
         free(filename);
@@ -2682,7 +2686,7 @@ int main(int argc, const char **argv)
 {
     int force = 0;
     const char *stateFile = STATEFILE;
-    char *logFile = NULL;
+    const char *logFile = NULL;
     FILE *logFd = NULL;
     int rc = 0;
     int arg;
@@ -2772,7 +2776,7 @@ int main(int argc, const char **argv)
         return 2;
     }
 
-    files = poptGetArgs((poptContext) optCon);
+    files = poptGetArgs(optCon);
     if (!files) {
         fprintf(stderr, "logrotate " VERSION
                 " - Copyright (C) 1995-2001 Red Hat, Inc.\n");
