@@ -1878,7 +1878,7 @@ static int rotateSingleLog(struct logInfo *log, int logNum,
 #ifdef WITH_ACL
             if ((prev_acl = acl_get_file(log->files[logNum], ACL_TYPE_ACCESS)) == NULL) {
                 if (is_acl_well_supported(errno)) {
-                    message(MESS_ERROR, "error getting file ACL %s: %s\n",
+                    message(MESS_ERROR, "getting file ACL %s: %s\n",
                             log->files[logNum], strerror(errno));
                     hasErrors = 1;
                 }
