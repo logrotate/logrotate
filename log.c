@@ -55,9 +55,27 @@ static void log_once(FILE *where, int level, const char *format, va_list args)
 }
 
 __attribute__((format (printf, 2, 3)))
-void message(int level, const char *format, ...)
+void message(int level, char *format, ...)
 {
     va_list args;
+    switch (level) {
+        case MESS_DEBUG:
+            sprintf(format, "debug: %s", format) 
+            break;
+        case MESS_NORMAL:
+            break;
+        case MESS_VERBOSE:
+            sprintf(format, "verbose: %s", format)
+            break;
+        case MESS_ERROR:
+            sprintf(format, "error: %s", format) 
+            break;
+        case MESS_FATAL:
+            sprintf(format, "fatal: %s", format) 
+            break;
+        default:
+            break;
+    }
 
     if (level >= logLevel) {
         va_start(args, format);
@@ -101,8 +119,9 @@ void message(int level, const char *format, ...)
     }
 #endif
 
-    if (level == MESS_FATAL)
+    if (level == MESS_FATAL) {
         exit(1);
+    }
 }
 
 /* vim: set et sw=4 ts=4: */
