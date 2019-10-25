@@ -60,18 +60,18 @@ void message(int level, char *format, ...)
     va_list args;
     switch (level) {
         case MESS_DEBUG:
-            sprintf(format, "debug: %s", format) 
+            sprintf(format, "debug: %s", format);
             break;
         case MESS_NORMAL:
             break;
         case MESS_VERBOSE:
-            sprintf(format, "verbose: %s", format)
+            sprintf(format, "verbose: %s", format);
             break;
         case MESS_ERROR:
-            sprintf(format, "error: %s", format) 
+            sprintf(format, "error: %s", format);
             break;
         case MESS_FATAL:
-            sprintf(format, "fatal: %s", format) 
+            sprintf(format, "fatal: %s", format);
             break;
         default:
             break;
