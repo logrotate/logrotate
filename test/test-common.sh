@@ -34,6 +34,7 @@ genconfig() {
     user=$(id -u -n)
     group=$(id -g -n)
     sed "s,&DIR&,$PWD,g" < $input | sed "s,&USER&,$user,g" | sed "s,&GROUP&,$group,g" > $output
+    chmod go-w $output
     config_crc=$(md5sum $output)
 }
 

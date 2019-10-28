@@ -12,6 +12,7 @@ cat > includedir/test-0077.conf << EOF
 copytruncate
 rotate 1
 EOF
+chmod go-w includedir/test-0077.conf
 
 $RLR test-config.77 --force --verbose
 
