@@ -11,7 +11,7 @@ preptest test.log 70 2
 # Put in place a state file that will force a rotation
 cat > state <<EOF
 logrotate state -- version 2
-"$PWD/test.log" 2000-1-1
+"$PWD/test.log" $(($(date "+%Y") - 10))-1-1
 EOF
 
 $RLR test-config.70
