@@ -101,6 +101,15 @@ matrix:
           packages:
             - clang-3.7
       env: COMPILER=clang-3.7
+    - compiler: clang
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+            - llvm-toolchain-trusty-7
+          packages:
+            - clang-7
+      env: COMPILER=clang-7 CFLAGS='-O1 -g -fsanitize=address -fno-omit-frame-pointer -fsanitize=undefined -fsanitize=nullability -fsanitize=implicit-conversion -fsanitize=integer' LSAN_OPTIONS=suppressions=test/leak_san_supress.txt
 
 install:
   - sudo add-apt-repository ppa:dns/gnu -y
@@ -113,6 +122,10 @@ script:
   - ./configure --enable-werror --disable-silent-rules CC=$COMPILER
   - make
   - make -j9 check || ( cat test/test-suite.log; exit 1; )
+  # scan for Sanitizer output
+  - grep -riP 'sanitizer|runtime error' test/*.log; test $? -eq 1
+  # unset Sanitizer CFLAGS for distcheck
+  - unset CFLAGS
   - make -j9 distcheck
   # nodeps because rpm build deps can not be installed on debian system
   - make rpm RPM_FLAGS="--nodeps"
