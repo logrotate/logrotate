@@ -1968,7 +1968,6 @@ static int rotateSingleLog(struct logInfo *log, int logNum,
     int hasErrors = 0;
     struct stat sb;
     void *savedContext = NULL;
-    char *tmpFilename = NULL;
 
     if (!state->doRotate)
         return 0;
@@ -1990,6 +1989,8 @@ static int rotateSingleLog(struct logInfo *log, int logNum,
             }
 #endif /* WITH_ACL */
             if (log->flags & LOG_FLAG_TMPFILENAME) {
+                char *tmpFilename;
+
                 if (asprintf(&tmpFilename, "%s%s", log->files[logNum], ".tmp") < 0) {
                     message(MESS_FATAL, "could not allocate tmpFilename memory\n");
                     restoreSecCtx(&savedContext);
@@ -2004,6 +2005,8 @@ static int rotateSingleLog(struct logInfo *log, int logNum,
                             strerror(errno));
                     hasErrors = 1;
                 }
+
+                free(tmpFilename);
             }
             else {
                 message(MESS_DEBUG, "renaming %s to %s\n", log->files[logNum],
@@ -2104,7 +2107,7 @@ static int postrotateSingleLog(struct logInfo *log, int logNum,
     }
 
     if (!hasErrors && (log->flags & LOG_FLAG_TMPFILENAME)) {
-        char *tmpFilename = NULL;
+        char *tmpFilename;
         if (asprintf(&tmpFilename, "%s%s", log->files[logNum], ".tmp") < 0) {
             message(MESS_FATAL, "could not allocate tmpFilename memory\n");
             return 1;
@@ -2115,6 +2118,7 @@ static int postrotateSingleLog(struct logInfo *log, int logNum,
         if (!debug && !hasErrors) {
             unlink(tmpFilename);
         }
+        free(tmpFilename);
     }
 
     if (!hasErrors && (log->flags & LOG_FLAG_COMPRESS) &&
