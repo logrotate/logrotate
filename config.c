@@ -49,6 +49,7 @@
 #if !defined(HAVE_ASPRINTF) && !defined(_FORTIFY_SOURCE)
 #include <stdarg.h>
 
+WUR
 int asprintf(char **string_ptr, const char *format, ...)
 {
     va_list arg;
@@ -81,6 +82,7 @@ int asprintf(char **string_ptr, const char *format, ...)
 #endif
 
 #if !defined(HAVE_STRNDUP)
+WUR
 char *strndup(const char *s, size_t n)
 {
     size_t nAvail;
@@ -157,6 +159,7 @@ static int glob_errno = 0;
 static int readConfigFile(const char *configFile, struct logInfo *defConfig);
 static int globerr(const char *pathname, int theerr);
 
+WUR
 static char *isolateLine(char **strt, char **buf, size_t length) {
     char *endtag, *start, *tmp;
     const char *max = *buf + length;
@@ -176,6 +179,7 @@ static char *isolateLine(char **strt, char **buf, size_t length) {
     return key;
 }
 
+WUR
 static char *isolateValue(const char *fileName, int lineNum, const char *key,
                           char **startPtr, char **buf, size_t length)
 {
@@ -200,6 +204,7 @@ static char *isolateValue(const char *fileName, int lineNum, const char *key,
     return isolateLine(startPtr, buf, length);
 }
 
+WUR
 static char *isolateWord(char **strt, char **buf, size_t length) {
     char *endtag, *start;
     const char *max = *buf + length;
@@ -217,6 +222,7 @@ static char *isolateWord(char **strt, char **buf, size_t length) {
     return key;
 }
 
+WUR
 static char *readPath(const char *configFile, int lineNum, const char *key,
                       char **startPtr, char **buf, size_t length)
 {
@@ -240,6 +246,7 @@ static char *readPath(const char *configFile, int lineNum, const char *key,
 }
 
 /* set *pUid to UID of the given user, return non-zero on failure */
+WUR
 static int resolveUid(const char *userName, uid_t *pUid)
 {
     struct passwd *pw;
@@ -258,6 +265,7 @@ static int resolveUid(const char *userName, uid_t *pUid)
 }
 
 /* set *pGid to GID of the given group, return non-zero on failure */
+WUR
 static int resolveGid(const char *groupName, gid_t *pGid)
 {
     struct group *gr;
@@ -275,6 +283,7 @@ static int resolveGid(const char *groupName, gid_t *pGid)
     return 0;
 }
 
+WUR
 static int readModeUidGid(const char *configFile, int lineNum, char *key,
                           const char *directive, mode_t *mode, uid_t *pUid,
                           gid_t *pGid)
@@ -328,6 +337,7 @@ static int readModeUidGid(const char *configFile, int lineNum, char *key,
     return 0;
 }
 
+WUR
 static char *readAddress(const char *configFile, int lineNum, const char *key,
                          char **startPtr, char **buf, size_t length)
 {
@@ -352,6 +362,7 @@ static char *readAddress(const char *configFile, int lineNum, const char *key,
     return address;
 }
 
+WUR
 static int do_mkdir(const char *path, mode_t mode, uid_t uid, gid_t gid) {
     if (mkdir(path, mode) == 0) {
         /* newly created directory, set the owner and permissions */
@@ -385,6 +396,7 @@ static int do_mkdir(const char *path, mode_t mode, uid_t uid, gid_t gid) {
     return -1;
 }
 
+WUR
 static int mkpath(const char *path, mode_t mode, uid_t uid, gid_t gid) {
     char *pp;
     char *sp;
@@ -413,6 +425,7 @@ static int mkpath(const char *path, mode_t mode, uid_t uid, gid_t gid) {
     return rv;
 }
 
+WUR
 static int checkFile(const char *fname)
 {
     int i;
@@ -436,6 +449,7 @@ static int checkFile(const char *fname)
 }
 
 /* Used by qsort to sort filelist */
+WUR
 static int compar(const void *p, const void *q)
 {
     return strcoll(*((char * const*) p), *((char * const*) q));
@@ -462,6 +476,7 @@ static void free_2d_array(char **array, int lines_count)
             (dest) = NULL; \
         } \
     } while (0)
+WUR
 static int copyLogInfo(struct logInfo *to, const struct logInfo *from)
 {
     int rv = 0;
@@ -534,6 +549,7 @@ static void freeLogInfo(struct logInfo *log)
     free(log->dateformat);
 }
 
+WUR
 static struct logInfo *newLogInfo(const struct logInfo *template)
 {
     struct logInfo *new;
@@ -600,6 +616,7 @@ static void set_criterium(enum criterium *pDst, enum criterium src, int *pSet)
     *pSet = 1;
 }
 
+WUR
 static int readConfigPath(const char *path, struct logInfo *defConfig)
 {
     struct stat sb;
@@ -723,6 +740,7 @@ static int readConfigPath(const char *path, struct logInfo *defConfig)
     return result;
 }
 
+WUR
 int readAllConfigPaths(const char **paths)
 {
     int i, result = 0;
@@ -800,6 +818,7 @@ int readAllConfigPaths(const char **paths)
     return result;
 }
 
+WUR
 static char* parseGlobString(const char *configFile, int lineNum,
                              const char *buf, off_t length, char **ppos)
 {
@@ -872,6 +891,7 @@ static char* parseGlobString(const char *configFile, int lineNum,
     return NULL;
 }
 
+WUR
 static int globerr(const char *pathname, int theerr)
 {
     (void) pathname;
@@ -910,6 +930,7 @@ static int globerr(const char *pathname, int theerr)
     }
 #define MAX_NESTING 16U
 
+WUR
 static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 {
     int fd;

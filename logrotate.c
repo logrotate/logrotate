@@ -117,6 +117,7 @@ static int globerr(const char *pathname, int theerr)
  * but qsort_r is not portable enough (Linux vs. *BSD vs ...)... */
 static struct compData _compData;
 
+WUR
 static int compGlobResult(const void *result1, const void *result2)  {
     struct tm time_tmp;
     time_t t1, t2;
@@ -151,6 +152,7 @@ static void sortGlobResult(glob_t *result, int prefix_len, const char *dformat) 
 }
 #endif
 
+WUR
 int switch_user(uid_t user, gid_t group) {
     save_egid = getegid();
     save_euid = geteuid();
@@ -166,6 +168,7 @@ int switch_user(uid_t user, gid_t group) {
     return 0;
 }
 
+WUR
 static int switch_user_permanently(const struct logInfo *log) {
     gid_t group = getegid();
     uid_t user = geteuid();
@@ -195,10 +198,12 @@ static int switch_user_permanently(const struct logInfo *log) {
     return 0;
 }
 
+WUR
 int switch_user_back(void) {
     return switch_user(save_euid, save_egid);
 }
 
+WUR
 static int switch_user_back_permanently(void) {
     gid_t tmp_egid = save_egid;
     uid_t tmp_euid = save_euid;
@@ -237,6 +242,7 @@ static void unescape(char *arg)
 }
 
 #define HASH_SIZE_MIN 64
+WUR
 static int allocateHash(unsigned int hs)
 {
     unsigned int i;
@@ -274,6 +280,7 @@ static int allocateHash(unsigned int hs)
 #if defined(__clang__) && defined(__clang_major__) && (__clang_major__ >= 4)
 __attribute__((no_sanitize("unsigned-integer-overflow")))
 #endif
+WUR
 static int hashIndex(const char *fn)
 {
     unsigned hash = 0;
@@ -304,6 +311,7 @@ static int movefd(int oldfd, int newfd)
     return rc;
 }
 
+WUR
 static int setSecCtx(int fdSrc, const char *src, void **pPrevCtx)
 {
 #ifdef WITH_SELINUX
@@ -349,6 +357,7 @@ static int setSecCtx(int fdSrc, const char *src, void **pPrevCtx)
     return 0;
 }
 
+WUR
 static int setSecCtxByName(const char *src, void **pPrevCtx)
 {
     int hasErrors = 0;
@@ -388,6 +397,7 @@ static void restoreSecCtx(void **pPrevCtx)
 #endif
 }
 
+WUR
 static struct logState *newState(const char *fn)
 {
     struct tm now;
@@ -428,6 +438,7 @@ static struct logState *newState(const char *fn)
     return new;
 }
 
+WUR
 static struct logState *findState(const char *fn)
 {
     const int i = hashIndex(fn);
@@ -451,6 +462,7 @@ static struct logState *findState(const char *fn)
     return p;
 }
 
+WUR
 static int runScript(struct logInfo *log, char *logfn, char *logrotfn, char *script)
 {
     int rc;
@@ -484,6 +496,7 @@ static int runScript(struct logInfo *log, char *logfn, char *logrotfn, char *scr
 }
 
 #ifdef WITH_ACL
+WUR
 static int is_acl_well_supported(int err)
 {
     switch (err) {
@@ -498,6 +511,7 @@ static int is_acl_well_supported(int err)
 }
 #endif /* WITH_ACL */
 
+WUR
 static int createOutputFile(char *fileName, int flags, struct stat *sb,
                             acl_type acl, int force_mode)
 {
@@ -605,6 +619,7 @@ static int createOutputFile(char *fileName, int flags, struct stat *sb,
 
 /* unlink, but try to call shred from GNU coreutils if LOG_FLAG_SHRED
  * is enabled (in that case fd needs to be a valid file descriptor) */
+WUR
 static int shred_file(int fd, char *filename, struct logInfo *log)
 {
     char count[DIGITS];    /*  that's a lot of shredding :)  */
@@ -689,6 +704,7 @@ unlink_file:
     return 0;
 }
 
+WUR
 static int removeLogFile(char *name, struct logInfo *log)
 {
     int fd = -1;
@@ -735,6 +751,7 @@ static void setAtimeMtime(const char *filename, const struct stat *sb)
 #endif
 }
 
+WUR
 static int compressLogFile(char *name, struct logInfo *log, struct stat *sb)
 {
     char *compressedName;
@@ -873,6 +890,7 @@ static int compressLogFile(char *name, struct logInfo *log, struct stat *sb)
     return 0;
 }
 
+WUR
 static int mailLog(struct logInfo *log, char *logFile, const char *mailComm,
                    char *uncompressCommand, char *address, char *subject)
 {
@@ -975,6 +993,7 @@ static int mailLog(struct logInfo *log, char *logFile, const char *mailComm,
     return rc;
 }
 
+WUR
 static int mailLogWrapper(char *mailFilename, const char *mailComm,
                           int logNum, struct logInfo *log)
 {
@@ -1002,6 +1021,7 @@ static int mailLogWrapper(char *mailFilename, const char *mailComm,
    with sparse blocks.  If the file has fewer blocks than would normally
    be needed for a file of its size, then at least one of the blocks in
    the file is a hole.  In that case, return true.  */
+WUR
 static int is_probably_sparse(struct stat const *sb)
 {
 #if defined(HAVE_STRUCT_STAT_ST_BLOCKS) && defined(HAVE_STRUCT_STAT_ST_BLKSIZE)
@@ -1016,7 +1036,7 @@ static int is_probably_sparse(struct stat const *sb)
 
 /* Return whether the buffer consists entirely of NULs.
    Note the word after the buffer must be non NUL. */
-
+WUR
 static int is_nul (void const *buf, size_t bufsize)
 {
     char const *cbuf = buf;
@@ -1029,6 +1049,7 @@ static int is_nul (void const *buf, size_t bufsize)
     return cbuf + bufsize < cp;
 }
 
+WUR
 static size_t full_write(int fd, const void *buf, size_t count)
 {
     size_t total = 0;
@@ -1057,6 +1078,7 @@ static size_t full_write(int fd, const void *buf, size_t count)
     return total;
 }
 
+WUR
 static int sparse_copy(int src_fd, int dest_fd, struct stat *sb,
                        const char *saveLog, const char *currLog)
 {
@@ -1121,6 +1143,7 @@ static int sparse_copy(int src_fd, int dest_fd, struct stat *sb,
     return 1;
 }
 
+WUR
 static int copyTruncate(char *currLog, char *saveLog, struct stat *sb,
                         int flags, int skip_copy)
 {
@@ -1202,6 +1225,7 @@ fail:
 }
 
 /* return value similar to mktime() but the exact time is ignored */
+WUR
 static time_t mktimeFromDateOnly(const struct tm *src)
 {
     /* explicit struct copy to retain C89 compatibility */
@@ -1216,12 +1240,14 @@ static time_t mktimeFromDateOnly(const struct tm *src)
 }
 
 /* return by how many days the date was advanced but ignore exact time */
+WUR
 static int daysElapsed(const struct tm *now, const struct tm *last)
 {
     const time_t diff = mktimeFromDateOnly(now) - mktimeFromDateOnly(last);
     return diff / (24 * 3600);
 }
 
+WUR
 static int findNeedRotating(struct logInfo *log, int logNum, int force)
 {
     struct stat sb;
@@ -1430,6 +1456,7 @@ static int findNeedRotating(struct logInfo *log, int logNum, int force)
 }
 
 /* find the rotated file with the highest index */
+WUR
 static int findLastRotated(const struct logNames *rotNames,
                            const char *fileext, const char *compext)
 {
@@ -1491,6 +1518,7 @@ static int findLastRotated(const struct logNames *rotNames,
     return last;
 }
 
+WUR
 static int prerotateSingleLog(struct logInfo *log, int logNum,
                               struct logState *state, struct logNames *rotNames)
 {
@@ -1962,6 +1990,7 @@ static int prerotateSingleLog(struct logInfo *log, int logNum,
     return hasErrors;
 }
 
+WUR
 static int rotateSingleLog(struct logInfo *log, int logNum,
                            struct logState *state, struct logNames *rotNames)
 {
@@ -2096,6 +2125,7 @@ static int rotateSingleLog(struct logInfo *log, int logNum,
     return hasErrors;
 }
 
+WUR
 static int postrotateSingleLog(struct logInfo *log, int logNum,
                                struct logState *state,
                                struct logNames *rotNames)
@@ -2145,6 +2175,7 @@ static int postrotateSingleLog(struct logInfo *log, int logNum,
     return hasErrors;
 }
 
+WUR
 static int rotateLogSet(struct logInfo *log, int force)
 {
     int i, j;
@@ -2419,6 +2450,7 @@ static int rotateLogSet(struct logInfo *log, int force)
     return hasErrors;
 }
 
+WUR
 static int writeState(const char *stateFilename)
 {
     struct logState *p;
@@ -2605,6 +2637,7 @@ static int writeState(const char *stateFilename)
     return error;
 }
 
+WUR
 static int readState(const char *stateFilename)
 {
     FILE *f;

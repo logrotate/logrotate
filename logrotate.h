@@ -42,6 +42,12 @@
 #define WITH_ACL 1
 #endif
 
+#if defined(__GNUC__) || defined(__clang__)
+#define WUR __attribute__((__warn_unused_result__))
+#else
+#define WUR
+#endif
+
 enum criterium {
     ROT_HOURLY,
     ROT_DAYS,
@@ -94,11 +100,11 @@ TAILQ_HEAD(logInfoHead, logInfo) logs;
 extern int numLogs;
 extern int debug;
 
-int switch_user(uid_t user, gid_t group);
-int switch_user_back(void);
-int readAllConfigPaths(const char **paths);
+int switch_user(uid_t user, gid_t group) WUR;
+int switch_user_back(void) WUR;
+int readAllConfigPaths(const char **paths) WUR;
 #if !defined(asprintf) && !defined(_FORTIFY_SOURCE)
-int asprintf(char **string_ptr, const char *format, ...);
+int asprintf(char **string_ptr, const char *format, ...) WUR;
 #endif
 
 #endif
