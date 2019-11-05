@@ -695,13 +695,15 @@ static int shred_file(int fd, char *filename, struct logInfo *log)
 unlink_file:
     if (unlink(filename) == 0)
         return 0;
-    if (errno != ENOENT)
-        return 1;
 
-    /* unlink of log file that no longer exists is not a fatal error */
     message(MESS_ERROR, "error unlinking log file %s: %s\n", filename,
             strerror(errno));
-    return 0;
+
+    /* unlink of log file that no longer exists is not a fatal error */
+    if (errno == ENOENT)
+        return 0;
+
+    return 1;
 }
 
 WUR
