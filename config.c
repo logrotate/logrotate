@@ -450,11 +450,24 @@ static void free_2d_array(char **array, int lines_count)
     free(array);
 }
 
-static void copyLogInfo(struct logInfo *to, const struct logInfo *from)
+#define MEMBER_COPY(dest, src) \
+    do { \
+        if (src && rv == 0) { \
+            (dest) = strdup(src); \
+            if ((dest) == NULL) { \
+                message(MESS_ERROR, "can not allocate memory\n"); \
+                rv = 1; \
+            } \
+        } else { \
+            (dest) = NULL; \
+        } \
+    } while (0)
+static int copyLogInfo(struct logInfo *to, const struct logInfo *from)
 {
+    int rv = 0;
+
     memset(to, 0, sizeof(*to));
-    if (from->oldDir)
-        to->oldDir = strdup(from->oldDir);
+    MEMBER_COPY(to->oldDir, from->oldDir);
     to->criterium = from->criterium;
     to->weekday = from->weekday;
     to->threshold = from->threshold;
@@ -464,26 +477,16 @@ static void copyLogInfo(struct logInfo *to, const struct logInfo *from)
     to->rotateMinAge = from->rotateMinAge;
     to->rotateAge = from->rotateAge;
     to->logStart = from->logStart;
-    if (from->pre)
-        to->pre = strdup(from->pre);
-    if (from->post)
-        to->post = strdup(from->post);
-    if (from->first)
-        to->first = strdup(from->first);
-    if (from->last)
-        to->last = strdup(from->last);
-    if (from->preremove)
-        to->preremove = strdup(from->preremove);
-    if (from->logAddress)
-        to->logAddress = strdup(from->logAddress);
-    if (from->extension)
-        to->extension = strdup(from->extension);
-    if (from->compress_prog)
-        to->compress_prog = strdup(from->compress_prog);
-    if (from->uncompress_prog)
-        to->uncompress_prog = strdup(from->uncompress_prog);
-    if (from->compress_ext)
-        to->compress_ext = strdup(from->compress_ext);
+    MEMBER_COPY(to->pre, from->pre);
+    MEMBER_COPY(to->post, from->post);
+    MEMBER_COPY(to->first, from->first);
+    MEMBER_COPY(to->last, from->last);
+    MEMBER_COPY(to->preremove, from->preremove);
+    MEMBER_COPY(to->logAddress , from->logAddress);
+    MEMBER_COPY(to->extension, from->extension);
+    MEMBER_COPY(to->compress_prog, from->compress_prog);
+    MEMBER_COPY(to->uncompress_prog, from->uncompress_prog);
+    MEMBER_COPY(to->compress_ext, from->compress_ext);
     to->flags = from->flags;
     to->shred_cycles = from->shred_cycles;
     to->createMode = from->createMode;
@@ -494,15 +497,23 @@ static void copyLogInfo(struct logInfo *to, const struct logInfo *from)
     to->olddirMode = from->olddirMode;
     to->olddirUid = from->olddirUid;
     to->olddirGid = from->olddirGid;
+
     if (from->compress_options_count) {
         poptDupArgv(from->compress_options_count, from->compress_options_list,
                     &to->compress_options_count,  &to->compress_options_list);
+        if (to->compress_options_list == NULL) {
+            message(MESS_ERROR, "can not allocate memory\n");
+            rv = 1;
+        }
     }
-    if (from->dateformat)
-        to->dateformat = strdup(from->dateformat);
+
+    MEMBER_COPY(to->dateformat, from->dateformat);
 
     to->list = from->list;
+
+    return rv;
 }
+#undef MEMBER_COPY
 
 static void freeLogInfo(struct logInfo *log)
 {
@@ -533,7 +544,12 @@ static struct logInfo *newLogInfo(const struct logInfo *template)
         return NULL;
     }
 
-    copyLogInfo(new, template);
+    if (copyLogInfo(new, template)) {
+        freeLogInfo(new);
+        free(new);
+        return NULL;
+    }
+
     TAILQ_INSERT_TAIL(&logs, new, list);
     numLogs++;
 
@@ -668,11 +684,16 @@ static int readConfigPath(const char *path, struct logInfo *defConfig)
 
         for (i = 0; i < files_count; ++i) {
             assert(namelist[i] != NULL);
-            copyLogInfo(&defConfigBackup, defConfig);
+            if (copyLogInfo(&defConfigBackup, defConfig)) {
+                freeLogInfo(&defConfigBackup);
+                close(here);
+                free_2d_array(namelist, files_count);
+                return 1;
+            }
             if (readConfigFile(namelist[i], defConfig)) {
                 message(MESS_ERROR, "found error in file %s, skipping\n", namelist[i]);
                 freeLogInfo(defConfig);
-                copyLogInfo(defConfig, &defConfigBackup);
+                if (copyLogInfo(defConfig, &defConfigBackup)){} /* do not check, we are already in a error path */
                 freeLogInfo(&defConfigBackup);
                 result = 1;
                 continue;
@@ -686,10 +707,14 @@ static int readConfigPath(const char *path, struct logInfo *defConfig)
         close(here);
         free_2d_array(namelist, files_count);
     } else {
-        copyLogInfo(&defConfigBackup, defConfig);
+        if (copyLogInfo(&defConfigBackup, defConfig)) {
+            freeLogInfo(&defConfigBackup);
+            return 1;
+        }
+
         if (readConfigFile(path, defConfig)) {
             freeLogInfo(defConfig);
-            copyLogInfo(defConfig, &defConfigBackup);
+            if (copyLogInfo(defConfig, &defConfigBackup)){} /* do not check, we are already in a error path */
             result = 1;
         }
         freeLogInfo(&defConfigBackup);
