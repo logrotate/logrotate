@@ -867,7 +867,12 @@ static int compressLogFile(char *name, struct logInfo *log, struct stat *sb)
     }
 
     setAtimeMtime(compressedName, sb);
-    shred_file(inFile, name, log);
+
+    if (shred_file(inFile, name, log)) {
+        close(inFile);
+        return 1;
+    }
+
     close(inFile);
 
     return 0;
