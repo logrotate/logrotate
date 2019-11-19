@@ -1,5 +1,5 @@
 #!/bin/sh
-autoreconf --force --install
+autoreconf --force --install --warnings=all
 ret=$?
 if [ $ret -ne 0 ]; then
     echo "autoreconf: failed with return code: $ret"
