@@ -84,7 +84,7 @@ case "$host" in
 esac
 
 AC_ARG_WITH([state-file-path],
-  AC_HELP_STRING([--with-state-file-path=PATH],
+  AS_HELP_STRING([--with-state-file-path=PATH],
                  [path to state file (/var/lib/logrotate.status by default)]),
   [
     case "$withval" in
@@ -100,7 +100,7 @@ AC_DEFINE_UNQUOTED([STATEFILE], ["$STATE_FILE_PATH"], [State file path.])
 AC_SUBST(STATE_FILE_PATH)
 
 AC_ARG_WITH([default-mail-command],
-  AC_HELP_STRING([--with-default-mail-command=COMMAND],
+  AS_HELP_STRING([--with-default-mail-command=COMMAND],
                  [default mail command (e.g. /bin/mail)]),
   [
     case "$withval" in
@@ -116,7 +116,7 @@ AC_DEFINE_UNQUOTED([DEFAULT_MAIL_COMMAND], ["$DEFAULT_MAIL_COMMAND"], [default m
 AC_SUBST(DEFAULT_MAIL_COMMAND)
 
 AC_ARG_WITH([compress-command],
-  AC_HELP_STRING([--with-compress-command=COMMAND],
+  AS_HELP_STRING([--with-compress-command=COMMAND],
                  [compress command (default: /bin/gzip)]),
   [
     case "$withval" in
@@ -132,7 +132,7 @@ AC_DEFINE_UNQUOTED([COMPRESS_COMMAND], "$COMPRESS_COMMAND", [default compress co
 AC_SUBST(COMPRESS_COMMAND)
 
 AC_ARG_WITH([uncompress-command],
-  AC_HELP_STRING([--with-uncompress-command=COMMAND],
+  AS_HELP_STRING([--with-uncompress-command=COMMAND],
                  [uncompress command (default: /bin/gunzip)]),
   [
     case "$withval" in
@@ -148,7 +148,7 @@ AC_DEFINE_UNQUOTED([UNCOMPRESS_COMMAND], "$UNCOMPRESS_COMMAND", [default uncompr
 AC_SUBST(UNCOMPRESS_COMMAND)
 
 AC_ARG_WITH([compress-extension],
-  AC_HELP_STRING([--with-compress-extension=EXTENSION],
+  AS_HELP_STRING([--with-compress-extension=EXTENSION],
                  [compress extension (default: .gz)]),
   [
     case "$withval" in
