@@ -2632,8 +2632,8 @@ static int writeState(const char *stateFilename)
         if (rename(tmpFilename, stateFilename)) {
             unlink(tmpFilename);
             error = 1;
-            message(MESS_ERROR, "error renaming temp state file %s\n",
-                    tmpFilename);
+            message(MESS_ERROR, "error renaming temp state file %s to %s\n",
+                    tmpFilename, stateFilename);
         }
     }
     else {
