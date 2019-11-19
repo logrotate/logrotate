@@ -2652,7 +2652,7 @@ static int readState(const char *stateFilename)
     int argc;
     int year, month, day, hour, minute, second;
     int line = 0;
-    int error;
+    int fd;
     struct logState *st;
     time_t lr_time;
     struct stat f_stat;
@@ -2660,11 +2660,24 @@ static int readState(const char *stateFilename)
 
     message(MESS_DEBUG, "Reading state from file: %s\n", stateFilename);
 
-    error = stat(stateFilename, &f_stat);
-    if (error) {
-        /* treat non-statable file as an empty file */
+    fd = open(stateFilename, O_RDONLY);
+    if (fd == -1) {
+        /* treat non-openable file as an empty file for allocateHash() */
         f_stat.st_size = 0;
+
+        /* no error if state just not exists */
         if (errno != ENOENT) {
+            message(MESS_ERROR, "error opening state file %s: %s\n",
+                    stateFilename, strerror(errno));
+
+            /* do not return until the hash table is allocated */
+            rc = 1;
+        }
+    } else {
+        if (fstat(fd, &f_stat) == -1) {
+            /* treat non-statable file as an empty file for allocateHash() */
+            f_stat.st_size = 0;
+
             message(MESS_ERROR, "error stat()ing state file %s: %s\n",
                     stateFilename, strerror(errno));
 
@@ -2678,16 +2691,20 @@ static int readState(const char *stateFilename)
      * just an estimation). During the testing I've found out that 200 entries
      * per single hash entry gives good mem/performance ratio. */
     if (allocateHash(f_stat.st_size / 80 / 200))
-        return 1;
+        rc = 1;
 
-    if (rc || (f_stat.st_size == 0))
+    if (rc || (f_stat.st_size == 0)) {
         /* error already occurred, or we have no state file to read from */
+        if (fd != -1)
+            close(fd);
         return rc;
+    }
 
-    f = fopen(stateFilename, "r");
+    f = fdopen(fd, "r");
     if (!f) {
         message(MESS_ERROR, "error opening state file %s: %s\n",
                 stateFilename, strerror(errno));
+        close(fd);
         return 1;
     }
 
