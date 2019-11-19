@@ -2637,7 +2637,6 @@ static int writeState(const char *stateFilename)
         }
     }
     else {
-        unlink(tmpFilename);
         if (errno)
             message(MESS_ERROR, "error creating temp state file %s: %s\n",
                     tmpFilename, strerror(errno));
@@ -2645,6 +2644,7 @@ static int writeState(const char *stateFilename)
             message(MESS_ERROR, "error creating temp state file %s%s\n",
                     tmpFilename, error == ENOMEM ?
                     ": Insufficient storage space is available." : "" );
+        unlink(tmpFilename);
     }
     free(tmpFilename);
     return error;
