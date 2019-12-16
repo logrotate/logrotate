@@ -2453,13 +2453,42 @@ static int writeState(const char *stateFilename)
     /* Remove possible tmp state file from previous run */
     unlink(tmpFilename);
 
+    fdcurr = open(stateFilename, O_RDONLY);
+    if (fdcurr == -1) {
+        const char *state_header_v2 = "logrotate state -- version 2\n";
+        const size_t state_header_v2_len = strlen(state_header_v2);
+        size_t ret;
 
-    if ((fdcurr = open(stateFilename, O_RDONLY)) < 0) {
-        message(MESS_ERROR, "error opening %s: %s\n", stateFilename,
-                strerror(errno));
-        free(tmpFilename);
-        return 1;
+        /* no error if state file is just missing */
+        if (errno != ENOENT) {
+            message(MESS_ERROR, "error opening state file %s: %s\n",
+                    stateFilename, strerror(errno));
+            free(tmpFilename);
+            return 1;
+        }
+
+        /* create a stub state file with mode 0644 */
+        fdcurr = open(stateFilename, O_CREAT | O_EXCL | O_WRONLY,
+                      S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH);
+        if (fdcurr == -1) {
+            message(MESS_ERROR, "error creating stub state file %s: %s\n",
+                    stateFilename, strerror(errno));
+            free(tmpFilename);
+            return 1;
+        }
+
+        /* check write access */
+        ret = full_write(fdcurr, state_header_v2, state_header_v2_len);
+        if (ret != state_header_v2_len) {
+            message(MESS_ERROR, "error writing to stub state file %s: %s\n",
+                    stateFilename, strerror(errno));
+            close(fdcurr);
+            free(tmpFilename);
+            return 1;
+        }
     }
+
+    /* get attributes, to assign them to the new state file */
 
     if (setSecCtx(fdcurr, stateFilename, &prevCtx) != 0) {
         /* error msg already printed */
@@ -2481,16 +2510,20 @@ static int writeState(const char *stateFilename)
     }
 #endif
 
-    close(fdcurr);
-    if (stat(stateFilename, &sb) == -1) {
+    if (fstat(fdcurr, &sb) == -1) {
         message(MESS_ERROR, "error stating %s: %s\n", stateFilename, strerror(errno));
+        restoreSecCtx(&prevCtx);
         free(tmpFilename);
 #ifdef WITH_ACL
-        if (prev_acl)
+        if (prev_acl) {
             acl_free(prev_acl);
+            prev_acl = NULL;
+        }
 #endif
         return 1;
     }
+
+    close(fdcurr);
 
     fdsave = createOutputFile(tmpFilename, O_RDWR | O_CREAT | O_TRUNC, &sb, prev_acl, 0);
 #ifdef WITH_ACL
@@ -2633,22 +2666,6 @@ static int readState(const char *stateFilename)
         f_stat.st_size = 0;
         if (errno != ENOENT) {
             message(MESS_ERROR, "error stat()ing state file %s: %s\n",
-                    stateFilename, strerror(errno));
-
-            /* do not return until the hash table is allocated */
-            rc = 1;
-        }
-    }
-
-    if (!debug && (f_stat.st_size == 0)) {
-        /* create the file before continuing to ensure we have write
-           access to the file */
-        f = fopen(stateFilename, "w");
-        if (f) {
-            fprintf(f, "logrotate state -- version 2\n");
-            fclose(f);
-        } else {
-            message(MESS_ERROR, "error creating state file %s: %s\n",
                     stateFilename, strerror(errno));
 
             /* do not return until the hash table is allocated */
