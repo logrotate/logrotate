@@ -105,14 +105,26 @@ matrix:
             - clang-3.7
       env: COMPILER=clang-3.7
     - compiler: clang
+      dist: bionic
       addons:
         apt:
           sources:
-            - ubuntu-toolchain-r-test
-            - llvm-toolchain-trusty-7
+            - sourceline: 'deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-9 main'
+              key_url: 'https://apt.llvm.org/llvm-snapshot.gpg.key'
           packages:
-            - clang-7
-      env: COMPILER=clang-7 CFLAGS='-O1 -g -fsanitize=address -fno-omit-frame-pointer -fsanitize=undefined -fsanitize=nullability -fsanitize=implicit-conversion -fsanitize=integer' LSAN_OPTIONS=suppressions=test/leak_san_supress.txt
+            - clang-9
+      env: COMPILER=clang-9 CFLAGS='-O1 -g -fsanitize=address -fno-omit-frame-pointer -fsanitize=undefined -fsanitize=nullability -fsanitize=implicit-conversion -fsanitize=integer' LSAN_OPTIONS=suppressions=test/leak_san_supress.txt
+    - compiler: clang
+      dist: bionic
+      addons:
+        apt:
+          sources:
+            - sourceline: 'deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-9 main'
+              key_url: 'https://apt.llvm.org/llvm-snapshot.gpg.key'
+          packages:
+            - clang-9
+            - clang-tools-9
+      env: COMPILER=scan-build-9
 
 install:
   - sudo add-apt-repository ppa:dns/gnu -y
@@ -120,8 +132,15 @@ install:
   - sudo apt-get -qq install libpopt-dev libselinux1-dev libacl1-dev automake dash rpm acl
 
 script:
-  - $COMPILER --version
   - ./autogen.sh
+  - |
+    if [[ "${COMPILER}" =~ ^scan-build.* ]]; then
+      ${COMPILER} -analyze-headers --status-bugs ./configure --enable-werror --disable-silent-rules
+      ${COMPILER} -analyze-headers --status-bugs make
+      export TRAVIS_TEST_RESULT=$?
+      travis_terminate $TRAVIS_TEST_RESULT;
+    fi
+  - $COMPILER --version
   - ./configure --enable-werror --disable-silent-rules CC=$COMPILER
   - make
   - make -j9 check || ( cat test/test-suite.log; exit 1; )
