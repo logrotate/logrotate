@@ -28,6 +28,8 @@
 #include "log.h"
 #include "logrotate.h"
 
+struct logInfoHead logs;
+
 #if !defined(GLOB_ABORTED) && defined(GLOB_ABEND)
 #define GLOB_ABORTED GLOB_ABEND
 #endif

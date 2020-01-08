@@ -89,7 +89,8 @@ struct logInfo {
     TAILQ_ENTRY(logInfo) list;
 };
 
-TAILQ_HEAD(logInfoHead, logInfo) logs;
+TAILQ_HEAD(logInfoHead, logInfo);
+extern struct logInfoHead logs;
 
 extern int numLogs;
 extern int debug;
