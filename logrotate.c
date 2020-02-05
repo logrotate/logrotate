@@ -458,7 +458,7 @@ static int runScript(struct logInfo *log, char *logfn, char *logrotfn, char *scr
 
     if (debug) {
         message(MESS_DEBUG, "running script with args %s %s: \"%s\"\n",
-                logfn, logrotfn, script);
+                logfn, logrotfn ? logrotfn : "", script);
         return 0;
     }
 
