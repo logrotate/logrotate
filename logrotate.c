@@ -1,6 +1,6 @@
 #include "queue.h"
 /* alloca() is defined in stdlib.h in NetBSD */
-#if !defined(__NetBSD__) && !defined(__FreeBSD__)
+#if !defined(__NetBSD__) && !defined(__FreeBSD__) && !defined(__OpenBSD__)
 #include <alloca.h>
 #endif
 #include <limits.h>
