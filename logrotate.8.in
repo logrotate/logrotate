@@ -20,6 +20,7 @@ logrotate \(hy rotates, compresses, and mails system logs
 \fR[\fB\-\-force\fR]
 \fR[\fB\-\-debug\fR]
 \fR[\fB\-\-state\fR \fIfile\fR]
+\fR[\fB\-\-skip-state-lock\fR]
 \fR[\fB\-\-verbose\fR]
 \fR[\fB\-\-log\fR \fIfile\fR]
 \fR[\fB\-\-mail\fR \fIcommand\fR]
@@ -71,7 +72,13 @@ Turn on debug mode, which means that no changes are made to the logs and the
 \fB\-s\fR, \fB\-\-state\fR \fIstatefile\fR
 Tells \fBlogrotate\fR to use an alternate state file.  This is useful
 if \fBlogrotate\fR is being run as a different user for various sets of
-log files.  The default state file is \fI@STATE_FILE_PATH@\fR.
+log files.  To prevent parallel execution \fBlogrotate\fR by default
+acquires a lock on the state file, if it can not be acquired it will exit
+with value 3.  The default state file is \fI@STATE_FILE_PATH@\fR.
+
+.TP
+\fB\-\-skip-state-lock\fR
+Do not lock the state file, for example if locking is unsupported or prohibited.
 
 .TP
 \fB\-v\fR, \fB\-\-verbose\fR
