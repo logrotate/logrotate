@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/file.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
 #include <time.h>
@@ -2511,37 +2512,12 @@ static int writeState(const char *stateFilename)
 
     fdcurr = open(stateFilename, O_RDONLY);
     if (fdcurr == -1) {
-        const char *state_header_v2 = "logrotate state -- version 2\n";
-        const size_t state_header_v2_len = strlen(state_header_v2);
-        size_t ret;
-
-        /* no error if state file is just missing */
-        if (errno != ENOENT) {
-            message(MESS_ERROR, "error opening state file %s: %s\n",
-                    stateFilename, strerror(errno));
-            free(tmpFilename);
-            return 1;
-        }
-
-        /* create a stub state file with mode 0644 */
-        fdcurr = open(stateFilename, O_CREAT | O_EXCL | O_WRONLY,
-                      S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH);
-        if (fdcurr == -1) {
-            message(MESS_ERROR, "error creating stub state file %s: %s\n",
-                    stateFilename, strerror(errno));
-            free(tmpFilename);
-            return 1;
-        }
-
-        /* check write access */
-        ret = full_write(fdcurr, state_header_v2, state_header_v2_len);
-        if (ret != state_header_v2_len) {
-            message(MESS_ERROR, "error writing to stub state file %s: %s\n",
-                    stateFilename, strerror(errno));
-            close(fdcurr);
-            free(tmpFilename);
-            return 1;
-        }
+        /* the statefile should exist, lockState() already created an empty
+         * state file in case it did not exist initially */
+        message(MESS_ERROR, "error opening state file %s: %s\n",
+                stateFilename, strerror(errno));
+        free(tmpFilename);
+        return 1;
     }
 
     /* get attributes, to assign them to the new state file */
@@ -2721,12 +2697,15 @@ static int readState(const char *stateFilename)
         /* treat non-openable file as an empty file for allocateHash() */
         f_stat.st_size = 0;
 
-        /* no error if state just not exists */
-        if (errno != ENOENT) {
-            message(MESS_ERROR, "error opening state file %s: %s\n",
-                    stateFilename, strerror(errno));
+        /* the statefile should exist, lockState() already created an empty
+         * state file in case it did not exist initially */
+        message(MESS_ERROR, "error opening state file %s: %s\n",
+                stateFilename, strerror(errno));
 
-            /* do not return until the hash table is allocated */
+        /* Do not return until the hash table is allocated.
+         * In debug mode the state file might not exist,
+         * cause lockState() is not called */
+        if (!debug) {
             rc = 1;
         }
     } else {
@@ -2909,9 +2888,57 @@ static int readState(const char *stateFilename)
     return 0;
 }
 
+static int lockState(const char *stateFilename, int skip_state_lock)
+{
+    int lockFd = open(stateFilename, O_RDWR | O_CLOEXEC);
+    if (lockFd == -1) {
+        if (errno == ENOENT) {
+            message(MESS_DEBUG, "Creating stub state file: %s\n",
+                    stateFilename);
+
+            /* create a stub state file with mode 0644 */
+            lockFd = open(stateFilename, O_CREAT | O_EXCL | O_WRONLY,
+                          S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH);
+            if (lockFd == -1) {
+                message(MESS_ERROR, "error creating stub state file %s: %s\n",
+                        stateFilename, strerror(errno));
+                return 1;
+            }
+        } else {
+            message(MESS_ERROR, "error opening state file %s: %s\n",
+                    stateFilename, strerror(errno));
+            return 1;
+        }
+    }
+
+    if (skip_state_lock) {
+        message(MESS_DEBUG, "Skip locking state file %s\n",
+                stateFilename);
+        close(lockFd);
+        return 0;
+    }
+
+    if (flock(lockFd, LOCK_EX | LOCK_NB) == -1) {
+        if (errno == EWOULDBLOCK) {
+            message(MESS_ERROR, "state file %s is already locked\n"
+                    "logrotate does not support parallel execution on the"
+                    " same set of logfiles.\n", stateFilename);
+        } else {
+            message(MESS_ERROR, "can not acquire lock on state file %s: %s\n",
+                    stateFilename, strerror(errno));
+        }
+        close(lockFd);
+        return 1;
+    }
+
+    /* keep lockFd open till we terminate */
+    return 0;
+}
+
 int main(int argc, const char **argv)
 {
     int force = 0;
+    int skip_state_lock = 0;
     const char *stateFile = STATEFILE;
     const char *logFile = NULL;
     FILE *logFd = NULL;
@@ -2931,6 +2958,7 @@ int main(int argc, const char **argv)
         {"state", 's', POPT_ARG_STRING, &stateFile, 0,
             "Path of state file",
             "statefile"},
+        {"skip-state-lock", '\0', POPT_ARG_NONE, &skip_state_lock, 0, "Do not lock the state file", NULL},
         {"verbose", 'v', 0, NULL, 'v', "Display messages during rotation", NULL},
         {"log", 'l', POPT_ARG_STRING, &logFile, 'l', "Log file or 'syslog' to log to syslog",
             "logfile"},
@@ -3026,6 +3054,10 @@ int main(int argc, const char **argv)
 
     poptFreeContext(optCon);
     nowSecs = time(NULL);
+
+    if (!debug && lockState(stateFile, skip_state_lock)) {
+        exit(3);
+    }
 
     if (readState(stateFile))
         rc = 1;

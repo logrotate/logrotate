@@ -1,0 +1,5 @@
+&DIR&/test.log {
+    postrotate
+        sleep 8
+    endscript
+}
