@@ -107,7 +107,7 @@ static int globerr(const char *pathname, int theerr)
     message(MESS_ERROR, "error accessing %s: %s\n", pathname,
             strerror(theerr));
 
-    /* We want the glob operation to continue, so return 0 */
+    /* We want the glob operation to abort on error, so return 1 */
     return 1;
 }
 
