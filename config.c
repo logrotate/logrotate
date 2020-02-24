@@ -937,7 +937,6 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
     glob_t globResult;
     const char **argv;
     int argc, argNum;
-    int flags;
     int state = STATE_DEFAULT;
     int logerror = 0;
     struct logInfo *log;
@@ -958,19 +957,6 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
     if (fd < 0) {
         message(MESS_ERROR, "failed to open config file %s: %s\n",
                 configFile, strerror(errno));
-        return 1;
-    }
-    if ((flags = fcntl(fd, F_GETFD)) == -1) {
-        message(MESS_ERROR, "Could not retrieve flags from file %s\n",
-                configFile);
-        close(fd);
-        return 1;
-    }
-    flags |= FD_CLOEXEC;
-    if (fcntl(fd, F_SETFD, flags) == -1) {
-        message(MESS_ERROR, "Could not set flags on file %s\n",
-                configFile);
-        close(fd);
         return 1;
     }
     /* We don't want anybody to change the file while we parse it,
