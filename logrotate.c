@@ -55,7 +55,7 @@ static acl_type prev_acl = NULL;
 #endif
 
 #ifdef PATH_MAX
-#define STATEFILE_BUFFER_SIZE 2 * PATH_MAX + 16
+#define STATEFILE_BUFFER_SIZE ( 2 * PATH_MAX + 16 )
 #else
 #define STATEFILE_BUFFER_SIZE 4096
 #endif
