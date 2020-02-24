@@ -453,7 +453,7 @@ static struct logState *findState(const char *fn)
     return p;
 }
 
-static int runScript(struct logInfo *log, char *logfn, char *logrotfn, char *script)
+static int runScript(const struct logInfo *log, const char *logfn, const char *logrotfn, const char *script)
 {
     int rc;
     pid_t pid;
@@ -477,7 +477,7 @@ static int runScript(struct logInfo *log, char *logfn, char *logrotfn, char *scr
                 exit(1);
             }
         }
-        execl("/bin/sh", "sh", "-c", script, "logrotate_script", logfn, logrotfn, (char *) NULL);
+        execl("/bin/sh", "sh", "-c", (char *) script, "logrotate_script", (char *) logfn, (char *) logrotfn, (char *) NULL);
         exit(1);
     }
 
@@ -500,7 +500,7 @@ static int is_acl_well_supported(int err)
 }
 #endif /* WITH_ACL */
 
-static int createOutputFile(char *fileName, int flags, struct stat *sb,
+static int createOutputFile(const char *fileName, int flags, const struct stat *sb,
                             acl_type acl, int force_mode)
 {
     int fd = -1;
@@ -607,7 +607,7 @@ static int createOutputFile(char *fileName, int flags, struct stat *sb,
 
 /* unlink, but try to call shred from GNU coreutils if LOG_FLAG_SHRED
  * is enabled (in that case fd needs to be a valid file descriptor) */
-static int shred_file(int fd, char *filename, struct logInfo *log)
+static int shred_file(int fd, const char *filename, const struct logInfo *log)
 {
     char count[DIGITS];    /*  that's a lot of shredding :)  */
     const char **fullCommand;
@@ -691,7 +691,7 @@ unlink_file:
     return 0;
 }
 
-static int removeLogFile(char *name, struct logInfo *log)
+static int removeLogFile(const char *name, const struct logInfo *log)
 {
     int fd = -1;
     int result = 0;
@@ -737,10 +737,9 @@ static void setAtimeMtime(const char *filename, const struct stat *sb)
 #endif
 }
 
-static int compressLogFile(char *name, struct logInfo *log, struct stat *sb)
+static int compressLogFile(const char *name, const struct logInfo *log, const struct stat *sb)
 {
     char *compressedName;
-    char *envInFilename;
     const char **fullCommand;
     int inFile;
     int outFile;
@@ -825,6 +824,8 @@ static int compressLogFile(char *name, struct logInfo *log, struct stat *sb)
     }
 
     if (pid == 0) {
+        char *envInFilename;
+
         /* close read end of pipe in the child process */
         close(compressPipe[0]);
 
@@ -881,14 +882,14 @@ static int compressLogFile(char *name, struct logInfo *log, struct stat *sb)
     return 0;
 }
 
-static int mailLog(struct logInfo *log, char *logFile, const char *mailComm,
-                   char *uncompressCommand, char *address, char *subject)
+static int mailLog(const struct logInfo *log, const char *logFile, const char *mailComm,
+                   const char *uncompressCommand, const char *address, const char *subject)
 {
     int mailInput;
     pid_t mailChild, uncompressChild = 0;
     int mailStatus, uncompressStatus;
     int uncompressPipe[2];
-    char * const mailArgv[] = { (char *) mailComm, (char *) "-s", subject, address, NULL };
+    char * const mailArgv[] = { (char *) mailComm, (char *) "-s", (char *) subject, (char *) address, NULL };
     int rc = 0;
 
     if ((mailInput = open(logFile, O_RDONLY | O_NOFOLLOW)) < 0) {
@@ -983,15 +984,15 @@ static int mailLog(struct logInfo *log, char *logFile, const char *mailComm,
     return rc;
 }
 
-static int mailLogWrapper(char *mailFilename, const char *mailComm,
-                          unsigned logNum, struct logInfo *log)
+static int mailLogWrapper(const char *mailFilename, const char *mailComm,
+                          unsigned logNum, const struct logInfo *log)
 {
     /* uncompress already compressed log files before mailing them */
-    char *uncompress_prog = (log->flags & LOG_FLAG_COMPRESS)
+    const char *uncompress_prog = (log->flags & LOG_FLAG_COMPRESS)
         ? log->uncompress_prog
         : NULL;
 
-    char *subject = mailFilename;
+    const char *subject = mailFilename;
     if (log->flags & LOG_FLAG_MAILFIRST) {
         if (log->flags & LOG_FLAG_DELAYCOMPRESS)
             /* the log we are mailing has not been compressed yet */
@@ -1065,10 +1066,10 @@ static size_t full_write(int fd, const void *buf, size_t count)
     return total;
 }
 
-static int sparse_copy(int src_fd, int dest_fd, struct stat *sb,
+static int sparse_copy(int src_fd, int dest_fd, const struct stat *sb,
                        const char *saveLog, const char *currLog)
 {
-    int make_holes = is_probably_sparse(sb);
+    const int make_holes = is_probably_sparse(sb);
     size_t max_n_read = SIZE_MAX;
     int last_write_made_hole = 0;
     off_t total_n_read = 0;
@@ -1130,12 +1131,11 @@ static int sparse_copy(int src_fd, int dest_fd, struct stat *sb,
     return 1;
 }
 
-static int copyTruncate(char *currLog, char *saveLog, struct stat *sb,
+static int copyTruncate(const char *currLog, const char *saveLog, const struct stat *sb,
                         int flags, int skip_copy)
 {
     int rc = 1;
     int fdcurr = -1, fdsave = -1;
-    char *prevCtx;
 
     message(MESS_DEBUG, "copying %s to %s\n", currLog, saveLog);
 
@@ -1150,6 +1150,8 @@ static int copyTruncate(char *currLog, char *saveLog, struct stat *sb,
         }
 
         if (!skip_copy) {
+            char *prevCtx;
+
             if (setSecCtx(fdcurr, currLog, &prevCtx) != 0) {
                 /* error msg already printed */
                 goto fail;
@@ -1231,7 +1233,7 @@ static time_t daysElapsed(const struct tm *now, const struct tm *last)
     return diff / (24 * 3600);
 }
 
-static int findNeedRotating(struct logInfo *log, unsigned logNum, int force)
+static int findNeedRotating(const struct logInfo *log, unsigned logNum, int force)
 {
     struct stat sb;
     struct logState *state = NULL;
@@ -1500,7 +1502,7 @@ static int findLastRotated(const struct logNames *rotNames,
     return last;
 }
 
-static int prerotateSingleLog(struct logInfo *log, unsigned logNum,
+static int prerotateSingleLog(const struct logInfo *log, unsigned logNum,
                               struct logState *state, struct logNames *rotNames)
 {
     struct tm now;
@@ -1584,8 +1586,8 @@ static int prerotateSingleLog(struct logInfo *log, unsigned logNum,
     }
 
     if (log->addextension) {
-        size_t baseLen = strlen(rotNames->baseName);
-        size_t extLen = strlen(log->addextension);
+        const size_t baseLen = strlen(rotNames->baseName);
+        const size_t extLen = strlen(log->addextension);
         if (baseLen >= extLen &&
                 strncmp(&(rotNames->baseName[baseLen - extLen]),
                     log->addextension, extLen) == 0) {
@@ -1986,7 +1988,7 @@ static int prerotateSingleLog(struct logInfo *log, unsigned logNum,
     return hasErrors;
 }
 
-static int rotateSingleLog(struct logInfo *log, unsigned logNum,
+static int rotateSingleLog(const struct logInfo *log, unsigned logNum,
                            struct logState *state, struct logNames *rotNames)
 {
     int hasErrors = 0;
@@ -2122,7 +2124,7 @@ static int rotateSingleLog(struct logInfo *log, unsigned logNum,
     return hasErrors;
 }
 
-static int postrotateSingleLog(struct logInfo *log, unsigned logNum,
+static int postrotateSingleLog(const struct logInfo *log, unsigned logNum,
                                struct logState *state,
                                struct logNames *rotNames)
 {
@@ -2171,7 +2173,7 @@ static int postrotateSingleLog(struct logInfo *log, unsigned logNum,
     return hasErrors;
 }
 
-static int rotateLogSet(struct logInfo *log, int force)
+static int rotateLogSet(const struct logInfo *log, int force)
 {
     unsigned i, j;
     int hasErrors = 0;
