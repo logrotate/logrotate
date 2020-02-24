@@ -2732,8 +2732,8 @@ static int readState(const char *stateFilename)
         return 1;
     }
 
-    if (strcmp(buf, "logrotate state -- version 1\n") &&
-            strcmp(buf, "logrotate state -- version 2\n")) {
+    if (strcmp(buf, "logrotate state -- version 1\n") != 0 &&
+            strcmp(buf, "logrotate state -- version 2\n") != 0) {
         fclose(f);
         message(MESS_ERROR, "bad top line in state file %s\n",
                 stateFilename);
