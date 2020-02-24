@@ -234,7 +234,7 @@ static char *readPath(const char *configFile, int lineNum, const char *key,
     if (path != NULL) {
         wchar_t pwc;
         size_t len;
-        char *chptr = path;
+        const char *chptr = path;
 
         while (*chptr && (len = mbrtowc(&pwc, chptr, strlen(chptr), NULL)) != 0) {
             if (len == (size_t)(-1) || len == (size_t)(-2) || !iswprint((wint_t)pwc) || iswblank((wint_t)pwc)) {
@@ -346,7 +346,7 @@ static char *readAddress(const char *configFile, int lineNum, const char *key,
 
     if (address != NULL) {
         /* validate the address */
-        char *chptr = address;
+        const char *chptr = address;
         while (isprint((unsigned char) *chptr) && *chptr != ' ') {
             chptr++;
         }
@@ -622,10 +622,10 @@ static int readConfigPath(const char *path, struct logInfo *defConfig)
     }
 
     if (S_ISDIR(sb.st_mode)) {
-        char **namelist, **p;
+        char **namelist = NULL;
         struct dirent *dp;
         int here;
-        unsigned files_count, i;
+        unsigned files_count = 0, i;
         DIR *dirp;
 
         if ((here = open(".", O_RDONLY)) == -1) {
@@ -640,13 +640,11 @@ static int readConfigPath(const char *path, struct logInfo *defConfig)
             close(here);
             return 1;
         }
-        files_count = 0;
-        namelist = NULL;
         while ((dp = readdir(dirp)) != NULL) {
             if (checkFile(dp->d_name)) {
                 /* Realloc memory for namelist array if necessary */
                 if (files_count % REALLOC_STEP == 0) {
-                    p = (char **) realloc(namelist,
+                    char **p = (char **) realloc(namelist,
                             (files_count +
                              REALLOC_STEP) * sizeof(char *));
                     if (p) {
@@ -923,29 +921,22 @@ static int globerr(const char *pathname, int theerr)
 static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 {
     int fd;
-    char *buf, *endtag, *key = NULL;
+    char *buf, *key = NULL;
     size_t length;
     int lineNum = 1;
-    unsigned long long multiplier;
     char *scriptStart = NULL;
     char **scriptDest = NULL;
     struct logInfo *newlog = defConfig;
     char *start, *chptr;
-    struct passwd *pw = NULL;
-    int rc;
-    struct stat sb, sb2;
-    glob_t globResult;
-    const char **argv;
-    int argc, argNum;
+    struct passwd *pw;
+    struct stat sb;
     int state = STATE_DEFAULT;
     int logerror = 0;
-    struct logInfo *log;
     /* to check if incompatible criteria are specified */
     int criterium_set = 0;
     static unsigned recursion_depth = 0U;
     char *globerr_msg = NULL;
     int in_config = 0;
-    int rv;
     struct flock fd_lock = {
         .l_start = 0,
         .l_len = 0,
@@ -1132,6 +1123,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                     } else if (!strcmp(key, "maillast")) {
                         newlog->flags &= ~LOG_FLAG_MAILFIRST;
                     } else if (!strcmp(key, "su")) {
+                        int rv;
                         mode_t tmp_mode = NO_MODE;
                         free(key);
                         key = isolateLine(&start, &buf, length);
@@ -1162,6 +1154,8 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 
                         newlog->flags |= LOG_FLAG_SU;
                     } else if (!strcmp(key, "create")) {
+                        int rv;
+
                         free(key);
                         key = isolateLine(&start, &buf, length);
                         if (key == NULL)
@@ -1176,6 +1170,8 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 
                         newlog->flags |= LOG_FLAG_CREATE;
                     } else if (!strcmp(key, "createolddir")) {
+                        int rv;
+
                         free(key);
                         key = isolateLine(&start, &buf, length);
                         if (key == NULL)
@@ -1200,6 +1196,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                         key = isolateValue(configFile, lineNum, opt, &start, &buf, length);
                         if (key && key[0]) {
                             off_t size;
+                            unsigned long multiplier;
                             const size_t l = strlen(key) - 1;
                             if (key[l] == 'k' || key[l] == 'K') {
                                 key[l] = '\0';
@@ -1373,6 +1370,8 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                         scriptDest = &newlog->preremove;
                         state = STATE_LOAD_SCRIPT;
                     } else if (!strcmp(key, "tabooext")) {
+                        char *endtag;
+
                         if (newlog != defConfig) {
                             message(MESS_ERROR,
                                     "%s:%d tabooext may not appear inside "
@@ -1430,6 +1429,8 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                                 endtag++;
                         }
                     } else if (!strcmp(key, "taboopat")) {
+                        char *endtag;
+
                         if (newlog != defConfig) {
                             message(MESS_ERROR,
                                     "%s:%d taboopat may not appear inside "
@@ -1486,6 +1487,8 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                                 endtag++;
                         }
                     } else if (!strcmp(key, "include")) {
+                        int rv;
+
                         free(key);
                         key = isolateValue(configFile, lineNum, "include", &start,
                                            &buf, length);
@@ -1642,6 +1645,8 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                         ) {
                     char *glob_string;
                     size_t glob_count;
+                    int argc, argNum;
+                    const char **argv;
                     in_config = 0;
                     if (newlog != defConfig) {
                         message(MESS_ERROR, "%s:%d unexpected log filename\n",
@@ -1693,6 +1698,8 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                     newlog->numFiles = 0;
                     for (argNum = 0; argNum < argc; argNum++) {
                         char **tmp;
+                        int rc;
+                        glob_t globResult;
 
                         if (globerr_msg) {
                             free(globerr_msg);
@@ -1732,6 +1739,8 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                         newlog->files = tmp;
 
                         for (glob_count = 0; glob_count < globResult.gl_pathc; glob_count++) {
+                            struct logInfo *log;
+
                             /* if we glob directories we can get false matches */
                             if (!lstat(globResult.gl_pathv[glob_count], &sb) &&
                                     S_ISDIR(sb.st_mode)) {
@@ -1798,6 +1807,7 @@ duperror:
                             char *ld;
                             char *dirpath;
                             const char *dirName;
+                            struct stat sb2;
 
                             dirpath = strdup(newlog->files[j]);
                             if (dirpath == NULL) {
@@ -1942,7 +1952,7 @@ duperror:
                         state = STATE_SKIP_CONFIG;
                     }
                     else {
-                        endtag = start - 9;
+                        const char *endtag = start - 9;
                         while (*endtag != '\n')
                             endtag--;
                         endtag++;
