@@ -1562,10 +1562,21 @@ static int prerotateSingleLog(struct logInfo *log, int logNum,
         }
     }
 
-    rotNames->baseName = strdup(basename(log->files[logNum]));
-    if (rotNames->baseName == NULL) {
-        message(MESS_ERROR, "can not allocate memory\n");
-        return 1;
+    {
+        char *filename = strdup(log->files[logNum]);
+        if (filename == NULL) {
+            message(MESS_ERROR, "can not allocate memory\n");
+            return 1;
+        }
+
+        rotNames->baseName = strdup(basename(filename));
+        if (rotNames->baseName == NULL) {
+            message(MESS_ERROR, "can not allocate memory\n");
+            free(filename);
+            return 1;
+        }
+
+        free(filename);
     }
 
     if (log->addextension) {
