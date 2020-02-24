@@ -40,7 +40,7 @@ struct logInfoHead logs;
 #if defined(SunOS)
 #include <limits.h>
 #if !defined(isblank)
-#define isblank(c) ( (c) == ' ' || (c) == '\t' ) ? 1 : 0
+#define isblank(c) ( ( (c) == ' ' || (c) == '\t' ) ? 1 : 0 )
 #endif
 #endif
 
@@ -454,7 +454,7 @@ static void free_2d_array(char **array, int lines_count)
 
 #define MEMBER_COPY(dest, src) \
     do { \
-        if (src && rv == 0) { \
+        if ((src) && rv == 0) { \
             (dest) = strdup(src); \
             if ((dest) == NULL) { \
                 message(MESS_ERROR, "can not allocate memory\n"); \
