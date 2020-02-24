@@ -1763,13 +1763,6 @@ static int prerotateSingleLog(struct logInfo *log, unsigned logNum,
             } else {
                 message(MESS_DEBUG,
                         "glob finding logs to compress failed\n");
-                /* fallback to old behaviour */
-                if (asprintf(&oldName, "%s/%s.%d%s", rotNames->dirName,
-                             rotNames->baseName, logStart, fileext) < 0) {
-                    message_OOM();
-                    return 1;
-                }
-                free(oldName);
             }
             globfree(&globResult);
             free(glob_pattern);
