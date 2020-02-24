@@ -51,10 +51,10 @@ enum criterium {
 struct logInfo {
     char *pattern;
     char **files;
-    int numFiles;
+    unsigned numFiles;
     char *oldDir;
     enum criterium criterium;
-    int weekday; /* used by ROT_WEEKLY only */
+    unsigned weekday; /* used by ROT_WEEKLY only */
     off_t threshold;
     off_t maxsize;
     off_t minsize;

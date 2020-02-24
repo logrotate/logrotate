@@ -117,7 +117,7 @@ static const struct compress_cmd_item compress_cmd_list[] = {
     {"compress", ".Z"},
     {"zip", "zip"},
 };
-static const int compress_cmd_list_size = sizeof(compress_cmd_list)
+static const unsigned compress_cmd_list_size = sizeof(compress_cmd_list)
     / sizeof(compress_cmd_list[0]);
 
 enum {
@@ -149,11 +149,11 @@ static const char *defTabooExts[] = {
     ".ucf-old",
     "~"
 };
-static const int defTabooCount = sizeof(defTabooExts) / sizeof(char *);
+static const unsigned defTabooCount = sizeof(defTabooExts) / sizeof(char *);
 
 /* I shouldn't use globals here :-( */
 static char **tabooPatterns = NULL;
-static int tabooCount = 0;
+static unsigned tabooCount = 0;
 static int glob_errno = 0;
 
 static int readConfigFile(const char *configFile, struct logInfo *defConfig);
@@ -173,7 +173,7 @@ static char *isolateLine(char **strt, char **buf, size_t length) {
     tmp = endtag - 1;
     while (isspace((unsigned char)*endtag))
         endtag--;
-    key = strndup(start, endtag - start + 1);
+    key = strndup(start, (size_t)(endtag - start + 1));
     if (key == NULL) {
         message_OOM();
         return NULL;
@@ -218,7 +218,7 @@ static char *isolateWord(char **strt, char **buf, size_t length) {
         endtag++;}
     if (max < endtag)
         return NULL;
-    key = strndup(start, endtag - start);
+    key = strndup(start, (size_t)(endtag - start));
     if (key == NULL) {
         message_OOM();
         return NULL;
@@ -237,7 +237,7 @@ static char *readPath(const char *configFile, int lineNum, const char *key,
         char *chptr = path;
 
         while (*chptr && (len = mbrtowc(&pwc, chptr, strlen(chptr), NULL)) != 0) {
-            if (len == (size_t)(-1) || len == (size_t)(-2) || !iswprint(pwc) || iswblank(pwc)) {
+            if (len == (size_t)(-1) || len == (size_t)(-2) || !iswprint((wint_t)pwc) || iswblank((wint_t)pwc)) {
                 message(MESS_ERROR, "%s:%d bad %s path %s\n",
                         configFile, lineNum, key, path);
                 free(path);
@@ -425,7 +425,7 @@ static int mkpath(const char *path, mode_t mode, uid_t uid, gid_t gid) {
 
 static int checkFile(const char *fname)
 {
-    int i;
+    unsigned i;
 
     /* Check if fname is '.' or '..'; if so, return false */
     if (fname[0] == '.' && (!fname[1] || (fname[1] == '.' && !fname[2])))
@@ -452,9 +452,9 @@ static int compar(const void *p, const void *q)
 }
 
 /* Free memory blocks pointed to by pointers in a 2d array and the array itself */
-static void free_2d_array(char **array, int lines_count)
+static void free_2d_array(char **array, unsigned lines_count)
 {
-    int i;
+    unsigned i;
     for (i = 0; i < lines_count; ++i)
         free(array[i]);
     free(array);
@@ -624,7 +624,8 @@ static int readConfigPath(const char *path, struct logInfo *defConfig)
     if (S_ISDIR(sb.st_mode)) {
         char **namelist, **p;
         struct dirent *dp;
-        int files_count, here, i;
+        int here;
+        unsigned files_count, i;
         DIR *dirp;
 
         if ((here = open(".", O_RDONLY)) == -1) {
@@ -733,7 +734,8 @@ static int readConfigPath(const char *path, struct logInfo *defConfig)
 
 int readAllConfigPaths(const char **paths)
 {
-    int i, result = 0;
+    int result = 0;
+    unsigned i;
     const char **file;
     struct logInfo defConfig = {
         .pattern = NULL,
@@ -809,7 +811,7 @@ int readAllConfigPaths(const char **paths)
 }
 
 static char* parseGlobString(const char *configFile, int lineNum,
-                             const char *buf, off_t length, char **ppos)
+                             const char *buf, size_t length, char **ppos)
 {
     /* output buffer */
     char *globString = NULL;
@@ -822,7 +824,7 @@ static char* parseGlobString(const char *configFile, int lineNum,
     } state = PGS_INIT;
 
     /* move the cursor at caller's side while going through the input */
-    for (; (*ppos - buf < length) && **ppos; (*ppos)++) {
+    for (; ((size_t)(*ppos - buf) < length) && **ppos; (*ppos)++) {
         /* state transition (see above) */
         switch (state) {
             case PGS_INIT:
@@ -922,10 +924,9 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 {
     int fd;
     char *buf, *endtag, *key = NULL;
-    off_t length;
+    size_t length;
     int lineNum = 1;
     unsigned long long multiplier;
-    int i, k;
     char *scriptStart = NULL;
     char **scriptDest = NULL;
     struct logInfo *newlog = defConfig;
@@ -1032,7 +1033,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
         }
     }
 
-    length = sb.st_size;
+    length = (size_t)sb.st_size;
 
     if (length > 0xffffff) {
         message(MESS_ERROR, "file %s too large, probably not a config file.\n",
@@ -1051,10 +1052,10 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
     }
 
 #ifdef MAP_POPULATE
-    buf = mmap(NULL, (size_t) length, PROT_READ,
+    buf = mmap(NULL, length, PROT_READ,
             MAP_PRIVATE | MAP_POPULATE, fd, (off_t) 0);
 #else /* MAP_POPULATE */
-    buf = mmap(NULL, (size_t) length, PROT_READ,
+    buf = mmap(NULL, length, PROT_READ,
             MAP_PRIVATE, fd, (off_t) 0);
 #endif /* MAP_POPULATE */
 
@@ -1067,17 +1068,17 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 
 #ifdef HAVE_MADVISE
 #ifdef MADV_DONTFORK
-    madvise(buf, (size_t)(length + 2),
+    madvise(buf, length + 2,
             MADV_SEQUENTIAL | MADV_WILLNEED | MADV_DONTFORK);
 #else /* MADV_DONTFORK */
-    madvise(buf, (size_t)(length + 2),
+    madvise(buf, length + 2,
             MADV_SEQUENTIAL | MADV_WILLNEED);
 #endif /* MADV_DONTFORK */
 #endif /* HAVE_MADVISE */
 
     message(MESS_DEBUG, "reading config file %s\n", configFile);
 
-    for (start = buf; start - buf < length; start++) {
+    for (start = buf; (size_t)(start - buf) < length; start++) {
         switch (state) {
             case STATE_DEFAULT:
                 if (isblank((unsigned char)*start))
@@ -1208,12 +1209,12 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                         newlog->flags &= ~LOG_FLAG_CREATE;
                     } else if (!strcmp(key, "size") || !strcmp(key, "minsize") ||
                             !strcmp(key, "maxsize")) {
-                        unsigned long long size = 0;
                         char *opt = key;
 
                         key = isolateValue(configFile, lineNum, opt, &start, &buf, length);
                         if (key && key[0]) {
-                            int l = strlen(key) - 1;
+                            off_t size;
+                            const size_t l = strlen(key) - 1;
                             if (key[l] == 'k' || key[l] == 'K') {
                                 key[l] = '\0';
                                 multiplier = 1024;
@@ -1232,8 +1233,8 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                                 multiplier = 1;
                             }
 
-                            size = multiplier * strtoull(key, &chptr, 0);
-                            if (*chptr) {
+                            size = (off_t) (multiplier * strtoull(key, &chptr, 0));
+                            if (*chptr || size < 0) {
                                 message(MESS_ERROR, "%s:%d bad size '%s'\n",
                                         configFile, lineNum, key);
                                 free(opt);
@@ -1259,7 +1260,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                                            &start, &buf, length);
                         if (key == NULL)
                             continue;
-                        newlog->shred_cycles = strtoul(key, &chptr, 0);
+                        newlog->shred_cycles = (int)strtoul(key, &chptr, 0);
                         if (*chptr || newlog->shred_cycles < 0) {
                             message(MESS_ERROR, "%s:%d bad shred cycles '%s'\n",
                                     configFile, lineNum, key);
@@ -1300,7 +1301,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                                            &buf, length);
                         if (key == NULL)
                             continue;
-                        newlog->rotateCount = strtol(key, &chptr, 0);
+                        newlog->rotateCount = (int)strtol(key, &chptr, 0);
                         if (*chptr || newlog->rotateCount < -1) {
                             message(MESS_ERROR,
                                     "%s:%d bad rotation count '%s'\n",
@@ -1313,7 +1314,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                                            &buf, length);
                         if (key == NULL)
                             continue;
-                        newlog->logStart = strtoul(key, &chptr, 0);
+                        newlog->logStart = (int)strtoul(key, &chptr, 0);
                         if (*chptr || newlog->logStart < 0) {
                             message(MESS_ERROR, "%s:%d bad start count '%s'\n",
                                     configFile, lineNum, key);
@@ -1325,7 +1326,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                                            &buf, length);
                         if (key == NULL)
                             continue;
-                        newlog->rotateMinAge = strtoul(key, &chptr, 0);
+                        newlog->rotateMinAge = (int)strtoul(key, &chptr, 0);
                         if (*chptr || newlog->rotateMinAge < 0) {
                             message(MESS_ERROR, "%s:%d bad minimum age '%s'\n",
                                     configFile, lineNum, start);
@@ -1337,7 +1338,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                                            &buf, length);
                         if (key == NULL)
                             continue;
-                        newlog->rotateAge = strtoul(key, &chptr, 0);
+                        newlog->rotateAge = (int)strtoul(key, &chptr, 0);
                         if (*chptr || newlog->rotateAge < 0) {
                             message(MESS_ERROR, "%s:%d bad maximum age '%s'\n",
                                     configFile, lineNum, start);
@@ -1554,6 +1555,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                     } else if (!strcmp(key, "compresscmd")) {
                         char *compresscmd_full;
                         const char *compresscmd_base;
+                        unsigned i;
 
                         freeLogItem (compress_prog);
 
@@ -1752,6 +1754,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 
                             for (log = logs.tqh_first; log != NULL;
                                     log = log->list.tqe_next) {
+                                unsigned k;
                                 for (k = 0; k < log->numFiles; k++) {
                                     if (!strcmp(log->files[k],
                                                 globResult.gl_pathv[glob_count])) {
@@ -1804,12 +1807,13 @@ duperror:
                     }
 
                     if (newlog->oldDir) {
-                        for (i = 0; i < newlog->numFiles; i++) {
+                        unsigned j;
+                        for (j = 0; j < newlog->numFiles; j++) {
                             char *ld;
                             char *dirpath;
                             const char *dirName;
 
-                            dirpath = strdup(newlog->files[i]);
+                            dirpath = strdup(newlog->files[j]);
                             if (dirpath == NULL) {
                                 message_OOM();
                                 goto error;
@@ -1890,7 +1894,7 @@ duperror:
                                 message(MESS_ERROR,
                                         "%s:%d olddir %s and log file %s "
                                         "are on different devices\n", configFile,
-                                        lineNum, newlog->oldDir, newlog->files[i]);
+                                        lineNum, newlog->oldDir, newlog->files[j]);
                                 goto error;
                             }
                         }
@@ -1956,7 +1960,7 @@ duperror:
                         while (*endtag != '\n')
                             endtag--;
                         endtag++;
-                        *scriptDest = strndup(scriptStart, endtag - scriptStart);
+                        *scriptDest = strndup(scriptStart, (size_t)(endtag - scriptStart));
                         if (*scriptDest == NULL) {
                             message_OOM();
                             goto error;
@@ -2034,13 +2038,13 @@ duperror:
 
     free(key);
 
-    munmap(buf, (size_t) length);
+    munmap(buf, length);
     close(fd);
     return logerror;
 error:
     /* free is a NULL-safe operation */
     free(key);
-    munmap(buf, (size_t) length);
+    munmap(buf, length);
     close(fd);
     return 1;
 }

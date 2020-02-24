@@ -85,7 +85,7 @@ struct logNames {
 };
 
 struct compData {
-    int prefix_len;
+    size_t prefix_len;
     const char *dformat;
 };
 
@@ -136,7 +136,7 @@ static int compGlobResult(const void *result1, const void *result2)  {
     return 0;
 }
 
-static void sortGlobResult(glob_t *result, int prefix_len, const char *dformat) {
+static void sortGlobResult(glob_t *result, size_t prefix_len, const char *dformat) {
     if (!dformat || *dformat == '\0') {
         return;
     }
@@ -146,7 +146,7 @@ static void sortGlobResult(glob_t *result, int prefix_len, const char *dformat) 
     qsort(result->gl_pathv, result->gl_pathc, sizeof(char *), compGlobResult);
 }
 #else
-static void sortGlobResult(glob_t *result, int prefix_len, const char *dformat) {
+static void sortGlobResult(glob_t *result, size_t prefix_len, const char *dformat) {
     /* TODO */
 }
 #endif
@@ -237,7 +237,8 @@ static void unescape(char *arg)
 }
 
 #define HASH_SIZE_MIN 64
-static int allocateHash(unsigned int hs)
+#define HASH_SIZE_MAX 8192
+static int allocateHash(unsigned long hs)
 {
     unsigned int i;
 
@@ -245,7 +246,11 @@ static int allocateHash(unsigned int hs)
     if (hs < HASH_SIZE_MIN)
         hs = HASH_SIZE_MIN;
 
-    message(MESS_DEBUG, "Allocating hash table for state file, size %u entries\n",
+    /* Enforce some reasonable maximum hash size */
+    if (hs > HASH_SIZE_MAX)
+        hs = HASH_SIZE_MAX;
+
+    message(MESS_DEBUG, "Allocating hash table for state file, size %lu entries\n",
             hs);
 
     states = calloc(hs, sizeof(struct logStateList *));
@@ -263,7 +268,7 @@ static int allocateHash(unsigned int hs)
         LIST_INIT(&(states[i]->head));
     }
 
-    hashSize = hs;
+    hashSize = (unsigned)hs;
 
     return 0;
 }
@@ -281,10 +286,10 @@ static int hashIndex(const char *fn)
 
     while (*fn) {
         hash *= HASH_CONST;
-        hash += *fn++;
+        hash += (unsigned char)*fn++;
     }
 
-    return hash % hashSize;
+    return (int)(hash % hashSize);
 }
 
 /* safe implementation of dup2(oldfd, nefd) followed by close(oldfd) */
@@ -743,6 +748,7 @@ static int compressLogFile(char *name, struct logInfo *log, struct stat *sb)
     int status;
     int compressPipe[2];
     char buff[4092];
+    ssize_t n_read;
     int error_printed = 0;
     char *prevCtx;
     pid_t pid;
@@ -752,7 +758,7 @@ static int compressLogFile(char *name, struct logInfo *log, struct stat *sb)
         return 0;
 
     fullCommand = alloca(sizeof(*fullCommand) *
-            (log->compress_options_count + 2));
+            ((unsigned)log->compress_options_count + 2));
     fullCommand[0] = log->compress_prog;
     for (i = 0; i < log->compress_options_count; i++)
         fullCommand[i + 1] = log->compress_options_list[i];
@@ -841,13 +847,13 @@ static int compressLogFile(char *name, struct logInfo *log, struct stat *sb)
     /* close write end of pipe in the parent process */
     close(compressPipe[1]);
 
-    while ((i = read(compressPipe[0], buff, sizeof(buff) - 1)) > 0) {
+    while ((n_read = read(compressPipe[0], buff, sizeof(buff) - 1)) > 0) {
         if (!error_printed) {
             error_printed = 1;
             message(MESS_ERROR, "Compressing program wrote following message "
                     "to stderr when compressing log %s:\n", name);
         }
-        buff[i] = '\0';
+        buff[n_read] = '\0';
         fprintf(stderr, "%s", buff);
     }
     close(compressPipe[0]);
@@ -978,7 +984,7 @@ static int mailLog(struct logInfo *log, char *logFile, const char *mailComm,
 }
 
 static int mailLogWrapper(char *mailFilename, const char *mailComm,
-                          int logNum, struct logInfo *log)
+                          unsigned logNum, struct logInfo *log)
 {
     /* uncompress already compressed log files before mailing them */
     char *uncompress_prog = (log->flags & LOG_FLAG_COMPRESS)
@@ -1041,7 +1047,7 @@ static size_t full_write(int fd, const void *buf, size_t count)
         size_t n_rw;
         for (;;)
         {
-            n_rw = write (fd, buf, count);
+            n_rw = (size_t)write (fd, buf, count);
             if (errno == EINTR)
                 continue;
             else
@@ -1070,8 +1076,8 @@ static int sparse_copy(int src_fd, int dest_fd, struct stat *sb,
 
     while (max_n_read) {
         int make_hole = 0;
-
-        ssize_t n_read = read (src_fd, buf, MIN (max_n_read, BUFSIZ));
+        size_t bytes_read;
+        const ssize_t n_read = read (src_fd, buf, MIN (max_n_read, BUFSIZ));
         if (n_read < 0) {
             if (errno == EINTR) {
                 continue;
@@ -1084,14 +1090,16 @@ static int sparse_copy(int src_fd, int dest_fd, struct stat *sb,
         if (n_read == 0)
             break;
 
-        max_n_read -= n_read;
+        bytes_read = (size_t)n_read;
+
+        max_n_read -= bytes_read;
         total_n_read += n_read;
 
         if (make_holes) {
             /* Sentinel required by is_nul().  */
-            buf[n_read] = '\1';
+            buf[bytes_read] = '\1';
 
-            if ((make_hole = is_nul(buf, n_read))) {
+            if ((make_hole = is_nul(buf, bytes_read))) {
                 if (lseek (dest_fd, n_read, SEEK_CUR) < 0) {
                     message(MESS_ERROR, "error seeking %s: %s\n",
                             saveLog, strerror(errno));
@@ -1101,8 +1109,7 @@ static int sparse_copy(int src_fd, int dest_fd, struct stat *sb,
         }
 
         if (!make_hole) {
-            size_t n = n_read;
-            if (full_write (dest_fd, buf, n) != n) {
+            if (full_write (dest_fd, buf, bytes_read) != bytes_read) {
                 message(MESS_ERROR, "error writing to %s: %s\n",
                         saveLog, strerror(errno));
                 return 0;
@@ -1218,13 +1225,13 @@ static time_t mktimeFromDateOnly(const struct tm *src)
 }
 
 /* return by how many days the date was advanced but ignore exact time */
-static int daysElapsed(const struct tm *now, const struct tm *last)
+static time_t daysElapsed(const struct tm *now, const struct tm *last)
 {
     const time_t diff = mktimeFromDateOnly(now) - mktimeFromDateOnly(last);
     return diff / (24 * 3600);
 }
 
-static int findNeedRotating(struct logInfo *log, int logNum, int force)
+static int findNeedRotating(struct logInfo *log, unsigned logNum, int force)
 {
     struct stat sb;
     struct logState *state = NULL;
@@ -1326,7 +1333,7 @@ static int findNeedRotating(struct logInfo *log, int logNum, int force)
             state->lastRotated.tm_mon != now.tm_mon ||
             state->lastRotated.tm_mday != now.tm_mday ||
             state->lastRotated.tm_hour != now.tm_hour) {
-        int days;
+        time_t days;
         switch (log->criterium) {
             case ROT_WEEKLY:
                 days = daysElapsed(&now, &state->lastRotated);
@@ -1335,7 +1342,7 @@ static int findNeedRotating(struct logInfo *log, int logNum, int force)
                     /* ... or if we have not yet rotated today */
                     || (days >= 1
                             /* ... and the selected weekday is today */
-                            && now.tm_wday == log->weekday);
+                            && (unsigned)now.tm_wday == log->weekday);
                 if (!state->doRotate) {
                     message(MESS_DEBUG, "  log does not need rotating "
                             "(log has been rotated at %d-%02d-%02d %02d:%02d, "
@@ -1493,7 +1500,7 @@ static int findLastRotated(const struct logNames *rotNames,
     return last;
 }
 
-static int prerotateSingleLog(struct logInfo *log, int logNum,
+static int prerotateSingleLog(struct logInfo *log, unsigned logNum,
                               struct logState *state, struct logNames *rotNames)
 {
     struct tm now;
@@ -1808,20 +1815,19 @@ static int prerotateSingleLog(struct logInfo *log, int logNum,
              * if we find another one mail and remove the first and
              * remember the second and so on */
             struct stat fst_buf;
-            int mail_out = -1;
-            size_t glob_count;
+            size_t glob_count, mail_out = (size_t)-1;
             /* Remove the first (n - rotateCount) matches no real rotation
              * needed, since the files have the date in their name. Note that
              * (size_t)-1 == SIZE_T_MAX in rotateCount */
             sortGlobResult(&globResult, strlen(rotNames->dirName) + 1 + strlen(rotNames->baseName), dformat);
             for (glob_count = 0; glob_count < globResult.gl_pathc; glob_count++) {
                 if (!stat((globResult.gl_pathv)[glob_count], &fst_buf)) {
-                    if (((globResult.gl_pathc >= (size_t)rotateCount) && (glob_count <= (globResult.gl_pathc - rotateCount)))
+                    if (((globResult.gl_pathc >= (size_t)rotateCount) && (glob_count <= (globResult.gl_pathc - (size_t)rotateCount)))
                             || ((log->rotateAge > 0)
                                 &&
                                 (((nowSecs - fst_buf.st_mtime) / DAY_SECONDS)
                                  > log->rotateAge))) {
-                        if (mail_out != -1) {
+                        if (mail_out != (size_t)-1) {
                             char *mailFilename =
                                 (globResult.gl_pathv)[mail_out];
                             if (!hasErrors && log->logAddress)
@@ -1836,7 +1842,7 @@ static int prerotateSingleLog(struct logInfo *log, int logNum,
                     }
                 }
             }
-            if (mail_out != -1) {
+            if (mail_out != (size_t)-1) {
                 /* oldName is oldest Backup found (for unlink later) */
                 if (asprintf(&oldName, "%s", (globResult.gl_pathv)[mail_out]) < 0) {
                     message_OOM();
@@ -1987,7 +1993,7 @@ static int prerotateSingleLog(struct logInfo *log, int logNum,
     return hasErrors;
 }
 
-static int rotateSingleLog(struct logInfo *log, int logNum,
+static int rotateSingleLog(struct logInfo *log, unsigned logNum,
                            struct logState *state, struct logNames *rotNames)
 {
     int hasErrors = 0;
@@ -2123,7 +2129,7 @@ static int rotateSingleLog(struct logInfo *log, int logNum,
     return hasErrors;
 }
 
-static int postrotateSingleLog(struct logInfo *log, int logNum,
+static int postrotateSingleLog(struct logInfo *log, unsigned logNum,
                                struct logState *state,
                                struct logNames *rotNames)
 {
@@ -2174,7 +2180,7 @@ static int postrotateSingleLog(struct logInfo *log, int logNum,
 
 static int rotateLogSet(struct logInfo *log, int force)
 {
-    int i, j;
+    unsigned i, j;
     int hasErrors = 0;
     int *logHasErrors;
     int numRotated = 0;
@@ -2717,7 +2723,7 @@ static int readState(const char *stateFilename)
      * We expect single entry to have around 80 characters (Of course this is
      * just an estimation). During the testing I've found out that 200 entries
      * per single hash entry gives good mem/performance ratio. */
-    if (allocateHash(f_stat.st_size / 80 / 200))
+    if (allocateHash((size_t)f_stat.st_size / 80 / 200))
         rc = 1;
 
     if (rc || (f_stat.st_size == 0)) {
