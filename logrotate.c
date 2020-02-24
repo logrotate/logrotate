@@ -34,7 +34,7 @@
 #include "log.h"
 #include "logrotate.h"
 
-static void *prev_context;
+static char *prev_context;
 #ifdef WITH_SELINUX
 #include <selinux/selinux.h>
 static int selinux_enabled = 0;
@@ -304,10 +304,10 @@ static int movefd(int oldfd, int newfd)
     return rc;
 }
 
-static int setSecCtx(int fdSrc, const char *src, void **pPrevCtx)
+static int setSecCtx(int fdSrc, const char *src, char **pPrevCtx)
 {
 #ifdef WITH_SELINUX
-    security_context_t srcCtx;
+    char *srcCtx;
     *pPrevCtx = NULL;
 
     if (!selinux_enabled)
@@ -326,7 +326,7 @@ static int setSecCtx(int fdSrc, const char *src, void **pPrevCtx)
     }
 
     /* save default security context for restoreSecCtx() */
-    if (getfscreatecon_raw((security_context_t *)pPrevCtx) < 0) {
+    if (getfscreatecon_raw(pPrevCtx) < 0) {
         message(MESS_ERROR, "getting default context: %s\n", strerror(errno));
         return selinux_enforce;
     }
@@ -349,7 +349,7 @@ static int setSecCtx(int fdSrc, const char *src, void **pPrevCtx)
     return 0;
 }
 
-static int setSecCtxByName(const char *src, void **pPrevCtx)
+static int setSecCtxByName(const char *src, char **pPrevCtx)
 {
     int hasErrors = 0;
 #ifdef WITH_SELINUX
@@ -367,21 +367,20 @@ static int setSecCtxByName(const char *src, void **pPrevCtx)
     return hasErrors;
 }
 
-static void restoreSecCtx(void **pPrevCtx)
+static void restoreSecCtx(char **pPrevCtx)
 {
 #ifdef WITH_SELINUX
-    const security_context_t prevCtx = (security_context_t) *pPrevCtx;
-    if (!prevCtx)
+    if (!*pPrevCtx)
         /* no security context saved for restoration */
         return;
 
     /* set default security context to the previously stored one */
-    if (selinux_enabled && setfscreatecon_raw(prevCtx) < 0)
-        message(MESS_ERROR, "setting default context to %s: %s\n", prevCtx,
+    if (selinux_enabled && setfscreatecon_raw(*pPrevCtx) < 0)
+        message(MESS_ERROR, "setting default context to %s: %s\n", *pPrevCtx,
                 strerror(errno));
 
     /* free the memory allocated to save the security context */
-    freecon(prevCtx);
+    freecon(*pPrevCtx);
     *pPrevCtx = NULL;
 #else
     (void) pPrevCtx;
@@ -747,7 +746,7 @@ static int compressLogFile(char *name, struct logInfo *log, struct stat *sb)
     int compressPipe[2];
     char buff[4092];
     int error_printed = 0;
-    void *prevCtx;
+    char *prevCtx;
     pid_t pid;
 
     message(MESS_DEBUG, "compressing log with: %s\n", log->compress_prog);
@@ -1131,7 +1130,7 @@ static int copyTruncate(char *currLog, char *saveLog, struct stat *sb,
 {
     int rc = 1;
     int fdcurr = -1, fdsave = -1;
-    void *prevCtx;
+    char *prevCtx;
 
     message(MESS_DEBUG, "copying %s to %s\n", currLog, saveLog);
 
@@ -1983,7 +1982,7 @@ static int rotateSingleLog(struct logInfo *log, int logNum,
 {
     int hasErrors = 0;
     struct stat sb;
-    void *savedContext = NULL;
+    char *savedContext = NULL;
 
     if (!state->doRotate)
         return 0;
@@ -2449,7 +2448,7 @@ static int writeState(const char *stateFilename)
     char *tmpFilename = NULL;
     struct tm now;
     time_t now_time, last_time;
-    void *prevCtx;
+    char *prevCtx;
 
     localtime_r(&nowSecs, &now);
 
