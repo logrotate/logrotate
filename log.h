@@ -18,6 +18,12 @@ void message(int level, const char *format, ...)
 #else
 ;
 #endif
+
+#define message_OOM() \
+    do { \
+        message(MESS_ERROR, "can not allocate memory [%s():%d]\n", __func__, __LINE__); \
+    } while(0)
+
 void logSetMessageFile(FILE * f);
 void logToSyslog(int enable);
 void logSetLevel(int level);

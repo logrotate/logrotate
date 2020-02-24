@@ -250,16 +250,14 @@ static int allocateHash(unsigned int hs)
 
     states = calloc(hs, sizeof(struct logStateList *));
     if (states == NULL) {
-        message(MESS_ERROR, "could not allocate memory for "
-                "hash table\n");
+        message_OOM();
         return 1;
     }
 
     for (i = 0; i < hs; i++) {
         states[i] = malloc(sizeof *states[0]);
         if (states[i] == NULL) {
-            message(MESS_ERROR, "could not allocate memory for "
-                    "hash element\n");
+            message_OOM();
             return 1;
         }
         LIST_INIT(&(states[i]->head));
@@ -399,13 +397,13 @@ static struct logState *newState(const char *fn)
 
     new = malloc(sizeof(*new));
     if (new == NULL) {
-        message(MESS_ERROR, "can not allocate memory\n");
+        message_OOM();
         return NULL;
     }
 
     new->fn = strdup(fn);
     if (new->fn  == NULL) {
-        message(MESS_ERROR, "can not allocate memory\n");
+        message_OOM();
         free(new);
         return NULL;
     }
@@ -1241,7 +1239,7 @@ static int findNeedRotating(struct logInfo *log, int logNum, int force)
         char *ld;
         char *logpath = strdup(log->files[logNum]);
         if (logpath == NULL) {
-            message(MESS_ERROR, "can not allocate memory\n");
+            message_OOM();
             return 1;
         }
         ld = dirname(logpath);
@@ -1540,7 +1538,7 @@ static int prerotateSingleLog(struct logInfo *log, int logNum,
         char *ld;
         char *logpath = strdup(log->files[logNum]);
         if (logpath == NULL) {
-            message(MESS_ERROR, "can not allocate memory\n");
+            message_OOM();
             return 1;
         }
         ld = dirname(logpath);
@@ -1556,7 +1554,7 @@ static int prerotateSingleLog(struct logInfo *log, int logNum,
         free(logpath);
 
         if (rotNames->dirName == NULL) {
-            message(MESS_ERROR, "can not allocate memory\n");
+            message_OOM();
             return 1;
         }
     }
@@ -1564,13 +1562,13 @@ static int prerotateSingleLog(struct logInfo *log, int logNum,
     {
         char *filename = strdup(log->files[logNum]);
         if (filename == NULL) {
-            message(MESS_ERROR, "can not allocate memory\n");
+            message_OOM();
             return 1;
         }
 
         rotNames->baseName = strdup(basename(filename));
         if (rotNames->baseName == NULL) {
-            message(MESS_ERROR, "can not allocate memory\n");
+            message_OOM();
             free(filename);
             return 1;
         }
@@ -1587,7 +1585,7 @@ static int prerotateSingleLog(struct logInfo *log, int logNum,
 
             char *tempstr = strndup(rotNames->baseName, baseLen - extLen);
             if (tempstr == NULL) {
-                message(MESS_ERROR, "can not allocate memory\n");
+                message_OOM();
                 return 1;
             }
 
@@ -1609,7 +1607,7 @@ static int prerotateSingleLog(struct logInfo *log, int logNum,
             fileext = log->extension;
             tempstr = strndup(rotNames->baseName, baseLen - extLen);
             if (tempstr == NULL) {
-                message(MESS_ERROR, "can not allocate memory\n");
+                message_OOM();
                 return 1;
             }
             free(rotNames->baseName);
@@ -1788,7 +1786,7 @@ static int prerotateSingleLog(struct logInfo *log, int logNum,
         malloc(strlen(rotNames->dirName) + strlen(rotNames->baseName) +
                 strlen(fileext) + strlen(compext) + DATEEXT_LEN + 2 );
     if (rotNames->firstRotated == NULL) {
-        message(MESS_ERROR, "can not allocate memory\n");
+        message_OOM();
         return 1;
     }
 
@@ -1797,7 +1795,8 @@ static int prerotateSingleLog(struct logInfo *log, int logNum,
          * and compress ext */
         if (asprintf(&glob_pattern, "%s/%s%s%s%s", rotNames->dirName,
                      rotNames->baseName, dext_pattern, fileext, compext) < 0) {
-            message(MESS_ERROR, "could not allocate glob pattern memory\n");
+            message_OOM();
+            return 1;
         }
         rc = glob(glob_pattern, 0, globerr, &globResult);
         if (!rc) {
@@ -1902,7 +1901,7 @@ static int prerotateSingleLog(struct logInfo *log, int logNum,
         if (log->rotateCount != -1) {
             rotNames->disposeName = strdup(oldName);
             if (rotNames->disposeName == NULL) {
-                message(MESS_ERROR, "can not allocate memory\n");
+                message_OOM();
             }
         }
 
@@ -1961,7 +1960,7 @@ static int prerotateSingleLog(struct logInfo *log, int logNum,
         /* note: the gzip extension is *not* used here! */
         if (asprintf(&(rotNames->finalName), "%s/%s.%d%s", rotNames->dirName,
                      rotNames->baseName, logStart, fileext) < 0) {
-            message(MESS_ERROR, "could not allocate finalName memory\n");
+            message_OOM();
         }
     }
 
@@ -2007,7 +2006,7 @@ static int rotateSingleLog(struct logInfo *log, int logNum,
                 char *tmpFilename;
 
                 if (asprintf(&tmpFilename, "%s%s", log->files[logNum], ".tmp") < 0) {
-                    message(MESS_FATAL, "could not allocate tmpFilename memory\n");
+                    message_OOM();
                     restoreSecCtx(&savedContext);
                     return 1;
                 }
@@ -2124,7 +2123,7 @@ static int postrotateSingleLog(struct logInfo *log, int logNum,
     if (!hasErrors && (log->flags & LOG_FLAG_TMPFILENAME)) {
         char *tmpFilename;
         if (asprintf(&tmpFilename, "%s%s", log->files[logNum], ".tmp") < 0) {
-            message(MESS_FATAL, "could not allocate tmpFilename memory\n");
+            message_OOM();
             return 1;
         }
         hasErrors = copyTruncate(tmpFilename, rotNames->finalName,
@@ -2171,8 +2170,7 @@ static int rotateLogSet(struct logInfo *log, int force)
 
     logHasErrors = calloc(log->numFiles, sizeof(int));
     if (!logHasErrors) {
-        message(MESS_ERROR, "could not allocate memory for "
-                "logHasErrors\n");
+        message_OOM();
         return 1;
     }
     message(MESS_DEBUG, "\nrotating pattern: %s ", log->pattern);
@@ -2283,7 +2281,7 @@ static int rotateLogSet(struct logInfo *log, int force)
     rotNames = malloc(log->numFiles * sizeof(struct logNames *));
 
     if (state == NULL || rotNames == NULL) {
-        message(MESS_ERROR, "can not allocate memory\n");
+        message_OOM();
         free(rotNames);
         free(state);
         free(logHasErrors);
@@ -2303,7 +2301,7 @@ static int rotateLogSet(struct logInfo *log, int force)
 
             rotNames[i] = malloc(sizeof(struct logNames));
             if (rotNames[i] == NULL) {
-                message(MESS_ERROR, "can not allocate memory\n");
+                message_OOM();
                 free(rotNames);
                 free(state);
                 free(logHasErrors);
@@ -2454,8 +2452,7 @@ static int writeState(const char *stateFilename)
 
     tmpFilename = malloc(strlen(stateFilename) + 5 );
     if (tmpFilename == NULL) {
-        message(MESS_ERROR, "could not allocate memory for "
-                "tmp state filename\n");
+        message_OOM();
         return 1;
     }
     strcpy(tmpFilename, stateFilename);
@@ -2835,7 +2832,7 @@ static int readState(const char *stateFilename)
 
         filename = strdup(argv[0]);
         if (filename == NULL) {
-            message(MESS_ERROR, "can not allocate memory\n");
+            message_OOM();
             free(argv);
             fclose(f);
             return 1;

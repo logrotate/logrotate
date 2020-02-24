@@ -70,7 +70,7 @@ int asprintf(char **string_ptr, const char *format, ...)
          * Strictly speaking, GNU asprintf doesn't do this,
          * but the caller isn't checking the return value.
          */
-        fprintf(stderr, "failed to allocate memory\\n");
+        message_OOM();
         exit(1);
     }
     rv = vsnprintf(str, size, format, arg);
@@ -174,6 +174,10 @@ static char *isolateLine(char **strt, char **buf, size_t length) {
     while (isspace((unsigned char)*endtag))
         endtag--;
     key = strndup(start, endtag - start + 1);
+    if (key == NULL) {
+        message_OOM();
+        return NULL;
+    }
     *strt = tmp;
     return key;
 }
@@ -215,6 +219,10 @@ static char *isolateWord(char **strt, char **buf, size_t length) {
     if (max < endtag)
         return NULL;
     key = strndup(start, endtag - start);
+    if (key == NULL) {
+        message_OOM();
+        return NULL;
+    }
     *strt = endtag;
     return key;
 }
@@ -394,7 +402,7 @@ static int mkpath(const char *path, mode_t mode, uid_t uid, gid_t gid) {
     char *copypath = strdup(path);
 
     if (!copypath) {
-        message(MESS_ERROR, "can not allocate memory\n");
+        message_OOM();
         return 1;
     }
 
@@ -457,7 +465,7 @@ static void free_2d_array(char **array, int lines_count)
         if ((src) && rv == 0) { \
             (dest) = strdup(src); \
             if ((dest) == NULL) { \
-                message(MESS_ERROR, "can not allocate memory\n"); \
+                message_OOM(); \
                 rv = 1; \
             } \
         } else { \
@@ -504,7 +512,7 @@ static int copyLogInfo(struct logInfo *to, const struct logInfo *from)
         poptDupArgv(from->compress_options_count, from->compress_options_list,
                     &to->compress_options_count,  &to->compress_options_list);
         if (to->compress_options_list == NULL) {
-            message(MESS_ERROR, "can not allocate memory\n");
+            message_OOM();
             rv = 1;
         }
     }
@@ -542,7 +550,7 @@ static struct logInfo *newLogInfo(const struct logInfo *template)
 
     new = malloc(sizeof(*new));
     if (new == NULL) {
-        message(MESS_ERROR, "can not allocate memory\n");
+        message_OOM();
         return NULL;
     }
 
@@ -648,8 +656,7 @@ static int readConfigPath(const char *path, struct logInfo *defConfig)
                         free_2d_array(namelist, files_count);
                         closedir(dirp);
                         close(here);
-                        message(MESS_ERROR, "cannot realloc: %s\n",
-                                strerror(errno));
+                        message_OOM();
                         return 1;
                     }
                 }
@@ -661,8 +668,7 @@ static int readConfigPath(const char *path, struct logInfo *defConfig)
                     free_2d_array(namelist, files_count);
                     closedir(dirp);
                     close(here);
-                    message(MESS_ERROR, "cannot realloc: %s\n",
-                            strerror(errno));
+                    message_OOM();
                     return 1;
                 }
             }
@@ -770,7 +776,7 @@ int readAllConfigPaths(const char **paths)
 
     tabooPatterns = malloc(sizeof(*tabooPatterns) * defTabooCount);
     if (tabooPatterns == NULL) {
-        message(MESS_ERROR, "can not allocate memory\n");
+        message_OOM();
         return 1;
     }
 
@@ -788,7 +794,7 @@ int readAllConfigPaths(const char **paths)
             tabooCount++;
         } else {
             free_2d_array(tabooPatterns, tabooCount);
-            message(MESS_ERROR, "cannot malloc: %s\n", strerror(errno));
+            message_OOM();
             return 1;
         }
     }
@@ -857,7 +863,7 @@ static char* parseGlobString(const char *configFile, int lineNum,
             globStringAlloc += GLOB_STR_REALLOC_STEP;
             ptr = realloc(globString, globStringAlloc);
             if (!ptr) {
-                message(MESS_ERROR, "can not realloc\n");
+                message_OOM();
                 free(globString);
                 return NULL;
             }
@@ -1418,7 +1424,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                                 char **tmp = realloc(tabooPatterns, sizeof(*tabooPatterns) *
                                         (tabooCount + 1));
                                 if (tmp == NULL) {
-                                    message(MESS_ERROR, "can not allocate memory\n");
+                                    message_OOM();
                                     RAISE_ERROR();
                                 }
                                 tabooPatterns = tmp;
@@ -1475,7 +1481,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                             tmp = realloc(tabooPatterns, sizeof(*tabooPatterns) *
                                     (tabooCount + 1));
                             if (tmp == NULL) {
-                                message(MESS_ERROR, "can not allocate memory\n");
+                                message_OOM();
                                 RAISE_ERROR();
                             }
                             tabooPatterns = tmp;
@@ -1562,7 +1568,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 
                         compresscmd_full = strdup(newlog->compress_prog);
                         if (compresscmd_full == NULL) {
-                            message(MESS_ERROR, "can not allocate memory\n");
+                            message_OOM();
                             RAISE_ERROR();
                         }
 
@@ -1575,7 +1581,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                                 freeLogItem (compress_ext);
                                 newlog->compress_ext = strdup(compress_cmd_list[i].ext);
                                 if (newlog->compress_ext == NULL) {
-                                    message(MESS_ERROR, "can not allocate memory\n");
+                                    message_OOM();
                                     free(compresscmd_full);
                                     RAISE_ERROR();
                                 }
@@ -1666,7 +1672,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                         newlog->compress_ext = strdup(COMPRESS_EXT);
 
                     if (!newlog->compress_prog || !newlog->uncompress_prog || !newlog->compress_ext) {
-                        message(MESS_ERROR, "can not allocate memory\n");
+                        message_OOM();
                         goto error;
                     }
 
@@ -1730,7 +1736,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                                         globResult.
                                         gl_pathc));
                         if (tmp == NULL) {
-                            message(MESS_ERROR, "can not allocate memory\n");
+                            message_OOM();
                             logerror = 1;
                             goto duperror;
                         }
@@ -1762,7 +1768,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                             newlog->files[newlog->numFiles] =
                                 strdup(globResult.gl_pathv[glob_count]);
                             if (newlog->files[newlog->numFiles] == NULL) {
-                                message(MESS_ERROR, "can not allocate memory\n");
+                                message_OOM();
                                 logerror = 1;
                                 goto duperror;
                             }
@@ -1805,7 +1811,7 @@ duperror:
 
                             dirpath = strdup(newlog->files[i]);
                             if (dirpath == NULL) {
-                                message(MESS_ERROR, "can not allocate memory\n");
+                                message_OOM();
                                 goto error;
                             }
 
@@ -1832,7 +1838,7 @@ duperror:
                             }
                             ld = malloc(strlen(dirName) + strlen(newlog->oldDir) + 2);
                             if (ld == NULL) {
-                                message(MESS_ERROR, "can not allocate memory\n");
+                                message_OOM();
                                 free(dirpath);
                                 goto error;
                             }
@@ -1952,7 +1958,7 @@ duperror:
                         endtag++;
                         *scriptDest = strndup(scriptStart, endtag - scriptStart);
                         if (*scriptDest == NULL) {
-                            message(MESS_ERROR, "can not allocate memory\n");
+                            message_OOM();
                             goto error;
                         }
 
