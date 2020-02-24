@@ -1546,7 +1546,9 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                                 newlog->addextension);
 
                     } else if (!strcmp(key, "compresscmd")) {
-                        char *compresscmd_base;
+                        char *compresscmd_full;
+                        const char *compresscmd_base;
+
                         freeLogItem (compress_prog);
 
                         if (!
@@ -1558,11 +1560,14 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                         message(MESS_DEBUG, "compress_prog is now %s\n",
                                 newlog->compress_prog);
 
-                        compresscmd_base = strdup(basename(newlog->compress_prog));
-                        if (compresscmd_base == NULL) {
+                        compresscmd_full = strdup(newlog->compress_prog);
+                        if (compresscmd_full == NULL) {
                             message(MESS_ERROR, "can not allocate memory\n");
                             RAISE_ERROR();
                         }
+
+                        compresscmd_base = basename(compresscmd_full);
+
                         /* we check whether we changed the compress_cmd. In case we use the appropriate extension
                            as listed in compress_cmd_list */
                         for(i = 0; i < compress_cmd_list_size; i++) {
@@ -1571,14 +1576,14 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                                 newlog->compress_ext = strdup(compress_cmd_list[i].ext);
                                 if (newlog->compress_ext == NULL) {
                                     message(MESS_ERROR, "can not allocate memory\n");
-                                    free(compresscmd_base);
+                                    free(compresscmd_full);
                                     RAISE_ERROR();
                                 }
                                 message(MESS_DEBUG, "compress_ext was changed to %s\n", newlog->compress_ext);
                                 break;
                             }
                         }
-                        free(compresscmd_base);
+                        free(compresscmd_full);
                     } else if (!strcmp(key, "uncompresscmd")) {
                         freeLogItem (uncompress_prog);
 
