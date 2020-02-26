@@ -201,6 +201,12 @@ are removed rather than rotated.  If \fIcount\fR is -1, old logs are not removed
 at all (use with caution, may waste performance and disk space). Default is 0.
 
 .TP
+\fBmaxage\fR \fIcount\fR
+Remove rotated logs older than <count> days. The age is only checked
+if the logfile is to be rotated.  The files are mailed to the
+configured address if \fBmaillast\fR and \fBmail\fR are configured.
+
+.TP
 \fBolddir \fIdirectory\fR
 Logs are moved into \fIdirectory\fR for rotation.  The \fIdirectory\fR must be
 on the same physical device as the log file being rotated, unless \fBcopy\fR,
@@ -290,12 +296,6 @@ Do not rotate the log if it is empty (this overrides the \fBifempty\fR option).
 .TP
 \fBminage\fR \fIcount\fR
 Do not rotate logs which are less than <count> days old.
-
-.TP
-\fBmaxage\fR \fIcount\fR
-Remove rotated logs older than <count> days. The age is only checked
-if the logfile is to be rotated.  The files are mailed to the
-configured address if \fBmaillast\fR and \fBmail\fR are configured.
 
 .TP
 \fBminsize\fR \fIsize\fR
