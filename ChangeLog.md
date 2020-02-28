@@ -4,7 +4,17 @@ All notable changes to this project will be documented in this file.
 
 ## [UNRELEASED]
 
-[UNRELEASED]: https://github.com/logrotate/logrotate/compare/3.15.1...master
+[UNRELEASED]: https://github.com/logrotate/logrotate/compare/3.16.0...master
+
+## [3.16.0] - 2020-02-28
+  - fix compilation with gcc-10, which defaults to `-fno-common` (#288)
+  - reduce number of `open()` operations on state file (#282)
+  - validate user/group given to the `su` directive early (#276)
+  - add hardening options to systemd unit file in examples (#274, #291)
+  - fix crash of logrotate on invalid configuration with include (#271)
+  - fix heap buffer overflow on too long logfile extension (#270)
+
+[3.16.0]: https://github.com/logrotate/logrotate/compare/3.15.1...3.16.0
 
 ## [3.15.1] - 2019-08-30
   - use correct `create` mode in examples/btmp (#257)
