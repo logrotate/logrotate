@@ -588,7 +588,7 @@ static int createOutputFile(const char *fileName, int flags, const struct stat *
         }
     }
 #else
-    (void) acl_set;
+    (void) acl;
 #endif
 
     if (!acl_set || force_mode) {
