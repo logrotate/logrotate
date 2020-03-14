@@ -22,6 +22,7 @@ LockPersonality=true
 MemoryDenyWriteExecute=true
 PrivateDevices=true
 PrivateTmp=true
+ProtectClock=true
 ProtectControlGroups=true
 ProtectKernelLogs=true
 ProtectKernelModules=true
