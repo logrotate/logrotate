@@ -1867,29 +1867,6 @@ static int prerotateSingleLog(const struct logInfo *log, unsigned logNum,
     } else {
         int i;
         char *newName = NULL;
-        if (log->rotateAge) {
-            struct stat fst_buf;
-            /* we will not enter the loop in case rotateCount == -1 */
-            for (i = 1; i <= rotateCount + 1; i++) {
-                if (asprintf(&oldName, "%s/%s.%d%s%s", rotNames->dirName,
-                             rotNames->baseName, i, fileext, compext) < 0) {
-                    message_OOM();
-                    return 1;
-                }
-                if (!stat(oldName, &fst_buf)
-                        && (((nowSecs - fst_buf.st_mtime) / DAY_SECONDS)
-                            > log->rotateAge)) {
-                    char *mailFilename = oldName;
-                    if (!hasErrors && log->logAddress)
-                        hasErrors =
-                            mailLogWrapper(mailFilename, mailCommand,
-                                    logNum, log);
-                    if (!hasErrors)
-                        hasErrors = removeLogFile(mailFilename, log);
-                }
-                free(oldName);
-            }
-        }
 
         if (rotateCount == -1) {
             rotateCount = findLastRotated(rotNames, fileext, compext);
@@ -1927,6 +1904,34 @@ static int prerotateSingleLog(const struct logInfo *log, unsigned logNum,
                 message_OOM();
                 oldName = NULL;
                 break;
+            }
+
+            /* remove files hit by maxage */
+            if (log->rotateAge) {
+                struct stat fst_buf;
+
+                if (stat(oldName, &fst_buf)) {
+                    if (errno == ENOENT) {
+                        message(MESS_DEBUG, "old log %s does not exist\n",
+                                oldName);
+                    } else {
+                        message(MESS_ERROR, "cannot stat %s: %s\n", oldName,
+                                strerror(errno));
+                        hasErrors = 1;
+                    }
+
+                    continue;
+                }
+
+                if (((nowSecs - fst_buf.st_mtime) / DAY_SECONDS) > log->rotateAge) {
+                    if (!hasErrors && log->logAddress)
+                        hasErrors = mailLogWrapper(oldName, mailCommand,
+                                                   logNum, log);
+                    if (!hasErrors)
+                        hasErrors = removeLogFile(oldName, log);
+
+                    continue;
+                }
             }
 
             message(MESS_DEBUG,

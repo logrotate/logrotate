@@ -197,8 +197,9 @@ These directives may be included in a \fBlogrotate\fR configuration file:
 \fBrotate \fIcount\fR
 Log files are rotated \fIcount\fR times before being removed or mailed to the
 address specified in a \fBmail\fR directive.  If \fIcount\fR is 0, old versions
-are removed rather than rotated.  If \fIcount\fR is -1, old logs are not removed
-at all (use with caution, may waste performance and disk space). Default is 0.
+are removed rather than rotated.  If \fIcount\fR is \-1, old logs are not
+removed at all, except they are affected by \fBmaxage\fR (use with caution, may
+waste performance and disk space).  Default is 0.
 
 .TP
 \fBolddir \fIdirectory\fR
@@ -293,9 +294,10 @@ Do not rotate logs which are less than <count> days old.
 
 .TP
 \fBmaxage\fR \fIcount\fR
-Remove rotated logs older than <count> days. The age is only checked
-if the logfile is to be rotated.  The files are mailed to the
-configured address if \fBmaillast\fR and \fBmail\fR are configured.
+Remove rotated logs older than <count> days.  The age is only checked
+if the logfile is to be rotated.  \fBrotate \-1\fR does not hinder removal.
+The files are mailed to the configured address if \fBmaillast\fR and
+\fBmail\fR are configured.
 
 .TP
 \fBminsize\fR \fIsize\fR
