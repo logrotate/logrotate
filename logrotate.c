@@ -176,7 +176,7 @@ static int switch_user_permanently(const struct logInfo *log) {
         return 0;
     /* switch to full root first */
     if (setgid(getgid()) || setuid(getuid())) {
-        message(MESS_ERROR, "error getting rid of euid != uid\n");
+        message(MESS_ERROR, "error getting rid of euid != uid: %s\n", strerror(errno));
         return 1;
     }
     message(MESS_DEBUG, "switching uid to %u and gid to %u\n",
@@ -767,7 +767,7 @@ static int compressLogFile(const char *name, const struct logInfo *log, const st
     sprintf(compressedName, "%s%s", name, log->compress_ext);
 
     if ((inFile = open(name, O_RDWR | O_NOFOLLOW)) < 0) {
-        message(MESS_ERROR, "unable to open %s for compression\n", name);
+        message(MESS_ERROR, "unable to open %s for compression: %s\n", name, strerror(errno));
         return 1;
     }
 
@@ -2656,10 +2656,10 @@ static int writeState(const char *stateFilename)
 
     if (error == 0) {
         if (rename(tmpFilename, stateFilename)) {
+            message(MESS_ERROR, "error renaming temp state file %s to %s: %s\n",
+                    tmpFilename, stateFilename, strerror(errno));
             unlink(tmpFilename);
             error = 1;
-            message(MESS_ERROR, "error renaming temp state file %s to %s\n",
-                    tmpFilename, stateFilename);
         }
     }
     else {
