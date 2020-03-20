@@ -912,7 +912,7 @@ static int globerr(const char *pathname, int theerr)
 #define RAISE_ERROR() \
     if (newlog != defConfig) { \
         state = STATE_ERROR; \
-        continue; \
+        goto next_state; \
     } else { \
         goto error; \
     }
@@ -2023,6 +2023,7 @@ duperror:
             lineNum++;
         }
 
+next_state: ;
     }
 
     if (scriptStart) {
