@@ -37,11 +37,8 @@ struct logInfoHead logs;
 #define REALLOC_STEP            10
 #define GLOB_STR_REALLOC_STEP   0x100
 
-#if defined(SunOS)
-#include <limits.h>
-#if !defined(isblank)
+#if defined(SunOS) && !defined(isblank)
 #define isblank(c) ( ( (c) == ' ' || (c) == '\t' ) ? 1 : 0 )
-#endif
 #endif
 
 #ifdef __hpux

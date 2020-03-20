@@ -23,10 +23,6 @@
 #include <stdint.h>
 #include <libgen.h>
 
-#if defined(SunOS)
-#include <limits.h>
-#endif
-
 #if !defined(PATH_MAX) && defined(__FreeBSD__)
 #include <sys/param.h>
 #endif
