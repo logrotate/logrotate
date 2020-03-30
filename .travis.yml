@@ -154,6 +154,8 @@ script:
   - sed 's|/bin/bash|/bin/dash|' -i test/*.sh && make -j9 check
   # make sure that no tabs appear in the source code files
   - grep -P '\t' config.c log.{c,h} logrotate.{c,h}; test $? -eq 1
+  # check for whitespace issues
+  - git diff-tree --check $(git hash-object -t tree /dev/null) HEAD
 
 notifications:
   email:
