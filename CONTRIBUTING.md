@@ -6,7 +6,7 @@
   - Create your feature branch (`git checkout -b fixing-blah`), please avoid working directly on the `master` branch.
   - Check for unnecessary whitespaces with `git diff --check` before committing.
   - [optional] Add user visible changes to `ChangeLog.md` under the `UNRELEASED` section
-  - Commit your changes, try to follow this format: 
+  - Commit your changes, try to follow this format:
 ```
 scope: short summary of the change
 [empty line]

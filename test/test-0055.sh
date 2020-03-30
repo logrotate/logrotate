@@ -12,7 +12,7 @@ preptest test.log 55 1 0
 DATE=""
 for i in $(seq 1 60)
 do
-    DATE=$(/bin/date "+%s" --date "$i hour ago" 2>/dev/null)   
+    DATE=$(/bin/date "+%s" --date "$i hour ago" 2>/dev/null)
     echo "x" > test.log-$DATE.gz
 done
 
