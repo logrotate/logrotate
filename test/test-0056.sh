@@ -12,7 +12,7 @@ preptest test.log 56 1 0
 DATE=""
 for i in $(seq 1 60)
 do
-    DATE=$(/bin/date "+%d-%m-%Y" --date "$i day ago" 2>/dev/null)   
+    DATE=$(/bin/date "+%d-%m-%Y" --date "$i day ago" 2>/dev/null)
     echo "x" > test.log-$DATE
 done
 

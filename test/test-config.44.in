@@ -7,7 +7,7 @@ create
     prerotate
 		touch scriptout
 		IFS=$(printf "\n\b")
-		printf "\"" >> scriptout 
+		printf "\"" >> scriptout
 		for f in "$1"
 		do
 			printf '%s' "$(basename $f)" >>  scriptout

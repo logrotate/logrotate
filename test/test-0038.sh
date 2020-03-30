@@ -8,7 +8,7 @@ cleanup 38
 # preremove script
 preptest test.log 38 1
 preptest test2.log 38 1
-$RLR test-config.38 --force 
+$RLR test-config.38 --force
 
 # Check both possible orders
 grep "test2.log.1test.log.1" scriptout >/dev/null
