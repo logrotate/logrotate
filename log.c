@@ -24,6 +24,11 @@ void logSetMessageFile(FILE * f)
     messageFile = f;
 }
 
+void logFlushMessageFile(void){
+    if(messageFile)
+        fflush(messageFile);
+}
+
 void logToSyslog(int enable) {
     _logToSyslog = enable;
 

@@ -473,6 +473,9 @@ static int runScript(const struct logInfo *log, const char *logfn, const char *l
                 exit(1);
             }
         }
+        fflush(stdout);
+        fflush(stderr);
+        logFlushMessageFile();
         execl("/bin/sh", "sh", "-c", (char *) script, "logrotate_script", (char *) logfn, (char *) logrotfn, (char *) NULL);
         exit(1);
     }

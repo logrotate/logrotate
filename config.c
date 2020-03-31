@@ -710,7 +710,10 @@ static int readConfigPath(const char *path, struct logInfo *defConfig)
         }
         close(here);
         free_2d_array(namelist, files_count);
-    } else {
+    } else if (S_ISREG(sb.st_mode)) {
+	/* XXX Should checkFile() be called here?  If not, files
+	 * listed on the command line or directly in an include
+	 * directive are not checked against the taboo list. */
         if (copyLogInfo(&defConfigBackup, defConfig)) {
             freeLogInfo(&defConfigBackup);
             return 1;
@@ -722,6 +725,8 @@ static int readConfigPath(const char *path, struct logInfo *defConfig)
             result = 1;
         }
         freeLogInfo(&defConfigBackup);
+    } else {
+        /* ignore other types per the man page */
     }
 
     return result;

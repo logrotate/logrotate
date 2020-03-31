@@ -25,6 +25,7 @@ void message(int level, const char *format, ...)
     } while(0)
 
 void logSetMessageFile(FILE * f);
+void logFlushMessageFile(void);
 void logToSyslog(int enable);
 void logSetLevel(int level);
 
