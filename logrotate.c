@@ -895,7 +895,7 @@ static int mailLog(const struct logInfo *log, const char *logFile, const char *m
     }
 
     if (uncompressCommand) {
-        /* pipe used to capture ouput of the uncompress process */
+        /* pipe used to capture output of the uncompress process */
         if (pipe(uncompressPipe) < 0) {
             message(MESS_ERROR, "error opening pipe for uncompress: %s",
                     strerror(errno));
