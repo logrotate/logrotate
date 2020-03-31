@@ -433,7 +433,7 @@ All notable changes to this project will be documented in this file.
   - compress and maillast didn't work together properly
   - delaycompress and mailfirst didn't work properly
   - don't use system() for mailing (or uncompressing) logs anymore
-  - use "-s" for speciying the subjected of mailed logs
+  - use "-s" for specifying the subjected of mailed logs
 
 [3.7]: https://github.com/logrotate/logrotate/compare/r3-6...r3-7
 

@@ -11,7 +11,7 @@ Steps to build and install logrotate on Solaris 2.6
 
 OBS.: If you want to use the test script on Solaris 2.6, you'll need to have
       bash installed, adjust the path after the sha-bang (#!) properly and
-      substitute the sintax $(...) for backticks `...` in all
+      substitute the syntax $(...) for backticks `...` in all
       "test-config.?.in" files.
 
 --
