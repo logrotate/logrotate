@@ -424,6 +424,8 @@ static int checkFile(const char *fname)
 {
     unsigned i;
 
+    message_TRACE2("checkFile called", fname);
+
     /* Check if fname is '.' or '..'; if so, return false */
     if (fname[0] == '.' && (!fname[1] || (fname[1] == '.' && !fname[2])))
         return 0;
@@ -613,6 +615,7 @@ static int readConfigPath(const char *path, struct logInfo *defConfig)
     int result = 0;
     struct logInfo defConfigBackup;
 
+    message_TRACE2("readConfigPath called", path);
     if (stat(path, &sb)) {
         message(MESS_ERROR, "cannot stat %s: %s\n", path, strerror(errno));
         return 1;
@@ -638,6 +641,7 @@ static int readConfigPath(const char *path, struct logInfo *defConfig)
             return 1;
         }
         while ((dp = readdir(dirp)) != NULL) {
+	    message_TRACE2("readdir", dp->d_name);
             if (checkFile(dp->d_name)) {
                 /* Realloc memory for namelist array if necessary */
                 if (files_count % REALLOC_STEP == 0) {
@@ -671,6 +675,7 @@ static int readConfigPath(const char *path, struct logInfo *defConfig)
         }
         closedir(dirp);
 
+	message_TRACE("qsort");
         if (files_count > 0) {
             qsort(namelist, files_count, sizeof(char *), compar);
         } else {
@@ -685,7 +690,9 @@ static int readConfigPath(const char *path, struct logInfo *defConfig)
             free_2d_array(namelist, files_count);
             return 1;
         }
+	message_TRACE2("chdir", path);
 
+	message_TRACE2("start loop", path);
         for (i = 0; i < files_count; ++i) {
             assert(namelist[i] != NULL);
             if (copyLogInfo(&defConfigBackup, defConfig)) {
@@ -694,6 +701,7 @@ static int readConfigPath(const char *path, struct logInfo *defConfig)
                 free_2d_array(namelist, files_count);
                 return 1;
             }
+	    message_TRACE2("RCF", namelist[i]);
             if (readConfigFile(namelist[i], defConfig)) {
                 message(MESS_ERROR, "found error in file %s, skipping\n", namelist[i]);
                 freeLogInfo(defConfig);
@@ -704,10 +712,12 @@ static int readConfigPath(const char *path, struct logInfo *defConfig)
             }
             freeLogInfo(&defConfigBackup);
         }
+	message_TRACE2("end loop", path);
 
         if (fchdir(here) < 0) {
             message(MESS_ERROR, "could not change directory to '.'");
         }
+	message_TRACE("chdir back");
         close(here);
         free_2d_array(namelist, files_count);
     } else if (S_ISREG(sb.st_mode)) {
@@ -719,6 +729,7 @@ static int readConfigPath(const char *path, struct logInfo *defConfig)
             return 1;
         }
 
+	message_TRACE2("RCF", path);
         if (readConfigFile(path, defConfig)) {
             freeLogInfo(defConfig);
             if (copyLogInfo(defConfig, &defConfigBackup)){} /* do not check, we are already in a error path */
@@ -726,6 +737,7 @@ static int readConfigPath(const char *path, struct logInfo *defConfig)
         }
         freeLogInfo(&defConfigBackup);
     } else {
+	message_TRACE("other type");
         /* ignore other types per the man page */
     }
 
@@ -776,6 +788,8 @@ int readAllConfigPaths(const char **paths)
         .compress_options_count = 0
     };
 
+    message_TRACE("enter");
+
     tabooPatterns = malloc(sizeof(*tabooPatterns) * defTabooCount);
     if (tabooPatterns == NULL) {
         message_OOM();
@@ -802,6 +816,7 @@ int readAllConfigPaths(const char **paths)
     }
 
     for (file = paths; *file; file++) {
+	message_TRACE2("looping on",*file);
         if (readConfigPath(*file, &defConfig))
             result = 1;
     }
@@ -945,6 +960,8 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
         .l_whence = SEEK_SET,
         .l_type = F_RDLCK
     };
+
+    message_TRACE2("readConfigFile", configFile);
 
     fd = open(configFile, O_RDONLY);
     if (fd < 0) {
@@ -1505,6 +1522,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                         }
 
                         ++recursion_depth;
+			message_TRACE2("RCF", key);
                         rv = readConfigPath(key, newlog);
                         --recursion_depth;
 

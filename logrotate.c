@@ -2997,8 +2997,10 @@ int main(int argc, const char **argv)
 
     TAILQ_INIT(&logs);
 
+    message_TRACE("start command line files");
     if (readAllConfigPaths(files))
         rc = 1;
+    message_TRACE("end command line files");
 
     poptFreeContext(optCon);
     nowSecs = time(NULL);
