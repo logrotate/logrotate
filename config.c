@@ -998,7 +998,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
             return 0;
         }
 
-        if (sb.st_uid != ROOT_UID && (pw == NULL ||
+        if (sb.st_uid != ROOT_UID && (
                     sb.st_uid != pw->pw_uid ||
                     pw->pw_uid != ROOT_UID)) {
             message(MESS_ERROR,
