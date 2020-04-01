@@ -28,14 +28,33 @@ a log more than once in one day unless the criterion for that log is
 based on the log's size and \fBlogrotate\fR is being run more than once
 each day, or unless the \fB\-f\fR or \fB\-\-force\fR option is used.
 .P
-Any number of config files may be given on the command line.  Later config
+Any number of config files or directories containing config files
+may be given on the command line.  Later config
 files may override the options given in earlier files, so the order
 in which the \fBlogrotate\fR config files are listed is important.
+
+
 Normally, a single config file which includes any other config files
-which are needed should be used.  See below for more information on how
-to use the \fBinclude\fR directive to accomplish this.  If a directory
-is given on the command line, every file in that directory is used as
-a config file.
+which are needed should be used.
+
+For \fBlogrotate\fR to notice a config file that is something other than a
+regular file or
+a directory, that file must be listed directly on the command line
+or in an \fBinclude\fR directive; other types are ignored when found inside
+a directory (either on the command line or in an include directive).
+Also note that the taboo list is not applied to directory names (anywhere) or
+to files on the command line.
+
+See the \fBinclude\fR directive for more important details.
+.\" See below for more information on how
+.\"to use the \fBinclude\fR directive to accomplish this.  If a directory
+.\"is given on the command line, every file in that directory is used as
+.\"a config file.
+QQQ so we need to discuss how directories are treated - DFS, sorted? more?
+QQQ that's wrong
+QQQ files on command line are not subject to the taboo list
+QQQ      is that right?
+
 .P
 If no command line arguments are given, \fBlogrotate\fR will print
 version and copyright information, along with a short usage summary.  If
@@ -568,19 +587,38 @@ instead of the about-to-expire file.
 When using the \fBmail\fR command, mail the about-to-expire file,
 instead of the just-rotated file (this is the default).
 
-.SS Scripts
+.SS Additional config files
 
 .TP
 \fBinclude \fIfile_or_directory\fR
 Reads the file given as an argument as if it was included inline
 where the \fBinclude\fR directive appears.  If a directory is given,
+
+QQQ check source: if the dir is not sorted BEFORE checking for directories,
+ then there is no control over the order config files are read.
+QQQ _really_ need push and pop of config state for safe reading of 
+  subdirectories and/or files (the special include can specify push once
+  or push each).  So main config sets up defaults, then does
+  include pusheach /etc/logrotate.d; each entry there is now isolated from
+  each other but can include its own hierarchy of config file using either the
+  old or new semantics.  How about "include [-p] [file|dir]" p for push or
+  private?
+
 most of the files in that directory are read in alphabetic order
 before processing of the including file continues.  The only files
 which are ignored are files which are not regular files (such as
-directories and named pipes) and files whose names end with one of
+directories and named pipes)
+
+QQQ why does it say directories are ignored?
+QQQ does the tabooext list apply only to files or to directories as well?
+
+
+and files whose names end with one of
 the taboo extensions or patterns, as specified by the \fBtabooext\fR
 or \fBtaboopat\fR directives, respectively.  For security reasons
 configuration files must not be group-writable nor world-writable.
+
+.SS Scripts
 
 .TP
 \fBsharedscripts\fR
@@ -606,57 +644,67 @@ the second argument to the \fBpostrotate\fR script.  If the scripts exit with
 error, the remaining actions will not be executed for the affected log only.
 
 .TP
-\fBfirstaction\fR/\fBendscript\fR
-The lines between \fBfirstaction\fR and \fBendscript\fR (both of which
-must appear on lines by themselves) are executed (using \fB/bin/sh\fR) once
+\fBfirstaction\fR/\fIscript\fR/\fBendscript\fR
+The \fIscript\fR is executed once
 before all log files that match the wildcarded pattern are rotated, before
 prerotate script is run and only if at least one log will actually be rotated.
 These directives may only appear inside a log file definition.  Whole pattern is
 passed to the script as first argument. If the script exits with error,
-no further processing is done.  See also \fBlastaction\fR.
+no further processing is done.  See also \fBlastaction\fR and
+the \fBSCRIPTS\fR section.
 
 .TP
-\fBlastaction\fR/\fBendscript\fR
-The lines between \fBlastaction\fR and \fBendscript\fR (both of which
-must appear on lines by themselves) are executed (using \fB/bin/sh\fR) once
-after all log files that match the wildcarded pattern are rotated, after
+\fBlastaction\fR/\fIscript\fR/\fBendscript\fR
+The \fIscript\fR is executed once
+after all log files that match the wildcarded pattern are rotated, after the
 postrotate script is run and only if at least one log is rotated.  These
 directives may only appear inside a log file definition.  Whole pattern is
 passed to the script as first argument.  If the script exits
 with error, just an error message is shown (as this is the last
-action).  See also \fBfirstaction\fR.
+action).  See also \fBfirstaction\fR and
+the \fBSCRIPTS\fR section.
 
 .TP
-\fBprerotate\fR/\fBendscript\fR
-The lines between \fBprerotate\fR and \fBendscript\fR (both of which
-must appear on lines by themselves) are executed (using \fB/bin/sh\fR) before
+\fBprerotate\fR/\fIscript\fR/\fBendscript\fR
+The \fIscript\fR is executed before
 the log file is rotated and only if the log will actually be rotated.  These
 directives may only appear inside a log file definition.  Normally,
 the absolute path to the log file is passed as first argument to the script.
 If \fBsharedscripts\fR is specified, whole pattern is passed to the script.
-See also \fBpostrotate\fR.
+See also \fBpostrotate\fR and the \fBSCRIPTS\fR section.
 See \fBsharedscripts\fR and \fBnosharedscripts\fR for error handling.
 
 .TP
-\fBpostrotate\fR/\fBendscript\fR
-The lines between \fBpostrotate\fR and \fBendscript\fR (both of which
-must appear on lines by themselves) are executed (using \fB/bin/sh\fR)
+\fBpostrotate\fR/\fIscript\fR/\fBendscript\fR
+The \fIscript\fR is executed
 after the log file is rotated.  These directives may only appear inside
 a log file definition.  Normally, the absolute path to the log file is
 passed as first argument to the script and the absolute path to the final
 rotated log file is passed as the second argument to the script.  If
 \fBsharedscripts\fR is specified, the whole pattern is passed as the first
 argument to the script, and the second argument is omitted.
-See also \fBprerotate\fR.  See \fBsharedscripts\fR and \fBnosharedscripts\fR
+See also \fBprerotate\fR and the \fBSCRIPTS\fR section.
+See \fBsharedscripts\fR and \fBnosharedscripts\fR
 for error handling.
 
 .TP
-\fBpreremove\fR/\fBendscript\fR
-The lines between \fBpreremove\fR and \fBendscript\fR (both of which must
-appear on lines by themselves) are executed (using \fB/bin/sh\fR) once just
+\fBpreremove\fR/\fIscript\fR/\fBendscript\fR
+The \fIscript\fR is executed
+once just
 before removal of a log file.  The logrotate will pass
-the name of file which is soon to be removed. See also \fBfirstaction\fR.
+the name of file which is soon to be removed. See also \fBfirstaction\fR and
+the \fBSCRIPTS\fR section.
 
+.SH SCRIPTS
+
+The lines between the starting keyword (e.g. \fBprerotate\fR) and
+\fBendscript\fR (both of which must appear on lines by themselves) are
+executed (using \fB/bin/sh\fR).
+The script inherits some traits from the logrotate process, including stderr,
+stdout, the current directory, the environment, and the umask.
+Scripts are run as the invoking user and group, irrespective of any \fBsu\fR
+directive.  If the \fB\-\-log\fR flag was specified, file descriptor 3 is the
+log file.
 
 .SH FILES
 
