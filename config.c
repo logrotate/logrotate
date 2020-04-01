@@ -968,7 +968,8 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
     }
 
     if (!(pw = getpwuid(getuid()))) {
-        message(MESS_ERROR, "Logrotate UID is not in passwd file.\n");
+        message(MESS_ERROR, "Cannot find logrotate UID (%d) in passwd file: %s\n",
+                getuid(), strerror(errno));
         close(fd);
         return 1;
     }
