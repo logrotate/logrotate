@@ -925,7 +925,6 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
     char **scriptDest = NULL;
     struct logInfo *newlog = defConfig;
     char *start, *chptr;
-    struct passwd *pw;
     struct stat sb;
     int state = STATE_DEFAULT;
     int logerror = 0;
@@ -967,7 +966,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
         return 0;
     }
 
-    if (!(pw = getpwuid(getuid()))) {
+    if (!getpwuid(getuid())) {
         message(MESS_ERROR, "Cannot find logrotate UID (%d) in passwd file: %s\n",
                 getuid(), strerror(errno));
         close(fd);
@@ -975,6 +974,8 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
     }
 
     if (getuid() == ROOT_UID) {
+        struct passwd *pw;
+
         if ((sb.st_mode & 07533) != 0400) {
             message(MESS_DEBUG,
                     "Potentially dangerous mode on %s: 0%o\n",
