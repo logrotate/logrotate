@@ -706,7 +706,7 @@ static int readConfigPath(const char *path, struct logInfo *defConfig)
         }
 
         if (fchdir(here) < 0) {
-            message(MESS_ERROR, "could not change directory to '.'");
+            message(MESS_ERROR, "could not change directory to '.': %s\n", strerror(errno));
         }
         close(here);
         free_2d_array(namelist, files_count);
