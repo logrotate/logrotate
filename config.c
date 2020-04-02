@@ -974,8 +974,6 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
     }
 
     if (getuid() == ROOT_UID) {
-        struct passwd *pw;
-
         if ((sb.st_mode & 07533) != 0400) {
             message(MESS_DEBUG,
                     "Potentially dangerous mode on %s: 0%o\n",
@@ -990,17 +988,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
             return 0;
         }
 
-        if ((pw = getpwuid(ROOT_UID)) == NULL) {
-            message(MESS_ERROR,
-                    "Ignoring %s because there's no password entry for the owner.\n",
-                    configFile);
-            close(fd);
-            return 0;
-        }
-
-        if (sb.st_uid != ROOT_UID && (
-                    sb.st_uid != pw->pw_uid ||
-                    pw->pw_uid != ROOT_UID)) {
+        if (sb.st_uid != ROOT_UID) {
             message(MESS_ERROR,
                     "Ignoring %s because the file owner is wrong (should be root or user with uid 0).\n",
                     configFile);
