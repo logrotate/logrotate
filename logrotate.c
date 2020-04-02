@@ -668,7 +668,7 @@ static int shred_file(int fd, const char *filename, const struct logInfo *log)
     wait(&status);
 
     if (!WIFEXITED(status) || WEXITSTATUS(status)) {
-        message(MESS_ERROR, "Failed to shred %s\n, trying unlink", filename);
+        message(MESS_ERROR, "Failed to shred %s, trying unlink\n", filename);
         return unlink(filename);
     }
 
@@ -801,7 +801,7 @@ static int compressLogFile(const char *name, const struct logInfo *log, const st
 
     /* pipe used to capture stderr of the compress process */
     if (pipe(compressPipe) < 0) {
-        message(MESS_ERROR, "error opening pipe for compress: %s",
+        message(MESS_ERROR, "error opening pipe for compress: %s\n",
                 strerror(errno));
         close(inFile);
         close(outFile);
@@ -897,7 +897,7 @@ static int mailLog(const struct logInfo *log, const char *logFile, const char *m
     if (uncompressCommand) {
         /* pipe used to capture output of the uncompress process */
         if (pipe(uncompressPipe) < 0) {
-            message(MESS_ERROR, "error opening pipe for uncompress: %s",
+            message(MESS_ERROR, "error opening pipe for uncompress: %s\n",
                     strerror(errno));
             close(mailInput);
             return 1;
@@ -2143,7 +2143,7 @@ static int postrotateSingleLog(const struct logInfo *log, unsigned logNum,
         }
         hasErrors = copyTruncate(tmpFilename, rotNames->finalName,
                                  &state->sb, LOG_FLAG_COPY, /* skip_copy */ 0);
-        message(MESS_DEBUG, "removing tmp log %s \n", tmpFilename);
+        message(MESS_DEBUG, "removing tmp log %s\n", tmpFilename);
         if (!debug && !hasErrors) {
             unlink(tmpFilename);
         }
