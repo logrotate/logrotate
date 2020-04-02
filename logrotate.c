@@ -463,7 +463,7 @@ static int runScript(const struct logInfo *log, const char *logfn, const char *l
     pid = fork();
 
     if (pid == -1) {
-        message(MESS_ERROR, "can not fork: %s\n", strerror(errno));
+        message(MESS_ERROR, "cannot fork: %s\n", strerror(errno));
         return 1;
     }
 
@@ -650,7 +650,7 @@ static int shred_file(int fd, const char *filename, const struct logInfo *log)
     pid = fork();
 
     if (pid == -1) {
-        message(MESS_ERROR, "can not fork: %s\n", strerror(errno));
+        message(MESS_ERROR, "cannot fork: %s\n", strerror(errno));
         return 1;
     }
 
@@ -811,7 +811,7 @@ static int compressLogFile(const char *name, const struct logInfo *log, const st
     pid = fork();
 
     if (pid == -1) {
-        message(MESS_ERROR, "can not fork: %s\n", strerror(errno));
+        message(MESS_ERROR, "cannot fork: %s\n", strerror(errno));
         close(inFile);
         close(outFile);
         close(compressPipe[1]);
@@ -906,7 +906,7 @@ static int mailLog(const struct logInfo *log, const char *logFile, const char *m
         uncompressChild = fork();
 
         if (uncompressChild == -1) {
-            message(MESS_ERROR, "can not fork: %s \n", strerror(errno));
+            message(MESS_ERROR, "cannot fork: %s\n", strerror(errno));
             close(mailInput);
             close(uncompressPipe[1]);
             close(uncompressPipe[0]);
@@ -938,7 +938,7 @@ static int mailLog(const struct logInfo *log, const char *logFile, const char *m
     mailChild = fork();
 
     if (mailChild == -1) {
-        message(MESS_ERROR, "can not fork: %s\n", strerror(errno));
+        message(MESS_ERROR, "cannot fork: %s\n", strerror(errno));
         close(mailInput);
         return 1;
     }
