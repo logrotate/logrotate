@@ -1,5 +1,15 @@
 .TH LOGROTATE 8 "@VERSION@" "Linux" "System Administrator's Manual"
-
+.\" Per groff_man(7), the TQ macro should be copied from an-ext.tmac when
+.\" not running under groff.  That's not quite right; not all groff
+.\" installations include this macro.  So bring it in with another name
+.\" unconditionally.
+.\" Continuation line for .TP header.
+.de tq
+.  br
+.  ns
+.  TP \\$1\" no doublequotes around argument!
+..
+.\}
 .SH NAME
 
 logrotate \(hy rotates, compresses, and mails system logs
@@ -607,8 +617,12 @@ to the script.  The absolute path to the final rotated log file is passed as
 the second argument to the \fBpostrotate\fR script.  If the scripts exit with
 error, the remaining actions will not be executed for the affected log only.
 
-.TP
-\fBfirstaction\fR/\fIscript\fR/\fBendscript\fR
+.tq
+\fBfirstaction\fR
+.tq
+\ \ \ \ \fIscript\fR
+.tq
+\fBendscript\fR
 The \fIscript\fR is executed once
 before all log files that match the wildcarded pattern are rotated, before
 the prerotate script is run and only if at least one log will actually be rotated.
@@ -617,8 +631,12 @@ passed to the script as its first argument. If the script exits with an error,
 no further processing is done.  See also \fBlastaction\fR and
 the \fBSCRIPTS\fR section.
 
-.TP
-\fBlastaction\fR/\fIscript\fR/\fBendscript\fR
+.tq
+\fBlastaction\fR
+.tq
+\ \ \ \ \fIscript\fR
+.tq
+\fBendscript\fR
 The \fIscript\fR is executed once
 after all log files that match the wildcarded pattern are rotated, after the
 postrotate script is run and only if at least one log is rotated.  These
@@ -628,8 +646,12 @@ with an error, just an error message is shown (as this is the last
 action).  See also \fBfirstaction\fR and
 the \fBSCRIPTS\fR section.
 
-.TP
-\fBprerotate\fR/\fIscript\fR/\fBendscript\fR
+.tq
+\fBprerotate\fR
+.tq
+\ \ \ \ \fIscript\fR
+.tq
+\fBendscript\fR
 The \fIscript\fR is executed before
 the log file is rotated and only if the log will actually be rotated.  These
 directives may only appear inside a log file definition.  Normally,
@@ -638,8 +660,12 @@ If \fBsharedscripts\fR is specified, the whole pattern is passed to the script.
 See also \fBpostrotate\fR and the \fBSCRIPTS\fR section.
 See \fBsharedscripts\fR and \fBnosharedscripts\fR for error handling.
 
-.TP
-\fBpostrotate\fR/\fIscript\fR/\fBendscript\fR
+.tq
+\fBpostrotate\fR
+.tq
+\ \ \ \ \fIscript\fR
+.tq
+\fBendscript\fR
 The \fIscript\fR is executed
 after the log file is rotated.  These directives may only appear inside
 a log file definition.  Normally, the absolute path to the log file is
@@ -651,8 +677,12 @@ See also \fBprerotate\fR and the \fBSCRIPTS\fR section.
 See \fBsharedscripts\fR and \fBnosharedscripts\fR
 for error handling.
 
-.TP
-\fBpreremove\fR/\fIscript\fR/\fBendscript\fR
+.tq
+\fBpreremove\fR
+.tq
+\ \ \ \ \fIscript\fR
+.tq
+\fBendscript\fR
 The \fIscript\fR is executed
 once just
 before removal of a log file.  \fBlogrotate\fR will pass
