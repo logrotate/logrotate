@@ -81,7 +81,8 @@ Turns on verbose mode, for example to display messages during rotation.
 \fB\-l\fR, \fB\-\-log\fR \fIfile\fR
 Tells \fBlogrotate\fR to log verbose output into the log_file.  The verbose
 output logged to that file is the same as when running \fBlogrotate\fR with
-\fB-v\fR switch.  The log file is overwritten on every \fBlogrotate\fR execution.
+\fB-v\fR switch.  The log file is overwritten on every \fBlogrotate\fR
+execution.
 
 .TP
 \fB\-m\fR, \fB\-\-mail\fR \fIcommand\fR
@@ -625,11 +626,11 @@ error, the remaining actions will not be executed for the affected log only.
 \fBendscript\fR
 The \fIscript\fR is executed once
 before all log files that match the wildcarded pattern are rotated, before
-the prerotate script is run and only if at least one log will actually be rotated.
-These directives may only appear inside a log file definition.  The whole pattern is
-passed to the script as its first argument. If the script exits with an error,
-no further processing is done.  See also \fBlastaction\fR and
-the \fBSCRIPTS\fR section.
+the prerotate script is run and only if at least one log will actually be
+rotated.  These directives may only appear inside a log file definition.
+The whole pattern is passed to the script as its first argument. If the script
+exits with an error, no further processing is done.  See also \fBlastaction\fR
+and the \fBSCRIPTS\fR section.
 
 .tq
 \fBlastaction\fR
@@ -695,8 +696,8 @@ the \fBSCRIPTS\fR section.
 The lines between the starting keyword (e.g. \fBprerotate\fR) and
 \fBendscript\fR (both of which must appear on lines by themselves) are
 executed (using \fB/bin/sh\fR).
-The script inherits some traits from the \fBlogrotate\fR process, including stderr,
-stdout, the current directory, the environment, and the umask.
+The script inherits some traits from the \fBlogrotate\fR process, including
+stderr, stdout, the current directory, the environment, and the umask.
 Scripts are run as the invoking user and group, irrespective of any \fBsu\fR
 directive.  If the \fB\-\-log\fR flag was specified, file descriptor 3 is the
 log file.
