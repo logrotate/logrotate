@@ -163,18 +163,35 @@ int switch_user(uid_t user, gid_t group) {
 }
 
 static int switch_user_permanently(const struct logInfo *log) {
-    gid_t group = getegid();
-    uid_t user = geteuid();
+    const gid_t group = getegid();
+    const uid_t user = geteuid();
+
     if (!(log->flags & LOG_FLAG_SU)) {
         return 0;
     }
-    if (getuid() == user && getgid() == group)
+
+    if (user != log->suUid) {
+        message(MESS_ERROR, "current euid (%u) does not match uid of log configuration (%u)\n",
+                (unsigned) user, (unsigned) log->suUid);
+        return 1;
+    }
+    if (group != log->suGid) {
+        message(MESS_ERROR, "current egid (%u) does not match gid of log configuration (%u)\n",
+                (unsigned) group, (unsigned) log->suGid);
+        return 1;
+    }
+
+    /* we are already the final configuration specified user/group */
+    if (getuid() == user && getgid() == group) {
         return 0;
+    }
+
     /* switch to full root first */
     if (setgid(getgid()) || setuid(getuid())) {
         message(MESS_ERROR, "error getting rid of euid != uid: %s\n", strerror(errno));
         return 1;
     }
+
     message(MESS_DEBUG, "switching uid to %u and gid to %u\n",
             (unsigned) user, (unsigned) group);
     if (setgid(group) || setuid(user)) {
