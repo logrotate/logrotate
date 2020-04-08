@@ -152,11 +152,12 @@ int switch_user(uid_t user, gid_t group) {
     save_euid = geteuid();
     if (save_euid == user && save_egid == group)
         return 0;
-    message(MESS_DEBUG, "switching euid to %u and egid to %u\n",
-            (unsigned) user, (unsigned) group);
+    message(MESS_DEBUG, "switching euid from %u to %u and egid from %u to %u (pid %d)\n",
+            (unsigned) save_euid, (unsigned) user, (unsigned) save_egid, (unsigned) group, getpid());
     if (setegid(group) || seteuid(user)) {
-        message(MESS_ERROR, "error switching euid to %u and egid to %u: %s\n",
-                (unsigned) user, (unsigned) group, strerror(errno));
+        message(MESS_ERROR, "error switching euid from %u to %u and egid from %u to %u (pid %d): %s\n",
+                (unsigned) save_euid, (unsigned) user, (unsigned) save_egid, (unsigned) group, getpid(),
+                strerror(errno));
         return 1;
     }
     return 0;
@@ -171,13 +172,13 @@ static int switch_user_permanently(const struct logInfo *log) {
     }
 
     if (user != log->suUid) {
-        message(MESS_ERROR, "current euid (%u) does not match uid of log configuration (%u)\n",
-                (unsigned) user, (unsigned) log->suUid);
+        message(MESS_ERROR, "current euid (%u) does not match uid of log configuration (%u) (pid %d)\n",
+                (unsigned) user, (unsigned) log->suUid, getpid());
         return 1;
     }
     if (group != log->suGid) {
-        message(MESS_ERROR, "current egid (%u) does not match gid of log configuration (%u)\n",
-                (unsigned) group, (unsigned) log->suGid);
+        message(MESS_ERROR, "current egid (%u) does not match gid of log configuration (%u) (pid %d)\n",
+                (unsigned) group, (unsigned) log->suGid, getpid());
         return 1;
     }
 
@@ -188,20 +189,22 @@ static int switch_user_permanently(const struct logInfo *log) {
 
     /* switch to full root first */
     if (setgid(getgid()) || setuid(getuid())) {
-        message(MESS_ERROR, "error getting rid of euid != uid: %s\n", strerror(errno));
+        message(MESS_ERROR, "error getting rid of euid != uid (pid %d): %s\n",
+                getpid(), strerror(errno));
         return 1;
     }
 
-    message(MESS_DEBUG, "switching uid to %u and gid to %u\n",
-            (unsigned) user, (unsigned) group);
+    message(MESS_DEBUG, "switching uid to %u and gid to %u permanently (pid %d)\n",
+            (unsigned) user, (unsigned) group, getpid());
     if (setgid(group) || setuid(user)) {
-        message(MESS_ERROR, "error switching euid to %u and egid to %u: %s\n",
-                (unsigned) user, (unsigned) group, strerror(errno));
+        message(MESS_ERROR, "error switching uid to %u and gid to %u (pid %d): %s\n",
+                (unsigned) user, (unsigned) group, getpid(), strerror(errno));
         return 1;
     }
 
     if (user != ROOT_UID && setuid(ROOT_UID) != -1) {
-        message(MESS_ERROR, "failed to switch user permanently, able to switch back\n");
+        message(MESS_ERROR, "failed to switch user permanently, able to switch back (pid %d)\n",
+                getpid());
         return 1;
     }
 
