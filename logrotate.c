@@ -2317,6 +2317,9 @@ static int rotateLogSet(const struct logInfo *log, int force)
 
     if (state == NULL || rotNames == NULL) {
         message_OOM();
+        if (log->flags & LOG_FLAG_SU) {
+             switch_user_back();
+        }
         free(rotNames);
         free(state);
         free(logHasErrors);
@@ -2337,6 +2340,9 @@ static int rotateLogSet(const struct logInfo *log, int force)
             rotNames[i] = malloc(sizeof(struct logNames));
             if (rotNames[i] == NULL) {
                 message_OOM();
+                if (log->flags & LOG_FLAG_SU) {
+                    switch_user_back();
+                }
                 free(rotNames);
                 free(state);
                 free(logHasErrors);
