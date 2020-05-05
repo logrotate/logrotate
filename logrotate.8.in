@@ -116,7 +116,8 @@ Display version information.
 from the series of configuration files specified on the command line.  Each
 configuration file can set global options (local definitions override
 global ones, and later definitions override earlier ones) and specify
-logfiles to rotate.  A simple configuration file looks like this:
+logfiles to rotate.  Global options do not affect preceding include
+directives.  A simple configuration file looks like this:
 
 .nf
 .ta +8n
