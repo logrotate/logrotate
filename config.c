@@ -1478,6 +1478,39 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                                            &buf, length);
                         if (key == NULL)
                             continue;
+
+                        if (key[0] == '~' && key[1] == '/') {
+                            /* replace '~' with content of $HOME cause low-level functions
+                             * like stat() do not support the glob ~
+                             */
+                            const char *env_home = secure_getenv("HOME");
+                            char *new_key = NULL;
+
+                            if (!env_home) {
+                                const struct passwd *pwd = getpwuid(getuid());
+                                message(MESS_DEBUG,
+                                        "%s:%d cannot get HOME directory from environment "
+                                        "to replace ~/ in include directive\n",
+                                        configFile, lineNum);
+                                if (!pwd) {
+                                    message(MESS_ERROR, "%s:%d cannot get passwd entry for "
+                                            "running user %u: %s\n",
+                                           configFile, lineNum, getuid(), strerror(errno));
+                                    RAISE_ERROR();
+                                }
+                                env_home = pwd->pw_dir;
+                            }
+
+                            if (asprintf(&new_key, "%s/%s", env_home, key + 2) == -1) {
+                                message_OOM();
+                                RAISE_ERROR();
+                            }
+                            message(MESS_DEBUG, "%s:%d replaced %s with '%s' for include directive\n",
+                                    configFile, lineNum, key, env_home);
+                            free(key);
+                            key = new_key;
+                        }
+
                         message(MESS_DEBUG, "including %s\n", key);
                         if (recursion_depth >= MAX_NESTING) {
                             message(MESS_ERROR, "%s:%d include nesting too deep\n",
