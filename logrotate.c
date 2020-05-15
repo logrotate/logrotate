@@ -1031,6 +1031,7 @@ static int is_probably_sparse(struct stat const *sb)
 {
 #if defined(HAVE_STRUCT_STAT_ST_BLOCKS) && defined(HAVE_STRUCT_STAT_ST_BLKSIZE)
     return (S_ISREG (sb->st_mode)
+            && sb->st_blksize != 0
             && sb->st_blocks < sb->st_size / sb->st_blksize);
 #else
     return 0;
