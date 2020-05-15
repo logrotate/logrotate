@@ -85,9 +85,6 @@ char *strndup(const char *s, size_t n)
     size_t nAvail;
     char *p;
 
-    if(!s)
-        return NULL;
-
     /* min() */
     nAvail = strlen(s) + 1;
     if ( (n + 1) < nAvail)
