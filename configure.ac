@@ -172,6 +172,7 @@ AC_CONFIG_HEADERS([config.h])
 AM_CFLAGS="\
  -Wall\
  -Wconversion\
+ -Wdeclaration-after-statement\
  -Wextra\
  -Wmissing-format-attribute\
  -Wmissing-noreturn\
