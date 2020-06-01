@@ -169,7 +169,19 @@ AC_SUBST(ROOT_UID)
 AC_CHECK_FUNCS([asprintf madvise qsort strndup strptime utimensat vsyslog])
 AC_CONFIG_HEADERS([config.h])
 
-AM_CFLAGS="-Wall -Wconversion -Wextra -Wmissing-format-attribute -Wmissing-noreturn -Wpointer-arith -Wshadow -Wstrict-prototypes -Wundef -Wunused -Wwrite-strings"
+AM_CFLAGS="\
+ -Wall\
+ -Wconversion\
+ -Wextra\
+ -Wmissing-format-attribute\
+ -Wmissing-noreturn\
+ -Wpointer-arith\
+ -Wshadow\
+ -Wstrict-prototypes\
+ -Wundef\
+ -Wunused\
+ -Wwrite-strings"
+
 AC_ARG_ENABLE([werror],
         [AS_HELP_STRING([--enable-werror],
                 [Treat warnings as errors (default: warnings are not errors)])],
