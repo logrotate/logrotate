@@ -608,9 +608,9 @@ times for log file entries which match multiple files (such as the
 scripts are only run once, no matter how many logs match the wildcarded pattern,
 and whole pattern is passed to them.
 However, if none of the logs in the pattern require rotating, the scripts
-will not be run at all.  If the scripts exit with error, the remaining
-actions will not be executed for any logs.  This option overrides the
-\fBnosharedscripts\fR option and implies \fBcreate\fR option.
+will not be run at all.  If the scripts exit with error (or any log fails to
+rotate), the remaining actions will not be executed for any logs.  This option
+overrides the \fBnosharedscripts\fR option and implies \fBcreate\fR option.
 
 .TP
 \fBnosharedscripts\fR
