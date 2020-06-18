@@ -125,6 +125,7 @@ enum {
 
 static const char *defTabooExts[] = {
     ",v",
+    ".bak",
     ".cfsaved",
     ".disabled",
     ".dpkg-bak",
