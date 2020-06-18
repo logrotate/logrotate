@@ -252,37 +252,67 @@ static char *readPath(const char *configFile, int lineNum, const char *key,
 /* set *pUid to UID of the given user, return non-zero on failure */
 static int resolveUid(const char *userName, uid_t *pUid)
 {
-    struct passwd *pw;
+    const struct passwd *pw;
+    char *endptr;
+    unsigned long int parsed_uid;
+
 #ifdef __CYGWIN__
     if (strcmp(userName, "root") == 0) {
         *pUid = 0;
         return 0;
     }
 #endif
+
     pw = getpwnam(userName);
-    if (!pw)
-        return -1;
-    *pUid = pw->pw_uid;
-    endpwent();
-    return 0;
+    if (pw) {
+        *pUid = pw->pw_uid;
+        return 0;
+    }
+
+    parsed_uid = strtoul(userName, &endptr, 10);
+    if (userName[0] != '\0' &&
+        *endptr == '\0' &&
+        parsed_uid < INT_MAX && /* parsed_uid != ULONG_MAX && */
+        getpwuid((uid_t)parsed_uid) != NULL) {
+
+        *pUid = (uid_t)parsed_uid;
+        return 0;
+    }
+
+    return -1;
 }
 
 /* set *pGid to GID of the given group, return non-zero on failure */
 static int resolveGid(const char *groupName, gid_t *pGid)
 {
-    struct group *gr;
+    const struct group *gr;
+    char *endptr;
+    unsigned long int parsed_gid;
+
 #ifdef __CYGWIN__
     if (strcmp(groupName, "root") == 0) {
         *pGid = 0;
         return 0;
     }
 #endif
+
     gr = getgrnam(groupName);
-    if (!gr)
-        return -1;
-    *pGid = gr->gr_gid;
-    endgrent();
-    return 0;
+    if (gr) {
+        *pGid = gr->gr_gid;
+        return 0;
+    }
+
+    parsed_gid = strtoul(groupName, &endptr, 10);
+    if (groupName[0] != '\0' &&
+        *endptr == '\0' &&
+        parsed_gid < INT_MAX && /* parsed_gid != ULONG_MAX && */
+        getgrgid((gid_t)parsed_gid) != NULL) {
+
+        *pGid = (gid_t)parsed_gid;
+        return 0;
+    }
+
+    return -1;
 }
 
 static int readModeUidGid(const char *configFile, int lineNum, char *key,
