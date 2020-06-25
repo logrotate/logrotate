@@ -1,11 +1,11 @@
-sudo: required
+os: linux
 dist: trusty
 language: c
 
 git:
   depth: 3
 
-matrix:
+jobs:
   include:
     - compiler: gcc
       addons:
