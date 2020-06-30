@@ -2924,7 +2924,7 @@ static int lockState(const char *stateFilename, int skip_state_lock)
                     "logrotate does not support parallel execution on the"
                     " same set of logfiles.\n", stateFilename);
         } else {
-            message(MESS_ERROR, "can not acquire lock on state file %s: %s\n",
+            message(MESS_ERROR, "error acquiring lock on state file %s: %s\n",
                     stateFilename, strerror(errno));
         }
         close(lockFd);
