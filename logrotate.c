@@ -495,6 +495,7 @@ static int runScript(const struct logInfo *log, const char *logfn, const char *l
             }
         }
         execl("/bin/sh", "sh", "-c", (char *) script, "logrotate_script", (char *) logfn, (char *) logrotfn, (char *) NULL);
+        message(MESS_ERROR, "cannot execute sub-shell: %s\n", strerror(errno));
         exit(1);
     }
 
@@ -683,6 +684,7 @@ static int shred_file(int fd, const char *filename, const struct logInfo *log)
         }
 
         execvp(fullCommand[0], (void *) fullCommand);
+        message(MESS_ERROR, "cannot execute shred command: %s\n", strerror(errno));
         exit(1);
     }
 
@@ -859,6 +861,7 @@ static int compressLogFile(const char *name, const struct logInfo *log, const st
         sprintf(envInFilename, "LOGROTATE_COMPRESSED_FILENAME=%s", name);
         putenv(envInFilename);
         execvp(fullCommand[0], (void *) fullCommand);
+        message(MESS_ERROR, "cannot execute compress command: %s\n", strerror(errno));
         exit(1);
     }
 
@@ -948,6 +951,7 @@ static int mailLog(const struct logInfo *log, const char *logFile, const char *m
             }
 
             execlp(uncompressCommand, uncompressCommand, (char *) NULL);
+            message(MESS_ERROR, "cannot execute uncompress command: %s\n", strerror(errno));
             exit(1);
         }
 
@@ -976,6 +980,7 @@ static int mailLog(const struct logInfo *log, const char *logFile, const char *m
         }
 
         execvp(mailArgv[0], mailArgv);
+        message(MESS_ERROR, "cannot execute mail command: %s\n", strerror(errno));
         exit(1);
     }
 
