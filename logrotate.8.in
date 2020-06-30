@@ -73,8 +73,8 @@ Turn on debug mode, which means that no changes are made to the logs and the
 Tells \fBlogrotate\fR to use an alternate state file.  This is useful
 if \fBlogrotate\fR is being run as a different user for various sets of
 log files.  To prevent parallel execution \fBlogrotate\fR by default
-acquires a lock on the state file, if it can not be acquired it will exit
-with value 3.  The default state file is \fI@STATE_FILE_PATH@\fR.
+acquires a lock on the state file, if it cannot be acquired \fBlogrotate\fR
+will exit with value 3.  The default state file is \fI@STATE_FILE_PATH@\fR.
 
 .TP
 \fB\-\-skip-state-lock\fR
