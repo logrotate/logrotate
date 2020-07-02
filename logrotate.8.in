@@ -617,7 +617,7 @@ and whole pattern is passed to them.
 However, if none of the logs in the pattern require rotating, the scripts
 will not be run at all.  If the scripts exit with error (or any log fails to
 rotate), the remaining actions will not be executed for any logs.  This option
-overrides the \fBnosharedscripts\fR option and implies \fBcreate\fR option.
+overrides the \fBnosharedscripts\fR option.
 
 .TP
 \fBnosharedscripts\fR
