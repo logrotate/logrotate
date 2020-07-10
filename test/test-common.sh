@@ -1,6 +1,6 @@
 # common variables and functions for legacy tests
 LOGROTATE="$(readlink -f $LOGROTATE)"
-RLR="$LOGROTATE -m ./mailer -s state"
+RLR="$LOGROTATE -v -m ./mailer -s state"
 
 TESTDIR="$(basename "$0" .sh)"
 mkdir -p "$TESTDIR"

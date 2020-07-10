@@ -14,7 +14,7 @@ rotate 1
 EOF
 chmod go-w includedir/test-0077.conf
 
-$RLR test-config.77 --force --verbose
+$RLR test-config.77 --force
 
 rm -rf includedir
 

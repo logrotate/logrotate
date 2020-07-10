@@ -9,11 +9,11 @@ preptest test.log 87 1
 
 touch state
 
-$RLR test-config.87 -v -f &
+$RLR test-config.87 -f &
 
 sleep 2
 
-$RLR test-config.87 -v
+$RLR test-config.87
 ret=$?
 
 if [ $ret -ne 3 ]; then
