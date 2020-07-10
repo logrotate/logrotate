@@ -2076,7 +2076,9 @@ static int rotateSingleLog(const struct logInfo *log, unsigned logNum,
 
             if (!log->rotateCount) {
                 const char *ext = "";
-                if (log->compress_ext && (log->flags & LOG_FLAG_COMPRESS))
+                if (log->compress_ext
+                        && (log->flags & LOG_FLAG_COMPRESS)
+                        && !(log->flags & LOG_FLAG_DELAYCOMPRESS))
                     ext = log->compress_ext;
 
                 free(rotNames->disposeName);

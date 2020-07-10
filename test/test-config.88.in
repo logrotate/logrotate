@@ -1,0 +1,6 @@
+&DIR&/test.log
+{
+    rotate 0
+    compress
+    delaycompress
+}
