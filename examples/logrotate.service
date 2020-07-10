@@ -18,12 +18,14 @@ IOSchedulingPriority=7
 #  no ProtectHome for userdir logs
 #  no PrivateNetwork for mail deliviery
 #  no NoNewPrivileges for third party rotate scripts
+#  no RestrictSUIDSGID for creating setgid directories
 LockPersonality=true
 MemoryDenyWriteExecute=true
 PrivateDevices=true
 PrivateTmp=true
 ProtectClock=true
 ProtectControlGroups=true
+ProtectHostname=true
 ProtectKernelLogs=true
 ProtectKernelModules=true
 ProtectKernelTunables=true
