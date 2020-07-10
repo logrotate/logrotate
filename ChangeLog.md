@@ -4,7 +4,17 @@ All notable changes to this project will be documented in this file.
 
 ## [UNRELEASED]
 
-[UNRELEASED]: https://github.com/logrotate/logrotate/compare/3.16.0...master
+[UNRELEASED]: https://github.com/logrotate/logrotate/compare/3.17.0...master
+
+## [3.17.0] - 2020-07-10
+  - lock state file to prevent parallel execution of logrotate (#295, #297)
+  - add `.bak` extension to default taboo list (#332)
+  - allow to pass a home-relative path to `include` (#322, #326)
+  - `switch_user_permanently`: skip switchback check if switched to root (#319)
+  - logrotate.service: enable `ProtectClock` to restrict setting of clock (#306)
+  - delete old logs hit by `maxage` regardless of `dateext` (#301)
+
+[3.17.0]: https://github.com/logrotate/logrotate/compare/3.16.0...3.17.0
 
 ## [3.16.0] - 2020-02-28
   - fix compilation with gcc-10, which defaults to `-fno-common` (#288)
