@@ -166,7 +166,7 @@ AC_SUBST(COMPRESS_EXT)
 AC_DEFINE_UNQUOTED([ROOT_UID], [0], [Root user-id.])
 AC_SUBST(ROOT_UID)
 
-AC_CHECK_FUNCS([asprintf madvise qsort strndup strptime utimensat vsyslog])
+AC_CHECK_FUNCS([asprintf madvise qsort secure_getenv strndup strptime utimensat vsyslog])
 AC_CONFIG_HEADERS([config.h])
 
 AM_CFLAGS="\
