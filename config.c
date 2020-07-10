@@ -45,6 +45,10 @@ struct logInfoHead logs;
 #include "asprintf.c"
 #endif
 
+#if !defined(HAVE_SECURE_GETENV)
+#define secure_getenv getenv
+#endif
+
 #if !defined(HAVE_ASPRINTF) && !defined(_FORTIFY_SOURCE)
 #include <stdarg.h>
 
