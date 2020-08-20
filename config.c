@@ -112,6 +112,7 @@ static const struct compress_cmd_item compress_cmd_list[] = {
     {"gzip", ".gz"},
     {"bzip2", ".bz2"},
     {"xz", ".xz"},
+    {"zstd", ".zst"},
     {"compress", ".Z"},
     {"zip", "zip"},
 };
