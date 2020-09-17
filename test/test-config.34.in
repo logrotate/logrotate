@@ -1,4 +1,4 @@
-create root root
+create root &ROOTGROUP&
 
 &DIR&/test.log {
 	daily

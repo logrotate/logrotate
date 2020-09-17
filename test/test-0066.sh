@@ -8,8 +8,13 @@ cleanup 66
 # When using %Y in the dateformat, the old logs are not removed
 preptest test.log 66 1 0
 
-DATESTRING=$(/bin/date +%Y%m%d)
-DAYAGO=$(/bin/date "+%Y-%m-%d" --date "1 day ago" 2>/dev/null)
+if date -v -1d > /dev/null 2>&1; then
+    DAYAGO=$(date -v-1d "+%Y-%m-%d")
+else
+    DAYAGO=$(date "+%Y-%m-%d" --date "1 day ago")
+fi
+
+echo "DAYAGO=${DAYAGO}"
 
 echo removed > "test.log$DAYAGO"
 

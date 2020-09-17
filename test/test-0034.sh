@@ -10,9 +10,12 @@ cleanup 34
 # checks the logrotate -d output.
 preptest test.log 34 1 0
 
-$RLR test-config.34 -d -f 2>&1|grep "uid = 0 gid = 0" > /dev/null
+OUTPUT=$($RLR test-config.34 -d -f 2>&1)
+
+echo "${OUTPUT}" | grep "uid = 0 gid = 0" > /dev/null
 
 if [ $? != 0 ]; then
+	echo "${OUTPUT}"
 	echo "logrotate output must contain 'uid = 0 gid = 0'"
 	exit 3
 fi

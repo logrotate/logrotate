@@ -2,6 +2,37 @@
 LOGROTATE="$(readlink -f $LOGROTATE)"
 RLR="$LOGROTATE -v -m ./mailer -s state"
 
+if du --apparent-size $LOGROTATE > /dev/null 2>&1; then
+  DU_APPARENT_SIZE='du --apparent-size'
+elif du -A $LOGROTATE > /dev/null 2>&1; then
+  DU_APPARENT_SIZE='du -A'
+else
+  echo "no du option for apparent size found:"
+  du --apparent-size $LOGROTATE
+  du -A $LOGROTATE
+  exit 1
+fi
+
+if command -v md5sum > /dev/null 2>&1; then
+  MD5SUM=md5sum
+elif command -v gmd5sum > /dev/null 2>&1; then
+  MD5SUM=gmd5sum
+else
+  echo "no md5sum command found"
+  exit 1
+fi
+
+if stat -c %f $LOGROTATE > /dev/null 2>&1; then
+  STAT_MODE_FORMAT='stat -c %f'
+elif stat -f %Xp $LOGROTATE > /dev/null 2>&1; then
+  STAT_MODE_FORMAT='stat -f %Xp'
+else
+  echo "no stat format option found:"
+  stat -c %f $LOGROTATE
+  stat -f %Xp $LOGROTATE
+  exit 1
+fi
+
 TESTDIR="$(basename "$0" .sh)"
 mkdir -p "$TESTDIR"
 cd "$TESTDIR" || exit $?
@@ -33,9 +64,10 @@ genconfig() {
     output=test-config.$1
     user=$(id -u -n)
     group=$(id -g -n)
-    sed "s,&DIR&,$PWD,g" < $input | sed "s,&USER&,$user,g" | sed "s,&GROUP&,$group,g" > $output
+    rootgroup=$(id -g -n root)
+    sed "s,&DIR&,$PWD,g" < $input | sed "s,&USER&,$user,g" | sed "s,&GROUP&,$group,g" | sed "s,&ROOTGROUP&,$rootgroup,g" > $output
     chmod go-w $output
-    config_crc=$(md5sum $output)
+    config_crc=$(${MD5SUM} $output)
 }
 
 createlog() {
@@ -139,7 +171,7 @@ checkoutput() {
 	    echo expected: \'$expected\'
 	    exit 2
 	fi
-	echo "$config_crc" | md5sum -c - >/dev/null
+	echo "$config_crc" | ${MD5SUM} -c - >/dev/null
 	if [ $? != 0 ]; then
 		echo "config file $output has been altered: MD5 sum mismatch"
 		exit 3
