@@ -146,7 +146,6 @@ jobs:
       env: COMPILER=scan-build-11
 
 install:
-  - sudo add-apt-repository ppa:dns/gnu -y
   - sudo apt-get -qq update
   - sudo apt-get -qq install libpopt-dev libselinux1-dev libacl1-dev automake dash rpm acl
 
