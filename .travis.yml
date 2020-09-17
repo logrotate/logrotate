@@ -162,7 +162,7 @@ install:
   - |
     if [[ "${TRAVIS_OS_NAME}" = "linux" ]]; then
       sudo apt-get -qq update
-      sudo apt-get -qq install libpopt-dev libselinux1-dev libacl1-dev automake dash rpm acl
+      sudo apt-get -qq install libpopt-dev libselinux1-dev libacl1-dev automake rpm acl
     fi
   - |
     if [[ "${TRAVIS_OS_NAME}" = "freebsd" ]]; then
@@ -190,7 +190,6 @@ script:
     if [[ "${TRAVIS_OS_NAME}" = "linux" ]]; then
       make rpm RPM_FLAGS="--nodeps"
     fi
-  - sed 's|/bin/bash|/bin/dash|' -i test/*.sh && make -j9 check
   # make sure that no tabs appear in the source code files
   - grep "$(printf '\t')" config.c log.{c,h} logrotate.{c,h}; test $? -eq 1
   # check for whitespace issues
