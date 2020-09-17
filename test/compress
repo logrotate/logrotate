@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 echo "gzip $*" > compress-args
 env > compress-env
