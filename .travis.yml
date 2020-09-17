@@ -128,7 +128,7 @@ jobs:
             - clang-11
       env:
         - COMPILER=clang-11
-        - CFLAGS='-O1 -g -fsanitize=address -fsanitize-address-use-after-scope -fno-omit-frame-pointer -fsanitize=undefined -fsanitize=nullability -fsanitize=implicit-conversion -fsanitize=integer -fsanitize=float-divide-by-zero -fsanitize=local-bounds'
+        - SANITIZER_CFLAGS='-O1 -g -fsanitize=address -fsanitize-address-use-after-scope -fno-omit-frame-pointer -fsanitize=undefined -fsanitize=nullability -fsanitize=implicit-conversion -fsanitize=integer -fsanitize=float-divide-by-zero -fsanitize=local-bounds'
         - ASAN_OPTIONS=strict_string_checks=1:detect_stack_use_after_return=1:check_initialization_order=1:strict_init_order=1
         - UBSAN_OPTIONS=print_stacktrace=1:print_summary=1:halt_on_error=1
         - LSAN_OPTIONS=suppressions=test/leak_san_supress.txt
@@ -159,13 +159,11 @@ script:
       travis_terminate $TRAVIS_TEST_RESULT;
     fi
   - $COMPILER --version
-  - ./configure --enable-werror --disable-silent-rules CC=$COMPILER
+  - ./configure --enable-werror --disable-silent-rules CC=$COMPILER CFLAGS="$CFLAGS $SANITIZER_CFLAGS"
   - make
   - make -j9 check || ( cat test/test-suite.log; exit 1; )
   # scan for Sanitizer output
   - grep -riE 'sanitizer|runtime error' test/*.log; test $? -eq 1
-  # unset Sanitizer CFLAGS for distcheck
-  - unset CFLAGS
   - CC=$COMPILER make -j9 distcheck DISTCHECK_CONFIGURE_FLAGS="--enable-werror --disable-silent-rules"
   # nodeps because rpm build deps cannot be installed on debian system
   - make rpm RPM_FLAGS="--nodeps"
