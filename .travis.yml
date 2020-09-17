@@ -8,86 +8,77 @@ git:
 jobs:
   include:
     - name: "GCC 4.4"
-      compiler: gcc
+      compiler: gcc-4.4
       addons:
         apt:
           sources:
             - ubuntu-toolchain-r-test
           packages:
             - gcc-4.4
-      env: COMPILER=gcc-4.4
     - name: "GCC 4.6"
-      compiler: gcc
+      compiler: gcc-4.6
       addons:
         apt:
           sources:
             - ubuntu-toolchain-r-test
           packages:
             - gcc-4.6
-      env: COMPILER=gcc-4.6
     - name: "GCC 4.7"
-      compiler: gcc
+      compiler: gcc-4.7
       addons:
         apt:
           sources:
             - ubuntu-toolchain-r-test
           packages:
             - gcc-4.7
-      env: COMPILER=gcc-4.7
     - name: "GCC 4.8"
-      compiler: gcc
+      compiler: gcc-4.8
       addons:
         apt:
           sources:
             - ubuntu-toolchain-r-test
           packages:
             - gcc-4.8
-      env: COMPILER=gcc-4.8
     - name: "GCC 4.9"
-      compiler: gcc
+      compiler: gcc-4.9
       addons:
         apt:
           sources:
             - ubuntu-toolchain-r-test
           packages:
             - gcc-4.9
-      env: COMPILER=gcc-4.9
     - name: "GCC 5"
-      compiler: gcc
+      compiler: gcc-5
       addons:
         apt:
           sources:
             - ubuntu-toolchain-r-test
           packages:
             - gcc-5
-      env: COMPILER=gcc-5
     - name: "GCC 6"
-      compiler: gcc
+      compiler: gcc-6
       addons:
         apt:
           sources:
             - ubuntu-toolchain-r-test
           packages:
             - gcc-6
-      env: COMPILER=gcc-6
     - name: "GCC 8"
-      compiler: gcc
+      compiler: gcc-8
       addons:
         apt:
           sources:
             - ubuntu-toolchain-r-test
           packages:
             - gcc-8
-      env: COMPILER=gcc-8
     - name: "Clang 3.4"
       compiler: clang
       addons:
         apt:
           packages:
             - clang-3.4
-      env: COMPILER=clang
     - name: "Clang 3.5"
-      compiler: clang
+      compiler: clang-3.5
       addons:
         apt:
           sources:
@@ -95,9 +86,8 @@ jobs:
             - llvm-toolchain-precise-3.5
           packages:
             - clang-3.5
-      env: COMPILER=clang-3.5
     - name: "Clang 3.6"
-      compiler: clang
+      compiler: clang-3.6
       addons:
         apt:
           sources:
@@ -105,9 +95,8 @@ jobs:
             - llvm-toolchain-precise-3.6
           packages:
             - clang-3.6
-      env: COMPILER=clang-3.6
     - name: "Clang 3.7"
-      compiler: clang
+      compiler: clang-3.7
       addons:
         apt:
           sources:
@@ -115,7 +104,6 @@ jobs:
             - llvm-toolchain-precise-3.7
           packages:
             - clang-3.7
-      env: COMPILER=clang-3.7
     - name: "GCC on FreeBSD"
       os: freebsd
       compiler: gcc
@@ -140,7 +128,6 @@ jobs:
           packages:
             - clang-11
       env:
-        - COMPILER=clang-11
         - SANITIZER_CFLAGS='-O1 -g -fsanitize=address -fsanitize-address-use-after-scope -fno-omit-frame-pointer -fsanitize=undefined -fsanitize=nullability -fsanitize=implicit-conversion -fsanitize=integer -fsanitize=float-divide-by-zero -fsanitize=local-bounds'
         - ASAN_OPTIONS=strict_string_checks=1:detect_stack_use_after_return=1:check_initialization_order=1:strict_init_order=1
         - UBSAN_OPTIONS=print_stacktrace=1:print_summary=1:halt_on_error=1
@@ -156,7 +143,7 @@ jobs:
           packages:
             - clang-11
             - clang-tools-11
-      env: COMPILER=scan-build-11
+      env: CLANG_ANALYZER=scan-build-11
 
 install:
   - |
@@ -170,21 +157,21 @@ install:
     fi
 
 script:
+  - $CC --version
   - ./autogen.sh
   - |
-    if [[ "${COMPILER}" =~ ^scan-build.* ]]; then
-      ${COMPILER} -analyze-headers --status-bugs ./configure --enable-werror --disable-silent-rules
-      ${COMPILER} -analyze-headers --status-bugs make
+    if [[ "${CLANG_ANALYZER}" =~ ^scan-build.* ]]; then
+      ${CLANG_ANALYZER} -analyze-headers --status-bugs ./configure --enable-werror --disable-silent-rules
+      ${CLANG_ANALYZER} -analyze-headers --status-bugs make
       export TRAVIS_TEST_RESULT=$?
       travis_terminate $TRAVIS_TEST_RESULT;
     fi
-  - $COMPILER --version
-  - ./configure --enable-werror --disable-silent-rules CC=$COMPILER CFLAGS="$CFLAGS $SANITIZER_CFLAGS" $CONFIGURE_OPTS
+  - ./configure --enable-werror --disable-silent-rules CFLAGS="$CFLAGS $SANITIZER_CFLAGS" $CONFIGURE_OPTS
   - make
   - make -j9 check || ( cat test/test-suite.log; exit 1; )
   # scan for Sanitizer output
   - grep -riE 'sanitizer|runtime error' test/*.log; test $? -eq 1
-  - CC=$COMPILER make -j9 distcheck DISTCHECK_CONFIGURE_FLAGS="--enable-werror --disable-silent-rules $CONFIGURE_OPTS"
+  - make -j9 distcheck DISTCHECK_CONFIGURE_FLAGS="--enable-werror --disable-silent-rules $CONFIGURE_OPTS"
   # nodeps because rpm build deps cannot be installed on debian system
   - |
     if [[ "${TRAVIS_OS_NAME}" = "linux" ]]; then
