@@ -116,6 +116,19 @@ jobs:
           packages:
             - clang-3.7
       env: COMPILER=clang-3.7
+    - name: "GCC on FreeBSD"
+      os: freebsd
+      compiler: gcc
+      env:
+        - CONFIGURE_OPTS='--with-compress-command=/usr/bin/gzip --with-uncompress-command=/usr/bin/gunzip --with-default-mail-command=/usr/bin/mail'
+    - name: "Clang on FreeBSD"
+      os: freebsd
+      compiler: clang
+      env:
+        # libpopt gets installed into /usr/local and Clang does not search there by default
+        - CFLAGS='-I /usr/local/include'
+        - CONFIGURE_OPTS='--with-compress-command=/usr/bin/gzip --with-uncompress-command=/usr/bin/gunzip --with-default-mail-command=/usr/bin/mail'
+        - LDFLAGS='-L /usr/local/lib'
     - name: "Clang 11 with Sanitizers"
       compiler: clang-11
       dist: bionic
@@ -146,8 +159,15 @@ jobs:
       env: COMPILER=scan-build-11
 
 install:
-  - sudo apt-get -qq update
-  - sudo apt-get -qq install libpopt-dev libselinux1-dev libacl1-dev automake dash rpm acl
+  - |
+    if [[ "${TRAVIS_OS_NAME}" = "linux" ]]; then
+      sudo apt-get -qq update
+      sudo apt-get -qq install libpopt-dev libselinux1-dev libacl1-dev automake dash rpm acl
+    fi
+  - |
+    if [[ "${TRAVIS_OS_NAME}" = "freebsd" ]]; then
+      sudo pkg install --yes coreutils gzip popt
+    fi
 
 script:
   - ./autogen.sh
@@ -159,14 +179,17 @@ script:
       travis_terminate $TRAVIS_TEST_RESULT;
     fi
   - $COMPILER --version
-  - ./configure --enable-werror --disable-silent-rules CC=$COMPILER CFLAGS="$CFLAGS $SANITIZER_CFLAGS"
+  - ./configure --enable-werror --disable-silent-rules CC=$COMPILER CFLAGS="$CFLAGS $SANITIZER_CFLAGS" $CONFIGURE_OPTS
   - make
   - make -j9 check || ( cat test/test-suite.log; exit 1; )
   # scan for Sanitizer output
   - grep -riE 'sanitizer|runtime error' test/*.log; test $? -eq 1
-  - CC=$COMPILER make -j9 distcheck DISTCHECK_CONFIGURE_FLAGS="--enable-werror --disable-silent-rules"
+  - CC=$COMPILER make -j9 distcheck DISTCHECK_CONFIGURE_FLAGS="--enable-werror --disable-silent-rules $CONFIGURE_OPTS"
   # nodeps because rpm build deps cannot be installed on debian system
-  - make rpm RPM_FLAGS="--nodeps"
+  - |
+    if [[ "${TRAVIS_OS_NAME}" = "linux" ]]; then
+      make rpm RPM_FLAGS="--nodeps"
+    fi
   - sed 's|/bin/bash|/bin/dash|' -i test/*.sh && make -j9 check
   # make sure that no tabs appear in the source code files
   - grep "$(printf '\t')" config.c log.{c,h} logrotate.{c,h}; test $? -eq 1
