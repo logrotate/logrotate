@@ -166,7 +166,7 @@ script:
   - grep -riP 'sanitizer|runtime error' test/*.log; test $? -eq 1
   # unset Sanitizer CFLAGS for distcheck
   - unset CFLAGS
-  - make -j9 distcheck
+  - CC=$COMPILER make -j9 distcheck DISTCHECK_CONFIGURE_FLAGS="--enable-werror --disable-silent-rules"
   # nodeps because rpm build deps cannot be installed on debian system
   - make rpm RPM_FLAGS="--nodeps"
   - sed 's|/bin/bash|/bin/dash|' -i test/*.sh && make -j9 check
