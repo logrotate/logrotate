@@ -7,7 +7,8 @@ git:
 
 jobs:
   include:
-    - compiler: gcc
+    - name: "GCC 4.4"
+      compiler: gcc
       addons:
         apt:
           sources:
@@ -15,7 +16,8 @@ jobs:
           packages:
             - gcc-4.4
       env: COMPILER=gcc-4.4
-    - compiler: gcc
+    - name: "GCC 4.6"
+      compiler: gcc
       addons:
         apt:
           sources:
@@ -23,7 +25,8 @@ jobs:
           packages:
             - gcc-4.6
       env: COMPILER=gcc-4.6
-    - compiler: gcc
+    - name: "GCC 4.7"
+      compiler: gcc
       addons:
         apt:
           sources:
@@ -31,7 +34,8 @@ jobs:
           packages:
             - gcc-4.7
       env: COMPILER=gcc-4.7
-    - compiler: gcc
+    - name: "GCC 4.8"
+      compiler: gcc
       addons:
         apt:
           sources:
@@ -39,7 +43,8 @@ jobs:
           packages:
             - gcc-4.8
       env: COMPILER=gcc-4.8
-    - compiler: gcc
+    - name: "GCC 4.9"
+      compiler: gcc
       addons:
         apt:
           sources:
@@ -47,7 +52,8 @@ jobs:
           packages:
             - gcc-4.9
       env: COMPILER=gcc-4.9
-    - compiler: gcc
+    - name: "GCC 5"
+      compiler: gcc
       addons:
         apt:
           sources:
@@ -55,7 +61,8 @@ jobs:
           packages:
             - gcc-5
       env: COMPILER=gcc-5
-    - compiler: gcc
+    - name: "GCC 6"
+      compiler: gcc
       addons:
         apt:
           sources:
@@ -63,7 +70,8 @@ jobs:
           packages:
             - gcc-6
       env: COMPILER=gcc-6
-    - compiler: gcc
+    - name: "GCC 8"
+      compiler: gcc
       addons:
         apt:
           sources:
@@ -71,13 +79,15 @@ jobs:
           packages:
             - gcc-8
       env: COMPILER=gcc-8
-    - compiler: clang
+    - name: "Clang 3.4"
+      compiler: clang
       addons:
         apt:
           packages:
             - clang-3.4
       env: COMPILER=clang
-    - compiler: clang
+    - name: "Clang 3.5"
+      compiler: clang
       addons:
         apt:
           sources:
@@ -86,7 +96,8 @@ jobs:
           packages:
             - clang-3.5
       env: COMPILER=clang-3.5
-    - compiler: clang
+    - name: "Clang 3.6"
+      compiler: clang
       addons:
         apt:
           sources:
@@ -95,7 +106,8 @@ jobs:
           packages:
             - clang-3.6
       env: COMPILER=clang-3.6
-    - compiler: clang
+    - name: "Clang 3.7"
+      compiler: clang
       addons:
         apt:
           sources:
@@ -104,7 +116,8 @@ jobs:
           packages:
             - clang-3.7
       env: COMPILER=clang-3.7
-    - compiler: clang-11
+    - name: "Clang 11 with Sanitizers"
+      compiler: clang-11
       dist: bionic
       addons:
         apt:
@@ -119,7 +132,8 @@ jobs:
         - ASAN_OPTIONS=strict_string_checks=1:detect_stack_use_after_return=1:check_initialization_order=1:strict_init_order=1
         - UBSAN_OPTIONS=print_stacktrace=1:print_summary=1:halt_on_error=1
         - LSAN_OPTIONS=suppressions=test/leak_san_supress.txt
-    - compiler: clang-11
+    - name: "Clang 11 Analyzer"
+      compiler: clang-11
       dist: bionic
       addons:
         apt:
