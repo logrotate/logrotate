@@ -320,15 +320,18 @@ static int readModeUidGid(const char *configFile, int lineNum, char *key,
                           gid_t *pGid)
 {
     char u[200], g[200];
-    unsigned int m = 0;
+    mode_t m = 0;
     char tmp;
     int rc;
 
     if (!strcmp("su", directive))
         /* do not read <mode> for the 'su' directive */
         rc = 0;
-    else
-        rc = sscanf(key, "%o %199s %199s%c", &m, u, g, &tmp);
+    else {
+        unsigned short int parsed_mode;
+        rc = sscanf(key, "%ho %199s %199s%c", &parsed_mode, u, g, &tmp);
+        m = parsed_mode;
+    }
 
     /* We support 'key <owner> <group> notation now */
     if (rc == 0) {
