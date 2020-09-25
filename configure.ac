@@ -176,6 +176,7 @@ AM_CFLAGS="\
  -Wextra\
  -Wmissing-format-attribute\
  -Wmissing-noreturn\
+ -Wmissing-prototypes\
  -Wpointer-arith\
  -Wshadow\
  -Wstrict-prototypes\
