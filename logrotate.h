@@ -26,6 +26,7 @@
 #define LOG_FLAG_OLDDIRCREATE   (1 << 13)
 #define LOG_FLAG_TMPFILENAME    (1 << 14)
 #define LOG_FLAG_DATEHOURAGO    (1 << 15)
+#define LOG_FLAG_COPYREDUCE     (1 << 16)
 
 #define NO_MODE ((mode_t) -1)
 #define NO_UID  ((uid_t) -1)
@@ -38,6 +39,14 @@
 #ifdef HAVE_LIBACL
 #define WITH_ACL 1
 #endif
+
+#if defined(HAVE_LINUX_FALLOC_H) && defined(HAVE_STRUCT_STAT_ST_BLKSIZE)
+#   include <linux/falloc.h>
+#   if defined(FALLOC_FL_PUNCH_HOLE) && defined(FALLOC_FL_KEEP_SIZE)
+#       define WITH_FALLOCATE 1
+#   endif
+#endif
+
 
 enum criterium {
     ROT_HOURLY,
