@@ -18,6 +18,8 @@ AC_STRUCT_ST_BLOCKS
 
 AC_CANONICAL_HOST
 
+AC_TYPE_UINT32_T
+
 dnl Use 64-bit file offsets on 32-bit systems (defines C macros if necessary)
 AC_SYS_LARGEFILE
 
