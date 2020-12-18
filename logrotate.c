@@ -1187,7 +1187,7 @@ static int sparse_copy(int src_fd, int dest_fd, const struct stat *sb,
 }
 
 static int copyTruncate(const char *currLog, const char *saveLog, const struct stat *sb,
-                        int flags, int skip_copy)
+                        uint32_t flags, int skip_copy)
 {
     int rc = 1;
     int fdcurr = -1, fdsave = -1;
