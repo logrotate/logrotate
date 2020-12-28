@@ -14,7 +14,9 @@ Makefile.in
 /config.log
 /config.status
 /config.guess
+/config.guess~
 /config.sub
+/config.sub~
 /autom4te.cache/
 /compile
 /configure
