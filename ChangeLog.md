@@ -4,7 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## [UNRELEASED]
 
-[UNRELEASED]: https://github.com/logrotate/logrotate/compare/3.17.0...master
+[UNRELEASED]: https://github.com/logrotate/logrotate/compare/3.18.0...master
+
+## [3.18.0] - 2021-01-08
+  - allow UIDs and GIDs to be specified numerically (#217)
+  - add support for Zstandard compressed files (#355)
+  - make `delaycompress` not to fail with `rotate 0` (#341)
+
+[3.18.0]: https://github.com/logrotate/logrotate/compare/3.17.0...3.18.0
 
 ## [3.17.0] - 2020-07-10
   - lock state file to prevent parallel execution of logrotate (#295, #297)
