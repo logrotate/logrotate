@@ -582,8 +582,12 @@ static int createOutputFile(const char *fileName, int flags, const struct stat *
         return -1;
     }
 
-    if ((sb_create.st_uid != sb->st_uid || sb_create.st_gid != sb->st_gid) &&
-            fchown(fd, sb->st_uid, sb->st_gid)) {
+    /* Only attempt to set user/group if running as root */
+    if (
+        0 == geteuid() &&
+        (sb_create.st_uid != sb->st_uid || sb_create.st_gid != sb->st_gid) &&
+        fchown(fd, sb->st_uid, sb->st_gid)
+    ) {
         message(MESS_ERROR, "error setting owner of %s to uid %u and gid %u: %s\n",
                 fileName, (unsigned) sb->st_uid, (unsigned) sb->st_gid, strerror(errno));
         close(fd);
