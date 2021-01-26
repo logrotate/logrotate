@@ -770,6 +770,8 @@ static int compressLogFile(const char *name, const struct logInfo *log, const st
     int error_printed = 0;
     char *prevCtx;
     pid_t pid;
+    int in_flags;
+    const char *in_how;
 
     message(MESS_DEBUG, "compressing log with: %s\n", log->compress_prog);
     if (debug)
@@ -785,8 +787,18 @@ static int compressLogFile(const char *name, const struct logInfo *log, const st
     compressedName = alloca(strlen(name) + strlen(log->compress_ext) + 2);
     sprintf(compressedName, "%s%s", name, log->compress_ext);
 
-    if ((inFile = open(name, O_RDWR | O_NOFOLLOW)) < 0) {
-        message(MESS_ERROR, "unable to open %s for compression: %s\n", name, strerror(errno));
+    in_flags = O_NOFOLLOW;
+    if (log->flags & LOG_FLAG_SHRED) {
+        /* need write access for shredding */
+        in_flags |= O_RDWR;
+        in_how = "read-write";
+    } else {
+        in_flags |= O_RDONLY;
+        in_how = "read-only";
+    }
+    if ((inFile = open(name, in_flags)) < 0) {
+        message(MESS_ERROR, "unable to open %s (%s) for compression: %s\n",
+            name, in_how, strerror(errno));
         return 1;
     }
 
