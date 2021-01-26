@@ -785,8 +785,10 @@ static int compressLogFile(const char *name, const struct logInfo *log, const st
     compressedName = alloca(strlen(name) + strlen(log->compress_ext) + 2);
     sprintf(compressedName, "%s%s", name, log->compress_ext);
 
-    if ((inFile = open(name, O_RDWR | O_NOFOLLOW)) < 0) {
-        message(MESS_ERROR, "unable to open %s for compression: %s\n", name, strerror(errno));
+    /* We do not need write permission on that file to compress it */
+    if ((inFile = open(name, O_RDONLY | O_NOFOLLOW)) < 0) {
+        message(MESS_ERROR, "unable to open %s for compression: %s\n",
+            name, strerror(errno));
         return 1;
     }
 
