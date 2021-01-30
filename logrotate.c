@@ -584,7 +584,7 @@ static int createOutputFile(const char *fileName, int flags, const struct stat *
 
     /* Only attempt to set user/group if running as root */
     if (
-        0 == geteuid() &&
+        ROOT_UID == geteuid() &&
         (sb_create.st_uid != sb->st_uid || sb_create.st_gid != sb->st_gid) &&
         fchown(fd, sb->st_uid, sb->st_gid)
     ) {
