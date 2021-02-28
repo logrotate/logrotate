@@ -153,7 +153,7 @@ install:
     fi
   - |
     if [[ "${TRAVIS_OS_NAME}" = "freebsd" ]]; then
-      sudo pkg install --yes coreutils gzip popt
+      sudo pkg install --yes gzip popt
     fi
 
 script:
