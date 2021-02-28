@@ -15,10 +15,10 @@ fi
 
 if command -v md5sum > /dev/null 2>&1; then
   MD5SUM=md5sum
-elif command -v gmd5sum > /dev/null 2>&1; then
-  MD5SUM=gmd5sum
+elif command -v md5 > /dev/null 2>&1; then
+  MD5SUM=md5
 else
-  echo "no md5sum command found"
+  echo "no md5sum/md5 command found"
   exit 1
 fi
 
