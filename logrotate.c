@@ -2228,11 +2228,6 @@ static int rotateLogSet(const struct logInfo *log, int force)
     struct logState **state;
     struct logNames **rotNames;
 
-    logHasErrors = calloc(log->numFiles, sizeof(int));
-    if (!logHasErrors) {
-        message_OOM();
-        return 1;
-    }
     message(MESS_DEBUG, "\nrotating pattern: %s ", log->pattern);
     if (force) {
         message(MESS_DEBUG, "forced from command line ");
@@ -2293,8 +2288,13 @@ static int rotateLogSet(const struct logInfo *log, int force)
 
     if (log->numFiles == 0) {
         message(MESS_DEBUG, "No logs found. Rotation not needed.\n");
-        free(logHasErrors);
         return 0;
+    }
+
+    logHasErrors = calloc(log->numFiles, sizeof(int));
+    if (!logHasErrors) {
+        message_OOM();
+        return 1;
     }
 
     if (log->flags & LOG_FLAG_SU) {
