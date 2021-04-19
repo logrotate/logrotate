@@ -1583,7 +1583,7 @@ static int prerotateSingleLog(const struct logInfo *log, unsigned logNum,
     state->lastRotated = now;
 
     {
-        char *ld;
+        const char *ld;
         char *logpath = strdup(log->files[logNum]);
         if (logpath == NULL) {
             message_OOM();
