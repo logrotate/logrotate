@@ -1826,15 +1826,6 @@ static int prerotateSingleLog(const struct logInfo *log, unsigned logNum,
         }
     }
 
-    /* adding 2 due to / and \0 being added by snprintf */
-    rotNames->firstRotated =
-        malloc(strlen(rotNames->dirName) + strlen(rotNames->baseName) +
-                strlen(fileext) + strlen(compext) + DATEEXT_LEN + 2 );
-    if (rotNames->firstRotated == NULL) {
-        message_OOM();
-        return 1;
-    }
-
     if (log->flags & LOG_FLAG_DATEEXT) {
         /* glob for compressed files with our pattern
          * and compress ext */
@@ -1898,9 +1889,13 @@ static int prerotateSingleLog(const struct logInfo *log, unsigned logNum,
             rotNames->disposeName = NULL;
         }
         /* firstRotated is most recently created/compressed rotated log */
-        sprintf(rotNames->firstRotated, "%s/%s%s%s%s",
+        if (asprintf(&rotNames->firstRotated, "%s/%s%s%s%s",
                 rotNames->dirName, rotNames->baseName, dext_str, fileext,
-                (log->flags & LOG_FLAG_DELAYCOMPRESS) ? "" : compext);
+                (log->flags & LOG_FLAG_DELAYCOMPRESS) ? "" : compext) < 0) {
+            message_OOM();
+            rotNames->firstRotated = NULL;
+            return 1;
+        }
         globfree(&globResult);
         free(glob_pattern);
     } else {
@@ -1931,9 +1926,13 @@ static int prerotateSingleLog(const struct logInfo *log, unsigned logNum,
             }
         }
 
-        sprintf(rotNames->firstRotated, "%s/%s.%d%s%s", rotNames->dirName,
+        if (asprintf(&rotNames->firstRotated, "%s/%s.%d%s%s", rotNames->dirName,
                 rotNames->baseName, logStart, fileext,
-                (log->flags & LOG_FLAG_DELAYCOMPRESS) ? "" : compext);
+                (log->flags & LOG_FLAG_DELAYCOMPRESS) ? "" : compext) < 0) {
+            message_OOM();
+            rotNames->firstRotated = NULL;
+            return 1;
+        }
 
         for (i = rotateCount + logStart - 1; (i >= 0) && !hasErrors; i--) {
             free(newName);
