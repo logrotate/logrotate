@@ -1545,7 +1545,6 @@ static int prerotateSingleLog(const struct logInfo *log, unsigned logNum,
                               struct logState *state, struct logNames *rotNames)
 {
     struct tm now;
-    char *oldName = NULL;
     const char *compext = "";
     const char *fileext = "";
     int hasErrors = 0;
@@ -1786,11 +1785,8 @@ static int prerotateSingleLog(const struct logInfo *log, unsigned logNum,
                 sortGlobResult(&globResult, strlen(rotNames->dirName) + 1 + strlen(rotNames->baseName), dformat);
                 for (glob_count = 0; glob_count < globResult.gl_pathc && !hasErrors; glob_count++) {
                     struct stat sbprev;
+                    const char *oldName = globResult.gl_pathv[glob_count];
 
-                    if (asprintf(&oldName, "%s", (globResult.gl_pathv)[glob_count]) < 0) {
-                        message_OOM();
-                        return 1;
-                    }
                     if (stat(oldName, &sbprev)) {
                         if (errno == ENOENT)
                             message(MESS_DEBUG, "previous log %s does not exist\n", oldName);
@@ -1799,7 +1795,6 @@ static int prerotateSingleLog(const struct logInfo *log, unsigned logNum,
                     } else {
                         hasErrors = compressLogFile(oldName, log, &sbprev);
                     }
-                    free(oldName);
                 }
             } else {
                 message(MESS_DEBUG,
@@ -1809,6 +1804,7 @@ static int prerotateSingleLog(const struct logInfo *log, unsigned logNum,
             free(glob_pattern);
         } else {
             struct stat sbprev;
+            char *oldName;
             if (asprintf(&oldName, "%s/%s.%d%s", rotNames->dirName,
                          rotNames->baseName, logStart, fileext) < 0) {
                 message_OOM();
@@ -1869,16 +1865,14 @@ static int prerotateSingleLog(const struct logInfo *log, unsigned logNum,
             }
             if (mail_out != (size_t)-1) {
                 /* oldName is oldest Backup found (for unlink later) */
-                if (asprintf(&oldName, "%s", (globResult.gl_pathv)[mail_out]) < 0) {
-                    message_OOM();
-                    return 1;
-                }
+                const char *oldName = globResult.gl_pathv[mail_out];
                 rotNames->disposeName = strdup(oldName);
                 if (rotNames->disposeName == NULL) {
                     message_OOM();
+                    globfree(&globResult);
+                    free(glob_pattern);
                     return 1;
                 }
-                free(oldName);
             } else {
                 free(rotNames->disposeName);
                 rotNames->disposeName = NULL;
@@ -1894,6 +1888,8 @@ static int prerotateSingleLog(const struct logInfo *log, unsigned logNum,
                 (log->flags & LOG_FLAG_DELAYCOMPRESS) ? "" : compext) < 0) {
             message_OOM();
             rotNames->firstRotated = NULL;
+            globfree(&globResult);
+            free(glob_pattern);
             return 1;
         }
         globfree(&globResult);
@@ -1901,6 +1897,7 @@ static int prerotateSingleLog(const struct logInfo *log, unsigned logNum,
     } else {
         int i;
         char *newName = NULL;
+        char *oldName;
 
         if (rotateCount == -1) {
             rotateCount = findLastRotated(rotNames, fileext, compext);
