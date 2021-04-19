@@ -1886,13 +1886,12 @@ duperror:
                                     continue;
                                 }
                             }
-                            ld = malloc(strlen(dirName) + strlen(newlog->oldDir) + 2);
-                            if (ld == NULL) {
+                            if (asprintf(&ld, "%s/%s", dirName, newlog->oldDir) < 0) {
                                 message_OOM();
                                 free(dirpath);
                                 goto error;
                             }
-                            sprintf(ld, "%s/%s", dirName, newlog->oldDir);
+
                             free(dirpath);
 
                             if (newlog->oldDir[0] != '/') {
