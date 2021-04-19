@@ -61,24 +61,20 @@ int asprintf(char **string_ptr, const char *format, ...)
 
     va_start(arg, format);
     size = vsnprintf(NULL, 0, format, arg);
-    size++;
     va_end(arg);
-    va_start(arg, format);
-    str = malloc(size);
-    if (str == NULL) {
-        va_end(arg);
-        /*
-         * Strictly speaking, GNU asprintf doesn't do this,
-         * but the caller isn't checking the return value.
-         */
-        message_OOM();
-        exit(1);
+    if (size < 0) {
+        return -1;
     }
-    rv = vsnprintf(str, size, format, arg);
+    str = malloc((size_t)size + 1);
+    if (str == NULL) {
+        return -1;
+    }
+    va_start(arg, format);
+    rv = vsnprintf(str, (size_t)size + 1, format, arg);
     va_end(arg);
 
     *string_ptr = str;
-    return (rv);
+    return rv;
 }
 
 #endif
