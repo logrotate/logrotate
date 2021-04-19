@@ -1592,9 +1592,9 @@ static int prerotateSingleLog(const struct logInfo *log, unsigned logNum,
         ld = dirname(logpath);
         if (log->oldDir) {
             if (log->oldDir[0] != '/') {
-                rotNames->dirName =
-                    malloc(strlen(ld) + strlen(log->oldDir) + 2);
-                sprintf(rotNames->dirName, "%s/%s", ld, log->oldDir);
+                if (asprintf(&rotNames->dirName, "%s/%s", ld, log->oldDir) < 0) {
+                    rotNames->dirName = NULL;
+                }
             } else
                 rotNames->dirName = strdup(log->oldDir);
         } else
@@ -1999,6 +1999,7 @@ static int prerotateSingleLog(const struct logInfo *log, unsigned logNum,
         if (asprintf(&(rotNames->finalName), "%s/%s%s%s", rotNames->dirName,
                      rotNames->baseName, dext_str, fileext) < 0) {
             message_OOM();
+            rotNames->finalName = NULL;
             return 1;
         }
         if (asprintf(&destFile, "%s%s", rotNames->finalName, compext) < 0) {
@@ -2017,6 +2018,7 @@ static int prerotateSingleLog(const struct logInfo *log, unsigned logNum,
         if (asprintf(&(rotNames->finalName), "%s/%s.%d%s", rotNames->dirName,
                      rotNames->baseName, logStart, fileext) < 0) {
             message_OOM();
+            rotNames->finalName = NULL;
         }
     }
 
@@ -2100,6 +2102,7 @@ static int rotateSingleLog(const struct logInfo *log, unsigned logNum,
                 free(rotNames->disposeName);
                 if (asprintf(&rotNames->disposeName, "%s%s", rotNames->finalName, ext) < 0) {
                     message_OOM();
+                    rotNames->disposeName = NULL;
                     return 1;
                 }
 

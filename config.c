@@ -815,21 +815,19 @@ int readAllConfigPaths(const char **paths)
 
 
     for (i = 0; i < defTabooCount; i++) {
-        int bytes;
         char *pattern = NULL;
 
         /* generate a pattern by concatenating star (wildcard) to the
          * suffix literal
          */
-        bytes = asprintf(&pattern, "*%s", defTabooExts[i]);
-        if (bytes != -1) {
-            tabooPatterns[i] = pattern;
-            tabooCount++;
-        } else {
+        if (asprintf(&pattern, "*%s", defTabooExts[i]) < 0) {
             free_2d_array(tabooPatterns, tabooCount);
             message_OOM();
             return 1;
         }
+
+        tabooPatterns[i] = pattern;
+        tabooCount++;
     }
 
     for (file = paths; *file; file++) {
@@ -1421,7 +1419,6 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                         }
 
                         while (*endtag) {
-                            int bytes;
                             char *pattern = NULL;
 
                             chptr = endtag;
@@ -1437,10 +1434,11 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                                     RAISE_ERROR();
                                 }
                                 tabooPatterns = tmp;
-                                bytes = asprintf(&pattern, "*%.*s", (int)(chptr - endtag), endtag);
+                                if (asprintf(&pattern, "*%.*s", (int)(chptr - endtag), endtag) < 0) {
+                                    message_OOM();
+                                    RAISE_ERROR();
+                                }
 
-                                /* should test for malloc() failure */
-                                assert(bytes != -1);
                                 tabooPatterns[tabooCount] = pattern;
                                 tabooCount++;
                             }
@@ -1481,7 +1479,6 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                         }
 
                         while (*endtag) {
-                            int bytes;
                             char *pattern = NULL;
                             char **tmp;
 
@@ -1496,10 +1493,11 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                                 RAISE_ERROR();
                             }
                             tabooPatterns = tmp;
-                            bytes = asprintf(&pattern, "%.*s", (int)(chptr - endtag), endtag);
+                            if (asprintf(&pattern, "%.*s", (int)(chptr - endtag), endtag) < 0) {
+                                message_OOM();
+                                RAISE_ERROR();
+                            }
 
-                            /* should test for malloc() failure */
-                            assert(bytes != -1);
                             tabooPatterns[tabooCount] = pattern;
                             tabooCount++;
 
@@ -1540,7 +1538,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                                 env_home = pwd->pw_dir;
                             }
 
-                            if (asprintf(&new_key, "%s/%s", env_home, key + 2) == -1) {
+                            if (asprintf(&new_key, "%s/%s", env_home, key + 2) < 0) {
                                 message_OOM();
                                 RAISE_ERROR();
                             }
