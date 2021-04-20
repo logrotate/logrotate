@@ -1145,9 +1145,9 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                         newlog->flags |= LOG_FLAG_DATEHOURAGO;
                     } else if (!strcmp(key, "dateformat")) {
                         freeLogItem(dateformat);
-                        newlog->dateformat = isolateLine(&start, &buf, length);
-                        if (newlog->dateformat == NULL)
-                            continue;
+                        newlog->dateformat = isolateValue(configFile, lineNum,
+                                                          key, &start, &buf,
+                                                          length);
                     } else if (!strcmp(key, "noolddir")) {
                         freeLogItem(oldDir);
                     } else if (!strcmp(key, "mailfirst")) {
