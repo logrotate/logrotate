@@ -1099,8 +1099,11 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                 if (isalpha((unsigned char)*start)) {
                     free(key);
                     key = isolateWord(&start, &buf, length);
-                    if (key == NULL)
+                    if (key == NULL) {
+                        message(MESS_ERROR, "%s:%d failed to parse keyword\n",
+                                configFile, lineNum);
                         continue;
+                    }
                     if (!isspace((unsigned char)*start)) {
                         message(MESS_NORMAL, "%s:%d keyword '%s' not properly"
                                 " separated, found %#x\n",
