@@ -315,7 +315,7 @@ static int resolveGid(const char *groupName, gid_t *pGid)
     return -1;
 }
 
-static int readModeUidGid(const char *configFile, int lineNum, char *key,
+static int readModeUidGid(const char *configFile, int lineNum, const char *key,
                           const char *directive, mode_t *mode, uid_t *pUid,
                           gid_t *pGid)
 {
