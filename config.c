@@ -2087,8 +2087,8 @@ duperror:
                 break;
             default:
                 message(MESS_FATAL,
-                        "%s: %d: readConfigFile() unknown state\n",
-                        configFile, lineNum);
+                        "%s: %d: readConfigFile() unknown state: %#x\n",
+                        configFile, lineNum, state);
         }
         if (*start == '\n') {
             lineNum++;
