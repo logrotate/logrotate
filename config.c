@@ -1165,8 +1165,11 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                         mode_t tmp_mode = NO_MODE;
                         free(key);
                         key = isolateLine(&start, &buf, length);
-                        if (key == NULL)
-                            continue;
+                        if (key == NULL) {
+                            message(MESS_ERROR, "%s:%d failed to parse su option value\n",
+                                    configFile, lineNum);
+                            RAISE_ERROR();
+                        }
 
                         rv = readModeUidGid(configFile, lineNum, key, "su",
                                             &tmp_mode, &newlog->suUid,
@@ -1279,13 +1282,14 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                         free(key);
                         key = isolateValue(configFile, lineNum, "shred cycles",
                                            &start, &buf, length);
-                        if (key == NULL)
-                            continue;
+                        if (key == NULL) {
+                            RAISE_ERROR();
+                        }
                         newlog->shred_cycles = (int)strtoul(key, &chptr, 0);
                         if (*chptr || newlog->shred_cycles < 0) {
                             message(MESS_ERROR, "%s:%d bad shred cycles '%s'\n",
                                     configFile, lineNum, key);
-                            goto error;
+                            RAISE_ERROR();
                         }
                     } else if (!strcmp(key, "hourly")) {
                         set_criterium(&newlog->criterium, ROT_HOURLY, &criterium_set);
@@ -1320,8 +1324,9 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                         free(key);
                         key = isolateValue(configFile, lineNum, "rotate count", &start,
                                            &buf, length);
-                        if (key == NULL)
-                            continue;
+                        if (key == NULL) {
+                            RAISE_ERROR();
+                        }
                         newlog->rotateCount = (int)strtol(key, &chptr, 0);
                         if (*chptr || newlog->rotateCount < -1) {
                             message(MESS_ERROR,
@@ -1333,8 +1338,9 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                         free(key);
                         key = isolateValue(configFile, lineNum, "start count", &start,
                                            &buf, length);
-                        if (key == NULL)
-                            continue;
+                        if (key == NULL) {
+                            RAISE_ERROR();
+                        }
                         newlog->logStart = (int)strtoul(key, &chptr, 0);
                         if (*chptr || newlog->logStart < 0) {
                             message(MESS_ERROR, "%s:%d bad start count '%s'\n",
@@ -1345,8 +1351,9 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                         free(key);
                         key = isolateValue(configFile, lineNum, "minage count", &start,
                                            &buf, length);
-                        if (key == NULL)
-                            continue;
+                        if (key == NULL) {
+                            RAISE_ERROR();
+                        }
                         newlog->rotateMinAge = (int)strtoul(key, &chptr, 0);
                         if (*chptr || newlog->rotateMinAge < 0) {
                             message(MESS_ERROR, "%s:%d bad minimum age '%s'\n",
@@ -1357,8 +1364,9 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                         free(key);
                         key = isolateValue(configFile, lineNum, "maxage count", &start,
                                            &buf, length);
-                        if (key == NULL)
-                            continue;
+                        if (key == NULL) {
+                            RAISE_ERROR();
+                        }
                         newlog->rotateAge = (int)strtoul(key, &chptr, 0);
                         if (*chptr || newlog->rotateAge < 0) {
                             message(MESS_ERROR, "%s:%d bad maximum age '%s'\n",
@@ -1529,8 +1537,9 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                         free(key);
                         key = isolateValue(configFile, lineNum, "include", &start,
                                            &buf, length);
-                        if (key == NULL)
-                            continue;
+                        if (key == NULL) {
+                            RAISE_ERROR();
+                        }
 
                         if (key[0] == '~' && key[1] == '/') {
                             /* replace '~' with content of $HOME cause low-level functions
@@ -1592,8 +1601,9 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                         free(key);
                         key = isolateValue(configFile, lineNum, "extension name", &start,
                                            &buf, length);
-                        if (key == NULL)
-                            continue;
+                        if (key == NULL) {
+                            RAISE_ERROR();
+                        }
                         freeLogItem (extension);
                         newlog->extension = key;
                         key = NULL;
@@ -1603,8 +1613,9 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                         free(key);
                         key = isolateValue(configFile, lineNum, "addextension name", &start,
                                            &buf, length);
-                        if (key == NULL)
-                            continue;
+                        if (key == NULL) {
+                            RAISE_ERROR();
+                        }
                         freeLogItem (addextension);
                         newlog->addextension = key;
                         key = NULL;
