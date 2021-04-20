@@ -1101,6 +1101,11 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                     key = isolateWord(&start, &buf, length);
                     if (key == NULL)
                         continue;
+                    if (!isspace((unsigned char)*start)) {
+                        message(MESS_NORMAL, "%s:%d keyword '%s' not properly"
+                                " separated, found %#x\n",
+                                configFile, lineNum, key, *start);
+                    }
                     if (!strcmp(key, "compress")) {
                         newlog->flags |= LOG_FLAG_COMPRESS;
                     } else if (!strcmp(key, "nocompress")) {
