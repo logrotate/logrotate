@@ -1155,7 +1155,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                         if (newlog->dateformat == NULL)
                             continue;
                     } else if (!strcmp(key, "noolddir")) {
-                        newlog->oldDir = NULL;
+                        freeLogItem(oldDir);
                     } else if (!strcmp(key, "mailfirst")) {
                         newlog->flags |= LOG_FLAG_MAILFIRST;
                     } else if (!strcmp(key, "maillast")) {
