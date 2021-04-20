@@ -1008,7 +1008,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 
     if (getuid() == ROOT_UID) {
         if ((sb.st_mode & 07533) != 0400) {
-            message(MESS_DEBUG,
+            message(MESS_NORMAL,
                     "Potentially dangerous mode on %s: 0%o\n",
                     configFile, (unsigned) (sb.st_mode & 07777));
         }
