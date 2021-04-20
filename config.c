@@ -1369,7 +1369,6 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                                         "mail", &start, &buf, length))) {
                             RAISE_ERROR();
                         }
-                        else continue;
                     } else if (!strcmp(key, "nomail")) {
                         freeLogItem(logAddress);
                     } else if (!strcmp(key, "missingok")) {
