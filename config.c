@@ -1374,7 +1374,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                             RAISE_ERROR();
                         }
                     } else if (!strcmp(key, "errors")) {
-                        message(MESS_DEBUG,
+                        message(MESS_NORMAL,
                                 "%s: %d: the errors directive is deprecated and no longer used.\n",
                                 configFile, lineNum);
                     } else if (!strcmp(key, "mail")) {
