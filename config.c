@@ -963,6 +963,9 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
     static unsigned recursion_depth = 0U;
     char *globerr_msg = NULL;
     int in_config = 0;
+#ifdef HAVE_MADVISE
+    int r;
+#endif
     struct flock fd_lock = {
         .l_start = 0,
         .l_len = 0,
@@ -1062,12 +1065,16 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 
 #ifdef HAVE_MADVISE
 #ifdef MADV_DONTFORK
-    madvise(buf, length + 2,
-            MADV_SEQUENTIAL | MADV_WILLNEED | MADV_DONTFORK);
+    r = madvise(buf, length + 2,
+                MADV_SEQUENTIAL | MADV_WILLNEED | MADV_DONTFORK);
 #else /* MADV_DONTFORK */
-    madvise(buf, length + 2,
-            MADV_SEQUENTIAL | MADV_WILLNEED);
+    r = madvise(buf, length + 2,
+                MADV_SEQUENTIAL | MADV_WILLNEED);
 #endif /* MADV_DONTFORK */
+    if (r < 0) {
+        message(MESS_DEBUG, "Failed to advise use of memory: %s\n",
+                strerror(errno));
+    }
 #endif /* HAVE_MADVISE */
 
     message(MESS_DEBUG, "reading config file %s\n", configFile);
