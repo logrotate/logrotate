@@ -410,7 +410,8 @@ Make a copy of the log file, but don't change the original at all.
 This option can be used, for instance, to make a snapshot of the current
 log file, or when some other utility needs to truncate or parse the file.
 When this option is used, the \fBcreate\fR option will have no effect,
-as the old log file stays in place.
+as the old log file stays in place.  The \fBcopy\fR option allows storing
+rotated log files on the different devices using \fBolddir\fR directive.
 
 .TP
 \fBnocopy\fR
@@ -426,7 +427,9 @@ and thus might continue writing (appending) to the previous log file forever.
 Note that there is a very small time slice between copying the file and
 truncating it, so some logging data might be lost.
 When this option is used, the \fBcreate\fR option will have no effect,
-as the old log file stays in place.
+as the old log file stays in place.  The \fBcopytruncate\fR option allows
+storing rotated log files on the different devices using \fBolddir\fR
+directive.
 
 .TP
 \fBnocopytruncate\fR
@@ -437,9 +440,14 @@ Do not truncate the original log file in place after creating a copy
 \fBrenamecopy\fR
 Log file is renamed to temporary filename in the same directory by adding
 ".tmp" extension to it.  After that, \fBpostrotate\fR script is run
-and log file is copied from temporary filename to final filename.  This allows
-storing rotated log files on the different devices using \fBolddir\fR
-directive. In the end, temporary filename is removed.
+and log file is copied from temporary filename to final filename.  In the end,
+temporary filename is removed.  The \fBrenamecopy\fR option allows storing
+rotated log files on the different devices using \fBolddir\fR directive.
+
+.TP
+\fBnorenamecopy\fR
+Do not rename and copy the original log file
+(this overrides the \fBrenamecopy\fR option).
 
 .TP
 \fBshred\fR
