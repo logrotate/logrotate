@@ -1121,10 +1121,12 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                         newlog->flags &= ~LOG_FLAG_SHAREDSCRIPTS;
                     } else if (!strcmp(key, "copytruncate")) {
                         newlog->flags |= LOG_FLAG_COPYTRUNCATE;
+                        newlog->flags &= ~LOG_FLAG_TMPFILENAME;
                     } else if (!strcmp(key, "nocopytruncate")) {
                         newlog->flags &= ~LOG_FLAG_COPYTRUNCATE;
                     } else if (!strcmp(key, "renamecopy")) {
                         newlog->flags |= LOG_FLAG_TMPFILENAME;
+                        newlog->flags &= ~LOG_FLAG_COPYTRUNCATE;
                     } else if (!strcmp(key, "norenamecopy")) {
                         newlog->flags &= ~LOG_FLAG_TMPFILENAME;
                     } else if (!strcmp(key, "copy")) {

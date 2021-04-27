@@ -429,7 +429,7 @@ truncating it, so some logging data might be lost.
 When this option is used, the \fBcreate\fR option will have no effect,
 as the old log file stays in place.  The \fBcopytruncate\fR option allows
 storing rotated log files on the different devices using \fBolddir\fR
-directive.
+directive.  The \fBcopytruncate\fR option implies \fBnorenamecopy\fR.
 
 .TP
 \fBnocopytruncate\fR
@@ -443,6 +443,7 @@ Log file is renamed to temporary filename in the same directory by adding
 and log file is copied from temporary filename to final filename.  In the end,
 temporary filename is removed.  The \fBrenamecopy\fR option allows storing
 rotated log files on the different devices using \fBolddir\fR directive.
+The \fBrenamecopy\fR option implies \fBnocopytruncate\fR.
 
 .TP
 \fBnorenamecopy\fR

@@ -1,5 +1,8 @@
 create
 
+# will be overridden by copytruncate
+renamecopy
+
 &DIR&/test*.log {
     daily
     copytruncate
