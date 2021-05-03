@@ -1919,6 +1919,7 @@ static int prerotateSingleLog(const struct logInfo *log, unsigned logNum,
             rotNames->disposeName = strdup(oldName);
             if (rotNames->disposeName == NULL) {
                 message_OOM();
+                free(oldName);
                 return 1;
             }
         }
@@ -1927,6 +1928,7 @@ static int prerotateSingleLog(const struct logInfo *log, unsigned logNum,
                 rotNames->baseName, logStart, fileext,
                 (log->flags & LOG_FLAG_DELAYCOMPRESS) ? "" : compext) < 0) {
             message_OOM();
+            free(oldName);
             rotNames->firstRotated = NULL;
             return 1;
         }
