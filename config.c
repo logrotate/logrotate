@@ -2113,12 +2113,14 @@ next_state: ;
 
     munmap(buf, length);
     close(fd);
+    free(globerr_msg);
     return logerror;
 error:
     /* free is a NULL-safe operation */
     free(key);
     munmap(buf, length);
     close(fd);
+    free(globerr_msg);
     return 1;
 }
 
