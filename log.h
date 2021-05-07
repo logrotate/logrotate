@@ -10,8 +10,6 @@
 #define MESS_ERROR      5
 #define MESS_FATAL      6
 
-#define LOG_TIMES       (1 << 0)
-
 void message(int level, const char *format, ...)
 #ifdef __GNUC__
     __attribute__ ((format(printf, 2, 3)));
