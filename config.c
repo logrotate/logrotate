@@ -936,12 +936,14 @@ static int globerr(const char *pathname, int theerr)
         newlog->what = NULL; \
     } while (0)
 #define RAISE_ERROR() \
-    if (newlog != defConfig) { \
-        state = STATE_ERROR; \
-        goto next_state; \
-    } else { \
-        goto error; \
-    }
+    do { \
+        if (newlog != defConfig) { \
+            state = STATE_ERROR; \
+            goto next_state; \
+        } else { \
+            goto error; \
+        } \
+    } while(0)
 #define MAX_NESTING 16U
 
 static int readConfigFile(const char *configFile, struct logInfo *defConfig)
