@@ -1066,11 +1066,9 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 
 #ifdef HAVE_MADVISE
 #ifdef MADV_DONTFORK
-    r = madvise(buf, length + 2,
-                MADV_SEQUENTIAL | MADV_WILLNEED | MADV_DONTFORK);
+    r = madvise(buf, length, MADV_SEQUENTIAL | MADV_WILLNEED | MADV_DONTFORK);
 #else /* MADV_DONTFORK */
-    r = madvise(buf, length + 2,
-                MADV_SEQUENTIAL | MADV_WILLNEED);
+    r = madvise(buf, length, MADV_SEQUENTIAL | MADV_WILLNEED);
 #endif /* MADV_DONTFORK */
     if (r < 0) {
         message(MESS_DEBUG, "Failed to advise use of memory: %s\n",
