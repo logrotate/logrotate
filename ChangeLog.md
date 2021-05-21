@@ -4,7 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## [UNRELEASED]
 
-[UNRELEASED]: https://github.com/logrotate/logrotate/compare/3.18.0...master
+[UNRELEASED]: https://github.com/logrotate/logrotate/compare/3.18.1...master
+
+## [3.18.1] - 2021-05-21
+  - fix memory leaks on error-handling paths (#383, #387)
+  - make `renamecopy` and `copytruncate` override each other (#386)
+  - improve error handling in the parser of configuration files (#383)
+  - improve user experience for non-privileged users of logrotate (#372)
+
+[3.18.1]: https://github.com/logrotate/logrotate/compare/3.18.0...3.18.1
 
 ## [3.18.0] - 2021-01-08
   - allow UIDs and GIDs to be specified numerically (#217)
