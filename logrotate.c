@@ -1105,18 +1105,23 @@ static size_t full_write(int fd, const void *buf, size_t count)
     return total;
 }
 
-static int sparse_copy(int src_fd, int dest_fd, const struct stat *sb,
-                       const char *saveLog, const char *currLog)
+static off_t sparse_copy(int src_fd, int dest_fd, const struct stat *sb,
+                       const char *saveLog, const char *currLog, int flags)
 {
     const int make_holes = is_probably_sparse(sb);
     size_t max_n_read = SIZE_MAX;
     int last_write_made_hole = 0;
     off_t total_n_read = 0;
     char buf[BUFSIZ + 1];
+    int copyreduce = flags & LOG_FLAG_COPYREDUCE;
+    int skip_null_head = copyreduce;
+
+    message(MESS_NORMAL, "make_holes: %d\n", make_holes);
 
     while (max_n_read) {
         int make_hole = 0;
-        size_t bytes_read;
+        size_t bytes_read, bytes;
+        char *cp = buf;
         const ssize_t n_read = read (src_fd, buf, MIN (max_n_read, BUFSIZ));
         if (n_read < 0) {
             if (errno == EINTR) {
@@ -1124,50 +1129,58 @@ static int sparse_copy(int src_fd, int dest_fd, const struct stat *sb,
             }
             message(MESS_ERROR, "error reading %s: %s\n",
                     currLog, strerror(errno));
-            return 0;
+            return -1;
         }
 
         if (n_read == 0)
             break;
 
-        bytes_read = (size_t)n_read;
+        bytes = bytes_read = (size_t)n_read;
 
         max_n_read -= bytes_read;
         total_n_read += n_read;
 
-        if (make_holes) {
+        if (make_holes || copyreduce) {
             /* Sentinel required by is_nul().  */
             buf[bytes_read] = '\1';
 
             if ((make_hole = is_nul(buf, bytes_read))) {
-                if (lseek (dest_fd, n_read, SEEK_CUR) < 0) {
-                    message(MESS_ERROR, "error seeking %s: %s\n",
-                            saveLog, strerror(errno));
-                    return 0;
+                if (!skip_null_head) {
+                    if (lseek (dest_fd, n_read, SEEK_CUR) < 0) {
+                        message(MESS_ERROR, "error seeking %s: %s\n",
+                                saveLog, strerror(errno));
+                        return -1;
+                    }
                 }
             }
         }
 
         if (!make_hole) {
-            if (full_write (dest_fd, buf, bytes_read) != bytes_read) {
+            if (skip_null_head) {
+                skip_null_head = 0;
+                while (*cp == 0) cp++;
+                bytes -= (size_t)(cp - buf);
+            }
+
+            if (full_write (dest_fd, cp, bytes) != bytes) {
                 message(MESS_ERROR, "error writing to %s: %s\n",
                         saveLog, strerror(errno));
-                return 0;
+                return -1;
             }
         }
 
         last_write_made_hole = make_hole;
     }
 
-    if (last_write_made_hole) {
+    if (last_write_made_hole && !copyreduce) {
         if (ftruncate(dest_fd, total_n_read) < 0) {
             message(MESS_ERROR, "error ftruncate %s: %s\n",
                     saveLog, strerror(errno));
-            return 0;
+            return -1;
         }
     }
 
-    return 1;
+    return total_n_read;
 }
 
 static int copyTruncate(const char *currLog, const char *saveLog, const struct stat *sb,
@@ -1175,13 +1188,14 @@ static int copyTruncate(const char *currLog, const char *saveLog, const struct s
 {
     int rc = 1;
     int fdcurr = -1, fdsave = -1;
+    off_t read_bytes = -1;
 
     message(MESS_DEBUG, "copying %s to %s\n", currLog, saveLog);
 
     if (!debug) {
         /* read access is sufficient for 'copy' but not for 'copytruncate' */
         const int read_only = (flags & LOG_FLAG_COPY)
-            && !(flags & LOG_FLAG_COPYTRUNCATE);
+            && !(flags & (LOG_FLAG_COPYTRUNCATE | LOG_FLAG_COPYREDUCE));
         if ((fdcurr = open(currLog, ((read_only) ? O_RDONLY : O_RDWR) | O_NOFOLLOW)) < 0) {
             message(MESS_ERROR, "error opening %s: %s\n", currLog,
                     strerror(errno));
@@ -1216,7 +1230,8 @@ static int copyTruncate(const char *currLog, const char *saveLog, const struct s
             if (fdsave < 0)
                 goto fail;
 
-            if (sparse_copy(fdcurr, fdsave, sb, saveLog, currLog) != 1) {
+            read_bytes = sparse_copy(fdcurr, fdsave, sb, saveLog, currLog, flags);
+            if (read_bytes < 0) {
                 message(MESS_ERROR, "error copying %s to %s: %s\n", currLog,
                         saveLog, strerror(errno));
                 unlink(saveLog);
@@ -1226,6 +1241,12 @@ static int copyTruncate(const char *currLog, const char *saveLog, const struct s
     }
 
     if (flags & LOG_FLAG_COPYTRUNCATE) {
+#if defined(WITH_FALLOCATE)
+        if (flags & LOG_FLAG_COPYREDUCE) {
+            message(MESS_NORMAL, "WARNING: copytruncate and copyreduce are mutually exclusive;\n");
+            message(MESS_NORMAL, "copyreduce is disabled.\n");
+        }
+#endif
         message(MESS_DEBUG, "truncating %s\n", currLog);
 
         if (!debug) {
@@ -1237,6 +1258,20 @@ static int copyTruncate(const char *currLog, const char *saveLog, const struct s
                 goto fail;
             }
         }
+#if defined(WITH_FALLOCATE)
+    } else if (flags & LOG_FLAG_COPYREDUCE) {
+        message(MESS_DEBUG, "reducing %s\n", currLog);
+
+        if (!debug) {
+            if (fdsave >= 0)
+                fsync(fdsave);
+            if (fallocate(fdcurr, FALLOC_FL_PUNCH_HOLE | FALLOC_FL_KEEP_SIZE, 0L, read_bytes)) {
+                message(MESS_ERROR, "error punching a hole in %s: %s\n", currLog,
+                        strerror(errno));
+                goto fail;
+            }
+        }
+#endif
     } else
         message(MESS_DEBUG, "Not truncating %s\n", currLog);
 
@@ -2044,7 +2079,7 @@ static int rotateSingleLog(const struct logInfo *log, unsigned logNum,
 
     if (!hasErrors) {
 
-        if (!(log->flags & (LOG_FLAG_COPYTRUNCATE | LOG_FLAG_COPY))) {
+        if (!(log->flags & (LOG_FLAG_COPYTRUNCATE | LOG_FLAG_COPY | LOG_FLAG_COPYREDUCE))) {
             if (setSecCtxByName(log->files[logNum], &savedContext) != 0) {
                 /* error msg already printed */
                 return 1;
@@ -2109,7 +2144,7 @@ static int rotateSingleLog(const struct logInfo *log, unsigned logNum,
         }
 
         if (!hasErrors && (log->flags & LOG_FLAG_CREATE) &&
-                !(log->flags & (LOG_FLAG_COPYTRUNCATE | LOG_FLAG_COPY))) {
+                !(log->flags & (LOG_FLAG_COPYTRUNCATE | LOG_FLAG_COPY | LOG_FLAG_COPYREDUCE))) {
             int have_create_mode = 0;
 
             if (log->createUid == NO_UID)
@@ -2154,7 +2189,7 @@ static int rotateSingleLog(const struct logInfo *log, unsigned logNum,
         restoreSecCtx(&savedContext);
 
         if (!hasErrors
-                && (log->flags & (LOG_FLAG_COPYTRUNCATE | LOG_FLAG_COPY))
+                && (log->flags & (LOG_FLAG_COPYTRUNCATE | LOG_FLAG_COPY | LOG_FLAG_COPYREDUCE))
                 && !(log->flags & LOG_FLAG_TMPFILENAME)) {
             hasErrors = copyTruncate(log->files[logNum], rotNames->finalName,
                                      &state->sb, log->flags, !log->rotateCount);

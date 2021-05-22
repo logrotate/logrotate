@@ -1144,6 +1144,18 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                         newlog->flags |= LOG_FLAG_DATEYESTERDAY;
                     } else if (!strcmp(key, "datehourago")) {
                         newlog->flags |= LOG_FLAG_DATEHOURAGO;
+#if defined(WITH_FALLOCATE)
+                    } else if (!strcmp(key, "copyreduce")) {
+                        newlog->flags |= LOG_FLAG_COPYREDUCE;
+                    } else if (!strcmp(key, "nocopyreduce")) {
+                        newlog->flags &= ~LOG_FLAG_COPYREDUCE;
+#else
+                    } else if (!strcmp(key, "copyreduce") || !strcmp(key, "nocopyreduce")) {
+                        message(MESS_ERROR, "%s:%d unsupported option '%s' "
+                                "-- ignoring line\n", configFile, lineNum, key);
+                        if (*start != '\n')
+                            state = STATE_SKIP_LINE;
+#endif
                     } else if (!strcmp(key, "dateformat")) {
                         freeLogItem(dateformat);
                         newlog->dateformat = isolateValue(configFile, lineNum,

@@ -3,6 +3,7 @@
 All notable changes to this project will be documented in this file.
 
 ## [UNRELEASED]
+  - add `copyreduce`; uses fallocate() to reduce source file size (#190)
 
 [UNRELEASED]: https://github.com/logrotate/logrotate/compare/3.18.1...master
 
