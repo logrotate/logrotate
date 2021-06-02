@@ -4,4 +4,5 @@ create
     monthly
     rotate 1
     olddir testdir
+    nocreateolddir
 }
