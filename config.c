@@ -956,7 +956,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
     char **scriptDest = NULL;
     struct logInfo *newlog = defConfig;
     char *start, *chptr;
-    struct stat sb;
+    struct stat sb_config;
     int state = STATE_DEFAULT;
     int logerror = 0;
     /* to check if incompatible criteria are specified */
@@ -986,13 +986,13 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
         message(MESS_ERROR, "Could not lock file %s for reading\n",
                 configFile);
     }
-    if (fstat(fd, &sb)) {
+    if (fstat(fd, &sb_config)) {
         message(MESS_ERROR, "fstat of %s failed: %s\n", configFile,
                 strerror(errno));
         close(fd);
         return 1;
     }
-    if (!S_ISREG(sb.st_mode)) {
+    if (!S_ISREG(sb_config.st_mode)) {
         message(MESS_DEBUG,
                 "Ignoring %s because it's not a regular file.\n",
                 configFile);
@@ -1008,13 +1008,13 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
     }
 
     if (getuid() == ROOT_UID) {
-        if ((sb.st_mode & 07533) != 0400) {
+        if ((sb_config.st_mode & 07533) != 0400) {
             message(MESS_NORMAL,
                     "Potentially dangerous mode on %s: 0%o\n",
-                    configFile, (unsigned) (sb.st_mode & 07777));
+                    configFile, (unsigned) (sb_config.st_mode & 07777));
         }
 
-        if (sb.st_mode & 0022) {
+        if (sb_config.st_mode & 0022) {
             message(MESS_ERROR,
                     "Ignoring %s because it is writable by group or others.\n",
                     configFile);
@@ -1022,7 +1022,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
             return 0;
         }
 
-        if (sb.st_uid != ROOT_UID) {
+        if (sb_config.st_uid != ROOT_UID) {
             message(MESS_ERROR,
                     "Ignoring %s because the file owner is wrong (should be root or user with uid 0).\n",
                     configFile);
@@ -1031,7 +1031,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
         }
     }
 
-    length = (size_t)sb.st_size;
+    length = (size_t)sb_config.st_size;
 
     if (length > 0xffffff) {
         message(MESS_ERROR, "file %s too large, probably not a config file.\n",
@@ -1816,10 +1816,11 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 
                         for (glob_count = 0; glob_count < globResult.gl_pathc; glob_count++) {
                             struct logInfo *log;
+                            struct stat sb_glob;
 
                             /* if we glob directories we can get false matches */
-                            if (!lstat(globResult.gl_pathv[glob_count], &sb) &&
-                                    S_ISDIR(sb.st_mode)) {
+                            if (!lstat(globResult.gl_pathv[glob_count], &sb_glob) &&
+                                    S_ISDIR(sb_glob.st_mode)) {
                                 continue;
                             }
 
@@ -1883,7 +1884,8 @@ duperror:
                             char *ld;
                             char *dirpath;
                             const char *dirName;
-                            struct stat sb2;
+                            struct stat sb_logdir;
+                            struct stat sb_olddir;
 
                             dirpath = strdup(newlog->files[j]);
                             if (dirpath == NULL) {
@@ -1892,7 +1894,7 @@ duperror:
                             }
 
                             dirName = dirname(dirpath);
-                            if (stat(dirName, &sb2)) {
+                            if (stat(dirName, &sb_logdir)) {
                                 if (!(newlog->flags & LOG_FLAG_MISSINGOK)) {
                                     message(MESS_ERROR,
                                             "%s:%d error verifying log file "
@@ -1927,7 +1929,7 @@ duperror:
                                 dirName = newlog->oldDir;
                             }
 
-                            if (stat(dirName, &sb)) {
+                            if (stat(dirName, &sb_olddir)) {
                                 if (errno == ENOENT && (newlog->flags & LOG_FLAG_OLDDIRCREATE)) {
                                     int ret;
                                     if (newlog->flags & LOG_FLAG_SU) {
@@ -1948,6 +1950,14 @@ duperror:
                                         free(ld);
                                         goto error;
                                     }
+
+                                    if (stat(dirName, &sb_olddir) != 0) {
+                                        message(MESS_ERROR, "%s:%d error verifying created olddir "
+                                                "path %s: %s\n", configFile, lineNum,
+                                                dirName, strerror(errno));
+                                        free(ld);
+                                        goto error;
+                                    }
                                 }
                                 else {
                                     message(MESS_ERROR, "%s:%d error verifying olddir "
@@ -1960,7 +1970,7 @@ duperror:
 
                             free(ld);
 
-                            if (sb.st_dev != sb2.st_dev
+                            if (sb_logdir.st_dev != sb_olddir.st_dev
                                     && !(newlog->flags & (LOG_FLAG_COPYTRUNCATE | LOG_FLAG_COPY | LOG_FLAG_TMPFILENAME))) {
                                 message(MESS_ERROR,
                                         "%s:%d olddir %s and log file %s "
