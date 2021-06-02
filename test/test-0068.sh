@@ -19,7 +19,7 @@ do
    echo "\"$PWD/removed.log$i\" 2000-1-1" >> state
 done
 
-$RLR test-config.68 --force
+$RLR test-config.68 --force || exit 23
 
 cat state|grep test.log >/dev/null
 if [ $? != 0 ]; then

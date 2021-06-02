@@ -6,7 +6,7 @@ cleanup 18
 
 # ------------------------------- Test 18 ------------------------------------
 preptest test.log 18 1
-$RLR test-config.18 -l syslog --force
+$RLR test-config.18 -l syslog --force || exit 23
 
 checkoutput <<EOF
 test.log 0

@@ -15,7 +15,7 @@ logrotate state -- version 1
 EOF
 
 DATESTRING=$(/bin/date +%Y%m%d)
-$RLR test-config.46 2>error.log
+$RLR test-config.46 2>error.log && exit 23
 
 grep "error: bad line 3 in state file state" error.log >/dev/null
 if [ $? != 0 ]; then

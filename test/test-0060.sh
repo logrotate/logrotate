@@ -8,7 +8,7 @@ cleanup 60
 # Test we log debug output using -l option when passed.
 preptest test.log 60 1 0
 
-$RLR test-config.60 --force -l ./logrotate.log
+$RLR test-config.60 --force -l ./logrotate.log || exit 23
 
 DATESTRING=$(/bin/date +%Y-%m-%d-%H)
 

@@ -8,7 +8,7 @@ cleanup 31
 # Test mode in create option
 preptest test.log 31 1 0
 
-$RLR test-config.31 --force
+$RLR test-config.31 --force || exit 23
 
 $STAT_MODE_FORMAT test.log|grep 8180 >/dev/null
 if [ $? != 0 ]; then

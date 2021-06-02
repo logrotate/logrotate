@@ -10,7 +10,7 @@ cleanup 45
 preptest test.log 45 1
 
 touch scriptout
-$RLR test-config.45 2>error.log
+$RLR test-config.45 2>error.log && exit 23
 
 grep "error: stat of" error.log >/dev/null
 if [ $? != 0 ]; then

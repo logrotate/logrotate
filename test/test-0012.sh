@@ -9,7 +9,8 @@ cleanup 12
 preptest test.log 12 1 0
 rm -rf testdir
 mkdir testdir
-$RLR test-config.12 --force
+
+$RLR test-config.12 --force || exit 23
 
 checkoutput <<EOF
 test.log 0

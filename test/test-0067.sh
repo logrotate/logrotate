@@ -13,7 +13,7 @@ TODAY=$(/bin/date "+%Y-%m-%d" 2>/dev/null)
 
 echo removed > "test.log$TODAY"
 
-$RLR test-config.67 --force
+$RLR test-config.67 --force && exit 23
 
 cat scriptout|grep firstaction >/dev/null
 if [ $? != 0 ]; then

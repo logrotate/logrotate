@@ -11,6 +11,11 @@ cleanup 34
 preptest test.log 34 1 0
 
 OUTPUT=$($RLR test-config.34 -d -f 2>&1)
+RET=$?
+if [ $RET != 0 ]; then
+	echo "logrotate exited with value $RET"
+	exit 23
+fi
 
 echo "${OUTPUT}" | grep "uid = 0 gid = 0" > /dev/null
 

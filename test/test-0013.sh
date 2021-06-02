@@ -8,7 +8,8 @@ cleanup 13
 # ------------------------------- Test 13 ------------------------------------
 preptest test.log 13 1 0
 rm -rf testdir
-$RLR test-config.13 --force
+
+$RLR test-config.13 --force || exit 23
 
 ls -l|grep testdir|grep "drwx------." 2>/dev/null >/dev/null
 if [ $? != 0 ]; then

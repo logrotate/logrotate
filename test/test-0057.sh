@@ -8,7 +8,7 @@ cleanup 57
 # When compressing program prints something to stderr, we should prepend it
 # with the log name.
 preptest test.log 57 1
-$RLR test-config.57 --force 2>error.log
+$RLR test-config.57 --force 2>error.log || exit 23
 
 grep "error: Compressing" error.log >/dev/null
 if [ $? != 0 ]; then

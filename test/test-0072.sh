@@ -7,7 +7,7 @@ cleanup 72
 # ------------------------------- Test 72 ------------------------------------
 preptest test.log 72 2
 
-$RLR test-config.72 --force
+$RLR test-config.72 --force || exit 23
 
 checkoutput <<EOF
 test.log 0
@@ -17,7 +17,7 @@ EOF
 
 echo 'unexpected' > test.log.1.gz
 
-$RLR test-config.72 --force
+$RLR test-config.72 --force || exit 23
 dt="$(date +%Y%m%d%H)"
 
 checkoutput <<EOF

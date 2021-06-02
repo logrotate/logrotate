@@ -8,7 +8,7 @@ cleanup 1
 # ------------------------------- Test 1 -------------------------------------
 # Without a log file, no rotations should occur
 preptest test.log 1 2
-$RLR test-config.1
+$RLR test-config.1 || exit 23
 
 checkoutput <<EOF
 test.log 0 zero
@@ -22,7 +22,7 @@ logrotate state -- version 1
 EOF
 
 # Now force the rotation
-$RLR test-config.1
+$RLR test-config.1 || exit 23
 checkoutput <<EOF
 test.log 0
 test.log.1 0 zero
@@ -30,7 +30,7 @@ test.log.2 0 first
 EOF
 
 # rerun it to make sure nothing happens
-$RLR test-config.1
+$RLR test-config.1 || exit 23
 
 checkoutput <<EOF
 test.log

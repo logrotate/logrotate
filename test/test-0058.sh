@@ -7,7 +7,7 @@ cleanup 58
 # ------------------------------- Test 58 ------------------------------------
 # Test renamecopy
 preptest test.log 58 1 0
-$RLR test-config.58 --force
+$RLR test-config.58 --force || exit 23
 
 checkoutput <<EOF
 test.log 0

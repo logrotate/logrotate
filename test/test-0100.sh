@@ -7,7 +7,7 @@ cleanup 100
 # ------------------------------- Test 100 ------------------------------------
 # check rotation with extension appended to the filename
 preptest test.log 100 1 0
-$RLR test-config.100 --force
+$RLR test-config.100 --force || exit 23
 
 checkoutput <<EOF
 test.log 0

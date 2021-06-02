@@ -9,7 +9,7 @@ cleanup 28
 
 preptest test.log 28 1 0
 # log with 1 byte should not be rotated
-$RLR test-config.28
+$RLR test-config.28 || exit 23
 
 checkoutput <<EOF
 test.log 0

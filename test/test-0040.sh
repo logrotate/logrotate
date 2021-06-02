@@ -13,6 +13,6 @@ echo 1 > ./testingdir/config.v
 echo 2 > ./testingdir/config.x
 echo 3 > ./testingdir/.config.z
 
-$RLR test-config.40 --force
+$RLR test-config.40 --force || exit 23
 
 rm -rf testingdir

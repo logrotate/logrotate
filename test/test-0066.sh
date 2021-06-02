@@ -18,7 +18,7 @@ echo "DAYAGO=${DAYAGO}"
 
 echo removed > "test.log$DAYAGO"
 
-$RLR test-config.66 --force
+$RLR test-config.66 --force || exit 23
 checkoutput <<EOF
 test.log 0
 EOF

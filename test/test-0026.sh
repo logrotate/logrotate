@@ -10,7 +10,7 @@ cleanup 26
 
 preptest test.log 26 1 0
 # log with 1 byte should not be rotated
-$RLR test-config.26 2>error.log
+$RLR test-config.26 2>error.log || exit 23
 
 grep "unknown option" error.log >/dev/null
 if [ $? != 0 ]; then

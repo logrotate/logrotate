@@ -12,7 +12,7 @@ mkdir adir
 mkdir bdir
 cp test.log adir
 cp test.log bdir
-$RLR test-config.69 --force
+$RLR test-config.69 --force || exit 23
 
 checkoutput <<EOF
 adir/test.log 0

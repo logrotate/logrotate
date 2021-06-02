@@ -10,7 +10,7 @@ cleanup 41
 preptest test.log 41 1
 echo x > test2.log
 
-$RLR test-config.41
+$RLR test-config.41 || exit 23
 
 checkoutput <<EOF
 test.log 0

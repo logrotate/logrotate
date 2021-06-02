@@ -8,7 +8,7 @@ cleanup 14
 # ------------------------------- Test 14 ------------------------------------
 preptest test.log 14 1 0
 
-$RLR test-config.14 --force
+$RLR test-config.14 --force || exit 23
 
 DATESTRING=$(/bin/date +%Y-%m-%d)
 

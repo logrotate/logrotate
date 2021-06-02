@@ -10,7 +10,7 @@ cleanup 43
 preptest test.log 43 1
 echo number2 > test2.log
 
-$RLR test-config.43
+$RLR test-config.43 || exit 23
 
 # Check both possible orders
 grep "test2.log;test2.log;test.log;test.log;" scriptout >/dev/null

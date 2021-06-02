@@ -18,7 +18,7 @@ preptest test.log 32 1 0
 chmod 600 test.log
 setfacl -m u:nobody:rwx test.log
 
-$RLR test-config.32 --force
+$RLR test-config.32 --force || exit 23
 getfacl test.log|grep "user:nobody:rwx" >/dev/null
 if [ $? != 0 ]; then
 	echo "test.log must have user:nobody:rwx ACL"

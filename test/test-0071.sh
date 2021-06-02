@@ -17,7 +17,7 @@ logrotate state -- version 2
 "$PWD/test.log" 2000-1-1
 EOF
 
-$RLR test-config.71
+$RLR test-config.71 || exit 23
 
 checkoutput <<EOF
 test.log 0

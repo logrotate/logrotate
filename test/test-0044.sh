@@ -9,7 +9,7 @@ cleanup 44
 # is defined and one rotation fails
 preptest test.log 44 1
 
-$RLR test-config.44 2>error.log
+$RLR test-config.44 2>error.log && exit 23
 
 grep "error: stat of" error.log >/dev/null
 if [ $? != 0 ]; then

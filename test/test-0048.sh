@@ -20,7 +20,7 @@ EOF
 
 setfacl -m u:nobody:rwx state
 
-$RLR test-config.48
+$RLR test-config.48 || exit 23
 
 getfacl state|grep "user:nobody:rwx" >/dev/null
 if [ $? != 0 ]; then

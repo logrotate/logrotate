@@ -13,7 +13,7 @@ if [ $SELINUX_TESTS = 1 ]; then
 else
 	echo "Skipping SELinux part of test 6"
 fi
-$RLR test-config.6 --force
+$RLR test-config.6 --force || exit 23
 
 if [ $SELINUX_TESTS = 1 ]; then
 	ls -Z test.log.0|grep logrotate_tmp_t >/dev/null

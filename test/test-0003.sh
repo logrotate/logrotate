@@ -7,7 +7,7 @@ cleanup 3
 # ------------------------------- Test 3 -------------------------------------
 
 preptest test.log 3 1
-$RLR test-config.3 --force
+$RLR test-config.3 --force || exit 23
 
 checkoutput <<EOF
 test.log 0
@@ -19,7 +19,7 @@ cleanup
 
 preptest test.log 3 1
 preptest test2.log 3 1
-$RLR test-config.3 --force
+$RLR test-config.3 --force || exit 23
 
 checkoutput <<EOF
 test.log 0

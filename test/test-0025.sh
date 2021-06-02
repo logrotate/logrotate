@@ -10,7 +10,7 @@ cleanup 25
 
 preptest test.log 25 1 0
 # log with 1 byte should not be rotated
-$RLR test-config.25 2>error.log
+$RLR test-config.25 2>error.log && exit 23
 
 grep "missing '{' after log files definition" error.log >/dev/null
 if [ $? != 0 ]; then
