@@ -392,19 +392,31 @@ static char *readAddress(const char *configFile, int lineNum, const char *key,
 
 static int do_mkdir(const char *path, mode_t mode, uid_t uid, gid_t gid) {
     if (mkdir(path, mode) == 0) {
+        int fd;
+
         /* newly created directory, set the owner and permissions */
-        if (chown(path, uid, gid) != 0) {
+        fd = open(path, O_RDONLY | O_DIRECTORY | O_NOFOLLOW);
+        if (fd < 0) {
+            message(MESS_ERROR, "error opening %s after creation: %s\n",
+                    path, strerror(errno));
+            return -1;
+        }
+
+        if (fchown(fd, uid, gid) != 0) {
             message(MESS_ERROR, "error setting owner of %s to uid %u and gid %u: %s\n",
                     path, (unsigned) uid, (unsigned) gid, strerror(errno));
+            close(fd);
             return -1;
         }
 
-        if (chmod(path, mode) != 0) {
+        if (fchmod(fd, mode) != 0) {
             message(MESS_ERROR, "error setting permissions of %s to 0%o: %s\n",
                     path, mode, strerror(errno));
+            close(fd);
             return -1;
         }
 
+        close(fd);
         return 0;
     }
 
