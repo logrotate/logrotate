@@ -24,3 +24,23 @@ testdir/test.log.1 0 zero
 EOF
 
 rm -rf testdir
+mkdir testdir
+chmod 777 testdir
+
+echo first >> test.log
+
+$RLR test-config.13 --force || exit 23
+
+ls -l|grep testdir|grep "drwxrwxrwx." 2>/dev/null >/dev/null
+if [ $? != 0 ]; then
+	echo "testdir should have mode 2777, but it has:"
+	ls -l|grep testdir
+	exit 3
+fi
+
+checkoutput <<EOF
+test.log 0
+testdir/test.log.1 0 first
+EOF
+
+rm -rf testdir
