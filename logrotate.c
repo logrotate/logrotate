@@ -1283,7 +1283,7 @@ static int findNeedRotating(const struct logInfo *log, unsigned logNum, int forc
     localtime_r(&nowSecs, &now);
 
     /* Check if parent directory of this log has safe permissions */
-    if ((log->flags & LOG_FLAG_SU) == 0 && getuid() == 0) {
+    if ((log->flags & LOG_FLAG_SU) == 0 && getuid() == ROOT_UID) {
         char *ld;
         char *logpath = strdup(log->files[logNum]);
         if (logpath == NULL) {
