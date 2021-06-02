@@ -6,7 +6,7 @@ cleanup 8
 
 # ------------------------------- Test 8 -------------------------------------
 preptest test.log 8 1 1
-$RLR test-config.8 --force
+$RLR test-config.8 --force || exit 23
 
 checkoutput <<EOF
 test.log 0

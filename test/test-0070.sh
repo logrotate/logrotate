@@ -19,7 +19,7 @@ test.log.1 0 first
 test.log.2 0 second
 EOF
 
-$RLR test-config.70
+$RLR test-config.70 || exit 23
 
 checkoutput <<EOF
 test.log 0 zero
@@ -33,7 +33,7 @@ logrotate state -- version 2
 "$PWD/test.log" $(($(date "+%Y") - 10))-1-1
 EOF
 
-$RLR test-config.70
+$RLR test-config.70 || exit 23
 
 checkoutput <<EOF
 test.log 0 zero

@@ -7,7 +7,7 @@ cleanup 86
 # ------------------------------- Test 86 ------------------------------------
 preptest test.log 86 0
 
-$RLR test-config.86 -f
+$RLR test-config.86 -f || exit 23
 
 checkoutput <<EOF
 test.log 0
@@ -22,7 +22,7 @@ mv $LOGFILE test.log-20000101
 
 echo "content" >> test.log
 
-$RLR test-config.86 -f
+$RLR test-config.86 -f || exit 23
 
 # maxage should remove this file
 if [ -f test.log-20000101 ]; then

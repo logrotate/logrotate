@@ -11,7 +11,7 @@ preptest test.log 27 1 0
 
 DATESTRING=$(/bin/date +%Y%m%d)
 
-$RLR test-config.27 --force
+$RLR test-config.27 --force || exit 23
 checkoutput <<EOF
 test.log 0
 test.log-$DATESTRING 0 zero

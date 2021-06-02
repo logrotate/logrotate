@@ -10,7 +10,7 @@ preptest test_copy.log 73 2
 # make sure that 'rotate 0' and 'copytruncate' work together
 preptest test_rotate.log 73 0
 
-$RLR test-config.73 --force
+$RLR test-config.73 --force || exit 23
 
 checkoutput <<EOF
 test_copy.log 0

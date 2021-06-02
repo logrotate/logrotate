@@ -8,7 +8,7 @@ cleanup 16
 preptest test.log 16 1 0
 # log with 1 byte should not be rotated
 echo "a" > test.log
-$RLR test-config.16
+$RLR test-config.16 || exit 23
 
 if [ -f test.log.1 ]; then
 	echo "file $file does exist!"
@@ -17,7 +17,7 @@ fi
 
 # log with 4 bytes should be rotated
 echo "zero" > test.log
-$RLR test-config.16
+$RLR test-config.16 || exit 23
 
 checkoutput <<EOF
 test.log 0

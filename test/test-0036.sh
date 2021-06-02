@@ -8,7 +8,7 @@ cleanup 36
 # size 1x - 'x' is unknown unit, config should be skipped
 preptest test.log 36 1 0
 
-$RLR test-config.36 --force 2>error.log
+$RLR test-config.36 --force 2>error.log && exit 23
 
 grep "unknown unit" error.log >/dev/null
 if [ $? != 0 ]; then

@@ -7,7 +7,7 @@ cleanup 17
 # ------------------------------- Test 17 ------------------------------------
 preptest test.log 17 1 0
 # log with 1 byte should not be rotated
-$RLR test-config.17 -l logrotate.log 2>error.log
+$RLR test-config.17 -l logrotate.log 2>error.log && exit 23
 
 grep "unexpected } (missing previous '{')" error.log >/dev/null
 if [ $? != 0 ]; then

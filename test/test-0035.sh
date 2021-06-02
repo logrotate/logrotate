@@ -16,7 +16,7 @@ cleanup 35
 preptest test.log 35 1 0
 
 setfacl -m u:nobody:rwx test.log
-$RLR test-config.35 --force
+$RLR test-config.35 --force || exit 23
 
 getfacl test.log|grep "user:nobody:rwx" >/dev/null
 if [ $? != 0 ]; then

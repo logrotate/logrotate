@@ -11,4 +11,4 @@ mkdir -p log/dir
 ln -s XXX log/sym
 touch log/dir/file
 
-$RLR test-config.84 --force
+$RLR test-config.84 --force || exit 23

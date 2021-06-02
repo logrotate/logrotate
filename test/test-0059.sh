@@ -9,7 +9,7 @@ cleanup 59
 preptest test.log 59 1 0
 touch test.log.1
 touch test.log.2
-$RLR test-config.59 --force -d 2>/dev/null
+$RLR test-config.59 --force -d 2>/dev/null || exit 23
 
 checkoutput <<EOF
 test.log 0 zero

@@ -7,7 +7,7 @@ cleanup 88
 
 preptest test.log 88 0
 
-$RLR -fv test-config.88 2> stderr || exit $?
+$RLR -fv test-config.88 2> stderr || exit 23
 
 if grep 'error:.*No such file or directory' stderr; then
     exit 7

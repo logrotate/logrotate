@@ -8,7 +8,7 @@ cleanup 52
 # sharedscripts are not run if the first log file does not exist
 preptest test.log 52 1 0
 
-$RLR test-config.52
+$RLR test-config.52 || exit 23
 
 checkoutput <<EOF
 test.log 0

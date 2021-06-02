@@ -13,7 +13,7 @@ logrotate state -- version 2
 "test.log" 2012-8-19
 EOF
 
-$RLR test-config.49
+$RLR test-config.49 || exit 23
 
 checkoutput <<EOF
 test.log 0

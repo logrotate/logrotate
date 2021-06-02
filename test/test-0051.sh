@@ -31,9 +31,4 @@ logrotate state -- version 2
 "/var/log/mrepo.log" 2011-5-30
 EOF
 
-$RLR test-config.51
-
-if [ $? != 0 ]; then
-	echo "logrotate ended with non-zero exit code (probably crashed)"
-	exit 3
-fi
+$RLR test-config.51 || exit 23

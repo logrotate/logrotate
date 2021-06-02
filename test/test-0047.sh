@@ -21,7 +21,7 @@ EOF
 
 chcon --type=logrotate_tmp_t state
 
-$RLR test-config.47
+$RLR test-config.47 || exit 23
 
 ls -Z state|grep logrotate_tmp_t >/dev/null
 if [ $? != 0 ]; then

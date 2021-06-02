@@ -20,7 +20,7 @@ do
     echo "x" > test.log-$DATE
 done
 
-$RLR test-config.56 --force
+$RLR test-config.56 --force || exit 23
 
 if [ -e test.log-$DATE ]; then
     echo "File test.log-$DATE should not exist (it should be deleted)"

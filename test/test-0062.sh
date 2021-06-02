@@ -21,7 +21,7 @@ if [ $SIZE_SPARSE_OLD -gt 100 ]; then
 fi
 
 SIZE_OLD=$($DU_APPARENT_SIZE test.log|awk '{print $1}')
-$RLR test-config.62 --force
+$RLR test-config.62 --force || exit 23
 SIZE_NEW=$($DU_APPARENT_SIZE test.log.1|awk '{print $1}')
 SIZE_SPARSE_NEW=$(du test.log.1|awk '{print $1}')
 

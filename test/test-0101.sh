@@ -6,7 +6,7 @@
 cleanup 101
 
 preptest test.log 101 1 0
-$RLR test-config.101 --force
+$RLR test-config.101 --force || exit 23
 
 checkoutput <<EOF
 test.log 0

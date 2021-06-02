@@ -10,7 +10,7 @@ cleanup 24
 # since logrotate-3.8.2, we don't support symlinks rotation officially.
 preptest test.log.original 24 1
 ln -s test.log.original test.log
-$RLR test-config.24 --force 2>error.log
+$RLR test-config.24 --force 2>error.log || exit 23
 
 checkoutput <<EOF
 test.log 0 zero

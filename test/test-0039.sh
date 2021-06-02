@@ -8,7 +8,7 @@ cleanup 39
 # preremove script error - do not remove log file
 preptest test.log 39 1
 preptest test2.log 39 1
-$RLR test-config.39 --force 2>error.log
+$RLR test-config.39 --force 2>error.log && exit 23
 
 grep "error running preremove script" error.log >/dev/null
 if [ $? != 0 ]; then

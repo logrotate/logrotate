@@ -9,7 +9,7 @@ cleanup 76
 # https://github.com/logrotate/logrotate/issues/154
 preptest test.log 76 2 2
 
-$RLR test-config.76 <&- >&-
+$RLR test-config.76 <&- >&- || exit 23
 
 checkoutput <<EOF
 test.log 0

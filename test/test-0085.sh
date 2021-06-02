@@ -7,7 +7,7 @@ cleanup 85
 # ------------------------------- Test 85 ------------------------------------
 preptest test.log 85 0
 
-$RLR test-config.85 -f
+$RLR test-config.85 -f || exit 23
 
 checkoutput <<EOF
 test.log 0
@@ -19,7 +19,7 @@ touch -t 200001010000 test.log.1
 
 echo "content" >> test.log
 
-$RLR test-config.85 -f
+$RLR test-config.85 -f || exit 23
 
 # maxage should remove this file
 if [ -f test.log.2 ]; then

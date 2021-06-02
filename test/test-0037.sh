@@ -8,7 +8,7 @@ cleanup 37
 # skip config with firstaction script
 preptest test.log 37 1 0
 
-$RLR test-config.37 --force 2>error.log
+$RLR test-config.37 --force 2>error.log && exit 23
 
 grep "skipping" error.log >/dev/null
 if [ $? != 0 ]; then

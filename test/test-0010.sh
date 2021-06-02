@@ -14,7 +14,7 @@ else
 	echo "Skipping SELinux part of test 10"
 fi
 
-$RLR test-config.10 --force
+$RLR test-config.10 --force || exit 23
 
 checkoutput <<EOF
 test.log 0
@@ -23,7 +23,7 @@ EOF
 
 echo "newfile" > test.log
 
-$RLR test-config.10 --force
+$RLR test-config.10 --force || exit 23
 
 if [ $SELINUX_TESTS = 1 ]; then
 	ls -Z test.log.2.gz|grep logrotate_tmp_t >/dev/null

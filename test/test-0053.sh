@@ -8,7 +8,7 @@ cleanup 53
 # test if --force works
 preptest test.log 53 1 0
 
-$RLR test-config.53 --force
+$RLR test-config.53 --force || exit 23
 
 checkoutput <<EOF
 test.log 0
