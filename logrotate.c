@@ -2515,6 +2515,10 @@ static int writeState(const char *stateFilename)
     time_t now_time, last_time;
     char *prevCtx;
 
+    if (!strcmp(stateFilename, "/dev/null"))
+        /* explicitly asked not to write the state file */
+        return 0;
+
     localtime_r(&nowSecs, &now);
 
     tmpFilename = malloc(strlen(stateFilename) + 5 );
