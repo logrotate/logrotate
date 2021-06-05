@@ -209,6 +209,12 @@ static int switch_user_permanently(const struct logInfo *log) {
         return 1;
     }
 
+    if (chdir("/") != 0) {
+        message(MESS_ERROR, "failed to change current directory to root path: %s\n",
+                strerror(errno));
+        return -1;
+    }
+
     return 0;
 }
 
