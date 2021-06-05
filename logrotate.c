@@ -225,6 +225,16 @@ static int switch_user_back_permanently(void) {
     return ret;
 }
 
+static int rotate_as_root(const struct logInfo *log) {
+    if (getuid() != ROOT_UID)
+        return 0;
+
+    if (!(log->flags & LOG_FLAG_SU))
+        return 1;
+
+    return log->suUid == ROOT_UID;
+}
+
 static void unescape(char *arg)
 {
     char *p = arg;
@@ -652,6 +662,22 @@ static int shred_file(int fd, const char *filename, const struct logInfo *log)
 
     if (!(log->flags & LOG_FLAG_SHRED)) {
         goto unlink_file;
+    }
+
+    /* do not shred hardlinks as root */
+    if (rotate_as_root(log)) {
+        struct stat sb;
+        if (fstat(fd, &sb) != 0) {
+            message(MESS_ERROR, "cannot stat %s: %s\n", filename, strerror(errno));
+            return 1;
+        }
+
+        if (sb.st_nlink != 1) {
+            message(MESS_ERROR, "failed to shred \"%s\", because shredding hardlinks"
+                    " is disabled as root for security reasons.\n",
+                    filename);
+            return 1;
+        }
     }
 
     message(MESS_DEBUG, "Using shred to remove the file %s\n", filename);
@@ -1283,7 +1309,7 @@ static int findNeedRotating(const struct logInfo *log, unsigned logNum, int forc
     localtime_r(&nowSecs, &now);
 
     /* Check if parent directory of this log has safe permissions */
-    if ((log->flags & LOG_FLAG_SU) == 0 && getuid() == ROOT_UID) {
+    if (rotate_as_root(log)) {
         char *ld;
         char *logpath = strdup(log->files[logNum]);
         if (logpath == NULL) {
@@ -1339,6 +1365,13 @@ static int findNeedRotating(const struct logInfo *log, unsigned logNum, int forc
     if ((sb.st_mode & S_IFMT) == S_IFLNK) {
         message(MESS_DEBUG, "  log %s is symbolic link. Rotation of symbolic"
                 " links is not allowed to avoid security issues -- skipping.\n",
+                log->files[logNum]);
+        return 0;
+    }
+
+    if (rotate_as_root(log) && sb.st_nlink != 1) {
+        message(MESS_DEBUG, "  log %s is hard link. Rotation of hard"
+                " links is not allowed as root to avoid security issues -- skipping.\n",
                 log->files[logNum]);
         return 0;
     }
