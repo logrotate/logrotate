@@ -196,7 +196,7 @@ static int switch_user_permanently(const struct logInfo *log) {
         return 1;
     }
 
-    if (user != ROOT_UID && setuid(ROOT_UID) != -1) {
+    if (user != ROOT_UID && (setuid(ROOT_UID) != -1 || seteuid(ROOT_UID) != -1)) {
         message(MESS_ERROR, "failed to switch user permanently, able to switch back (pid %d)\n",
                 getpid());
         return 1;
