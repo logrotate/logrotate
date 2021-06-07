@@ -373,7 +373,13 @@ static int setSecCtxByName(const char *src, char **pPrevCtx)
 {
     int hasErrors = 0;
 #ifdef WITH_SELINUX
-    int fd = open(src, O_RDONLY | O_NOFOLLOW);
+    int fd;
+
+    if (!selinux_enabled)
+        /* pretend success */
+        return 0;
+
+    fd = open(src, O_RDONLY | O_NOFOLLOW);
     if (fd < 0) {
         message(MESS_ERROR, "error opening %s: %s\n", src, strerror(errno));
         return 1;
