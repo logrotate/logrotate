@@ -241,6 +241,39 @@ static int rotate_as_root(const struct logInfo *log) {
     return log->suUid == ROOT_UID;
 }
 
+static int open_logfile(const char *path, int flags) {
+    int fd;
+    struct stat sb;
+
+    if ((flags & (O_RDONLY | O_RDWR)) != flags) {
+        errno = EINVAL;
+        return -1;
+    }
+
+    fd = open(path, O_NOFOLLOW | flags);
+    if (fd < 0)
+        return fd;
+
+    if (fstat(fd, &sb) != 0) {
+        close(fd);
+        return -1;
+    }
+
+    if (! S_ISREG(sb.st_mode)) {
+        close(fd);
+        errno = ENOTSUP;
+        return -1;
+    }
+
+    if (sb.st_nlink != 1 && getuid() == ROOT_UID) {
+        close(fd);
+        errno = ENOTSUP;
+        return -1;
+    }
+
+    return fd;
+}
+
 static void unescape(char *arg)
 {
     char *p = arg;
@@ -389,7 +422,7 @@ static int setSecCtxByName(const char *src, char **pPrevCtx)
 {
     int hasErrors = 0;
 #ifdef WITH_SELINUX
-    int fd = open(src, O_RDONLY | O_NOFOLLOW);
+    int fd = open_logfile(src, O_RDONLY);
     if (fd < 0) {
         message(MESS_ERROR, "error opening %s: %s\n", src, strerror(errno));
         return 1;
@@ -753,7 +786,7 @@ static int removeLogFile(const char *name, const struct logInfo *log)
     message(MESS_DEBUG, "removing old log %s\n", name);
 
     if (log->flags & LOG_FLAG_SHRED) {
-        fd = open(name, O_RDWR | O_NOFOLLOW);
+        fd = open_logfile(name, O_RDWR);
         if (fd < 0) {
             message(MESS_ERROR, "error opening %s: %s\n",
                     name, strerror(errno));
@@ -806,8 +839,6 @@ static int compressLogFile(const char *name, const struct logInfo *log, const st
     int error_printed = 0;
     char *prevCtx;
     pid_t pid;
-    int in_flags;
-    const char *in_how;
 
     message(MESS_DEBUG, "compressing log with: %s\n", log->compress_prog);
     if (debug)
@@ -823,18 +854,9 @@ static int compressLogFile(const char *name, const struct logInfo *log, const st
     compressedName = alloca(strlen(name) + strlen(log->compress_ext) + 2);
     sprintf(compressedName, "%s%s", name, log->compress_ext);
 
-    in_flags = O_NOFOLLOW;
-    if (log->flags & LOG_FLAG_SHRED) {
-        /* need write access for shredding */
-        in_flags |= O_RDWR;
-        in_how = "read-write";
-    } else {
-        in_flags |= O_RDONLY;
-        in_how = "read-only";
-    }
-    if ((inFile = open(name, in_flags)) < 0) {
+    if ((inFile = open_logfile(name, (log->flags & LOG_FLAG_SHRED) ? O_RDWR : O_RDONLY)) < 0) {
         message(MESS_ERROR, "unable to open %s (%s) for compression: %s\n",
-            name, in_how, strerror(errno));
+            name, (log->flags & LOG_FLAG_SHRED) ? "read-write" : "read-only", strerror(errno));
         return 1;
     }
 
@@ -960,7 +982,7 @@ static int mailLog(const struct logInfo *log, const char *logFile, const char *m
     char * const mailArgv[] = { (char *) mailComm, (char *) "-s", (char *) subject, (char *) address, NULL };
     int rc = 0;
 
-    if ((mailInput = open(logFile, O_RDONLY | O_NOFOLLOW)) < 0) {
+    if ((mailInput = open_logfile(logFile, O_RDONLY)) < 0) {
         message(MESS_ERROR, "failed to open %s for mailing: %s\n", logFile,
                 strerror(errno));
         return 1;
@@ -1214,7 +1236,7 @@ static int copyTruncate(const char *currLog, const char *saveLog, const struct s
         /* read access is sufficient for 'copy' but not for 'copytruncate' */
         const int read_only = (flags & LOG_FLAG_COPY)
             && !(flags & LOG_FLAG_COPYTRUNCATE);
-        if ((fdcurr = open(currLog, ((read_only) ? O_RDONLY : O_RDWR) | O_NOFOLLOW)) < 0) {
+        if ((fdcurr = open_logfile(currLog, read_only ? O_RDONLY : O_RDWR)) < 0) {
             message(MESS_ERROR, "error opening %s: %s\n", currLog,
                     strerror(errno));
             goto fail;
