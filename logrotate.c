@@ -547,7 +547,7 @@ static int createOutputFile(const char *fileName, int flags, const struct stat *
         size_t fileName_size, buf_size;
         char *backupName, *ptr;
 
-        fd = open(fileName, (flags | O_EXCL | O_NOFOLLOW),
+        fd = open(fileName, (flags | O_CREAT | O_EXCL | O_NOFOLLOW),
                 (S_IRUSR | S_IWUSR) & sb->st_mode);
 
         if ((fd >= 0) || (errno != EEXIST))
@@ -857,7 +857,7 @@ static int compressLogFile(const char *name, const struct logInfo *log, const st
 #endif
 
     outFile =
-        createOutputFile(compressedName, O_RDWR | O_CREAT, sb, prev_acl, 0);
+        createOutputFile(compressedName, O_RDWR, sb, prev_acl, 0);
     restoreSecCtx(&prevCtx);
 #ifdef WITH_ACL
     if (prev_acl) {
@@ -1237,7 +1237,7 @@ static int copyTruncate(const char *currLog, const char *saveLog, const struct s
                 }
             }
 #endif /* WITH_ACL */
-            fdsave = createOutputFile(saveLog, O_WRONLY | O_CREAT, sb, prev_acl, 0);
+            fdsave = createOutputFile(saveLog, O_WRONLY, sb, prev_acl, 0);
             restoreSecCtx(&prevCtx);
 #ifdef WITH_ACL
             if (prev_acl) {
@@ -2173,7 +2173,7 @@ static int rotateSingleLog(const struct logInfo *log, unsigned logNum,
 
             if (!debug) {
                 if (!hasErrors) {
-                    int fd = createOutputFile(log->files[logNum], O_CREAT | O_RDWR,
+                    int fd = createOutputFile(log->files[logNum], O_RDWR,
                             &sb, prev_acl, have_create_mode);
 #ifdef WITH_ACL
                     if (prev_acl) {
@@ -2624,7 +2624,7 @@ static int writeState(const char *stateFilename)
 
     close(fdcurr);
 
-    fdsave = createOutputFile(tmpFilename, O_RDWR | O_CREAT | O_TRUNC, &sb, prev_acl, 0);
+    fdsave = createOutputFile(tmpFilename, O_RDWR, &sb, prev_acl, 0);
 #ifdef WITH_ACL
     if (prev_acl) {
         acl_free(prev_acl);
