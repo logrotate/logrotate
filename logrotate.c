@@ -108,8 +108,6 @@ static int globerr(const char *pathname, int theerr)
     return 1;
 }
 
-#if defined(HAVE_STRPTIME) && defined(HAVE_QSORT)
-
 /* We could switch to qsort_r to get rid of this global variable,
  * but qsort_r is not portable enough (Linux vs. *BSD vs ...)... */
 static struct compData _compData;
@@ -142,11 +140,6 @@ static void sortGlobResult(glob_t *result, size_t prefix_len, const char *dforma
     _compData.dformat = dformat;
     qsort(result->gl_pathv, result->gl_pathc, sizeof(char *), compGlobResult);
 }
-#else
-static void sortGlobResult(glob_t *result, size_t prefix_len, const char *dformat) {
-    /* TODO */
-}
-#endif
 
 int switch_user(uid_t user, gid_t group) {
     save_egid = getegid();
