@@ -1,0 +1,166 @@
+name: Build CI
+
+on: [push, pull_request]
+
+jobs:
+
+  build-linux:
+    name: Build with ${{ matrix.cc }} on ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        cc: [ gcc, clang ]
+        os: [ ubuntu-18.04, ubuntu-20.04 ]
+    runs-on: ${{ matrix.os }}
+    env:
+      CC: ${{ matrix.cc }}
+    steps:
+    - uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579
+
+    - name: Install dependencies
+      run: sudo apt-get install -y acl automake libacl1-dev libpopt-dev libselinux1-dev rpm
+
+    - name: Bootstrap
+      run: ./autogen.sh
+
+    - name: Configure
+      run: ./configure --enable-werror --disable-silent-rules
+
+    - name: Build
+      run: make -k
+
+    - name: Testsuite
+      run: make -j9 check || ( cat test/test-suite.log; exit 1; )
+
+    - name: Install
+      run: sudo make install
+
+    - name: Installcheck
+      run: make installcheck
+
+    - name: Distcheck
+      run: make -j9 distcheck DISTCHECK_CONFIGURE_FLAGS="--enable-werror --disable-silent-rules"
+
+    - name: Build rpm
+      run: make rpm RPM_FLAGS="--nodeps"
+
+
+  build-macos:
+    name: Build with clang on macOS
+    runs-on: macOS-latest
+    steps:
+    - uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579
+
+    - name: Install dependencies
+      run: brew install automake coreutils popt
+
+    - name: Bootstrap
+      run: ./autogen.sh
+
+    - name: Configure
+      run: ./configure --enable-werror --disable-silent-rules
+
+    - name: Build
+      run: make -k
+
+    - name: Testsuite
+      run: make -j9 check || ( cat test/test-suite.log; exit 1; )
+
+    - name: Install
+      run: sudo make install
+
+    - name: Installcheck
+      run: make installcheck
+
+    - name: Distcheck
+      run: make -j9 distcheck DISTCHECK_CONFIGURE_FLAGS="--enable-werror --disable-silent-rules"
+
+
+  build-clang-analyzer:
+    name: Clang Analyzer
+    runs-on: ubuntu-latest
+    env:
+      CC: clang-13
+    steps:
+    - uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579
+
+    - name: Install Clang repo
+      run: |
+        wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key 2>/dev/null | sudo apt-key add -
+        sudo add-apt-repository 'deb http://apt.llvm.org/focal/ llvm-toolchain-focal-13 main' -y
+        sudo apt-get update -q
+
+    - name: Install dependencies
+      run: sudo apt-get install -y automake clang-13 clang-tools-13 libacl1-dev libpopt-dev libselinux1-dev
+
+    - name: Bootstrap
+      run: ./autogen.sh
+
+    - name: Configure
+      run: scan-build-13 -analyze-headers --status-bugs ./configure --enable-werror --disable-silent-rules
+
+    - name: Analyze
+      run: scan-build-13 -analyze-headers --status-bugs make -j"$(nproc)"
+
+
+  build-clang-sanitizer:
+    name: Clang Sanitizer
+    runs-on: ubuntu-latest
+    env:
+      CC: clang-13
+      CFLAGS: '-O1 -g -fsanitize=address -fsanitize-address-use-after-scope -fno-omit-frame-pointer -fsanitize=undefined -fsanitize=nullability -fsanitize=implicit-conversion -fsanitize=integer -fsanitize=float-divide-by-zero -fsanitize=local-bounds'
+      ASAN_OPTIONS: strict_string_checks=1:detect_stack_use_after_return=1:check_initialization_order=1:strict_init_order=1
+      UBSAN_OPTIONS: print_stacktrace=1:print_summary=1:halt_on_error=1
+      LSAN_OPTIONS: suppressions=test/leak_san_suppress.txt
+    steps:
+    - uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579
+
+    - name: Install Clang repo
+      run: |
+        wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key 2>/dev/null | sudo apt-key add -
+        sudo add-apt-repository 'deb http://apt.llvm.org/focal/ llvm-toolchain-focal-13 main' -y
+        sudo apt-get update -q
+
+    - name: Install dependencies
+      run: sudo apt-get install -y acl automake clang-13 libacl1-dev libpopt-dev libselinux1-dev
+
+    - name: Bootstrap
+      run: ./autogen.sh
+
+    - name: Configure
+      run: ./configure --enable-werror --disable-silent-rules
+
+    - name: Build
+      run: make -j"$(nproc)"
+
+    - name: Testsuite
+      run: make -j9 check || ( cat test/test-suite.log; exit 1; )
+
+    - name: Scan for sanitizer issues
+      run: |
+        issues="$( grep -riE 'sanitizer|runtime error' test/*.log )" || true
+        if [ -n "$issues" ]; then
+            echo "Found sanitizer issues:"
+            echo "$issues"
+            exit 1;
+        fi
+
+
+  space-check:
+    name: Space Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579
+
+      - name: Spaces check
+        run: git diff-tree --check $(git hash-object -t tree /dev/null) HEAD
+
+      - name: Tab check
+        run: |
+          issues="$( grep "$(printf '\t')" config.c log.{c,h} logrotate.{c,h} )" || true
+          if [ -n "$issues" ]; then
+              echo "Found tab issues:"
+              echo "$issues"
+              exit 1;
+          fi
