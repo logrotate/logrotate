@@ -2991,9 +2991,9 @@ int main(int argc, const char **argv)
     int arg;
     const char **files;
     poptContext optCon;
-    struct logInfo *log;
+    const struct logInfo *log;
 
-    struct poptOption options[] = {
+    const struct poptOption options[] = {
         {"debug", 'd', 0, NULL, 'd',
             "Don't do anything, just test and print debug messages", NULL},
         {"force", 'f', 0, &force, 0, "Force file rotation", NULL},
