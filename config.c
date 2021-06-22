@@ -1126,6 +1126,10 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                         newlog->flags |= LOG_FLAG_SHRED;
                     } else if (!strcmp(key, "noshred")) {
                         newlog->flags &= ~LOG_FLAG_SHRED;
+                    } else if (!strcmp(key, "allowhardlink")) {
+                        newlog->flags |= LOG_FLAG_ALLOWHARDLINK;
+                    } else if (!strcmp(key, "noallowhardlink")) {
+                        newlog->flags &= ~LOG_FLAG_ALLOWHARDLINK;
                     } else if (!strcmp(key, "sharedscripts")) {
                         newlog->flags |= LOG_FLAG_SHAREDSCRIPTS;
                     } else if (!strcmp(key, "nosharedscripts")) {

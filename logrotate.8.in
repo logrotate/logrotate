@@ -467,6 +467,16 @@ Do not use \fBshred\fR when deleting old log files.  See also \fBshred\fR.
 Asks GNU \fBshred\fR(1) to overwrite log files \fBcount\fR times before
 deletion.  Without this option, \fBshred\fR's default will be used.
 
+.TP
+\fBallowhardlink\fR
+Rotate files with multiple hard links; this is off by default.  The target file
+might get emptied, e.g. with \fBshred\fR or \fBcopytruncate\fR.  Use with
+caution, especially when the log files are rotated as root.
+
+.TP
+\fBnoallowhardlink\fR
+Do not rotate files with multiple hard links.  See also \fBallowhardlink\fR.
+
 .SS Compression
 
 .TP
