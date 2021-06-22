@@ -2137,6 +2137,8 @@ next_state: ;
     free(globerr_msg);
     return logerror;
 error:
+    if (newlog != defConfig)
+        freeTailLogs(1);
     /* free is a NULL-safe operation */
     free(key);
     munmap(buf, length);
