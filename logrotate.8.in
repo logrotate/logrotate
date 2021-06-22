@@ -723,7 +723,7 @@ The script inherits some traits from the \fBlogrotate\fR process, including
 stderr, stdout, the current directory, the environment, and the umask.
 Scripts are run as the invoking user and group, irrespective of any \fBsu\fR
 directive.  If the \fB\-\-log\fR flag was specified, file descriptor 3 is the
-log file.
+log file.  The current working directory is unspecified.
 
 .SH USER AND GROUP
 
