@@ -3,7 +3,7 @@ AC_INIT([logrotate],m4_esyscmd([build-aux/git-version-gen --prefix '' .tarball-v
 
 dnl foreign: Do not require AUTHORS, ChangeLog, NEWS, and README to exist
 dnl dist-xz: Produce tar.xz version of the release archive
-AM_INIT_AUTOMAKE(foreign dist-xz)
+AM_INIT_AUTOMAKE([-Wall foreign dist-xz std-options])
 
 # --enable-silent-rules
 m4_ifdef([AM_SILENT_RULES],
