@@ -171,6 +171,8 @@ script:
   - make -j9 check || ( cat test/test-suite.log; exit 1; )
   # scan for Sanitizer output
   - grep -riE 'sanitizer|runtime error' test/*.log; test $? -eq 1
+  - sudo make install
+  - make installcheck
   - make -j9 distcheck DISTCHECK_CONFIGURE_FLAGS="--enable-werror --disable-silent-rules $CONFIGURE_OPTS"
   # nodeps because rpm build deps cannot be installed on debian system
   - |
