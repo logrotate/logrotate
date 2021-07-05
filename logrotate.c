@@ -224,7 +224,7 @@ static int switch_user_back_permanently(void) {
     return ret;
 }
 
-static int open_logfile(const char *path, int write_access) {
+static int open_logfile(const char *path, const struct logInfo *log, int write_access) {
     int fd;
     struct stat sb;
 
@@ -238,6 +238,12 @@ static int open_logfile(const char *path, int write_access) {
     }
 
     if (! S_ISREG(sb.st_mode)) {
+        close(fd);
+        errno = ENOTSUP;
+        return -1;
+    }
+
+    if (sb.st_nlink != 1 && !(log->flags & LOG_FLAG_ALLOWHARDLINK)) {
         close(fd);
         errno = ENOTSUP;
         return -1;
@@ -390,7 +396,7 @@ static int setSecCtx(int fdSrc, const char *src, char **pPrevCtx)
     return 0;
 }
 
-static int setSecCtxByName(const char *src, char **pPrevCtx)
+static int setSecCtxByName(const char *src, const struct logInfo *log, char **pPrevCtx)
 {
     int hasErrors = 0;
 #ifdef WITH_SELINUX
@@ -400,7 +406,7 @@ static int setSecCtxByName(const char *src, char **pPrevCtx)
         /* pretend success */
         return 0;
 
-    fd = open_logfile(src, 0);
+    fd = open_logfile(src, log, 0);
     if (fd < 0) {
         message(MESS_ERROR, "error opening %s: %s\n", src, strerror(errno));
         return 1;
@@ -409,6 +415,7 @@ static int setSecCtxByName(const char *src, char **pPrevCtx)
     close(fd);
 #else
     (void) src;
+    (void) log;
     (void) pPrevCtx;
 #endif
     return hasErrors;
@@ -681,6 +688,21 @@ static int shred_file(int fd, const char *filename, const struct logInfo *log)
         goto unlink_file;
     }
 
+    if (!(log->flags & LOG_FLAG_ALLOWHARDLINK)) {
+        struct stat sb;
+        if (fstat(fd, &sb) != 0) {
+            message(MESS_ERROR, "cannot stat %s: %s\n", filename, strerror(errno));
+            return 1;
+        }
+
+        if (sb.st_nlink != 1) {
+            message(MESS_ERROR, "failed to shred \"%s\", because shredding files with"
+                    " multiple hard links is disabled for %s.\n",
+                    filename, log->pattern);
+            return 1;
+        }
+    }
+
     message(MESS_DEBUG, "Using shred to remove the file %s\n", filename);
 
     if (log->shred_cycles != 0) {
@@ -748,7 +770,7 @@ static int removeLogFile(const char *name, const struct logInfo *log)
     message(MESS_DEBUG, "removing old log %s\n", name);
 
     if (log->flags & LOG_FLAG_SHRED) {
-        fd = open_logfile(name, 1);
+        fd = open_logfile(name, log, 1);
         if (fd < 0) {
             message(MESS_ERROR, "error opening %s: %s\n",
                     name, strerror(errno));
@@ -816,7 +838,7 @@ static int compressLogFile(const char *name, const struct logInfo *log, const st
     compressedName = alloca(strlen(name) + strlen(log->compress_ext) + 2);
     sprintf(compressedName, "%s%s", name, log->compress_ext);
 
-    if ((inFile = open_logfile(name, log->flags & LOG_FLAG_SHRED)) < 0) {
+    if ((inFile = open_logfile(name, log, log->flags & LOG_FLAG_SHRED)) < 0) {
         message(MESS_ERROR, "unable to open %s (%s) for compression: %s\n",
             name, (log->flags & LOG_FLAG_SHRED) ? "read-write" : "read-only", strerror(errno));
         return 1;
@@ -944,7 +966,7 @@ static int mailLog(const struct logInfo *log, const char *logFile, const char *m
     char * const mailArgv[] = { (char *) mailComm, (char *) "-s", (char *) subject, (char *) address, NULL };
     int rc = 0;
 
-    if ((mailInput = open_logfile(logFile, 0)) < 0) {
+    if ((mailInput = open_logfile(logFile, log, 0)) < 0) {
         message(MESS_ERROR, "failed to open %s for mailing: %s\n", logFile,
                 strerror(errno));
         return 1;
@@ -1187,7 +1209,7 @@ static int sparse_copy(int src_fd, int dest_fd, const struct stat *sb,
 }
 
 static int copyTruncate(const char *currLog, const char *saveLog, const struct stat *sb,
-                        uint32_t flags, int skip_copy)
+                        const struct logInfo *log, int skip_copy)
 {
     int rc = 1;
     int fdcurr = -1, fdsave = -1;
@@ -1196,9 +1218,9 @@ static int copyTruncate(const char *currLog, const char *saveLog, const struct s
 
     if (!debug) {
         /* read access is sufficient for 'copy' but not for 'copytruncate' */
-        const int read_only = (flags & LOG_FLAG_COPY)
-            && !(flags & LOG_FLAG_COPYTRUNCATE);
-        if ((fdcurr = open_logfile(currLog, !read_only)) < 0) {
+        const int read_only = (log->flags & LOG_FLAG_COPY)
+            && !(log->flags & LOG_FLAG_COPYTRUNCATE);
+        if ((fdcurr = open_logfile(currLog, log, !read_only)) < 0) {
             message(MESS_ERROR, "error opening %s: %s\n", currLog,
                     strerror(errno));
             goto fail;
@@ -1241,7 +1263,7 @@ static int copyTruncate(const char *currLog, const char *saveLog, const struct s
         }
     }
 
-    if (flags & LOG_FLAG_COPYTRUNCATE) {
+    if (log->flags & LOG_FLAG_COPYTRUNCATE) {
         message(MESS_DEBUG, "truncating %s\n", currLog);
 
         if (!debug) {
@@ -1356,6 +1378,13 @@ static int findNeedRotating(const struct logInfo *log, unsigned logNum, int forc
         message(MESS_DEBUG, "  log %s is symbolic link. Rotation of symbolic"
                 " links is not allowed to avoid security issues -- skipping.\n",
                 log->files[logNum]);
+        return 0;
+    }
+
+    if (!(log->flags & LOG_FLAG_ALLOWHARDLINK) && sb.st_nlink != 1) {
+        message(MESS_DEBUG, "  log %s has multiple (%lu) hard links. Rotation of files"
+                " with multiple hard links is not allowed for %s -- skipping.\n",
+                log->files[logNum], sb.st_nlink, log->pattern);
         return 0;
     }
 
@@ -1780,7 +1809,7 @@ static int prerotateSingleLog(const struct logInfo *log, unsigned logNum,
     message(MESS_DEBUG, "dateext suffix '%s'\n", dext_str);
     message(MESS_DEBUG, "glob pattern '%s'\n", dext_pattern);
 
-    if (setSecCtxByName(log->files[logNum], &prev_context) != 0) {
+    if (setSecCtxByName(log->files[logNum], log, &prev_context) != 0) {
         /* error msg already printed */
         return 1;
     }
@@ -2061,7 +2090,7 @@ static int rotateSingleLog(const struct logInfo *log, unsigned logNum,
     if (!hasErrors) {
 
         if (!(log->flags & (LOG_FLAG_COPYTRUNCATE | LOG_FLAG_COPY))) {
-            if (setSecCtxByName(log->files[logNum], &savedContext) != 0) {
+            if (setSecCtxByName(log->files[logNum], log, &savedContext) != 0) {
                 /* error msg already printed */
                 return 1;
             }
@@ -2173,7 +2202,7 @@ static int rotateSingleLog(const struct logInfo *log, unsigned logNum,
                 && (log->flags & (LOG_FLAG_COPYTRUNCATE | LOG_FLAG_COPY))
                 && !(log->flags & LOG_FLAG_TMPFILENAME)) {
             hasErrors = copyTruncate(log->files[logNum], rotNames->finalName,
-                                     &state->sb, log->flags, !log->rotateCount);
+                                     &state->sb, log, !log->rotateCount);
         }
 
 #ifdef WITH_ACL
@@ -2204,7 +2233,7 @@ static int postrotateSingleLog(const struct logInfo *log, unsigned logNum,
             return 1;
         }
         hasErrors = copyTruncate(tmpFilename, rotNames->finalName,
-                                 &state->sb, LOG_FLAG_COPY, /* skip_copy */ 0);
+                                 &state->sb, log, /* skip_copy */ 0);
         message(MESS_DEBUG, "removing tmp log %s\n", tmpFilename);
         if (!debug && !hasErrors) {
             unlink(tmpFilename);

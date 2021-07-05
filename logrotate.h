@@ -27,6 +27,7 @@
 #define LOG_FLAG_OLDDIRCREATE   (1U << 13)
 #define LOG_FLAG_TMPFILENAME    (1U << 14)
 #define LOG_FLAG_DATEHOURAGO    (1U << 15)
+#define LOG_FLAG_ALLOWHARDLINK  (1U << 16)
 
 #define NO_MODE ((mode_t) -1)
 #define NO_UID  ((uid_t) -1)
