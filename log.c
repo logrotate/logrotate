@@ -38,14 +38,26 @@ void logToSyslog(int enable) {
 __attribute__((format (printf, 3, 0)))
 static void log_once(FILE *where, int level, const char *format, va_list args)
 {
-    switch (level) {
-        case MESS_DEBUG:
-        case MESS_NORMAL:
-        case MESS_VERBOSE:
-            break;
-        default:
-            fprintf(where, "error: ");
-            break;
+    switch (level)
+    {
+    case MESS_DEBUG:
+        fprintf(where, "debug: ");
+        break;
+    case MESS_NORMAL:
+        fprintf(where, "info: ");
+        break;
+    case MESS_VERBOSE:
+        fprintf(where, "verbose: ");
+        break;
+    case MESS_ERROR:
+        fprintf(where, "error: ");
+        break;
+    case MESS_FATAL:
+        fprintf(where, "fatal: ");
+        break;
+    default:
+        fprintf(where, "unknown: ");
+        break;
     }
 
     vfprintf(where, format, args);
@@ -56,7 +68,6 @@ __attribute__((format (printf, 2, 3)))
 void message(int level, const char *format, ...)
 {
     va_list args;
-
     if (level >= logLevel) {
         va_start(args, format);
         log_once(stderr, level, format, args);
@@ -99,8 +110,9 @@ void message(int level, const char *format, ...)
     }
 #endif
 
-    if (level == MESS_FATAL)
+    if (level == MESS_FATAL) {
         exit(1);
+    }
 }
 
 /* vim: set et sw=4 ts=4: */
