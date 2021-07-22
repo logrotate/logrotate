@@ -1,8 +1,4 @@
 #include "queue.h"
-/* alloca() is defined in stdlib.h in NetBSD */
-#if !defined(__NetBSD__) && !defined(__FreeBSD__) && !defined(__OpenBSD__)
-#include <alloca.h>
-#endif
 #include <limits.h>
 #include <ctype.h>
 #include <dirent.h>
@@ -575,7 +571,11 @@ static int createOutputFile(const char *fileName, int flags, const struct stat *
         localtime_r(&nowSecs, &now);
         fileName_size = strlen(fileName);
         buf_size = fileName_size + sizeof("-YYYYMMDDHH.backup");
-        backupName = alloca(buf_size);
+        backupName = malloc(buf_size);
+        if (!backupName) {
+            message_OOM();
+            return -1;
+        }
         ptr = backupName;
 
         /* construct backupName starting with fileName */
@@ -592,8 +592,12 @@ static int createOutputFile(const char *fileName, int flags, const struct stat *
         if (rename(fileName, backupName) != 0) {
             message(MESS_ERROR, "error renaming already existing output file"
                     " %s to %s: %s\n", fileName, backupName, strerror(errno));
+            free(backupName);
             return -1;
         }
+
+        free(backupName);
+
         /* existing file renamed, try it once again */
     }
 
@@ -666,7 +670,7 @@ static int createOutputFile(const char *fileName, int flags, const struct stat *
 static int shred_file(int fd, const char *filename, const struct logInfo *log)
 {
     char count[DIGITS];    /*  that's a lot of shredding :)  */
-    const char **fullCommand;
+    const char *fullCommand[6];
     int id = 0;
     int status;
     pid_t pid;
@@ -705,12 +709,6 @@ static int shred_file(int fd, const char *filename, const struct logInfo *log)
 
     message(MESS_DEBUG, "Using shred to remove the file %s\n", filename);
 
-    if (log->shred_cycles != 0) {
-        fullCommand = alloca(sizeof(*fullCommand) * 6);
-    }
-    else {
-        fullCommand = alloca(sizeof(*fullCommand) * 4);
-    }
     fullCommand[id++] = "shred";
     fullCommand[id++] = "-u";
 
@@ -812,10 +810,8 @@ static void setAtimeMtime(const char *filename, const struct stat *sb)
 static int compressLogFile(const char *name, const struct logInfo *log, const struct stat *sb)
 {
     char *compressedName;
-    const char **fullCommand;
     int inFile;
     int outFile;
-    int i;
     int status;
     int compressPipe[2];
     char buff[4092];
@@ -827,16 +823,6 @@ static int compressLogFile(const char *name, const struct logInfo *log, const st
     message(MESS_DEBUG, "compressing log with: %s\n", log->compress_prog);
     if (debug)
         return 0;
-
-    fullCommand = alloca(sizeof(*fullCommand) *
-            ((unsigned)log->compress_options_count + 2));
-    fullCommand[0] = log->compress_prog;
-    for (i = 0; i < log->compress_options_count; i++)
-        fullCommand[i + 1] = log->compress_options_list[i];
-    fullCommand[log->compress_options_count + 1] = NULL;
-
-    compressedName = alloca(strlen(name) + strlen(log->compress_ext) + 2);
-    sprintf(compressedName, "%s%s", name, log->compress_ext);
 
     if ((inFile = open_logfile(name, log, log->flags & LOG_FLAG_SHRED)) < 0) {
         message(MESS_ERROR, "unable to open %s (%s) for compression: %s\n",
@@ -862,6 +848,12 @@ static int compressLogFile(const char *name, const struct logInfo *log, const st
     }
 #endif
 
+    if (asprintf(&compressedName, "%s%s", name, log->compress_ext) < 0) {
+        message_OOM();
+        close(inFile);
+        return 1;
+    }
+
     outFile =
         createOutputFile(compressedName, O_RDWR, sb, prev_acl, 0);
     restoreSecCtx(&prevCtx);
@@ -873,6 +865,7 @@ static int compressLogFile(const char *name, const struct logInfo *log, const st
 #endif
     if (outFile < 0) {
         close(inFile);
+        free(compressedName);
         return 1;
     }
 
@@ -882,6 +875,7 @@ static int compressLogFile(const char *name, const struct logInfo *log, const st
                 strerror(errno));
         close(inFile);
         close(outFile);
+        free(compressedName);
         return 1;
     }
 
@@ -893,14 +887,17 @@ static int compressLogFile(const char *name, const struct logInfo *log, const st
         close(outFile);
         close(compressPipe[1]);
         close(compressPipe[0]);
+        free(compressedName);
         return 1;
     }
 
     if (pid == 0) {
-        char *envInFilename;
+        const char **fullCommand;
+        int i;
 
         /* close read end of pipe in the child process */
         close(compressPipe[0]);
+        free(compressedName);
 
         movefd(inFile, STDIN_FILENO);
         movefd(outFile, STDOUT_FILENO);
@@ -911,11 +908,30 @@ static int compressLogFile(const char *name, const struct logInfo *log, const st
 
         movefd(compressPipe[1], STDERR_FILENO);
 
-        envInFilename = alloca(strlen("LOGROTATE_COMPRESSED_FILENAME=") + strlen(name) + 2);
-        sprintf(envInFilename, "LOGROTATE_COMPRESSED_FILENAME=%s", name);
-        putenv(envInFilename);
+        /* export name of file to compress for custom compress scripts */
+        {
+                char *envInFilename;
+                if (asprintf(&envInFilename, "LOGROTATE_COMPRESSED_FILENAME=%s", name) < 0) {
+                    message_OOM();
+                    exit(1);
+                }
+                putenv(envInFilename);
+                /* do not free envInFilename, cause putenv(3) might not create a copy */
+        }
+
+        fullCommand = malloc(sizeof(*fullCommand) * ((size_t)log->compress_options_count + 2));
+        if (!fullCommand) {
+            message_OOM();
+            exit(1);
+        }
+
+        fullCommand[0] = log->compress_prog;
+        for (i = 0; i < log->compress_options_count; i++)
+            fullCommand[i + 1] = log->compress_options_list[i];
+        fullCommand[log->compress_options_count + 1] = NULL;
+
         execvp(fullCommand[0], (void *) fullCommand);
-        message(MESS_ERROR, "cannot execute compress command: %s\n", strerror(errno));
+        message(MESS_ERROR, "cannot execute compress command '%s': %s\n", fullCommand[0], strerror(errno));
         exit(1);
     }
 
@@ -941,10 +957,13 @@ static int compressLogFile(const char *name, const struct logInfo *log, const st
         message(MESS_ERROR, "failed to compress log %s\n", name);
         close(inFile);
         unlink(compressedName);
+        free(compressedName);
         return 1;
     }
 
     setAtimeMtime(compressedName, sb);
+
+    free(compressedName);
 
     if (shred_file(inFile, name, log)) {
         close(inFile);
