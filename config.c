@@ -1109,7 +1109,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                                 configFile, lineNum);
                         continue;
                     }
-                    if (!isspace((unsigned char)*start)) {
+                    if (!isspace((unsigned char)*start) && *start != '=') {
                         message(MESS_NORMAL, "%s:%d keyword '%s' not properly"
                                 " separated, found %#x\n",
                                 configFile, lineNum, key, *start);
