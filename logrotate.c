@@ -1,4 +1,5 @@
 #include "queue.h"
+#include <assert.h>
 #include <limits.h>
 #include <ctype.h>
 #include <dirent.h>
@@ -691,6 +692,9 @@ static int shred_file(int fd, const char *filename, const struct logInfo *log)
     if (!(log->flags & LOG_FLAG_SHRED)) {
         goto unlink_file;
     }
+
+    assert(fd >= 0);
+    assert( ({ int r_ = fcntl(fd, F_GETFL); r_ >= 0 && (r_ & (O_WRONLY | O_RDWR)); }) );
 
     if (!(log->flags & LOG_FLAG_ALLOWHARDLINK)) {
         struct stat sb;
