@@ -1137,18 +1137,18 @@ static int is_nul (void const *buf, size_t bufsize)
 static size_t full_write(int fd, const void *buf, size_t count)
 {
     size_t total = 0;
-    const char *ptr = (const char *) buf;
+    const unsigned char *ptr = (const unsigned char *) buf;
 
     while (count > 0)
     {
         size_t n_rw;
         for (;;)
         {
-            n_rw = (size_t)write (fd, buf, count);
-            if (errno == EINTR)
+            n_rw = (size_t)write (fd, ptr, count);
+            if (n_rw == (size_t) -1 && errno == EINTR)
                 continue;
-            else
-                break;
+
+            break;
         }
         if (n_rw == (size_t) -1)
             break;
