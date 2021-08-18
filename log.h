@@ -20,7 +20,7 @@ void message(int level, const char *format, ...)
 #define message_OOM() \
     do { \
         message(MESS_ERROR, "cannot allocate memory [%s():%d]\n", __func__, __LINE__); \
-    } while(0)
+    } while (0)
 
 void logSetMessageFile(FILE * f);
 void logToSyslog(int enable);
