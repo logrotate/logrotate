@@ -955,7 +955,7 @@ static int globerr(const char *pathname, int theerr)
         } else { \
             goto error; \
         } \
-    } while(0)
+    } while (0)
 #define MAX_NESTING 16U
 
 static int readConfigFile(const char *configFile, struct logInfo *defConfig)
@@ -1659,7 +1659,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 
                         /* we check whether we changed the compress_cmd. In case we use the appropriate extension
                            as listed in compress_cmd_list */
-                        for(i = 0; i < compress_cmd_list_size; i++) {
+                        for (i = 0; i < compress_cmd_list_size; i++) {
                             if (!strcmp(compress_cmd_list[i].cmd, compresscmd_base)) {
                                 freeLogItem (compress_ext);
                                 newlog->compress_ext = strdup(compress_cmd_list[i].ext);

@@ -187,7 +187,7 @@ struct {								\
 	}								\
 	else {								\
 		struct type *curelm = (head)->slh_first;		\
-		while(curelm->field.sle_next != (elm))			\
+		while (curelm->field.sle_next != (elm))			\
 			curelm = curelm->field.sle_next;		\
 		curelm->field.sle_next =				\
 		    curelm->field.sle_next->field.sle_next;		\
@@ -195,7 +195,7 @@ struct {								\
 } while (/*CONSTCOND*/0)
 
 #define	SLIST_FOREACH(var, head, field)					\
-	for((var) = (head)->slh_first; (var); (var) = (var)->field.sle_next)
+	for ((var) = (head)->slh_first; (var); (var) = (var)->field.sle_next)
 
 /*
  * Singly-linked List access methods.
