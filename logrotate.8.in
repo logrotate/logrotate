@@ -51,7 +51,7 @@ a config file.
 If no command line arguments are given, \fBlogrotate\fR will print
 version and copyright information, along with a short usage summary.  If
 any errors occur while rotating logs, \fBlogrotate\fR will exit with
-non-zero status.
+non-zero status, although the state file will be updated.
 
 .SH OPTIONS
 
@@ -205,6 +205,11 @@ Please use wildcards with caution.  If you specify *, \fBlogrotate\fR will
 rotate all files, including previously rotated ones.  A way around this
 is to use the \fBolddir\fR directive or a more exact wildcard (such as *.log).
 
+Please note, by default when using \fBsystemd\fR(1), the option
+\fIProtectSystem=full\fR is set in the \fIlogrotate.service\fR file.
+This prevents \fBlogrotate\fR from modifying logs in \fI/etc\fR
+and \fI/usr\fR.
+
 Here is more information on the directives which may be included in
 a \fBlogrotate\fR configuration file:
 
@@ -253,8 +258,9 @@ that are directly or indirectly in control of non-privileged users.
 .TP
 \fBhourly\fR
 Log files are rotated every hour.  Note that usually \fBlogrotate\fR is
-configured to be run by cron daily.  You have to change this configuration
-and run \fBlogrotate\fR hourly to be able to really rotate logs hourly.
+configured to be run by cron daily (or by \fIlogrotate.timer\fR when using
+\fBsystemd\fR(1)).  You have to change this configuration and run 
+\fBlogrotate\fR hourly to be able to really rotate logs hourly.
 
 .TP
 \fBdaily\fR
@@ -282,7 +288,7 @@ Log files are rotated if the current year is not the same as the last rotation.
 \fBsize \fIsize\fR
 Log files are rotated only if they grow bigger than \fIsize\fR bytes.  If
 \fIsize\fR is followed by \fIk\fR, the size is assumed to be in kilobytes.
-If the \fIM\fR is used, the size is in megabytes, and if \fIG\fR is used, the
+If \fIM\fR is used, the size is in megabytes, and if \fIG\fR is used, the
 size is in gigabytes. So \fIsize 100\fR, \fIsize 100k\fR, \fIsize 100M\fR and
 \fIsize 100G\fR are all valid.  This option is mutually exclusive with the time
 interval options, and it causes log files to be rotated without regard for the
