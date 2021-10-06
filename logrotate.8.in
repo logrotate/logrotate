@@ -259,7 +259,7 @@ that are directly or indirectly in control of non-privileged users.
 \fBhourly\fR
 Log files are rotated every hour.  Note that usually \fBlogrotate\fR is
 configured to be run by cron daily (or by \fIlogrotate.timer\fR when using
-\fBsystemd\fR(1)).  You have to change this configuration and run 
+\fBsystemd\fR(1)).  You have to change this configuration and run
 \fBlogrotate\fR hourly to be able to really rotate logs hourly.
 
 .TP
