@@ -2789,16 +2789,19 @@ static int readState(const char *stateFilename)
         /* treat non-openable file as an empty file for allocateHash() */
         f_stat.st_size = 0;
 
-        /* the statefile should exist, lockState() already created an empty
-         * state file in case it did not exist initially */
-        message(MESS_ERROR, "error opening state file %s: %s\n",
-                stateFilename, strerror(errno));
-
         /* Do not return until the hash table is allocated.
          * In debug mode the state file might not exist,
          * cause lockState() is not called */
         if (!debug) {
+            message(MESS_ERROR, "error opening state file %s: %s\n",
+                    stateFilename, strerror(errno));
             rc = 1;
+        } else if (errno == ENOENT) {
+            message(MESS_DEBUG, "state file %s does not exist\n",
+                    stateFilename);
+        } else {
+           message(MESS_ERROR, "error opening state file %s; assuming empty state: %s\n",
+                   stateFilename, strerror(errno));
         }
     } else {
         if (fstat(fd, &f_stat) == -1) {
