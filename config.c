@@ -1107,12 +1107,13 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                     if (key == NULL) {
                         message(MESS_ERROR, "%s:%d failed to parse keyword\n",
                                 configFile, lineNum);
-                        continue;
+                        RAISE_ERROR();
                     }
                     if (!isspace((unsigned char)*start) && *start != '=') {
-                        message(MESS_NORMAL, "%s:%d keyword '%s' not properly"
+                        message(MESS_ERROR, "%s:%d keyword '%s' not properly"
                                 " separated, found %#x\n",
                                 configFile, lineNum, key, *start);
+                        RAISE_ERROR();
                     }
                     if (!strcmp(key, "compress")) {
                         newlog->flags |= LOG_FLAG_COMPRESS;
@@ -2004,7 +2005,7 @@ duperror:
                     message(MESS_ERROR, "%s:%d lines must begin with a keyword "
                             "or a filename (possibly in double quotes)\n",
                             configFile, lineNum);
-                    state = STATE_SKIP_LINE;
+                    RAISE_ERROR();
                 }
                 break;
             case STATE_SKIP_LINE:
