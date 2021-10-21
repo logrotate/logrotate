@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ## [UNRELEASED]
 
 [UNRELEASED]: https://github.com/logrotate/logrotate/compare/3.18.1...master
+  - enforce stricter parsing of configuration files
 
 ## [3.18.1] - 2021-05-21
   - fix memory leaks on error-handling paths (#383, #387)

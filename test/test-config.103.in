@@ -1,0 +1,12 @@
+random noise
+a b c d
+a::x
+
+&DIR&/test.log {
+ daily
+ size=0
+
+firstaction
+ /bin/sh -c "echo test123"
+ endscript
+}

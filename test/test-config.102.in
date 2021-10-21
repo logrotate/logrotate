@@ -1,0 +1,10 @@
+ELF
+
+&DIR&/test.log {
+ daily
+ size=0
+
+firstaction
+ /bin/sh -c "echo test123"
+ endscript
+}
