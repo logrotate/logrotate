@@ -2771,14 +2771,8 @@ static int readState(const char *stateFilename)
 {
     FILE *f;
     char buf[STATEFILE_BUFFER_SIZE];
-    char *filename;
-    const char **argv;
-    int argc;
-    int year, month, day, hour, minute, second;
     int line = 0;
     int fd;
-    struct logState *st;
-    time_t lr_time;
     struct stat f_stat;
     int rc = 0;
 
@@ -2857,7 +2851,13 @@ static int readState(const char *stateFilename)
 
     while (fgets(buf, sizeof(buf) - 1, f)) {
         const size_t i = strlen(buf);
-        argv = NULL;
+        char *filename;
+        int argc;
+        const char **argv = NULL;
+        int year, month, day, hour, minute, second;
+        struct logState *st;
+        time_t lr_time;
+
         line++;
         if (i == 0) {
             message(MESS_ERROR, "line %d not parsable in state file %s\n",
