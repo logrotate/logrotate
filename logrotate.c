@@ -814,9 +814,6 @@ static int compressLogFile(const char *name, const struct logInfo *log, const st
     int outFile;
     int status;
     int compressPipe[2];
-    char buff[4092];
-    ssize_t n_read;
-    int error_printed = 0;
     char *prevCtx;
     pid_t pid;
 
@@ -938,15 +935,33 @@ static int compressLogFile(const char *name, const struct logInfo *log, const st
     /* close write end of pipe in the parent process */
     close(compressPipe[1]);
 
-    while ((n_read = read(compressPipe[0], buff, sizeof(buff) - 1)) > 0) {
-        if (!error_printed) {
-            error_printed = 1;
-            message(MESS_ERROR, "Compressing program wrote following message "
-                    "to stderr when compressing log %s:\n", name);
+    {
+        int error_printed = 0;
+
+        for (;;) {
+            char buff[4096];
+            ssize_t n_read = read(compressPipe[0], buff, sizeof(buff) - 1);
+
+            if (n_read < 0) {
+                if (errno == EINTR)
+                    continue;
+                else
+                    break;
+            }
+
+            if (n_read == 0)
+                break;
+
+            if (!error_printed) {
+                error_printed = 1;
+                message(MESS_ERROR, "Compressing program wrote following message "
+                        "to stderr when compressing log %s:\n", name);
+            }
+            buff[n_read] = '\0';
+            fprintf(stderr, "%s", buff);
         }
-        buff[n_read] = '\0';
-        fprintf(stderr, "%s", buff);
     }
+
     close(compressPipe[0]);
     wait(&status);
 
