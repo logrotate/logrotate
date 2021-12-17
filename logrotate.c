@@ -1403,7 +1403,7 @@ static int findNeedRotating(const struct logInfo *log, unsigned logNum, int forc
     if (!(log->flags & LOG_FLAG_ALLOWHARDLINK) && sb.st_nlink != 1) {
         message(MESS_DEBUG, "  log %s has multiple (%lu) hard links. Rotation of files"
                 " with multiple hard links is not allowed for %s -- skipping.\n",
-                log->files[logNum], sb.st_nlink, log->pattern);
+                log->files[logNum], (unsigned long)sb.st_nlink, log->pattern);
         return 0;
     }
 
