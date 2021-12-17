@@ -1,5 +1,16 @@
 # common variables and functions for legacy tests
-LOGROTATE="$(readlink -f $LOGROTATE)"
+
+if readlink -f $LOGROTATE > /dev/null 2>&1; then
+  LOGROTATE="$(readlink -f $LOGROTATE)"
+elif greadlink -f $LOGROTATE > /dev/null 2>&1; then
+  LOGROTATE="$(greadlink -f $LOGROTATE)"
+else
+  echo "no readlink with canonicalize option found:"
+  readlink -f $LOGROTATE
+  greadlink -f $LOGROTATE
+  exit 1
+fi
+
 RLR="$LOGROTATE -v -m ./mailer -s state"
 
 if du --apparent-size $LOGROTATE > /dev/null 2>&1; then
@@ -7,10 +18,10 @@ if du --apparent-size $LOGROTATE > /dev/null 2>&1; then
 elif du -A $LOGROTATE > /dev/null 2>&1; then
   DU_APPARENT_SIZE='du -A'
 else
-  echo "no du option for apparent size found:"
+  echo "no du option for apparent size found, using default mode:"
   du --apparent-size $LOGROTATE
   du -A $LOGROTATE
-  exit 1
+  DU_APPARENT_SIZE='du'
 fi
 
 if command -v md5sum > /dev/null 2>&1; then
