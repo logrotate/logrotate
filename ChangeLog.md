@@ -4,8 +4,22 @@ All notable changes to this project will be documented in this file.
 
 ## [UNRELEASED]
 
-[UNRELEASED]: https://github.com/logrotate/logrotate/compare/3.18.1...master
-  - enforce stricter parsing of configuration files
+[UNRELEASED]: https://github.com/logrotate/logrotate/compare/3.19.0...master
+
+## [3.19.0] - 2022-01-07
+  - continue on `EINTR` in `compressLogFile()` (#430)
+  - enforce stricter parsing of configuration files (#427, #431)
+  - avoid confusing error message in debug mode (#426)
+  - fix `full_write()` on incomplete write (#415)
+  - do not use `alloca()` any more (#412)
+  - do not rotate hard links unless `allowhardlink` is used (#407)
+  - change directory after dropping privileges (#397)
+  - add defence in depth when dropping privileges (#400)
+  - remove invalid configuration on error (#408)
+  - do not open symbolic link log files by accident (#399)
+  - do not write state if state file is `/dev/null` (#395)
+
+[3.19.0]: https://github.com/logrotate/logrotate/compare/3.18.1...3.19.0
 
 ## [3.18.1] - 2021-05-21
   - fix memory leaks on error-handling paths (#383, #387)
