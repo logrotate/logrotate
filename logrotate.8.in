@@ -76,7 +76,7 @@ log files.  To prevent parallel execution \fBlogrotate\fR by default
 acquires a lock on the state file, if it cannot be acquired \fBlogrotate\fR
 will exit with value 3.  The default state file is \fI@STATE_FILE_PATH@\fR.
 If \fI/dev/null\fR is given as the state file, then \fBlogrotate\fR will
-not try to write the state file.
+not try to lock or write the state file.
 
 .TP
 \fB\-\-skip-state-lock\fR

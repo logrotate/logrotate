@@ -3000,7 +3000,13 @@ static int readState(const char *stateFilename)
 
 static int lockState(const char *stateFilename, int skip_state_lock)
 {
-    int lockFd = open(stateFilename, O_RDWR | O_CLOEXEC);
+    int lockFd;
+
+    if (!strcmp(stateFilename, "/dev/null")) {
+        return 0;
+    }
+
+    lockFd = open(stateFilename, O_RDWR | O_CLOEXEC);
     if (lockFd == -1) {
         if (errno == ENOENT) {
             message(MESS_DEBUG, "Creating stub state file: %s\n",
