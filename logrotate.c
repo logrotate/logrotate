@@ -1340,8 +1340,8 @@ static time_t mktimeFromDateOnly(const struct tm *src)
 /* return by how many days the date was advanced but ignore exact time */
 static time_t daysElapsed(const struct tm *now, const struct tm *last)
 {
-    const time_t diff = mktimeFromDateOnly(now) - mktimeFromDateOnly(last);
-    return diff / (24 * 3600);
+    const double diff = difftime(mktimeFromDateOnly(now),mktimeFromDateOnly(last));
+    return (time_t) (diff / (24 * 3600));
 }
 
 static int findNeedRotating(const struct logInfo *log, unsigned logNum, int force)
@@ -1443,7 +1443,7 @@ static int findNeedRotating(const struct logInfo *log, unsigned logNum, int forc
             message(MESS_DEBUG, "  log does not need rotating "
                     "(log size is below the 'size' threshold)\n");
         }
-    } else if (mktime(&state->lastRotated) - mktime(&now) > (25 * 3600)) {
+    } else if (difftime(mktime(&state->lastRotated),mktime(&now)) > (25 * 3600)) {
         /* 25 hours allows for DST changes as well as geographical moves */
         message(MESS_ERROR,
                 "log %s last rotated in the future -- rotation forced\n",
@@ -1532,7 +1532,7 @@ static int findNeedRotating(const struct logInfo *log, unsigned logNum, int forc
                     "('minsize' directive is used and the log "
                     "size is smaller than the minsize value)\n");
         }
-        if (log->rotateMinAge && log->rotateMinAge * DAY_SECONDS >= nowSecs - sb.st_mtime) {
+        if (log->rotateMinAge && log->rotateMinAge * DAY_SECONDS >= difftime(nowSecs, sb.st_mtime)) {
             state->doRotate = 0;
             message(MESS_DEBUG, "  log does not need rotating "
                     "('minage' directive is used and the log "
@@ -1925,7 +1925,7 @@ static int prerotateSingleLog(const struct logInfo *log, unsigned logNum,
                     if (((globResult.gl_pathc >= (size_t)rotateCount) && (glob_count <= (globResult.gl_pathc - (size_t)rotateCount)))
                             || ((log->rotateAge > 0)
                                 &&
-                                (((nowSecs - fst_buf.st_mtime) / DAY_SECONDS)
+                                ((difftime(nowSecs, fst_buf.st_mtime) / DAY_SECONDS)
                                  > log->rotateAge))) {
                         if (mail_out != (size_t)-1) {
                             char *mailFilename =
@@ -2039,7 +2039,7 @@ static int prerotateSingleLog(const struct logInfo *log, unsigned logNum,
                     continue;
                 }
 
-                if (((nowSecs - fst_buf.st_mtime) / DAY_SECONDS) > log->rotateAge) {
+                if ((difftime(nowSecs, fst_buf.st_mtime) / DAY_SECONDS) > log->rotateAge) {
                     if (!hasErrors && log->logAddress)
                         hasErrors = mailLogWrapper(oldName, mailCommand,
                                                    logNum, log);
