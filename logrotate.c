@@ -1338,10 +1338,10 @@ static time_t mktimeFromDateOnly(const struct tm *src)
 }
 
 /* return by how many days the date was advanced but ignore exact time */
-static time_t daysElapsed(const struct tm *now, const struct tm *last)
+static long daysElapsed(const struct tm *now, const struct tm *last)
 {
     const double diff = difftime(mktimeFromDateOnly(now),mktimeFromDateOnly(last));
-    return (time_t) (diff / (24 * 3600));
+    return (long) (diff / (24 * 3600));
 }
 
 static int findNeedRotating(const struct logInfo *log, unsigned logNum, int force)
@@ -1453,7 +1453,7 @@ static int findNeedRotating(const struct logInfo *log, unsigned logNum, int forc
             state->lastRotated.tm_mon != now.tm_mon ||
             state->lastRotated.tm_mday != now.tm_mday ||
             state->lastRotated.tm_hour != now.tm_hour) {
-        time_t days;
+        long days;
         switch (log->criterium) {
             case ROT_WEEKLY:
                 days = daysElapsed(&now, &state->lastRotated);
