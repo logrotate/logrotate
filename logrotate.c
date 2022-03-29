@@ -2664,6 +2664,9 @@ static int writeState(const char *stateFilename)
 
     close(fdcurr);
 
+    /* drop world-readable flag to prevent others from locking */
+    sb.st_mode &= ~(mode_t)S_IROTH;
+
     fdsave = createOutputFile(tmpFilename, O_RDWR, &sb, prev_acl, 0);
 #ifdef WITH_ACL
     if (prev_acl) {
@@ -3001,6 +3004,7 @@ static int readState(const char *stateFilename)
 static int lockState(const char *stateFilename, int skip_state_lock)
 {
     int lockFd;
+    struct stat sb;
 
     if (!strcmp(stateFilename, "/dev/null")) {
         return 0;
@@ -3012,9 +3016,9 @@ static int lockState(const char *stateFilename, int skip_state_lock)
             message(MESS_DEBUG, "Creating stub state file: %s\n",
                     stateFilename);
 
-            /* create a stub state file with mode 0644 */
+            /* create a stub state file with mode 0640 */
             lockFd = open(stateFilename, O_CREAT | O_EXCL | O_WRONLY,
-                          S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH);
+                          S_IWUSR | S_IRUSR | S_IRGRP);
             if (lockFd == -1) {
                 message(MESS_ERROR, "error creating stub state file %s: %s\n",
                         stateFilename, strerror(errno));
@@ -3029,6 +3033,22 @@ static int lockState(const char *stateFilename, int skip_state_lock)
 
     if (skip_state_lock) {
         message(MESS_DEBUG, "Skip locking state file %s\n",
+                stateFilename);
+        close(lockFd);
+        return 0;
+    }
+
+    if (fstat(lockFd, &sb) == -1) {
+        message(MESS_ERROR, "error stat()ing state file %s: %s\n",
+                stateFilename, strerror(errno));
+        close(lockFd);
+        return 1;
+    }
+
+    if (sb.st_mode & S_IROTH) {
+        message(MESS_ERROR, "state file %s is world-readable and thus can"
+                " be locked from other unprivileged users."
+                " Skipping lock acquisition...\n",
                 stateFilename);
         close(lockFd);
         return 0;

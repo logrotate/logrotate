@@ -8,6 +8,7 @@ cleanup 87
 preptest test.log 87 1
 
 touch state
+chmod 0640 state
 
 $RLR test-config.87 -f &
 

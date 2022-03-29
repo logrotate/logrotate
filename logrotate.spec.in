@@ -41,7 +41,6 @@ install -p -m 644 examples/logrotate.conf $RPM_BUILD_ROOT%{_sysconfdir}/logrotat
 install -p -m 644 examples/btmp $RPM_BUILD_ROOT%{_sysconfdir}/logrotate.d/btmp
 install -p -m 644 examples/wtmp $RPM_BUILD_ROOT%{_sysconfdir}/logrotate.d/wtmp
 install -p -m 755 examples/logrotate.cron $RPM_BUILD_ROOT%{_sysconfdir}/cron.daily/logrotate
-touch $RPM_BUILD_ROOT%{_localstatedir}/lib/logrotate.status
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -55,4 +54,4 @@ rm -rf $RPM_BUILD_ROOT
 %attr(0755, root, root) %{_sysconfdir}/cron.daily/logrotate
 %attr(0644, root, root) %config(noreplace) %{_sysconfdir}/logrotate.conf
 %attr(0755, root, root) %{_sysconfdir}/logrotate.d
-%attr(0644, root, root) %verify(not size md5 mtime) %config(noreplace) %{_localstatedir}/lib/logrotate.status
+%ghost %attr(0640, root, root) %verify(not size md5 mtime) %{_localstatedir}/lib/logrotate.status
