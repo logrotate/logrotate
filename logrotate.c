@@ -1248,7 +1248,7 @@ static int copyTruncate(const char *currLog, const char *saveLog, const struct s
     int rc = 1;
     int fdcurr = -1, fdsave = -1;
 
-    message(MESS_DEBUG, "copying %s to %s\n", currLog, saveLog);
+    message(MESS_DEBUG, "%scopying %s to %s\n", skip_copy ? "skip " : "", currLog, saveLog);
 
     if (!debug) {
         /* read access is sufficient for 'copy' but not for 'copytruncate' */
