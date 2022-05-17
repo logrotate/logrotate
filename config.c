@@ -123,7 +123,7 @@ enum {
     STATE_ERROR = 64,
 };
 
-static const char *defTabooExts[] = {
+static const char *const defTabooExts[] = {
     ",v",
     ".bak",
     ".cfsaved",
