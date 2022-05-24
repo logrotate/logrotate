@@ -4,7 +4,17 @@ All notable changes to this project will be documented in this file.
 
 ## [UNRELEASED]
 
-[UNRELEASED]: https://github.com/logrotate/logrotate/compare/3.19.0...master
+[UNRELEASED]: https://github.com/logrotate/logrotate/compare/3.20.0...master
+
+## [3.20.0] - 2022-05-25
+  - fix potential DoS from unprivileged users via the state file ([CVE-2022-1348])
+  - fix a misleading debug message with `copytruncate` and `rotate 0` (#443)
+  - add support for unsigned `time_t` (#438)
+  - do not lock state file `/dev/null` (#433)
+
+[CVE-2022-1348]: https://bugzilla.redhat.com/CVE-2022-1348
+
+[3.20.0]: https://github.com/logrotate/logrotate/compare/3.19.0...3.20.0
 
 ## [3.19.0] - 2022-01-07
   - continue on `EINTR` in `compressLogFile()` (#430)
