@@ -17,4 +17,3 @@ checkoutput <<EOF
 test.log 0
 test.log.1 0 zero
 EOF
-
