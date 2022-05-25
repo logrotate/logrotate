@@ -4,7 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## [UNRELEASED]
 
-[UNRELEASED]: https://github.com/logrotate/logrotate/compare/3.20.0...master
+[UNRELEASED]: https://github.com/logrotate/logrotate/compare/3.20.1...master
+
+## [3.20.1] - 2022-05-25
+  - drop world-readable permission on state file even when ACLs are enabled (#446)
+
+[3.20.1]: https://github.com/logrotate/logrotate/compare/3.20.0...3.20.1
 
 ## [3.20.0] - 2022-05-25
   - fix potential DoS from unprivileged users via the state file ([CVE-2022-1348])
