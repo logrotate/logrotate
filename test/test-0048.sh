@@ -18,6 +18,7 @@ cat > state << EOF
 logrotate state -- version 2
 EOF
 
+chmod 0640 state
 setfacl -m u:nobody:rwx state
 
 $RLR test-config.48 || exit 23

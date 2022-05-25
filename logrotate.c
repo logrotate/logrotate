@@ -2593,6 +2593,7 @@ static int writeState(const char *stateFilename)
     struct tm now;
     time_t now_time, last_time;
     char *prevCtx;
+    int force_mode = 0;
 
     if (!strcmp(stateFilename, "/dev/null"))
         /* explicitly asked not to write the state file */
@@ -2664,10 +2665,13 @@ static int writeState(const char *stateFilename)
 
     close(fdcurr);
 
-    /* drop world-readable flag to prevent others from locking */
-    sb.st_mode &= ~(mode_t)S_IROTH;
+    if (sb.st_mode & (mode_t)S_IROTH) {
+        /* drop world-readable flag to prevent others from locking */
+        sb.st_mode &= ~(mode_t)S_IROTH;
+        force_mode = 1;
+    }
 
-    fdsave = createOutputFile(tmpFilename, O_RDWR, &sb, prev_acl, 0);
+    fdsave = createOutputFile(tmpFilename, O_RDWR, &sb, prev_acl, force_mode);
 #ifdef WITH_ACL
     if (prev_acl) {
         acl_free(prev_acl);
