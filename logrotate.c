@@ -3050,8 +3050,8 @@ static int lockState(const char *stateFilename, int skip_state_lock)
     }
 
     if (sb.st_mode & S_IROTH) {
-        message(MESS_ERROR, "state file %s is world-readable and thus can"
-                " be locked from other unprivileged users."
+        message(MESS_NORMAL, "warning: state file %s is world-readable"
+                " and thus can be locked from other unprivileged users."
                 " Skipping lock acquisition...\n",
                 stateFilename);
         close(lockFd);
