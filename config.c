@@ -643,7 +643,7 @@ static void set_criterium(enum criterium *pDst, enum criterium src, int *pSet)
 {
     if (*pSet && (*pDst != src)) {
         /* we are overriding a previously set criterium */
-        message(MESS_VERBOSE, "warning: '%s' overrides previously specified '%s'\n",
+        message(MESS_DEBUG, "note: '%s' overrides previously specified '%s'\n",
                 crit_to_string(src), crit_to_string(*pDst));
     }
     *pDst = src;
@@ -1021,7 +1021,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 
     if (getuid() == ROOT_UID) {
         if ((sb_config.st_mode & 07533) != 0400) {
-            message(MESS_NORMAL,
+            message(MESS_WARN,
                     "Potentially dangerous mode on %s: 0%o\n",
                     configFile, (unsigned) (sb_config.st_mode & 07777));
         }
@@ -1386,7 +1386,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                             RAISE_ERROR();
                         }
                     } else if (!strcmp(key, "errors")) {
-                        message(MESS_NORMAL,
+                        message(MESS_WARN,
                                 "%s: %d: the errors directive is deprecated and no longer used.\n",
                                 configFile, lineNum);
                     } else if (!strcmp(key, "mail")) {

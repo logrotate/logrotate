@@ -5,8 +5,7 @@
 
 #define MESS_REALDEBUG  1
 #define MESS_DEBUG      2
-#define MESS_VERBOSE    3
-#define MESS_NORMAL     4
+#define MESS_WARN       4
 #define MESS_ERROR      5
 #define MESS_FATAL      6
 

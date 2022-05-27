@@ -3050,7 +3050,7 @@ static int lockState(const char *stateFilename, int skip_state_lock)
     }
 
     if (sb.st_mode & S_IROTH) {
-        message(MESS_NORMAL, "warning: state file %s is world-readable"
+        message(MESS_WARN, "state file %s is world-readable"
                 " and thus can be locked from other unprivileged users."
                 " Skipping lock acquisition...\n",
                 stateFilename);
@@ -3106,7 +3106,7 @@ int main(int argc, const char **argv)
         POPT_AUTOHELP { NULL, 0, 0, NULL, 0, NULL, NULL }
     };
 
-    logSetLevel(MESS_NORMAL);
+    logSetLevel(MESS_WARN);
     setlocale (LC_ALL, "");
 
     optCon = poptGetContext("logrotate", argc, argv, options, 0);
@@ -3117,7 +3117,7 @@ int main(int argc, const char **argv)
         switch (arg) {
             case 'd':
                 debug = 1;
-                message(MESS_NORMAL, "WARNING: logrotate in debug mode does nothing"
+                message(MESS_WARN, "logrotate in debug mode does nothing"
                         " except printing debug messages!  Consider using verbose"
                         " mode (-v) instead if this is not what you want.\n\n");
                 /* fallthrough */
