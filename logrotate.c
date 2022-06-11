@@ -2012,7 +2012,7 @@ static int prerotateSingleLog(const struct logInfo *log, unsigned logNum,
             return 1;
         }
 
-        for (i = rotateCount + logStart - 1; (i >= 0) && !hasErrors; i--) {
+        for (i = rotateCount + logStart - 1; (i >= logStart) && !hasErrors; i--) {
             free(newName);
             newName = oldName;
             if (asprintf(&oldName, "%s/%s.%d%s%s", rotNames->dirName,
