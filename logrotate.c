@@ -1631,7 +1631,6 @@ static int prerotateSingleLog(const struct logInfo *log, unsigned logNum,
     glob_t globResult;
     int rc;
     int rotateCount = log->rotateCount ? log->rotateCount : 1;
-    int logStart = (log->logStart == -1) ? 1 : log->logStart;
 #define DATEEXT_LEN 64
 #define PATTERN_LEN (DATEEXT_LEN * 2)
     char dext_str[DATEEXT_LEN];
@@ -1885,7 +1884,7 @@ static int prerotateSingleLog(const struct logInfo *log, unsigned logNum,
             struct stat sbprev;
             char *oldName;
             if (asprintf(&oldName, "%s/%s.%d%s", rotNames->dirName,
-                         rotNames->baseName, logStart, fileext) < 0) {
+                         rotNames->baseName, log->logStart, fileext) < 0) {
                 message_OOM();
                 return 1;
             }
@@ -1988,7 +1987,7 @@ static int prerotateSingleLog(const struct logInfo *log, unsigned logNum,
         }
 
         if (asprintf(&oldName, "%s/%s.%d%s%s", rotNames->dirName,
-                     rotNames->baseName, logStart + rotateCount, fileext,
+                     rotNames->baseName, log->logStart + rotateCount, fileext,
                      compext) < 0) {
             message_OOM();
             return 1;
@@ -2004,7 +2003,7 @@ static int prerotateSingleLog(const struct logInfo *log, unsigned logNum,
         }
 
         if (asprintf(&rotNames->firstRotated, "%s/%s.%d%s%s", rotNames->dirName,
-                rotNames->baseName, logStart, fileext,
+                rotNames->baseName, log->logStart, fileext,
                 (log->flags & LOG_FLAG_DELAYCOMPRESS) ? "" : compext) < 0) {
             message_OOM();
             free(oldName);
@@ -2012,7 +2011,7 @@ static int prerotateSingleLog(const struct logInfo *log, unsigned logNum,
             return 1;
         }
 
-        for (i = rotateCount + logStart - 1; (i >= logStart) && !hasErrors; i--) {
+        for (i = rotateCount + log->logStart - 1; (i >= log->logStart) && !hasErrors; i--) {
             free(newName);
             newName = oldName;
             if (asprintf(&oldName, "%s/%s.%d%s%s", rotNames->dirName,
@@ -2052,7 +2051,7 @@ static int prerotateSingleLog(const struct logInfo *log, unsigned logNum,
 
             message(MESS_DEBUG,
                     "renaming %s to %s (rotatecount %d, logstart %d, i %d), \n",
-                    oldName, newName, rotateCount, logStart, i);
+                    oldName, newName, rotateCount, log->logStart, i);
 
             if (!debug && rename(oldName, newName)) {
                 if (errno == ENOENT) {
@@ -2093,7 +2092,7 @@ static int prerotateSingleLog(const struct logInfo *log, unsigned logNum,
     } else {
         /* note: the gzip extension is *not* used here! */
         if (asprintf(&(rotNames->finalName), "%s/%s.%d%s", rotNames->dirName,
-                     rotNames->baseName, logStart, fileext) < 0) {
+                     rotNames->baseName, log->logStart, fileext) < 0) {
             message_OOM();
             rotNames->finalName = NULL;
         }

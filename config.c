@@ -787,7 +787,7 @@ int readAllConfigPaths(const char **paths)
         .rotateCount = 0,
         .rotateMinAge = 0,
         .rotateAge = 0,
-        .logStart = -1,
+        .logStart = 1,
         .pre = NULL,
         .post = NULL,
         .first = NULL,
