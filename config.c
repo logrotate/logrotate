@@ -942,6 +942,45 @@ static int globerr(const char *pathname, int theerr)
     return 1;
 }
 
+static int expand_home_relative_path(char **path)
+{
+    const char *env_home;
+    char *new_path = NULL;
+
+    if (!*path || (*path)[0] != '~' || (*path)[1] != '/')
+        return 0;
+
+    env_home = secure_getenv("HOME");
+    if (!env_home) {
+        const struct passwd *pwd;
+
+        message(MESS_DEBUG,
+                "cannot get HOME directory from environment "
+                "to replace ~/, trying password database...\n");
+
+        pwd = getpwuid(getuid());
+        if (!pwd) {
+            message(MESS_ERROR, "cannot get passwd entry for "
+                    "running user %u: %s\n",
+                    getuid(), strerror(errno));
+            return 1;
+        }
+        env_home = pwd->pw_dir;
+    }
+
+    if (asprintf(&new_path, "%s/%s", env_home, *path + 2) < 0) {
+        message_OOM();
+        return 1;
+    }
+
+    message(MESS_DEBUG, "replaced '%s' with '%s'\n",
+            *path, new_path);
+
+    free(*path);
+    *path = new_path;
+    return 0;
+}
+
 #define freeLogItem(what) \
     do { \
         free(newlog->what); \
@@ -1553,36 +1592,11 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                             RAISE_ERROR();
                         }
 
-                        if (key[0] == '~' && key[1] == '/') {
-                            /* replace '~' with content of $HOME cause low-level functions
-                             * like stat() do not support the glob ~
-                             */
-                            const char *env_home = secure_getenv("HOME");
-                            char *new_key = NULL;
-
-                            if (!env_home) {
-                                const struct passwd *pwd = getpwuid(getuid());
-                                message(MESS_DEBUG,
-                                        "%s:%d cannot get HOME directory from environment "
-                                        "to replace ~/ in include directive\n",
-                                        configFile, lineNum);
-                                if (!pwd) {
-                                    message(MESS_ERROR, "%s:%d cannot get passwd entry for "
-                                            "running user %u: %s\n",
-                                           configFile, lineNum, getuid(), strerror(errno));
-                                    RAISE_ERROR();
-                                }
-                                env_home = pwd->pw_dir;
-                            }
-
-                            if (asprintf(&new_key, "%s/%s", env_home, key + 2) < 0) {
-                                message_OOM();
-                                RAISE_ERROR();
-                            }
-                            message(MESS_DEBUG, "%s:%d replaced %s with '%s' for include directive\n",
-                                    configFile, lineNum, key, env_home);
-                            free(key);
-                            key = new_key;
+                        /* replace '~' with content of $HOME cause low-level functions
+                         * like stat() do not support the glob ~
+                         */
+                        if (expand_home_relative_path(&key)) {
+                            RAISE_ERROR();
                         }
 
                         message(MESS_DEBUG, "including %s\n", key);
@@ -1608,6 +1622,14 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                                         "olddir", &start, &buf, length))) {
                             RAISE_ERROR();
                         }
+
+                        /* replace '~' with content of $HOME cause low-level functions
+                         * like stat() do not support the glob ~
+                         */
+                        if (expand_home_relative_path(&newlog->oldDir)) {
+                            RAISE_ERROR();
+                        }
+
                         message(MESS_DEBUG, "olddir is now %s\n", newlog->oldDir);
                     } else if (!strcmp(key, "extension")) {
                         free(key);
