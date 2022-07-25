@@ -30,7 +30,7 @@ if [ $? = 0 ]; then
 	fi
 fi
 if [ $SYSLOG_TESTS = 1 ]; then
-	journalctl -n 50 2>/dev/null|grep $PWD/test.log.1 2>/dev/null >/dev/null
+	journalctl -n 100 2>/dev/null|grep "$PWD/test.log.1" 2>/dev/null >/dev/null
 	if [ $? != 0 ]; then
 		echo "syslog message not found"
 		exit 1
