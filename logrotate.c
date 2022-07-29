@@ -663,13 +663,11 @@ static int createOutputFile(const char *fileName, int flags, const struct stat *
     return fd;
 }
 
-#define DIGITS 12
-
 /* unlink, but try to call shred from GNU coreutils if LOG_FLAG_SHRED
  * is enabled (in that case fd needs to be a valid file descriptor) */
 static int shred_file(int fd, const char *filename, const struct logInfo *log)
 {
-    char count[DIGITS];    /*  that's a lot of shredding :)  */
+    char count[12];    /*  11 digits - that's a lot of shredding :)  */
     const char *fullCommand[6];
     int id = 0;
     int status;
@@ -714,7 +712,7 @@ static int shred_file(int fd, const char *filename, const struct logInfo *log)
 
     if (log->shred_cycles != 0) {
         fullCommand[id++] = "-n";
-        snprintf(count, DIGITS - 1, "%d", log->shred_cycles);
+        snprintf(count, sizeof(count), "%d", log->shred_cycles);
         fullCommand[id++] = count;
     }
     fullCommand[id++] = "-";
@@ -1347,7 +1345,7 @@ static long daysElapsed(const struct tm *now, const struct tm *last)
 static int findNeedRotating(const struct logInfo *log, unsigned logNum, int force)
 {
     struct stat sb;
-    struct logState *state = NULL;
+    struct logState *state;
     struct tm now;
 
     message(MESS_DEBUG, "considering log %s\n", log->files[logNum]);

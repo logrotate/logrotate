@@ -1913,7 +1913,7 @@ duperror:
                     if (newlog->oldDir) {
                         unsigned j;
                         for (j = 0; j < newlog->numFiles; j++) {
-                            char *ld;
+                            char *ld = NULL;
                             char *dirpath;
                             const char *dirName;
                             struct stat sb_logdir;
@@ -1946,20 +1946,20 @@ duperror:
                                     continue;
                                 }
                             }
-                            if (asprintf(&ld, "%s/%s", dirName, newlog->oldDir) < 0) {
-                                message_OOM();
-                                free(dirpath);
-                                goto error;
-                            }
-
-                            free(dirpath);
 
                             if (newlog->oldDir[0] != '/') {
+                                if (asprintf(&ld, "%s/%s", dirName, newlog->oldDir) < 0) {
+                                    message_OOM();
+                                    free(dirpath);
+                                    goto error;
+                                }
                                 dirName = ld;
                             }
                             else {
                                 dirName = newlog->oldDir;
                             }
+
+                            free(dirpath);
 
                             if (stat(dirName, &sb_olddir)) {
                                 if (errno == ENOENT && (newlog->flags & LOG_FLAG_OLDDIRCREATE)) {
