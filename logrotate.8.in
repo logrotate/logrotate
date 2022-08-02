@@ -505,6 +505,23 @@ caution, especially when the log files are rotated as root.
 \fBnoallowhardlink\fR
 Do not rotate files with multiple hard links.  See also \fBallowhardlink\fR.
 
+.TP
+\fBallownonsecuredir\fR
+Rotate files inside insecure directories or into insecure \fBolddir\fR
+directories; this is off by default.  A directory is considered insecure if
+the directory or any of its parents is owned by a foreign non-root user or it
+is group-writable and owned by a foreign non-root group or it is
+world-writable and the sticky-bit is not set.  Operating in such a directory
+can lead to privilege escalation as the path might be redirected by an
+unprivileged user.  In most cases for such directories the privileges should
+be dropped via the \fBsu\fR directive.  Use with caution, especially when the
+log files are rotated as root.
+
+.TP
+\fBnoallownonsecuredir\fR
+Do not rotate files inside insecure directories or into insecure \fBolddir\fR
+directories.  This is the default.  See also \fBallownonsecuredir\fR.
+
 .SS Compression
 
 .TP
