@@ -1,3 +1,5 @@
+# shellcheck shell=sh
+
 # We test if the SELinux tests should be done or not
 
 if [ -z "$SELINUX_TESTS" ]; then

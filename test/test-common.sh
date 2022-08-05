@@ -1,3 +1,5 @@
+# shellcheck shell=sh
+
 # common variables and functions for legacy tests
 
 if readlink -f $LOGROTATE > /dev/null 2>&1; then

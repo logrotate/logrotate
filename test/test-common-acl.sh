@@ -1,3 +1,5 @@
+# shellcheck shell=sh
+
 # We test if the ACLs tests should be done or not
 
 if [ -z "$ACL_TESTS" ]; then
