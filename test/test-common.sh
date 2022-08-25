@@ -144,7 +144,7 @@ createlogs() {
 }
 
 checkmail() {
-    (echo -s $PWD/$1 user@invalid.; echo $2) | diff -u - mail-out
+    printf "%s\n%s\n" "-s $PWD/$1 user@invalid." "$2" | diff -u - mail-out
     if [ $? != 0 ]; then
         exit 5
     fi
