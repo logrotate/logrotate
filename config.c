@@ -1051,13 +1051,6 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
         return 0;
     }
 
-    if (!getpwuid(getuid())) {
-        message(MESS_ERROR, "Cannot find logrotate UID (%d) in passwd file: %s\n",
-                getuid(), strerror(errno));
-        close(fd);
-        return 1;
-    }
-
     if (getuid() == ROOT_UID) {
         if ((sb_config.st_mode & 07533) != 0400) {
             message(MESS_WARN,
