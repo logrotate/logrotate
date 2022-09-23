@@ -1,0 +1,2 @@
+# needed for tests to find ./test-common.sh
+source-path=test
