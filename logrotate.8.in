@@ -21,6 +21,7 @@ logrotate \(hy rotates, compresses, and mails system logs
 \fR[\fB\-\-debug\fR]
 \fR[\fB\-\-state\fR \fIfile\fR]
 \fR[\fB\-\-skip-state-lock\fR]
+\fR[\fB\-\-wait-for-state-lock\fR]
 \fR[\fB\-\-verbose\fR]
 \fR[\fB\-\-log\fR \fIfile\fR]
 \fR[\fB\-\-mail\fR \fIcommand\fR]
@@ -81,6 +82,11 @@ not try to lock or write the state file.
 .TP
 \fB\-\-skip-state-lock\fR
 Do not lock the state file, for example if locking is unsupported or prohibited.
+
+.TP
+\fB\-\-wait-for-state-lock\fR
+Wait until lock on the state file is released by another logrotate process.
+This option may cause logrotate to wait indefinitely.  Use with caution.
 
 .TP
 \fB\-v\fR, \fB\-\-verbose\fR

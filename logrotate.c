@@ -3004,9 +3004,10 @@ static int readState(const char *stateFilename)
     return 0;
 }
 
-static int lockState(const char *stateFilename, int skip_state_lock)
+static int lockState(const char *stateFilename, int skip_state_lock, int wait_for_state_lock)
 {
     int lockFd;
+    int lockFlags;
     struct stat sb;
 
     if (!strcmp(stateFilename, "/dev/null")) {
@@ -3057,7 +3058,13 @@ static int lockState(const char *stateFilename, int skip_state_lock)
         return 0;
     }
 
-    if (flock(lockFd, LOCK_EX | LOCK_NB) == -1) {
+    lockFlags = LOCK_EX;
+    if (wait_for_state_lock)
+        message(MESS_DEBUG, "waiting for lock on state file %s", stateFilename);
+    else
+        lockFlags |= LOCK_NB;
+
+    if (flock(lockFd, lockFlags) == -1) {
         if (errno == EWOULDBLOCK) {
             message(MESS_ERROR, "state file %s is already locked\n"
                     "logrotate does not support parallel execution on the"
@@ -3070,6 +3077,8 @@ static int lockState(const char *stateFilename, int skip_state_lock)
         return 1;
     }
 
+    message(MESS_DEBUG, "acquired lock on state file %s", stateFilename);
+
     /* keep lockFd open till we terminate */
     return 0;
 }
@@ -3078,6 +3087,7 @@ int main(int argc, const char **argv)
 {
     int force = 0;
     int skip_state_lock = 0;
+    int wait_for_state_lock = 0;
     const char *stateFile = STATEFILE;
     const char *logFile = NULL;
     FILE *logFd = NULL;
@@ -3098,6 +3108,7 @@ int main(int argc, const char **argv)
             "Path of state file",
             "statefile"},
         {"skip-state-lock", '\0', POPT_ARG_NONE, &skip_state_lock, 0, "Do not lock the state file", NULL},
+        {"wait-for-state-lock", '\0', POPT_ARG_NONE, &wait_for_state_lock, 0, "Wait for lock on the state file", NULL},
         {"verbose", 'v', 0, NULL, 'v', "Display messages during rotation", NULL},
         {"log", 'l', POPT_ARG_STRING, &logFile, 'l', "Log file or 'syslog' to log to syslog",
             "logfile"},
@@ -3181,6 +3192,14 @@ int main(int argc, const char **argv)
         poptFreeContext(optCon);
         exit(1);
     }
+
+    if (skip_state_lock && wait_for_state_lock) {
+        fprintf(stderr, "logrotate: options --skip-state-lock and"
+                " --wait-for-state-lock are mutually exclusive\n");
+        poptFreeContext(optCon);
+        exit(1);
+    }
+
 #ifdef WITH_SELINUX
     selinux_enabled = (is_selinux_enabled() > 0);
     selinux_enforce = security_getenforce();
@@ -3194,7 +3213,7 @@ int main(int argc, const char **argv)
     poptFreeContext(optCon);
     nowSecs = time(NULL);
 
-    if (!debug && lockState(stateFile, skip_state_lock)) {
+    if (!debug && lockState(stateFile, skip_state_lock, wait_for_state_lock)) {
         exit(3);
     }
 
