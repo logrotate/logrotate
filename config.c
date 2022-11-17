@@ -1433,6 +1433,8 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                         newlog->flags |= LOG_FLAG_MISSINGOK;
                     } else if (!strcmp(key, "nomissingok")) {
                         newlog->flags &= ~LOG_FLAG_MISSINGOK;
+                    } else if (!strcmp(key, "ignoreduplicates")) {
+                        newlog->flags |= LOG_FLAG_IGNOREDUPLICATES;
                     } else if (!strcmp(key, "prerotate")) {
                         freeLogItem (pre);
                         scriptStart = start;
@@ -1849,6 +1851,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                         for (glob_count = 0; glob_count < globResult.gl_pathc; glob_count++) {
                             struct logInfo *log;
                             struct stat sb_glob;
+                            int add_file = 1;
 
                             /* if we glob directories we can get false matches */
                             if (!lstat(globResult.gl_pathv[glob_count], &sb_glob) &&
@@ -1862,24 +1865,34 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                                 for (k = 0; k < log->numFiles; k++) {
                                     if (!strcmp(log->files[k],
                                                 globResult.gl_pathv[glob_count])) {
-                                        message(MESS_ERROR,
-                                                "%s:%d duplicate log entry for %s\n",
-                                                configFile, lineNum,
-                                                globResult.gl_pathv[glob_count]);
-                                        logerror = 1;
-                                        goto duperror;
+                                        if (log->flags & LOG_FLAG_IGNOREDUPLICATES) {
+                                            add_file = 0;
+                                            message(MESS_DEBUG,
+                                                    "%s:%d ignore duplicate log entry for %s\n",
+                                                    configFile, lineNum,
+                                                    globResult.gl_pathv[glob_count]);
+                                        } else {
+                                            message(MESS_ERROR,
+                                                    "%s:%d duplicate log entry for %s\n",
+                                                    configFile, lineNum,
+                                                    globResult.gl_pathv[glob_count]);
+                                            logerror = 1;
+                                            goto duperror;
+                                        }
                                     }
                                 }
                             }
 
-                            newlog->files[newlog->numFiles] =
-                                strdup(globResult.gl_pathv[glob_count]);
-                            if (newlog->files[newlog->numFiles] == NULL) {
-                                message_OOM();
-                                logerror = 1;
-                                goto duperror;
+                            if (add_file) {
+                                newlog->files[newlog->numFiles] =
+                                    strdup(globResult.gl_pathv[glob_count]);
+                                if (newlog->files[newlog->numFiles] == NULL) {
+                                    message_OOM();
+                                    logerror = 1;
+                                    goto duperror;
+                                }
+                                newlog->numFiles++;
                             }
-                            newlog->numFiles++;
                         }
 duperror:
                         globfree(&globResult);

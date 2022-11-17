@@ -313,6 +313,10 @@ message.  See also \fBnomissingok\fR.
 If a log file does not exist, issue an error.  This is the default.
 
 .TP
+\fBignoreduplicates\fR
+Ignore any following matches of a log file.
+
+.TP
 \fBifempty\fR
 Rotate the log file even if it is empty, overriding the \fBnotifempty\fR
 option (\fBifempty\fR is the default).
