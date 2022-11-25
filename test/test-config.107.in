@@ -1,0 +1,8 @@
+&DIR&/test.log {
+    rotate 1
+    ignoreduplicates
+}
+
+&DIR&/*.log {
+    rotate 1
+}
