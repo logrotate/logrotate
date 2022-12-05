@@ -1849,7 +1849,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                         newlog->files = tmp;
 
                         for (glob_count = 0; glob_count < globResult.gl_pathc; glob_count++) {
-                            struct logInfo *log;
+                            const struct logInfo *log;
                             struct stat sb_glob;
                             int add_file = 1;
 
