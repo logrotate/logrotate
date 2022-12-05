@@ -1,0 +1,6 @@
+&DIR&/test.log {
+    create
+    compress
+    daily
+    rotate 1
+}

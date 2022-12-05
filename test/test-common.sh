@@ -37,8 +37,12 @@ fi
 
 if stat -c %f $LOGROTATE > /dev/null 2>&1; then
   STAT_MODE_FORMAT='stat -c %f'
+  STAT_ATIME_FORMAT='stat -c %X'
+  STAT_MTIME_FORMAT='stat -c %Y'
 elif stat -f %Xp $LOGROTATE > /dev/null 2>&1; then
   STAT_MODE_FORMAT='stat -f %Xp'
+  STAT_ATIME_FORMAT='stat -f %a'
+  STAT_MTIME_FORMAT='stat -f %m'
 else
   echo "no stat format option found:"
   stat -c %f $LOGROTATE
