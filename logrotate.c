@@ -790,7 +790,7 @@ static void setAtimeMtime(const char *filename, const struct stat *sb)
     /* If we can't change atime/mtime, it's not a disaster.  It might
        possibly fail under SELinux. But do try to preserve the
        fractional part if we have utimensat(). */
-#if defined HAVE_UTIMENSAT && !defined(__APPLE__)
+#if defined HAVE_UTIMENSAT && defined HAVE_STRUCT_STAT_ST_ATIM && defined HAVE_STRUCT_STAT_ST_MTIM
     struct timespec ts[2];
 
     ts[0] = sb->st_atim;
