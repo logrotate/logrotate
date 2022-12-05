@@ -36,7 +36,7 @@ for file in "$TAR_GZ" "$TAR_XZ"; do
 done
 
 # file to store response from GitHub API
-JSON="./${NV}-github-relase.js"
+JSON="./${NV}-github-release.js"
 
 # create a new release on GitHub
 curl "https://api.github.com/repos/${NAME}/${NAME}/releases" \
