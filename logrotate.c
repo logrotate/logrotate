@@ -785,23 +785,35 @@ static int removeLogFile(const char *name, const struct logInfo *log)
     return result;
 }
 
-static void setAtimeMtime(const char *filename, const struct stat *sb)
+static void setAtimeMtime(int fd, const char *filename, const struct stat *sb)
 {
     /* If we can't change atime/mtime, it's not a disaster.  It might
        possibly fail under SELinux. But do try to preserve the
        fractional part if we have utimensat(). */
-#if defined HAVE_UTIMENSAT && defined HAVE_STRUCT_STAT_ST_ATIM && defined HAVE_STRUCT_STAT_ST_MTIM
+#if defined HAVE_FUTIMENS && defined HAVE_STRUCT_STAT_ST_ATIM && defined HAVE_STRUCT_STAT_ST_MTIM
     struct timespec ts[2];
 
     ts[0] = sb->st_atim;
     ts[1] = sb->st_mtim;
-    utimensat(AT_FDCWD, filename, ts, 0);
+    futimens(fd, ts);
+
+    (void)filename;
+#elif defined HAVE_UTIMENSAT && defined HAVE_STRUCT_STAT_ST_ATIM && defined HAVE_STRUCT_STAT_ST_MTIM
+    struct timespec ts[2];
+
+    ts[0] = sb->st_atim;
+    ts[1] = sb->st_mtim;
+    utimensat(AT_FDCWD, filename, ts, AT_SYMLINK_NOFOLLOW);
+
+    (void)fd;
 #else
     struct utimbuf utim;
 
     utim.actime = sb->st_atime;
     utim.modtime = sb->st_mtime;
     utime(filename, &utim);
+
+    (void)fd;
 #endif
 }
 
@@ -964,18 +976,19 @@ static int compressLogFile(const char *name, const struct logInfo *log, const st
     wait(&status);
 
     fsync(outFile);
-    close(outFile);
 
     if (!WIFEXITED(status) || WEXITSTATUS(status)) {
         message(MESS_ERROR, "failed to compress log %s\n", name);
         close(inFile);
+        close(outFile);
         unlink(compressedName);
         free(compressedName);
         return 1;
     }
 
-    setAtimeMtime(compressedName, sb);
+    setAtimeMtime(outFile, compressedName, sb);
 
+    close(outFile);
     free(compressedName);
 
     if (shred_file(inFile, name, log)) {
