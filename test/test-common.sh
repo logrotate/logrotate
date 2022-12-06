@@ -1,4 +1,4 @@
-# shellcheck shell=sh
+# shellcheck shell=sh disable=SC2034
 
 # common variables and functions for legacy tests
 
