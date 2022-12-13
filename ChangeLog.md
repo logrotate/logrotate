@@ -4,7 +4,18 @@ All notable changes to this project will be documented in this file.
 
 ## [UNRELEASED]
 
-[UNRELEASED]: https://github.com/logrotate/logrotate/compare/3.20.1...master
+[UNRELEASED]: https://github.com/logrotate/logrotate/compare/3.21.0...master
+
+## [3.21.0] - 2022-12-13
+  - add `ignoreduplicates` directive to allow duplicate file matches (#473)
+  - add `--wait-for-state-lock` option to wait for lock on the state file (#457)
+  - avoid failure when an anonymous non-privileged user runs logrotate (#463)
+  - support home dir expansion in `olddir` (#454)
+  - reduce unnecessary rename operations with `start N` where `N > 1` (#450)
+  - unify handling of log levels (#239 #449)
+  - do not print `error:` when exit code is unaffected (#448)
+
+[3.21.0]: https://github.com/logrotate/logrotate/compare/3.20.1...3.21.0
 
 ## [3.20.1] - 2022-05-25
   - drop world-readable permission on state file even when ACLs are enabled (#446)
