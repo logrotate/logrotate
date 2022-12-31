@@ -3071,7 +3071,7 @@ static int lockState(const char *stateFilename, int skip_state_lock, int wait_fo
 
     lockFlags = LOCK_EX;
     if (wait_for_state_lock)
-        message(MESS_DEBUG, "waiting for lock on state file %s", stateFilename);
+        message(MESS_DEBUG, "waiting for lock on state file %s\n", stateFilename);
     else
         lockFlags |= LOCK_NB;
 
@@ -3088,7 +3088,7 @@ static int lockState(const char *stateFilename, int skip_state_lock, int wait_fo
         return 1;
     }
 
-    message(MESS_DEBUG, "acquired lock on state file %s", stateFilename);
+    message(MESS_DEBUG, "acquired lock on state file %s\n", stateFilename);
 
     /* keep lockFd open till we terminate */
     return 0;
