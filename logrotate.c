@@ -2348,11 +2348,22 @@ static int rotateLogSet(const struct logInfo *log, int force)
         }
     }
 
-    if (log->rotateCount > 0)
-        message(MESS_DEBUG, "(%d rotations)\n", log->rotateCount);
-    else if (log->rotateCount == 0)
+    if (log->rotateCount == 0)
         message(MESS_DEBUG, "(no old logs will be kept)\n");
-
+    else {
+        if (log->rotateCount > 0)
+            message(MESS_DEBUG, "(%d rotations)", log->rotateCount);
+        else if (log->rotateCount == -1)
+            message(MESS_DEBUG, "(unlimited rotations)");
+        
+        if (log->rotateAge >= 0)
+            message(MESS_DEBUG, ", old logs are removed after %d days", log->rotateAge);
+        else if (log->rotateAge == -1) && (log->rotateCount == -1)
+            message(MESS_DEBUG, ", old logs are kept forever");
+        
+        message(MESS_DEBUG, "\n");
+    }
+    
     if (log->oldDir)
         message(MESS_DEBUG, "olddir is %s, ", log->oldDir);
 
@@ -2372,8 +2383,6 @@ static int rotateLogSet(const struct logInfo *log, int force)
 
     if (log->logAddress) {
         message(MESS_DEBUG, "old logs mailed to %s\n", log->logAddress);
-    } else {
-        message(MESS_DEBUG, "old logs are removed\n");
     }
 
     if (log->numFiles == 0) {
