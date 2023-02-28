@@ -2348,11 +2348,6 @@ static int rotateLogSet(const struct logInfo *log, int force)
         }
     }
 
-    if (log->rotateCount > 0)
-        message(MESS_DEBUG, "(%d rotations)\n", log->rotateCount);
-    else if (log->rotateCount == 0)
-        message(MESS_DEBUG, "(no old logs will be kept)\n");
-
     if (log->oldDir)
         message(MESS_DEBUG, "olddir is %s, ", log->oldDir);
 
@@ -2370,10 +2365,27 @@ static int rotateLogSet(const struct logInfo *log, int force)
     if (log->rotateMinAge)
         message(MESS_DEBUG, "only log files older than %d days are rotated, ", log->rotateMinAge);
 
-    if (log->logAddress) {
-        message(MESS_DEBUG, "old logs mailed to %s\n", log->logAddress);
-    } else {
-        message(MESS_DEBUG, "old logs are removed\n");
+    if ((log->rotateCount == -1) && (log->rotateAge == 0))
+        message(MESS_DEBUG, "old logs are kept forever\n");
+    else {
+        if (log->logAddress)
+            message(MESS_DEBUG, "old logs mailed to %s, ", log->logAddress);
+
+        if (log->rotateCount == 0)
+            message(MESS_DEBUG, "no old logs will be kept\n");
+        else {
+            if (log->rotateCount == -1)
+                message(MESS_DEBUG, "(unlimited rotations), ");
+            else
+                message(MESS_DEBUG, "(%d rotations), ", log->rotateCount);
+
+            message(MESS_DEBUG, "old logs are removed");
+
+            if (log->rotateAge > 0)
+                message(MESS_DEBUG, " after %d days", log->rotateAge);
+
+            message(MESS_DEBUG, "\n");
+        }
     }
 
     if (log->numFiles == 0) {
