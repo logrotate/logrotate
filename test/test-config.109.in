@@ -1,0 +1,49 @@
+&DIR&/test-pre.log {
+    create
+    rotate 3
+    prerotate
+        /usr/bin/false
+    endscript
+}
+
+&DIR&/test-post.log {
+    create
+    rotate 3
+    postrotate
+        /usr/bin/false
+    endscript
+}
+
+&DIR&/test-shared-pre*.log {
+    create
+    rotate 3
+    sharedscripts
+    prerotate
+        /usr/bin/false
+    endscript
+}
+
+&DIR&/test-shared-post*.log {
+    create
+    rotate 3
+    sharedscripts
+    postrotate
+        /usr/bin/false
+    endscript
+}
+
+&DIR&/test-first.log {
+    create
+    rotate 3
+    firstaction
+        /usr/bin/false
+    endscript
+}
+
+&DIR&/test-last.log {
+    create
+    rotate 3
+    lastaction
+        /usr/bin/false
+    endscript
+}
