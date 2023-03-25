@@ -77,6 +77,14 @@ struct logNames {
     char *baseName;
 };
 
+struct resumeConfigs {
+    int rename;
+    int rotateCount;
+    int logStart;
+    const char *fileext;
+    const char *compext;
+};
+
 struct compData {
     size_t prefix_len;
     const char *dformat;
@@ -1632,7 +1640,8 @@ static int findLastRotated(const struct logNames *rotNames,
 }
 
 static int prerotateSingleLog(const struct logInfo *log, unsigned logNum,
-                              struct logState *state, struct logNames *rotNames)
+                              struct logState *state, struct logNames *rotNames,
+                              struct resumeConfigs *resCfgs)
 {
     struct tm now;
     const char *compext = "";
@@ -1647,6 +1656,7 @@ static int prerotateSingleLog(const struct logInfo *log, unsigned logNum,
     char dext_str[DATEEXT_LEN];
     char dformat[PATTERN_LEN] = "";
     char dext_pattern[PATTERN_LEN];
+    resCfgs->rename = 0;
 
     if (!state->doRotate)
         return 0;
@@ -2075,6 +2085,12 @@ static int prerotateSingleLog(const struct logInfo *log, unsigned logNum,
                 }
             }
         }
+        resCfgs->rename = 1;
+        resCfgs->rotateCount = rotateCount;
+        resCfgs->logStart = log->logStart;
+        resCfgs->fileext = fileext;
+        resCfgs->compext = compext;
+
         free(newName);
         free(oldName);
     } /* !LOG_FLAG_DATEEXT */
@@ -2119,6 +2135,51 @@ static int prerotateSingleLog(const struct logInfo *log, unsigned logNum,
     }
 
     return hasErrors;
+}
+
+static void resumeSingleLog(struct logNames *rotNames, struct resumeConfigs *resCfgs)
+{
+    int i;
+    char *newName = NULL;
+    char *oldName;
+    const char *fileext = resCfgs->fileext;
+    const char *compext = resCfgs->compext;
+    int rotateCount = resCfgs->rotateCount;
+    int logStart = resCfgs->logStart;
+
+    if (asprintf(&oldName, "%s/%s.%d%s%s", rotNames->dirName,
+                 rotNames->baseName, 1, fileext,
+                 compext) < 0) {
+        message_OOM();
+        return;
+    }
+
+    for (i = 1; (i <= rotateCount + logStart - 1) ; i++) {
+        free(newName);
+        newName = oldName;
+        if (asprintf(&oldName, "%s/%s.%d%s%s", rotNames->dirName,
+                     rotNames->baseName, i + 1, fileext, compext) < 0) {
+            message_OOM();
+            oldName = NULL;
+            break;
+        }
+        message(MESS_DEBUG,
+                "resume %s to %s (rotatecount %d, logstart %d, i %d), \n",
+                oldName, newName, rotateCount, logStart, i);
+        if (!debug && rename(oldName, newName)) {
+            if (errno == ENOENT) {
+                message(MESS_DEBUG, "old log %s does not exist\n",
+                        oldName);
+            } else {
+                message(MESS_ERROR, "error renaming %s to %s: %s\n",
+                        oldName, newName, strerror(errno));
+            }
+        }
+    }
+    free(newName);
+    free(oldName);
+    message(MESS_DEBUG,
+                "resume log if prerotate script fails\n");
 }
 
 static int rotateSingleLog(const struct logInfo *log, unsigned logNum,
@@ -2317,6 +2378,7 @@ static int rotateLogSet(const struct logInfo *log, int force)
     int numRotated = 0;
     struct logState **state;
     struct logNames **rotNames;
+    struct resumeConfigs resCfgs;
 
     message(MESS_DEBUG, "\nrotating pattern: %s ", log->pattern);
     if (force) {
@@ -2478,7 +2540,7 @@ static int rotateLogSet(const struct logInfo *log, int force)
             memset(rotNames[i], 0, sizeof(struct logNames));
 
             logHasErrors[i] |=
-                prerotateSingleLog(log, i, state[i], rotNames[i]);
+                prerotateSingleLog(log, i, state[i], rotNames[i], &resCfgs);
             hasErrors |= logHasErrors[i];
         }
 
@@ -2502,6 +2564,9 @@ static int rotateLogSet(const struct logInfo *log, int force)
                         message(MESS_ERROR,
                                 "error running non-shared prerotate script "
                                 "for %s of '%s'\n", log->files[j], log->pattern);
+                    }
+                    if (resCfgs.rename == 1){
+                        resumeSingleLog(rotNames[j], &resCfgs);
                     }
                     logHasErrors[j] = 1;
                     hasErrors = 1;

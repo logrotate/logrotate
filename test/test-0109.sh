@@ -79,13 +79,13 @@ $RLR -f test-config.109 && exit 23
 
 checkoutput <<EOF
 test-pre.log 0 zero
-test-pre.log.2 0 first
-test-pre.log.3 0 second
-test-pre.log.4 0 third
+test-pre.log.1 0 first
+test-pre.log.2 0 second
+test-pre.log.3 0 third
 EOF
 
-if [ -e test-pre.log.1 ]; then
-	echo "test-pre.log.1 exists"
+if [ -e test-pre.log.4 ]; then
+	echo "test-pre.log.4 exists"
 	exit 3
 fi
 
@@ -99,13 +99,13 @@ EOF
 
 checkoutput <<EOF
 test-shared-pre-A.log 0 zero
-test-shared-pre-A.log.2 0 first
-test-shared-pre-A.log.3 0 second
-test-shared-pre-A.log.4 0 third
+test-shared-pre-A.log.1 0 first
+test-shared-pre-A.log.2 0 second
+test-shared-pre-A.log.3 0 third
 EOF
 
-if [ -e test-shared-pre-A.log.1 ]; then
-	echo "test-shared-pre-A.log.1 exists"
+if [ -e test-shared-pre-A.log.4 ]; then
+	echo "test-shared-pre-A.log.4 exists"
 	exit 3
 fi
 
