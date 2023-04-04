@@ -2476,10 +2476,6 @@ static int rotateLogSet(const struct logInfo *log, int force)
                 return 1;
             }
             memset(rotNames[i], 0, sizeof(struct logNames));
-
-            logHasErrors[i] |=
-                prerotateSingleLog(log, i, state[i], rotNames[i]);
-            hasErrors |= logHasErrors[i];
         }
 
         if (log->pre
@@ -2506,6 +2502,16 @@ static int rotateLogSet(const struct logInfo *log, int force)
                     logHasErrors[j] = 1;
                     hasErrors = 1;
                 }
+            }
+        }
+
+        for (i = j;
+             ((log->flags & LOG_FLAG_SHAREDSCRIPTS) && i < log->numFiles)
+             || (!(log->flags & LOG_FLAG_SHAREDSCRIPTS) && i == j); i++) {
+            if (! ( (logHasErrors[i] && !(log->flags & LOG_FLAG_SHAREDSCRIPTS))
+                    || (hasErrors && (log->flags & LOG_FLAG_SHAREDSCRIPTS)) ) ) {
+                logHasErrors[i] |= prerotateSingleLog(log, i, state[i], rotNames[i]);
+                hasErrors |= logHasErrors[i];
             }
         }
 
