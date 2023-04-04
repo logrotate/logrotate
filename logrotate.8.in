@@ -702,8 +702,8 @@ the \fBSCRIPTS\fR section.
 \ \ \ \ \fIscript\fR
 .tq
 \fBendscript\fR
-The \fIscript\fR is executed before
-the log file is rotated and only if the log will actually be rotated.  These
+The \fIscript\fR is executed before the log file and its old logs are
+rotated and only if the log will actually be rotated.  These
 directives may only appear inside a log file definition.  Normally,
 the absolute path to the log file is passed as the first argument to the script.
 If \fBsharedscripts\fR is specified, the whole pattern is passed to the script.
