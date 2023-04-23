@@ -1071,7 +1071,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                     "Ignoring %s because the file owner is wrong (should be root or user with uid 0).\n",
                     configFile);
             close(fd);
-            return 0;
+            return 1;
         }
     }
 
