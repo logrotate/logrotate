@@ -97,3 +97,5 @@ make
 # Patches and Questions
 
 Open issues or pull requests on GitHub.
+
+More details in CONTRIBUTING.md file for pull requests.
