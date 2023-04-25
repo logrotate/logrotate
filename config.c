@@ -1063,7 +1063,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                     "Ignoring %s because it is writable by group or others.\n",
                     configFile);
             close(fd);
-            return 0;
+            return 1;
         }
 
         if (sb_config.st_uid != ROOT_UID) {
