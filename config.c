@@ -1743,7 +1743,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                         message(MESS_DEBUG, "compress_ext is now %s\n",
                                 newlog->compress_ext);
                     } else {
-                        message(MESS_ERROR, "%s:%d unknown option '%s' "
+                        message(MESS_WARN, "%s:%d unknown option '%s' "
                                 "-- ignoring line\n", configFile, lineNum, key);
                         if (*start != '\n')
                             state = STATE_SKIP_LINE;
