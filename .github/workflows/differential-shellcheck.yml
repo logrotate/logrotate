@@ -23,6 +23,6 @@ jobs:
           fetch-depth: 0
 
       - name: Differential ShellCheck
-        uses: redhat-plumbers-in-action/differential-shellcheck@d24099b9f39ddee81dea31eb0e135e0a623cb2b8
+        uses: redhat-plumbers-in-action/differential-shellcheck@87b655ab4f0356d441e31da1a24dc0ec085beb13
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
