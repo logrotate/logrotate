@@ -15,7 +15,7 @@ jobs:
     env:
       CC: ${{ matrix.cc }}
     steps:
-    - uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3
+    - uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab
 
     - name: Install dependencies
       run: sudo apt-get install -y acl automake libacl1-dev libpopt-dev libselinux1-dev rpm
@@ -49,7 +49,7 @@ jobs:
     name: Build with clang on macOS
     runs-on: macOS-latest
     steps:
-    - uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3
+    - uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab
 
     - name: Install dependencies
       run: brew install automake coreutils popt
@@ -82,7 +82,7 @@ jobs:
     env:
       CC: clang-16
     steps:
-    - uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3
+    - uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab
 
     - name: Install Clang repo
       run: |
@@ -113,7 +113,7 @@ jobs:
       UBSAN_OPTIONS: print_stacktrace=1:print_summary=1:halt_on_error=1
       LSAN_OPTIONS: suppressions=test/leak_san_suppress.txt
     steps:
-    - uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3
+    - uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab
 
     - name: Install Clang repo
       run: |
@@ -151,7 +151,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3
+      - uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab
 
       - name: Spaces check
         run: git diff-tree --check $(git hash-object -t tree /dev/null) HEAD
