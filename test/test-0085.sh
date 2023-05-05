@@ -44,30 +44,6 @@ if [ -f test.log.2 ]; then
 fi
 
 # maxage should remove this file
-if [ -f test.log.5 ]; then
-    echo "test.log.5 not removed" >&2
-    exit 3
-fi
-
-# maxage should remove this file
-if [ -f test.log.6 ]; then
-    echo "test.log.6 not removed" >&2
-    exit 3
-fi
-
-# maxage should remove this file
-if [ -f test.log.7 ]; then
-    echo "test.log.7 not removed" >&2
-    exit 3
-fi
-
-# maxage should remove this file
-if [ -f test.log.8 ]; then
-    echo "test.log.8 not removed" >&2
-    exit 3
-fi
-
-# maxage should remove this file
 if [ -f test.log.9 ]; then
     echo "test.log.9 not removed" >&2
     exit 3
@@ -84,4 +60,8 @@ test.log 0
 test.log.1 0 content
 test.log.3 0 first
 test.log.4 0 second
+test.log.5 0 third
+test.log.6 0 fourth
+test.log.7 0 fifth
+test.log.8 0 sixth
 EOF

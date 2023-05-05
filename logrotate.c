@@ -1352,7 +1352,7 @@ static time_t mktimeFromDateOnly(const struct tm *src)
 static long daysElapsed(const struct tm *now, const struct tm *last)
 {
     const double diff = difftime(mktimeFromDateOnly(now), mktimeFromDateOnly(last));
-    return (long) (diff / DAY_SECONDS);
+    return (long) ((intmax_t)diff / DAY_SECONDS);
 }
 
 static int findNeedRotating(const struct logInfo *log, unsigned logNum, int force)
@@ -1935,7 +1935,7 @@ static int prerotateSingleLog(const struct logInfo *log, unsigned logNum,
                     if (((globResult.gl_pathc >= (size_t)rotateCount) && (glob_count <= (globResult.gl_pathc - (size_t)rotateCount)))
                             || ((log->rotateAge > 0)
                                 &&
-                                ((difftime(nowSecs, fst_buf.st_mtime) / DAY_SECONDS)
+                                (((intmax_t)difftime(nowSecs, fst_buf.st_mtime) / DAY_SECONDS)
                                  > log->rotateAge))) {
                         if (mail_out != (size_t)-1) {
                             char *mailFilename =
@@ -2049,7 +2049,7 @@ static int prerotateSingleLog(const struct logInfo *log, unsigned logNum,
                     continue;
                 }
 
-                if ((difftime(nowSecs, fst_buf.st_mtime) / DAY_SECONDS) > log->rotateAge) {
+                if (((intmax_t)difftime(nowSecs, fst_buf.st_mtime) / DAY_SECONDS) > log->rotateAge) {
                     if (!hasErrors && log->logAddress)
                         hasErrors = mailLogWrapper(oldName, mailCommand,
                                                    logNum, log);
