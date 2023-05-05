@@ -1351,8 +1351,8 @@ static time_t mktimeFromDateOnly(const struct tm *src)
 /* return by how many days the date was advanced but ignore exact time */
 static long daysElapsed(const struct tm *now, const struct tm *last)
 {
-    const double diff = difftime(mktimeFromDateOnly(now),mktimeFromDateOnly(last));
-    return (long) (diff / (24 * 3600));
+    const long diff = (long) difftime(mktimeFromDateOnly(now), mktimeFromDateOnly(last));
+    return diff / (24 * 3600);
 }
 
 static int findNeedRotating(const struct logInfo *log, unsigned logNum, int force)
