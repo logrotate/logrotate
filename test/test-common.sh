@@ -50,6 +50,19 @@ else
   exit 1
 fi
 
+# check for date(1) support of operating on a time given from the command
+# line instead of the current time. Necessary for test 0085.
+if date --date @42 +%Y%m%d%H%M > /dev/null 2>&1; then
+  DATE_DATEARG='date --date'
+elif gdate --date @42 +%Y%m%d%H%M > /dev/null 2>&1; then
+  DATE_DATEARG='gdate --date'
+else
+  echo "no date command supporting argument --date found:"
+  date --date @42 +%Y%m%d%H%M
+  gdate --date @42 +%Y%m%d%H%M
+  exit 1
+fi
+
 TESTDIR="$(basename "$0" .sh)"
 mkdir -p "$TESTDIR"
 cd "$TESTDIR" || exit $?
