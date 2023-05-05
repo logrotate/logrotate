@@ -118,7 +118,7 @@ createlog() {
 	    what=seventh
 	    ;;
 	8)
-	    what=eight
+	    what=eighth
 	    ;;
 	9)
 	    what=ninth
