@@ -13,7 +13,7 @@ test.log 0 zero
 EOF
 
 # Set log modification time to some date in the past
-TZ=UTC touch -t 200001010000 test.log
+TZ=UTC0 touch -t 200001010000 test.log
 
 $RLR test-config.108 --force || exit 23
 
