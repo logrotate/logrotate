@@ -16,5 +16,5 @@ test.log 0
 test.log.1 0 zero
 test2.log 0
 test2.log.1 0 number2
-scriptout 0 "test*.log ;test*.log ;"
+scriptout 0 "test*.log;test*.log;"
 EOF

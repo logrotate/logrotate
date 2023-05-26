@@ -853,6 +853,7 @@ static char* parseGlobString(const char *configFile, int lineNum,
     char *globString = NULL;
     size_t globStringPos = 0;
     size_t globStringAlloc = 0;
+    size_t i;
     enum {
         PGS_INIT,   /* picking blanks, looking for '#' */
         PGS_DATA,   /* picking data, looking for end of line */
@@ -889,6 +890,9 @@ static char* parseGlobString(const char *configFile, int lineNum,
                 /* NUL-terminate globString */
                 assert(globStringPos < globStringAlloc);
                 globString[globStringPos] = '\0';
+                /* drop trailing spaces */
+                for (i = globStringPos; i > 1 && isspace((unsigned char)globString[i - 1]); i--)
+                    globString[i - 1] = '\0';
                 return globString;
 
             default:
