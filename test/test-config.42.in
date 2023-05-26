@@ -10,7 +10,7 @@ create
 		printf "\"" >> scriptout
 		for f in "$1"
 		do
-			printf '%s' "$(basename $f)" >> scriptout
+			printf '%s' "$(basename "$f")" >> scriptout
 			printf ";" >> scriptout
 		done
     endscript
@@ -19,7 +19,7 @@ create
 		IFS=$(printf "\n\b")
 		for f in "$1"
 		do
-			printf '%s' "$(basename $f)" >>  scriptout
+			printf '%s' "$(basename "$f")" >>  scriptout
 			printf ";" >> scriptout
 		done
 		printf "\"" >> scriptout
