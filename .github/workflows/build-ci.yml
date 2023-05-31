@@ -169,6 +169,27 @@ jobs:
       run: make -j"$(nproc)"
 
 
+  build-gcc-c89:
+    name: GCC C89
+    runs-on: ubuntu-latest
+    env:
+      CFLAGS: -O2 -g -std=c89
+    steps:
+    - uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3
+
+    - name: Install dependencies
+      run: sudo apt-get install -y automake libacl1-dev libpopt-dev libselinux1-dev
+
+    - name: Bootstrap
+      run: ./autogen.sh
+
+    - name: Configure
+      run: ./configure --enable-werror --disable-silent-rules
+
+    - name: Build
+      run: make -j"$(nproc)"
+
+
   space-check:
     name: Space Check
     runs-on: ubuntu-latest
