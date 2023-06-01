@@ -154,7 +154,7 @@ jobs:
       CFLAGS: -O3 -flto=auto -finline-limit=1000 -fanalyzer
       LDFLAGS: -O3 -flto=auto -finline-limit=1000 -fanalyzer
     steps:
-    - uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3
+    - uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab
 
     - name: Install dependencies
       run: sudo apt-get install -y automake gcc-12 libacl1-dev libpopt-dev libselinux1-dev
