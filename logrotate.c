@@ -2627,11 +2627,31 @@ static int writeState(const char *stateFilename)
         /* explicitly asked not to write the state file */
         return 0;
 
-    localtime_r(&nowSecs, &now);
+    fdcurr = open(stateFilename, O_RDONLY);
+    if (fdcurr == -1) {
+        /* the statefile should exist, lockState() already created an empty
+         * state file in case it did not exist initially */
+        message(MESS_ERROR, "error opening state file %s: %s\n",
+                stateFilename, strerror(errno));
+        return 1;
+    }
+
+    if (fstat(fdcurr, &sb) == -1) {
+        message(MESS_ERROR, "error stating %s: %s\n", stateFilename, strerror(errno));
+        close(fdcurr);
+        return 1;
+    }
+
+    if (!S_ISREG(sb.st_mode)) {
+        message(MESS_ERROR, "not writing state to %s because it is not a regular file\n", stateFilename);
+        close(fdcurr);
+        return 1;
+    }
 
     tmpFilename = malloc(strlen(stateFilename) + 5 );
     if (tmpFilename == NULL) {
         message_OOM();
+        close(fdcurr);
         return 1;
     }
     strcpy(tmpFilename, stateFilename);
@@ -2642,19 +2662,10 @@ static int writeState(const char *stateFilename)
         message(MESS_ERROR, "error removing old temporary state file %s: %s\n",
                 tmpFilename, strerror(errno));
         free(tmpFilename);
+        close(fdcurr);
         return 1;
     }
     error = 0;
-
-    fdcurr = open(stateFilename, O_RDONLY);
-    if (fdcurr == -1) {
-        /* the statefile should exist, lockState() already created an empty
-         * state file in case it did not exist initially */
-        message(MESS_ERROR, "error opening state file %s: %s\n",
-                stateFilename, strerror(errno));
-        free(tmpFilename);
-        return 1;
-    }
 
     /* get attributes, to assign them to the new state file */
 
@@ -2677,19 +2688,6 @@ static int writeState(const char *stateFilename)
         }
     }
 #endif
-
-    if (fstat(fdcurr, &sb) == -1) {
-        message(MESS_ERROR, "error stating %s: %s\n", stateFilename, strerror(errno));
-        restoreSecCtx(&prevCtx);
-        free(tmpFilename);
-#ifdef WITH_ACL
-        if (prev_acl) {
-            acl_free(prev_acl);
-            prev_acl = NULL;
-        }
-#endif
-        return 1;
-    }
 
     close(fdcurr);
 
@@ -2731,6 +2729,8 @@ static int writeState(const char *stateFilename)
      * a convention (calendar year).
      */
 #define SECONDS_IN_YEAR 31556926
+
+    localtime_r(&nowSecs, &now);
 
     for (i = 0; i < hashSize && error == 0; i++) {
         for (p = states[i]->head.lh_first; p != NULL && error == 0;
