@@ -668,7 +668,7 @@ static int readConfigPath(const char *path, struct logInfo *defConfig)
         unsigned files_count = 0, i;
         DIR *dirp;
 
-        if ((here = open(".", O_RDONLY)) == -1) {
+        if ((here = open(".", O_RDONLY | O_DIRECTORY)) == -1) {
             message(MESS_ERROR, "cannot open current directory: %s\n",
                     strerror(errno));
             return 1;
