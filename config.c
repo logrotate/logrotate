@@ -1837,8 +1837,12 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                              * set, so store the error message for later. */
                             rc = asprintf(&globerr_msg, "%s:%d glob failed for %s: %s\n",
                                           configFile, lineNum, argv[argNum], strerror(glob_errno));
-                            if (rc == -1)
+                            if (rc == -1) {
+                                message_OOM();
                                 globerr_msg = NULL;
+                            } else {
+                                message(MESS_DEBUG, "%s", globerr_msg);
+                            }
 
                             globResult.gl_pathc = 0;
                         }
