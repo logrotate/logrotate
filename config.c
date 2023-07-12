@@ -1847,6 +1847,13 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                             globResult.gl_pathc = 0;
                         }
 
+                        if (globResult.gl_pathc == 0) {
+                            message(MESS_DEBUG, "%s:%d no matches for glob '%s', skipping\n",
+                                    configFile, lineNum, argv[argNum]);
+                            globfree(&globResult);
+                            continue;
+                        }
+
                         tmp = realloc(newlog->files,
                                     sizeof(*newlog->files) * (newlog->numFiles +
                                         globResult.
