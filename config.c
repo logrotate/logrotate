@@ -161,6 +161,7 @@ static char *isolateLine(char **strt, char **buf, size_t length) {
     char *endtag, *start, *tmp;
     const char *max = *buf + length;
     char *key;
+    size_t llen;
 
     start = *strt;
     endtag = start;
@@ -169,13 +170,19 @@ static char *isolateLine(char **strt, char **buf, size_t length) {
     if (max < endtag)
         return NULL;
     tmp = endtag - 1;
-    while (isspace((unsigned char)*endtag))
+    while (endtag >= start && endtag < max && isspace((unsigned char)*endtag))
         endtag--;
-    key = strndup(start, (size_t)(endtag - start + 1));
+    llen = (size_t)(endtag - start + 1);
+    if (start + llen > max)
+        llen = (size_t)(max - start);
+    /* Avoid strndup(3) since the buffer might not be NUL-terminated. */
+    key = malloc(llen + 1);
     if (key == NULL) {
         message_OOM();
         return NULL;
     }
+    memcpy(key, start, llen);
+    key[llen] = '\0';
     *strt = tmp;
     return key;
 }
@@ -184,7 +191,7 @@ static char *isolateValue(const char *fileName, int lineNum, const char *key,
                           char **startPtr, char **buf, size_t length)
 {
     char *chptr = *startPtr;
-    const char *max = *startPtr + length;
+    const char *max = *buf + length;
 
     while (chptr < max && isblank((unsigned char)*chptr))
         chptr++;
@@ -208,6 +215,8 @@ static char *isolateWord(char **strt, char **buf, size_t length) {
     char *endtag, *start;
     const char *max = *buf + length;
     char *key;
+    size_t wlen;
+
     start = *strt;
     while (start < max && isblank((unsigned char)*start))
         start++;
@@ -216,11 +225,15 @@ static char *isolateWord(char **strt, char **buf, size_t length) {
         endtag++;}
     if (max < endtag)
         return NULL;
-    key = strndup(start, (size_t)(endtag - start));
+    wlen = (size_t)(endtag - start);
+    /* Avoid strndup(3) since the buffer might not be NUL-terminated. */
+    key = malloc(wlen + 1);
     if (key == NULL) {
         message_OOM();
         return NULL;
     }
+    memcpy(key, start, wlen);
+    key[wlen] = '\0';
     *strt = endtag;
     return key;
 }
@@ -1148,7 +1161,9 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                                 configFile, lineNum);
                         RAISE_ERROR();
                     }
-                    if (!isspace((unsigned char)*start) && *start != '=') {
+                    if (start < buf + length &&
+                        !isspace((unsigned char)*start) &&
+                        *start != '=') {
                         message(MESS_ERROR, "%s:%d keyword '%s' not properly"
                                 " separated, found %#x\n",
                                 configFile, lineNum, key, *start);
@@ -1752,7 +1767,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                     } else {
                         message(MESS_WARN, "%s:%d unknown option '%s' "
                                 "-- ignoring line\n", configFile, lineNum, key);
-                        if (*start != '\n')
+                        if (start < buf + length && *start != '\n')
                             state = STATE_SKIP_LINE;
                     }
                 } else if (*start == '/' || *start == '"' || *start == '\''
@@ -2101,7 +2116,7 @@ duperror:
                     }
                     else {
                         const char *endtag = start - 9;
-                        while (*endtag != '\n')
+                        while (endtag > scriptStart && *endtag != '\n')
                             endtag--;
                         endtag++;
                         *scriptDest = strndup(scriptStart, (size_t)(endtag - scriptStart));
@@ -2116,7 +2131,7 @@ duperror:
                     state = (state & STATE_SKIP_CONFIG) ? STATE_SKIP_CONFIG : STATE_DEFAULT;
                 }
                 else {
-                    state = (*start == '\n' ? 0 : STATE_SKIP_LINE) |
+                    state = (start < buf + length && *start == '\n' ? 0 : STATE_SKIP_LINE) |
                         STATE_LOAD_SCRIPT |
                         ((state & STATE_SKIP_CONFIG) ? STATE_SKIP_CONFIG : 0);
                 }
@@ -2156,7 +2171,7 @@ duperror:
                          * pointer is increased by one and, after this,
                          * "start" points to the beginning of the next line.
                          */
-                        if (*start != '\n') {
+                        if (start < buf + length && *start != '\n') {
                             state = STATE_SKIP_LINE | STATE_SKIP_CONFIG;
                         }
                     }
@@ -2167,7 +2182,7 @@ duperror:
                         "%s: %d: readConfigFile() unknown state: %#x\n",
                         configFile, lineNum, state);
         }
-        if (*start == '\n') {
+        if (start < buf + length && *start == '\n') {
             lineNum++;
         }
 
