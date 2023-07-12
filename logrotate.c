@@ -1647,6 +1647,8 @@ static int prerotateSingleLog(const struct logInfo *log, unsigned logNum,
     char dext_str[DATEEXT_LEN];
     char dformat[PATTERN_LEN] = "";
     char dext_pattern[PATTERN_LEN];
+    const char *final_dformat;
+    size_t ret;
 
     if (!state->doRotate)
         return 0;
@@ -1766,19 +1768,19 @@ static int prerotateSingleLog(const struct logInfo *log, unsigned logNum,
     /* Construct the glob pattern corresponding to the date format */
     dext_str[0] = '\0';
     if (log->dateformat) {
-        char *dext;
+        const char *dext = log->dateformat;
         size_t i = 0, j = 0;
+
         memset(dext_pattern, 0, sizeof(dext_pattern));
-        dext = log->dateformat;
         while (*dext == ' ')
             dext++;
-        while ((*dext != '\0') && (!hasErrors)) {
+        while (*dext != '\0') {
             /* Will there be a space for a char and '\0'? */
-            if (j >= (sizeof(dext_pattern) - 1)) {
+            if (j >= (sizeof(dext_pattern) - 1) ||
+                i >= (sizeof(dformat) - 1)) {
                 message(MESS_ERROR, "Date format %s is too long\n",
                         log->dateformat);
-                hasErrors = 1;
-                break;
+                return 1;
             }
             if (*dext == '%') {
                 switch (*(dext + 1)) {
@@ -1799,8 +1801,7 @@ static int prerotateSingleLog(const struct logInfo *log, unsigned logNum,
                         if (j >= (sizeof(dext_pattern) - 1)) {
                             message(MESS_ERROR, "Date format %s is too long\n",
                                     log->dateformat);
-                            hasErrors = 1;
-                            break;
+                            return 1;
                         }
                         dformat[i++] = *(dext++);
                         dformat[i] = *dext;
@@ -1814,8 +1815,7 @@ static int prerotateSingleLog(const struct logInfo *log, unsigned logNum,
                         if (j >= (sizeof(dext_pattern) - 1)) {
                             message(MESS_ERROR, "Date format %s is too long\n",
                                     log->dateformat);
-                            hasErrors = 1;
-                            break;
+                            return 1;
                         }
                         dformat[i++] = *(dext++);
                         dformat[i] = *dext;
@@ -1835,21 +1835,28 @@ static int prerotateSingleLog(const struct logInfo *log, unsigned logNum,
         }
         dformat[i] = '\0';
         message(MESS_DEBUG, "Converted '%s' -> '%s'\n", log->dateformat, dformat);
-        strftime(dext_str, sizeof(dext_str), dformat, &now);
+        final_dformat = dformat;
     } else {
         if (log->criterium == ROT_HOURLY) {
             /* hourly adds another two digits */
-            strftime(dext_str, sizeof(dext_str), "-%Y%m%d%H", &now);
+            final_dformat = "-%Y%m%d%H";
             strncpy(dext_pattern, "-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]",
                     sizeof(dext_pattern));
         } else {
             /* The default dateformat and glob pattern */
-            strftime(dext_str, sizeof(dext_str), "-%Y%m%d", &now);
+            final_dformat = "-%Y%m%d";
             strncpy(dext_pattern, "-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]",
                     sizeof(dext_pattern));
         }
         dext_pattern[PATTERN_LEN - 1] = '\0';
     }
+
+    ret = strftime(dext_str, sizeof(dext_str), final_dformat, &now);
+    if (ret == 0) {
+        message(MESS_ERROR, "failed to apply date format '%s'\n", final_dformat);
+        return 1;
+    }
+
     message(MESS_DEBUG, "dateext suffix '%s'\n", dext_str);
     message(MESS_DEBUG, "glob pattern '%s'\n", dext_pattern);
 
