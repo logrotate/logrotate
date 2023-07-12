@@ -1830,12 +1830,20 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                     newlog->numFiles = 0;
                     for (argNum = 0; argNum < argc; argNum++) {
                         char **tmp;
+                        size_t argLen = strlen(argv[argNum]);
                         int rc;
                         glob_t globResult;
 
                         if (globerr_msg) {
                             free(globerr_msg);
                             globerr_msg = NULL;
+                        }
+
+                        if (argLen > 2048) {
+                            message(MESS_ERROR, "%s:%d glob too long (%zu > 2048)\n",
+                                    configFile, lineNum, argLen);
+                            logerror = 1;
+                            continue;
                         }
 
                         rc = glob(argv[argNum], GLOB_NOCHECK
