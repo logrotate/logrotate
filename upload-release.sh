@@ -44,7 +44,7 @@ curl "https://api.github.com/repos/${NAME}/${NAME}/releases" \
     --header "Authorization: token $TOKEN" \
     --data '{
     "tag_name": "'"$TAG"'",
-    "target_commitish": "master",
+    "target_commitish": "main",
     "name": "'"$NV"'",
     "draft": false,
     "prerelease": false
