@@ -33,10 +33,10 @@ Previous releases:
 
 You can also obtain code by using git checkout:
 ```
-git clone https://github.com/logrotate/logrotate.git -b master
+git clone https://github.com/logrotate/logrotate.git -b main
 ```
 
-Replace `master` with branch or tag you intend to checkout
+Replace `main` with branch or tag you intend to checkout
 
 ## Verify and unpack
 
