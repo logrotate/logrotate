@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## [UNRELEASED]
 
-[UNRELEASED]: https://github.com/logrotate/logrotate/compare/3.21.0...master
+[UNRELEASED]: https://github.com/logrotate/logrotate/compare/3.21.0...main
 
 ## [3.21.0] - 2022-12-13
   - add `ignoreduplicates` directive to allow duplicate file matches (#473)
