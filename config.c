@@ -79,15 +79,20 @@ int asprintf(char **string_ptr, const char *format, ...)
 #endif
 
 #if !defined(HAVE_STRNDUP)
+static size_t logr__strnlen(const char *s, size_t n)
+{
+    const char *p;
+
+    p = memchr(s, '\0', n);
+    return p ? (size_t)(p - s) : n;
+}
+
 char *strndup(const char *s, size_t n)
 {
     size_t nAvail;
     char *p;
 
-    /* min() */
-    nAvail = strlen(s) + 1;
-    if ( (n + 1) < nAvail)
-        nAvail = n + 1;
+    nAvail = logr__strnlen(s, n) + 1;
 
     p = malloc(nAvail);
     if (!p)
