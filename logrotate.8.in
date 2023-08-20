@@ -1,3 +1,4 @@
+'\" t
 .TH LOGROTATE 8 "@VERSION@" "Linux" "System Administrator's Manual"
 .\" Per groff_man(7), the TQ macro should be copied from an-ext.tmac when
 .\" not running under groff.  That's not quite right; not all groff
