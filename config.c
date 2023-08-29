@@ -89,16 +89,16 @@ static size_t logr__strnlen(const char *s, size_t n)
 
 char *strndup(const char *s, size_t n)
 {
-    size_t nAvail;
+    size_t srcLen;
     char *p;
 
-    nAvail = logr__strnlen(s, n) + 1;
+    srcLen = logr__strnlen(s, n);
 
-    p = malloc(nAvail);
+    p = malloc(srcLen + 1);
     if (!p)
         return NULL;
-    memcpy(p, s, nAvail);
-    p[nAvail - 1] = 0;
+    memcpy(p, s, srcLen);
+    p[srcLen] = 0;
     return p;
 }
 #endif
