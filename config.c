@@ -114,7 +114,7 @@ static const struct compress_cmd_item compress_cmd_list[] = {
     {"xz", ".xz"},
     {"zstd", ".zst"},
     {"compress", ".Z"},
-    {"zip", "zip"},
+    {"zip", ".zip"},
 };
 static const unsigned compress_cmd_list_size = sizeof(compress_cmd_list)
     / sizeof(compress_cmd_list[0]);
