@@ -2253,7 +2253,8 @@ static int rotateSingleLog(const struct logInfo *log, unsigned logNum,
                 && (log->flags & (LOG_FLAG_COPYTRUNCATE | LOG_FLAG_COPY))
                 && !(log->flags & LOG_FLAG_TMPFILENAME)) {
             hasErrors = copyTruncate(log->files[logNum], rotNames->finalName,
-                                     &state->sb, log, !log->rotateCount);
+                                     &state->sb, log,
+                                     !log->rotateCount && !log->logAddress);
         }
 
 #ifdef WITH_ACL
