@@ -22,7 +22,7 @@ jobs:
       uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608
 
     - name: Initialize CodeQL
-      uses: github/codeql-action/init@ddccb873888234080b77e9bc2d4764d5ccaaccf9
+      uses: github/codeql-action/init@74483a38d39275f33fcff5f35b679b5ca4a26a99
       with:
         languages: cpp
 
@@ -39,4 +39,4 @@ jobs:
       run: make
 
     - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@ddccb873888234080b77e9bc2d4764d5ccaaccf9
+      uses: github/codeql-action/analyze@74483a38d39275f33fcff5f35b679b5ca4a26a99
