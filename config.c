@@ -530,6 +530,10 @@ static int mkpath(const char *path, mode_t mode, uid_t uid, gid_t gid) {
         return 1;
     }
 
+    message(MESS_DEBUG, "creating new directory %s mode = 0%o uid = %d "
+                        "gid = %d\n", path, (unsigned int) mode,
+                        (int) uid, (int) gid);
+
     rv = 0;
     pp = copypath;
     while (rv == 0 && (sp = strchr(pp, '/')) != NULL) {
@@ -1362,6 +1366,9 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                         rv = readModeUidGid(configFile, lineNum, key, "createolddir",
                                             &newlog->olddirMode, &newlog->olddirUid,
                                             &newlog->olddirGid);
+                        if (newlog->olddirMode == NO_MODE) {
+                            newlog->olddirMode = 0755;
+                        }
                         if (rv == -1) {
                             RAISE_ERROR();
                         }
