@@ -415,14 +415,14 @@ file for the omitted attributes.  This option can be disabled using the
 New log files are not created (this overrides the \fBcreate\fR option).
 
 .TP
-\fBcreateolddir \fImode\fR \fIowner\fR \fIgroup\fR
+\fBcreateolddir \fImode\fR \fR[\fIowner\fR \fR[\fIgroup\fR]\fR], \fBcreateolddir \fR[\fIowner\fR \fR[\fIgroup\fR]\fR]
 If the directory specified by \fBolddir\fR directive does not exist, it is
 created. \fImode\fR specifies the mode for the \fBolddir\fR directory
 in octal (the same as \fBchmod\fR(2)), \fIowner\fR specifies the user
 who will own the \fBolddir\fR directory, and \fIgroup\fR specifies the group
 the \fBolddir\fR directory will belong to (see the section \fBUSER AND GROUP
 \fR for details).  This option can be disabled using
-the \fBnocreateolddir\fR option.
+the \fBnocreateolddir\fR option. If \fImode\fR is not specified, \fB0755\fR is assumed.
 
 .TP
 \fBnocreateolddir\fR

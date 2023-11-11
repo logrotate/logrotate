@@ -20,6 +20,7 @@ Makefile.in
 /autom4te.cache/
 /compile
 /configure
+/configure~
 /cscope.out
 /depcomp
 /install-sh
