@@ -1,0 +1,5 @@
+&DIR&/test.log {
+    monthly
+    rotate 1
+    create 1001 1002
+}
