@@ -194,8 +194,8 @@ The next section defines the parameters for both
 Each is rotated whenever it grows over 100\ kilobytes in size, and the old logs
 files are mailed (uncompressed) to recipient@\:example.org after going through 5
 rotations, rather than being removed.  The \fBsharedscripts\fR means that
-the \fBpostrotate\fR script will only be run once (after the old logs have
-been compressed), not once for each log which is rotated.
+the \fBpostrotate\fR script will only be run once for this section, not once
+for each log which is rotated.
 Note that log file names may be enclosed in
 quotes (and that quotes are required if the name contains spaces).
 Normal shell quoting rules apply, with \fB'\fR, \fB"\fR, and \fB\e\fR
@@ -722,9 +722,9 @@ See \fBsharedscripts\fR and \fBnosharedscripts\fR for error handling.
 \ \ \ \ \fIscript\fR
 .tq
 \fBendscript\fR
-The \fIscript\fR is executed
-after the log file is rotated.  These directives may only appear inside
-a log file definition.  Normally, the absolute path to the log file is
+The \fIscript\fR is executed after the log file is rotated and before the log
+file is being compressed.  These directives may only appear inside a log file
+definition.  Normally, the absolute path to the log file is
 passed as the first argument to the script and the absolute path to the final
 rotated log file is passed as the second argument to the script.  If
 \fBsharedscripts\fR is specified, the whole pattern is passed as the first
