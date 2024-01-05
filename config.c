@@ -103,6 +103,17 @@ char *strndup(const char *s, size_t n)
 }
 #endif
 
+#if !defined(HAVE_REALLOCARRAY)
+static void *reallocarray(void *ptr, size_t nmemb, size_t size) {
+    if (size && nmemb > (size_t)-1 / size) {
+        errno = ENOMEM;
+        return NULL;
+    }
+
+    return realloc(ptr, nmemb * size);
+}
+#endif
+
 /* list of compression commands and the corresponding file extensions */
 struct compress_cmd_item {
     const char *cmd;
@@ -705,9 +716,7 @@ static int readConfigPath(const char *path, struct logInfo *defConfig)
             if (checkFile(dp->d_name)) {
                 /* Realloc memory for namelist array if necessary */
                 if (files_count % REALLOC_STEP == 0) {
-                    char **p = (char **) realloc(namelist,
-                            (files_count +
-                             REALLOC_STEP) * sizeof(char *));
+                    char **p = reallocarray(namelist, files_count + REALLOC_STEP, sizeof(char *));
                     if (p) {
                         namelist = p;
                         memset(namelist + files_count, '\0',
@@ -1526,8 +1535,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
 
                             /* accept only non-empty patterns to avoid exclusion of everything */
                             if (endtag < chptr) {
-                                char **tmp = realloc(tabooPatterns, sizeof(*tabooPatterns) *
-                                        (tabooCount + 1));
+                                char **tmp = reallocarray(tabooPatterns, tabooCount + 1, sizeof(*tabooPatterns));
                                 if (tmp == NULL) {
                                     message_OOM();
                                     RAISE_ERROR();
@@ -1585,8 +1593,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                             while (!isspace((unsigned char)*chptr) && *chptr != ',' && *chptr)
                                 chptr++;
 
-                            tmp = realloc(tabooPatterns, sizeof(*tabooPatterns) *
-                                    (tabooCount + 1));
+                            tmp = reallocarray(tabooPatterns, tabooCount + 1, sizeof(*tabooPatterns));
                             if (tmp == NULL) {
                                 message_OOM();
                                 RAISE_ERROR();
@@ -1884,10 +1891,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                             continue;
                         }
 
-                        tmp = realloc(newlog->files,
-                                    sizeof(*newlog->files) * (newlog->numFiles +
-                                        globResult.
-                                        gl_pathc));
+                        tmp = reallocarray(newlog->files, newlog->numFiles + globResult.gl_pathc, sizeof(*newlog->files));
                         if (tmp == NULL) {
                             message_OOM();
                             logerror = 1;
