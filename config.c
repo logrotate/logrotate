@@ -684,7 +684,7 @@ static int readConfigPath(const char *path, struct logInfo *defConfig)
 
     if (S_ISDIR(sb.st_mode)) {
         char **namelist = NULL;
-        struct dirent *dp;
+        const struct dirent *dp;
         int here;
         unsigned files_count = 0, i;
         DIR *dirp;
