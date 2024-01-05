@@ -2625,8 +2625,7 @@ static int writeState(const char *stateFilename)
     int fdsave;
     struct stat sb;
     char *tmpFilename = NULL;
-    struct tm now;
-    time_t now_time, last_time;
+    time_t last_time;
     char *prevCtx;
     int force_mode = 0;
 
@@ -2737,16 +2736,13 @@ static int writeState(const char *stateFilename)
      */
 #define SECONDS_IN_YEAR 31556926
 
-    localtime_r(&nowSecs, &now);
-
     for (i = 0; i < hashSize && error == 0; i++) {
         for (p = states[i]->head.lh_first; p != NULL && error == 0;
                 p = p->list.le_next) {
 
             /* Skip states which are not used for more than a year. */
-            now_time = mktime(&now);
             last_time = mktime(&p->lastRotated);
-            if (!p->isUsed && difftime(now_time, last_time) > SECONDS_IN_YEAR) {
+            if (!p->isUsed && difftime(nowSecs, last_time) > SECONDS_IN_YEAR) {
                 message(MESS_DEBUG, "Removing %s from state file, "
                         "because it does not exist and has not been rotated for one year\n",
                         p->fn);
