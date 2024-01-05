@@ -359,18 +359,31 @@ static int readModeUidGid(const char *configFile, int lineNum, const char *key,
 
     for (i = 0; i < 3; i++) {
         const char *start = p;
+        char endchr = '\0';
+
         while (isspace((unsigned char)*start))
             start++;
 
+        if (*start == '\'' || *start == '"')
+            endchr = *start++;
+
         p = start;
-        while (*p != '\0' && !isspace((unsigned char)*p))
+        while (*p != '\0' && ((endchr != '\0') ? (*p != endchr) : !isspace((unsigned char)*p)))
             p++;
+
+        if (endchr != '\0' && *p != endchr) {
+            message(MESS_ERROR, "%s:%d invalid arguments for %s\n", configFile, lineNum, directive);
+            goto cleanup;
+        }
 
         val[i] = strndup(start, (size_t)(p - start));
         if (!val[i]) {
             message_OOM();
             goto cleanup;
         }
+
+        if (endchr != '\0')
+            p++;
 
         if (*p == '\0')
             break;

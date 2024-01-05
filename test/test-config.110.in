@@ -15,3 +15,9 @@
     rotate 1
     create 0700
 }
+
+&DIR&/test4.log {
+    daily
+    rotate 1
+    su "foo bar" 'bar baz'
+}
