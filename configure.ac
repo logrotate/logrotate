@@ -167,7 +167,7 @@ AC_SUBST(COMPRESS_EXT)
 AC_DEFINE_UNQUOTED([ROOT_UID], [0], [Root user-id.])
 AC_SUBST(ROOT_UID)
 
-AC_CHECK_FUNCS([asprintf futimens madvise secure_getenv strndup utimensat vsyslog])
+AC_CHECK_FUNCS([asprintf futimens madvise reallocarray secure_getenv strndup utimensat vsyslog])
 AC_CHECK_MEMBERS([struct stat.st_atim, struct stat.st_mtim])
 AC_CONFIG_HEADERS([config.h])
 
