@@ -13,9 +13,9 @@ DATE=""
 for i in $(seq 1 60)
 do
     if date -v -1d > /dev/null 2>&1; then
-        DATE=$(date -u -v-${i}d "+%Y-%m-%d")
+        DATE=$(TZ=UTC date -u -v-${i}d "+%Y-%m-%d")
     else
-        DATE=$(date --utc "+%Y-%m-%d" --date "$i day ago")
+        DATE=$(TZ=UTC date --utc "+%Y-%m-%d" --date "$i day ago")
     fi
     echo "x" > test.log-$DATE
 done
