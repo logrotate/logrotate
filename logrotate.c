@@ -2268,8 +2268,8 @@ static int rotateSingleLog(const struct logInfo *log, unsigned logNum,
 }
 
 static int postrotateSingleLog(const struct logInfo *log, unsigned logNum,
-                               struct logState *state,
-                               struct logNames *rotNames)
+                               const struct logState *state,
+                               const struct logNames *rotNames)
 {
     int hasErrors = 0;
 
