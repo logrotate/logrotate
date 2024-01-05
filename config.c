@@ -714,6 +714,13 @@ static int readConfigPath(const char *path, struct logInfo *defConfig)
         }
         while ((dp = readdir(dirp)) != NULL) {
             if (checkFile(dp->d_name)) {
+                if (files_count >= UINT_MAX - REALLOC_STEP) {
+                    message(MESS_ERROR, "too many files in directory %s\n", path);
+                    free_2d_array(namelist, files_count);
+                    closedir(dirp);
+                    close(here);
+                    return 1;
+                }
                 /* Realloc memory for namelist array if necessary */
                 if (files_count % REALLOC_STEP == 0) {
                     char **p = reallocarray(namelist, files_count + REALLOC_STEP, sizeof(char *));
