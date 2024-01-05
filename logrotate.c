@@ -3244,6 +3244,8 @@ int main(int argc, const char **argv)
 
     poptFreeContext(optCon);
     nowSecs = time(NULL);
+    /* localtime_r(3) is not required to call tzset(3) */
+    tzset();
 
     if (!debug && lockState(stateFile, skip_state_lock, wait_for_state_lock)) {
         exit(3);
