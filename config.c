@@ -346,56 +346,95 @@ static int readModeUidGid(const char *configFile, int lineNum, const char *key,
                           const char *directive, mode_t *mode, uid_t *pUid,
                           gid_t *pGid)
 {
-    char u[200], g[200];
-    mode_t m = 0;
-    char tmp;
-    int rc;
+    const char *p, *modestr, *userstr, *groupstr;
+    char *val[3] = {};
+    unsigned int i;
+    int is_su = (strcmp(directive, "su") == 0), rc = -1;
 
-    if (!strcmp("su", directive))
-        /* do not read <mode> for the 'su' directive */
-        rc = 0;
-    else {
-        unsigned short int parsed_mode;
-        rc = sscanf(key, "%ho %199s %199s%c", &parsed_mode, u, g, &tmp);
-        m = parsed_mode;
+    p = key;
+    while (*p != '\0' && isspace((unsigned char)*p))
+        p++;
+    if (*p == '\0')
+        return 0;
+
+    for (i = 0; i < 3; i++) {
+        const char *start = p;
+        while (isspace((unsigned char)*start))
+            start++;
+
+        p = start;
+        while (*p != '\0' && !isspace((unsigned char)*p))
+            p++;
+
+        val[i] = strndup(start, (size_t)(p - start));
+        if (!val[i]) {
+            message_OOM();
+            goto cleanup;
+        }
+
+        if (*p == '\0')
+            break;
     }
 
-    /* We support 'key <owner> <group> notation now */
-    if (rc == 0) {
-        rc = sscanf(key, "%199s %199s%c", u, g, &tmp);
-        /* Simulate that we have read mode and keep the default value. */
-        if (rc > 0) {
-            m = *mode;
-            rc += 1;
+    if (i >= 3 || (i == 2 && is_su)) {
+        message(MESS_ERROR, "%s:%d extra arguments for %s\n", configFile, lineNum, directive);
+        goto cleanup;
+    }
+
+    if (i == 2) {
+        modestr = val[0];
+        userstr = val[1];
+        groupstr = val[2];
+    } else if (i == 1) {
+        modestr = NULL;
+        userstr = val[0];
+        groupstr = val[1];
+    } else {
+        if (is_su) {
+            modestr = NULL;
+            userstr = val[0];
+        } else {
+            modestr = val[0];
+            userstr = NULL;
+        }
+        groupstr = NULL;
+    }
+
+    if (groupstr) {
+        if (resolveGid(groupstr, pGid) != 0) {
+            message(MESS_ERROR, "%s:%d unknown group '%s'\n", configFile, lineNum, groupstr);
+            goto cleanup;
         }
     }
 
-    if (rc == 4) {
-        message(MESS_ERROR, "%s:%d extra arguments for "
-                "%s\n", configFile, lineNum, directive);
-        return -1;
-    }
-
-    if (rc > 0) {
-        *mode = m;
-    }
-
-    if (rc > 1) {
-        if (resolveUid(u, pUid) != 0) {
-            message(MESS_ERROR, "%s:%d unknown user '%s'\n",
-                    configFile, lineNum, u);
-            return -1;
-        }
-    }
-    if (rc > 2) {
-        if (resolveGid(g, pGid) != 0) {
-            message(MESS_ERROR, "%s:%d unknown group '%s'\n",
-                    configFile, lineNum, g);
-            return -1;
+    if (userstr) {
+        if (resolveUid(userstr, pUid) != 0) {
+            message(MESS_ERROR, "%s:%d unknown user '%s'\n", configFile, lineNum, userstr);
+            goto cleanup;
         }
     }
 
-    return 0;
+    if (modestr) {
+        char *eptr;
+        long v;
+
+        errno = 0;
+        v = strtol(modestr, &eptr, 8);
+        if (errno || *modestr == '\0' || *eptr != '\0' || v < 0 || v >= INT_MAX || (long)(mode_t)v != v) {
+            message(MESS_ERROR, "%s:%d invalid mode '%s'\n", configFile, lineNum, modestr);
+            goto cleanup;
+        }
+
+        *mode = (mode_t)v;
+    }
+
+    rc = 0;
+cleanup:
+    free(val[0]);
+    free(val[1]);
+    free(val[2]);
+    return rc;
+
 }
 
 static char *readAddress(const char *configFile, int lineNum, const char *key,
