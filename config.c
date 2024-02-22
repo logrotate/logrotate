@@ -1919,7 +1919,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                             continue;
                         }
 
-                        rc = glob(argv[argNum], GLOB_NOCHECK
+                        rc = glob(argv[argNum], GLOB_NOCHECK | GLOB_NOSORT
 #ifdef GLOB_TILDE
                                 | GLOB_TILDE
 #endif
@@ -1963,6 +1963,8 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                             const struct logInfo *log;
                             struct stat sb_glob;
                             int add_file = 1;
+                            char *copy, *baseName, *dirName, *resolvedDir, *resolved_path;
+                            unsigned k;
 
                             /* if we glob directories we can get false matches */
                             if (!lstat(globResult.gl_pathv[glob_count], &sb_glob) &&
@@ -1970,12 +1972,69 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                                 continue;
                             }
 
+                            /* Resolves the directory but not the filename, to be able to detect symlinks */
+                            copy = strdup(globResult.gl_pathv[glob_count]);
+                            if (copy == NULL) {
+                                message_OOM();
+                                logerror = 1;
+                                goto duperror;
+                            }
+                            /* Because dirname() modifies the path, order is important */
+                            baseName = basename(copy);
+                            dirName = dirname(copy);
+                            resolvedDir = realpath(dirName, NULL);
+                            if (!resolvedDir) {
+                                if (errno == ENOENT) {
+                                    /* We don't know yet if missingok... */
+                                    resolvedDir = strdup(dirName);
+                                    if (resolvedDir == NULL) {
+                                        message_OOM();
+                                        logerror = 1;
+                                        goto duperror;
+                                    }
+                                } else if (errno == ENOMEM) {
+                                    message_OOM();
+                                    logerror = 1;
+                                    goto duperror;
+                                } else {
+                                    message(MESS_ERROR,
+                                        "%s:%d resolve error on log entry for %s: %s\n",
+                                        configFile, lineNum, globResult.gl_pathv[glob_count],
+                                        strerror(errno));
+                                    logerror = 1;
+                                    free(copy);
+                                    goto duperror;
+                                }
+                            }
+                            resolved_path = (char *)malloc(strlen(resolvedDir) + 1 + strlen(baseName) + 1);
+                            if (resolved_path == NULL) {
+                                message_OOM();
+                                logerror = 1;
+                                goto duperror;
+                            }
+                            (void) sprintf(resolved_path, "%s/%s", resolvedDir, baseName);
+                            free(resolvedDir);
+                            free(copy);
+
+                            /* Skip duplicates for the current set */
+                            for (k = 0; k < newlog->numFiles; k++) {
+                                if (!strcmp(newlog->files[k], resolved_path)) {
+                                    message(MESS_DEBUG,
+                                        "%s:%d duplicate log entry for %s "
+                                        "(originally %s), ignoring\n",
+                                        configFile, lineNum,
+                                        resolved_path,
+                                        globResult.gl_pathv[glob_count]);
+                                    free(resolved_path);
+                                    goto skip;
+                                }
+                            }
+
                             for (log = logs.tqh_first; log != NULL;
                                     log = log->list.tqe_next) {
-                                unsigned k;
                                 for (k = 0; k < log->numFiles; k++) {
                                     if (!strcmp(log->files[k],
-                                                globResult.gl_pathv[glob_count])) {
+                                                resolved_path)) {
                                         if (log->flags & LOG_FLAG_IGNOREDUPLICATES) {
                                             add_file = 0;
                                             message(MESS_DEBUG,
@@ -1995,15 +2054,11 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                             }
 
                             if (add_file) {
-                                newlog->files[newlog->numFiles] =
-                                    strdup(globResult.gl_pathv[glob_count]);
-                                if (newlog->files[newlog->numFiles] == NULL) {
-                                    message_OOM();
-                                    logerror = 1;
-                                    goto duperror;
-                                }
+                                newlog->files[newlog->numFiles] = resolved_path;
                                 newlog->numFiles++;
                             }
+skip:
+                            ;
                         }
 duperror:
                         globfree(&globResult);
