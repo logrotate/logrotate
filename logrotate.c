@@ -371,6 +371,7 @@ static int setSecCtx(int fdSrc, const char *src, char **pPrevCtx)
     /* save default security context for restoreSecCtx() */
     if (getfscreatecon_raw(pPrevCtx) < 0) {
         message(MESS_ERROR, "getting default context: %s\n", strerror(errno));
+        freecon(*pPrevCtx);
         return selinux_enforce;
     }
 
@@ -378,6 +379,7 @@ static int setSecCtx(int fdSrc, const char *src, char **pPrevCtx)
     if (setfscreatecon_raw(srcCtx) < 0) {
         message(MESS_ERROR, "setting default context to %s: %s\n", srcCtx,
                 strerror(errno));
+        freecon(*pPrevCtx);
         freecon(srcCtx);
         return selinux_enforce;
     }
