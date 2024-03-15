@@ -80,34 +80,34 @@ jobs:
     name: Clang Analyzer
     runs-on: ubuntu-latest
     env:
-      CC: clang-16
+      CC: clang-18
     steps:
     - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
 
     - name: Install Clang repo
       run: |
         wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | gpg --yes --dearmor --output /usr/share/keyrings/llvm-snapshot.gpg
-        echo 'deb [signed-by=/usr/share/keyrings/llvm-snapshot.gpg] http://apt.llvm.org/focal/ llvm-toolchain-focal-16 main' | sudo tee /etc/apt/sources.list.d/llvm-snapshot.list
+        echo 'deb [signed-by=/usr/share/keyrings/llvm-snapshot.gpg] http://apt.llvm.org/focal/ llvm-toolchain-focal-18 main' | sudo tee /etc/apt/sources.list.d/llvm-snapshot.list
         sudo apt-get update -q
 
     - name: Install dependencies
-      run: sudo apt-get install -y automake clang-16 clang-tools-16 libacl1-dev libpopt-dev libselinux1-dev
+      run: sudo apt-get install -y automake clang-18 clang-tools-18 libacl1-dev libpopt-dev libselinux1-dev
 
     - name: Bootstrap
       run: ./autogen.sh
 
     - name: Configure
-      run: scan-build-16 -analyze-headers --status-bugs ./configure --enable-werror --disable-silent-rules
+      run: scan-build-18 -analyze-headers --status-bugs ./configure --enable-werror --disable-silent-rules
 
     - name: Analyze
-      run: scan-build-16 -analyze-headers --status-bugs make -j"$(nproc)"
+      run: scan-build-18 -analyze-headers --status-bugs make -j"$(nproc)"
 
 
   build-clang-sanitizer:
     name: Clang Sanitizer
     runs-on: ubuntu-latest
     env:
-      CC: clang-16
+      CC: clang-18
       CFLAGS: '-O1 -g -fsanitize=address -fsanitize-address-use-after-scope -fno-omit-frame-pointer -fsanitize=undefined -fsanitize=nullability -fsanitize=implicit-conversion -fsanitize=integer -fsanitize=float-divide-by-zero -fsanitize=local-bounds'
       ASAN_OPTIONS: strict_string_checks=1:detect_stack_use_after_return=1:check_initialization_order=1:strict_init_order=1
       UBSAN_OPTIONS: print_stacktrace=1:print_summary=1:halt_on_error=1
@@ -118,11 +118,11 @@ jobs:
     - name: Install Clang repo
       run: |
         wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | gpg --yes --dearmor --output /usr/share/keyrings/llvm-snapshot.gpg
-        echo 'deb [signed-by=/usr/share/keyrings/llvm-snapshot.gpg] http://apt.llvm.org/focal/ llvm-toolchain-focal-16 main' | sudo tee /etc/apt/sources.list.d/llvm-snapshot.list
+        echo 'deb [signed-by=/usr/share/keyrings/llvm-snapshot.gpg] http://apt.llvm.org/focal/ llvm-toolchain-focal-18 main' | sudo tee /etc/apt/sources.list.d/llvm-snapshot.list
         sudo apt-get update -q
 
     - name: Install dependencies
-      run: sudo apt-get install -y acl automake clang-16 libacl1-dev libpopt-dev libselinux1-dev
+      run: sudo apt-get install -y acl automake clang-18 libacl1-dev libpopt-dev libselinux1-dev
 
     - name: Bootstrap
       run: ./autogen.sh
