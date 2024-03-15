@@ -587,7 +587,7 @@ Do not archive old versions of log files with date extension
 .TP
 \fBdateformat\fR \fIformat_string\fR
 Specify the extension for \fBdateext\fR using the notation similar to
-\fBstrftime\fR(3) function.  Only %Y %m %d %H %M %S %V and %s specifiers are
+\fBstrftime\fR(3) function.  Only %Y %m %d %H %M %S %V %s and %z specifiers are
 allowed.
 The default value is \-%Y%m%d except hourly, which uses \-%Y%m%d%H as default
 value.  Note that also the character separating log name from the extension is
