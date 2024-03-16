@@ -92,6 +92,7 @@ TEST_CASES = \
 	test-0091.sh \
 	test-0092.sh \
 	test-0093.sh \
+	test-0094.sh \
 	test-0100.sh \
 	test-0101.sh \
 	test-0102.sh \
