@@ -1,0 +1,11 @@
+&DIR&/*/*.log
+{
+	rotate 1
+	missingok
+	ifempty
+	compress
+	sharedscripts
+	postrotate
+		true
+	endscript
+}
