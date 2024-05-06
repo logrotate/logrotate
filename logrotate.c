@@ -221,10 +221,10 @@ static int switch_user_back_permanently(void) {
 }
 
 static int open_logfile(const char *path, const struct logInfo *log, int write_access) {
-    int fd;
+    int fd, flags;
     struct stat sb;
 
-    fd = open(path, O_NOFOLLOW | (write_access ? O_RDWR : O_RDONLY));
+    fd = open(path, O_NOFOLLOW | O_NOCTTY | O_NONBLOCK | (write_access ? O_RDWR : O_RDONLY));
     if (fd < 0)
         return fd;
 
@@ -242,6 +242,19 @@ static int open_logfile(const char *path, const struct logInfo *log, int write_a
     if (sb.st_nlink != 1 && !(log->flags & LOG_FLAG_ALLOWHARDLINK)) {
         close(fd);
         errno = ENOTSUP;
+        return -1;
+    }
+
+    /*
+     * Unset O_NONBLOCK for portability, since O_NONBLOCK is unspecified for
+     * regular files by POSIX.
+     */
+    if ((flags = fcntl(fd, F_GETFL)) == -1) {
+        close(fd);
+        return -1;
+    }
+    if (fcntl(fd, F_SETFL, flags & ~O_NONBLOCK) == -1) {
+        close(fd);
         return -1;
     }
 
