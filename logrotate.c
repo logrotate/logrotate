@@ -380,6 +380,7 @@ static int setSecCtx(int fdSrc, const char *src, char **pPrevCtx)
         message(MESS_ERROR, "setting default context to %s: %s\n", srcCtx,
                 strerror(errno));
         freecon(*pPrevCtx);
+        *pPrevCtx = NULL;
         freecon(srcCtx);
         return selinux_enforce;
     }
