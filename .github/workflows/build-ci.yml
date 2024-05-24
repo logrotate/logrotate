@@ -148,16 +148,16 @@ jobs:
 
   build-gcc-analyzer:
     name: GCC Analyzer
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
-      CC: gcc-12
+      CC: gcc-14
       CFLAGS: -O3 -flto=auto -finline-limit=1000 -fanalyzer
       LDFLAGS: -O3 -flto=auto -finline-limit=1000 -fanalyzer
     steps:
     - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b
 
     - name: Install dependencies
-      run: sudo apt-get install -y automake gcc-12 libacl1-dev libpopt-dev libselinux1-dev
+      run: sudo apt-get install -y automake gcc-14 libacl1-dev libpopt-dev libselinux1-dev
 
     - name: Bootstrap
       run: ./autogen.sh
