@@ -24,7 +24,7 @@ jobs:
       run: ./autogen.sh
 
     - name: Configure
-      run: ./configure --enable-werror --disable-silent-rules
+      run: ./configure --enable-werror --disable-silent-rules || ( cat config.log; exit 1; )
 
     - name: Build
       run: make -k
@@ -58,7 +58,7 @@ jobs:
       run: ./autogen.sh
 
     - name: Configure
-      run: ./configure --enable-werror --disable-silent-rules
+      run: ./configure --enable-werror --disable-silent-rules || ( cat config.log; exit 1; )
 
     - name: Build
       run: make -k
@@ -128,7 +128,7 @@ jobs:
       run: ./autogen.sh
 
     - name: Configure
-      run: ./configure --enable-werror --disable-silent-rules
+      run: ./configure --enable-werror --disable-silent-rules || ( cat config.log; exit 1; )
 
     - name: Build
       run: make -j"$(nproc)"
@@ -163,7 +163,7 @@ jobs:
       run: ./autogen.sh
 
     - name: Configure
-      run: ./configure --enable-werror --disable-silent-rules
+      run: ./configure --enable-werror --disable-silent-rules || ( cat config.log; exit 1; )
 
     - name: Analyze
       run: make -j"$(nproc)"
@@ -184,7 +184,7 @@ jobs:
       run: ./autogen.sh
 
     - name: Configure
-      run: ./configure --enable-werror --disable-silent-rules
+      run: ./configure --enable-werror --disable-silent-rules || ( cat config.log; exit 1; )
 
     - name: Build
       run: make -j"$(nproc)"
