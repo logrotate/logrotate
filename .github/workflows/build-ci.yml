@@ -57,6 +57,11 @@ jobs:
     - name: Bootstrap
       run: ./autogen.sh
 
+    - name: Set include paths for brew
+      run: |
+        echo "CFLAGS=-O2 -g -I$(brew --prefix)/include" >> $GITHUB_ENV
+        echo "LDFLAGS=-L$(brew --prefix)/lib" >> $GITHUB_ENV
+
     - name: Configure
       run: ./configure --enable-werror --disable-silent-rules || ( cat config.log; exit 1; )
 
