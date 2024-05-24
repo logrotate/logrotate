@@ -87,7 +87,7 @@ jobs:
     - name: Install Clang repo
       run: |
         wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | gpg --yes --dearmor --output /usr/share/keyrings/llvm-snapshot.gpg
-        echo 'deb [signed-by=/usr/share/keyrings/llvm-snapshot.gpg] http://apt.llvm.org/focal/ llvm-toolchain-focal-18 main' | sudo tee /etc/apt/sources.list.d/llvm-snapshot.list
+        echo 'deb [signed-by=/usr/share/keyrings/llvm-snapshot.gpg] http://apt.llvm.org/jammy/ llvm-toolchain-jammy-18 main' | sudo tee /etc/apt/sources.list.d/llvm-snapshot.list
         sudo apt-get update -q
 
     - name: Install dependencies
@@ -118,7 +118,7 @@ jobs:
     - name: Install Clang repo
       run: |
         wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | gpg --yes --dearmor --output /usr/share/keyrings/llvm-snapshot.gpg
-        echo 'deb [signed-by=/usr/share/keyrings/llvm-snapshot.gpg] http://apt.llvm.org/focal/ llvm-toolchain-focal-18 main' | sudo tee /etc/apt/sources.list.d/llvm-snapshot.list
+        echo 'deb [signed-by=/usr/share/keyrings/llvm-snapshot.gpg] http://apt.llvm.org/jammy/ llvm-toolchain-jammy-18 main' | sudo tee /etc/apt/sources.list.d/llvm-snapshot.list
         sudo apt-get update -q
 
     - name: Install dependencies
