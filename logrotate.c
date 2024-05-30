@@ -1780,7 +1780,7 @@ static int prerotateSingleLog(const struct logInfo *log, unsigned logNum,
         while (*dext != '\0') {
             /* Will there be a space for a char and '\0'? */
             if (j >= (sizeof(dext_pattern) - 1) ||
-                i >= (sizeof(dformat) - 1)) {
+                i >= (sizeof(dformat) - 2)) {
                 message(MESS_ERROR, "Date format %s is too long\n",
                         log->dateformat);
                 return 1;
