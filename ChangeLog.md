@@ -4,7 +4,25 @@ All notable changes to this project will be documented in this file.
 
 ## [UNRELEASED]
 
-[UNRELEASED]: https://github.com/logrotate/logrotate/compare/3.21.0...main
+[UNRELEASED]: https://github.com/logrotate/logrotate/compare/3.22.0...main
+
+## [3.22.0] - 2024-06-01
+ - fix calculations for time differences (#516)
+ - fix extension for zip compression (#545)
+ - fix omitted copy for logs with `mail` and `rotate 0` (#553)
+ - fix wrongly skipping copy with `copytruncate` and `compress` (#553)
+ - fix ambiguities between `mode`, `UID` and `GID` parsing when not specifying all options (#575)
+ - fix hang when encountering a named pipe (#607)
+ - on prerotate failure logs are preserved instead of rotated (#506)
+ - in case a configuration file was skipped due to unsafe permissions the
+   exit status after rotattion will be `1` (#508)
+ - the state is no longer written to non-regular files (#529)
+ - the systemd timer now correctly utilizes load distribution (#574)
+ - add dateformat specifier `%z` for timezone offsets (#594)
+ - change default mode for created `olddir` directories to `0755` (#560)
+ - support quoted user and group names in `su`, `create`, and `createolddir` (#575)
+
+[3.22.0]: https://github.com/logrotate/logrotate/compare/3.21.0...3.22.0
 
 ## [3.21.0] - 2022-12-13
   - add `ignoreduplicates` directive to allow duplicate file matches (#473)
