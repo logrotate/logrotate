@@ -4,7 +4,9 @@
 *.m4
 *.o
 *.tar.gz
+*.tar.gz.asc
 *.tar.xz
+*.tar.xz.asc
 Makefile
 Makefile.in
 /.version
