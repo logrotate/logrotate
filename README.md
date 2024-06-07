@@ -67,7 +67,7 @@ If successful your GPG output should look like this:
 
 You may then unpack the tarball:
 
-    $ tar -xJf logrotate-3.220.tar.xz
+    $ tar -xJf logrotate-3.22.0.tar.xz
 
 Notice that git tags are signed with same key:
 
