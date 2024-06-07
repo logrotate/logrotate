@@ -43,33 +43,35 @@ Replace `main` with branch or tag you intend to checkout
 
 After downloading the tarball and .asc signature file, check the signature:
 
-Get Kamil's PGP key rsa4096/72A37B36
+Get Christian's PGP key rsa4096/C78CE737A3C3E28E
 (almost any keyserver will do if pgp.mit.edu is temporarily unavailable):
+
+    $ gpg --keyserver pgp.mit.edu --recv-key 8ECCDF12100AD84DA2EE7EBFC78CE737A3C3E28E
+
+Older releases are signed with Kamil's PGP key rsa4096/72A37B36
 
     $ gpg --keyserver pgp.mit.edu --recv-key 992A96E075056E79CD8214F9873DB37572A37B36
 
 and verify the PGP signature on the distribution tarball:
 
-
-    $ gpg --verify logrotate-3.11.0.tar.xz.asc logrotate-3.11.0.tar.xz
-
+    $ gpg --verify logrotate-3.22.0.tar.xz.asc logrotate-3.22.0.tar.xz
 
 If successful your GPG output should look like this:
 
-    gpg: Signature made Fri 02 Dec 2016 08:30:39 AM EST
-    gpg:                using RSA key 873DB37572A37B36
-    gpg: Good signature from "Kamil Dudka <kdudka@redhat.com>" [unknown]
+    gpg: Signature made Sat 01 Jun 2024 05:41:38 PM CEST
+    gpg:                using RSA key 8ECCDF12100AD84DA2EE7EBFC78CE737A3C3E28E
+    gpg: Good signature from "Christian Göttsche <cgzones@googlemail.com>" [unknown]
     gpg: WARNING: This key is not certified with a trusted signature!
     gpg:          There is no indication that the signature belongs to the owner.
-    Primary key fingerprint: 992A 96E0 7505 6E79 CD82  14F9 873D B375 72A3 7B36
+    Primary key fingerprint: 8ECC DF12 100A D84D A2EE  7EBF C78C E737 A3C3 E28E
 
 You may then unpack the tarball:
 
-    $ tar -xJf logrotate-3.11.0.tar.xz
+    $ tar -xJf logrotate-3.220.tar.xz
 
 Notice that git tags are signed with same key:
 
-    $ git tag --verify 3.11.0
+    $ git tag --verify 3.22.0
 
 ## Compiling
 
