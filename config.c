@@ -770,7 +770,9 @@ static int readConfigPath(const char *path, struct logInfo *defConfig)
         }
         while ((dp = readdir(dirp)) != NULL) {
             if (checkFile(dp->d_name)) {
-                if (files_count >= UINT_MAX - REALLOC_STEP) {
+                /* Use a lower limit than `UINT_MAX - REALLOC_STEP` to please
+                 * GCC with LTO on 32 bit architectures. */
+                if (files_count >= UINT_MAX / 4) {
                     message(MESS_ERROR, "too many files in directory %s\n", path);
                     free_2d_array(namelist, files_count);
                     closedir(dirp);
