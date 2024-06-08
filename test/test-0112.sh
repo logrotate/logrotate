@@ -23,7 +23,7 @@ test_reg.log.1.gz 1 zero
 test_reg.log.2.gz 1 first
 EOF
 
-grep "test_fifo.log.1 (read-only) for compression: Operation not supported" error.log >/dev/null
+grep "^error: unable to open .*/test_fifo\.log\.1 (read-only) for compression: " error.log >/dev/null
 if [ $? != 0 ]; then
 	echo "No error printed, but there should be one."
 	exit 3
