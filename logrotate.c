@@ -19,6 +19,7 @@
 #include <utime.h>
 #include <stdint.h>
 #include <libgen.h>
+#include <signal.h>
 
 #if !defined(PATH_MAX) && defined(__FreeBSD__)
 #include <sys/param.h>
@@ -516,9 +517,32 @@ static struct logState *findState(const char *fn)
     return p;
 }
 
-static int runScript(const struct logInfo *log, const char *logfn, const char *logrotfn, const char *script)
+static int waitpid_checked(pid_t pid, const char **errmsg)
 {
-    int rc;
+    int status;
+
+    if (waitpid(pid, &status, 0) < 0) {
+        *errmsg = strerror(errno);
+        return -1;
+    }
+
+    if (!WIFEXITED(status)) {
+        *errmsg = "child did not terminate normally";
+        return -2;
+    }
+
+    if (WEXITSTATUS(status) != 0) {
+        *errmsg = "child did not exit with status 0";
+        return -3;
+    }
+
+    *errmsg = NULL;
+    return 0;
+}
+
+static int runScript(const struct logInfo *log, const char *logfn,
+                     const char *logrotfn, const char *script, const char **errmsg)
+{
     pid_t pid;
 
     if (debug) {
@@ -545,8 +569,7 @@ static int runScript(const struct logInfo *log, const char *logfn, const char *l
         exit(1);
     }
 
-    wait(&rc);
-    return rc;
+    return waitpid_checked(pid, errmsg);
 }
 
 #ifdef WITH_ACL
@@ -685,17 +708,17 @@ static int shred_file(int fd, const char *filename, const struct logInfo *log)
 {
     char count[12];    /*  11 digits - that's a lot of shredding :)  */
     const char *fullCommand[6];
+    const char *errmsg = NULL;
     int id = 0;
-    int status;
     pid_t pid;
 
     if (log->preremove) {
         message(MESS_DEBUG, "running preremove script\n");
-        if (runScript(log, filename, NULL, log->preremove)) {
+        if (runScript(log, filename, NULL, log->preremove, &errmsg) < 0) {
             message(MESS_ERROR,
                     "error running preremove script "
-                    "for %s of '%s'. Not removing this file.\n",
-                    filename, log->pattern);
+                    "for %s of '%s' (%s). Not removing this file.\n",
+                    filename, log->pattern, errmsg);
             /* What ever was supposed to happen did not happen,
              * therefore do not unlink the file yet.  */
             return 1;
@@ -753,10 +776,8 @@ static int shred_file(int fd, const char *filename, const struct logInfo *log)
         exit(1);
     }
 
-    wait(&status);
-
-    if (!WIFEXITED(status) || WEXITSTATUS(status)) {
-        message(MESS_ERROR, "Failed to shred %s, trying unlink\n", filename);
+    if (waitpid_checked(pid, &errmsg) < 0) {
+        message(MESS_ERROR, "Failed to shred %s (%s), trying unlink\n", filename, errmsg);
         return unlink(filename);
     }
 
@@ -836,9 +857,9 @@ static void setAtimeMtime(int fd, const char *filename, const struct stat *sb)
 static int compressLogFile(const char *name, const struct logInfo *log, const struct stat *sb)
 {
     char *compressedName;
+    const char *errmsg = NULL;
     int inFile;
     int outFile;
-    int status;
     int compressPipe[2];
     char *prevCtx;
     pid_t pid;
@@ -989,18 +1010,18 @@ static int compressLogFile(const char *name, const struct logInfo *log, const st
     }
 
     close(compressPipe[0]);
-    wait(&status);
 
-    fsync(outFile);
-
-    if (!WIFEXITED(status) || WEXITSTATUS(status)) {
-        message(MESS_ERROR, "failed to compress log %s\n", name);
+    if (waitpid_checked(pid, &errmsg) < 0) {
+        message(MESS_ERROR, "failed to compress log %s: %s\n", name, errmsg);
+        fsync(outFile);
         close(inFile);
         close(outFile);
         unlink(compressedName);
         free(compressedName);
         return 1;
     }
+
+    fsync(outFile);
 
     setAtimeMtime(outFile, compressedName, sb);
 
@@ -1022,7 +1043,7 @@ static int mailLog(const struct logInfo *log, const char *logFile, const char *m
 {
     int mailInput;
     pid_t mailChild, uncompressChild = 0;
-    int mailStatus, uncompressStatus;
+    const char *errmsg = NULL;
     int uncompressPipe[2];
     char * const mailArgv[] = { (char *) mailComm, (char *) "-s", (char *) subject, (char *) address, NULL };
     int rc = 0;
@@ -1101,19 +1122,15 @@ static int mailLog(const struct logInfo *log, const char *logFile, const char *m
 
     close(mailInput);
 
-    waitpid(mailChild, &mailStatus, 0);
-
-    if (!WIFEXITED(mailStatus) || WEXITSTATUS(mailStatus)) {
-        message(MESS_ERROR, "mail command failed for %s\n", logFile);
+    if (waitpid_checked(mailChild, &errmsg) < 0) {
+        message(MESS_ERROR, "mail command failed for %s: %s\n", logFile, errmsg);
         rc = 1;
     }
 
     if (uncompressCommand) {
-        waitpid(uncompressChild, &uncompressStatus, 0);
-
-        if (!WIFEXITED(uncompressStatus) || WEXITSTATUS(uncompressStatus)) {
-            message(MESS_ERROR, "uncompress command failed mailing %s\n",
-                    logFile);
+        if (waitpid_checked(uncompressChild, &errmsg) < 0) {
+            message(MESS_ERROR, "uncompress command failed mailing %s: %s\n",
+                    logFile, errmsg);
             rc = 1;
         }
     }
@@ -2360,6 +2377,7 @@ static int rotateLogSet(const struct logInfo *log, int force)
     int numRotated = 0;
     struct logState **state;
     struct logNames **rotNames;
+    const char *errmsg = NULL;
 
     message(MESS_DEBUG, "\nrotating pattern: %s ", log->pattern);
     if (force) {
@@ -2465,9 +2483,9 @@ static int rotateLogSet(const struct logInfo *log, int force)
                     "since no logs will be rotated\n");
         } else {
             message(MESS_DEBUG, "running first action script\n");
-            if (runScript(log, log->pattern, NULL, log->first)) {
+            if (runScript(log, log->pattern, NULL, log->first, &errmsg) < 0) {
                 message(MESS_ERROR, "error running first action script "
-                        "for %s\n", log->pattern);
+                        "for %s: %s\n", log->pattern, errmsg);
                 hasErrors = 1;
                 if (log->flags & LOG_FLAG_SU) {
                     if (switch_user_back() != 0) {
@@ -2532,15 +2550,16 @@ static int rotateLogSet(const struct logInfo *log, int force)
                         "since no logs will be rotated\n");
             } else {
                 message(MESS_DEBUG, "running prerotate script\n");
-                if (runScript(log, (log->flags & LOG_FLAG_SHAREDSCRIPTS) ? log->pattern : log->files[j], NULL, log->pre)) {
+                if (runScript(log, (log->flags & LOG_FLAG_SHAREDSCRIPTS) ? log->pattern : log->files[j],
+                              NULL, log->pre, &errmsg) < 0) {
                     if (log->flags & LOG_FLAG_SHAREDSCRIPTS)
                         message(MESS_ERROR,
                                 "error running shared prerotate script "
-                                "for '%s'\n", log->pattern);
+                                "for '%s': %s\n", log->pattern, errmsg);
                     else {
                         message(MESS_ERROR,
                                 "error running non-shared prerotate script "
-                                "for %s of '%s'\n", log->files[j], log->pattern);
+                                "for %s of '%s': %s\n", log->files[j], log->pattern, errmsg);
                     }
                     logHasErrors[j] = 1;
                     hasErrors = 1;
@@ -2585,15 +2604,15 @@ static int rotateLogSet(const struct logInfo *log, int force)
                 const char *logrotfn = (log->flags & LOG_FLAG_SHAREDSCRIPTS) ? NULL : rotNames[j]->finalName;
 
                 message(MESS_DEBUG, "running postrotate script\n");
-                if (runScript(log, logfn, logrotfn, log->post)) {
+                if (runScript(log, logfn, logrotfn, log->post, &errmsg) < 0) {
                     if (log->flags & LOG_FLAG_SHAREDSCRIPTS)
                         message(MESS_ERROR,
                                 "error running shared postrotate script "
-                                "for '%s'\n", log->pattern);
+                                "for '%s': %s\n", log->pattern, errmsg);
                     else {
                         message(MESS_ERROR,
                                 "error running non-shared postrotate script "
-                                "for %s of '%s'\n", log->files[j], log->pattern);
+                                "for %s of '%s': %s\n", log->files[j], log->pattern, errmsg);
                     }
                     logHasErrors[j] = 1;
                     hasErrors = 1;
@@ -2631,9 +2650,9 @@ static int rotateLogSet(const struct logInfo *log, int force)
                     "since no logs will be rotated\n");
         } else {
             message(MESS_DEBUG, "running last action script\n");
-            if (runScript(log, log->pattern, NULL, log->last)) {
+            if (runScript(log, log->pattern, NULL, log->last, &errmsg) < 0) {
                 message(MESS_ERROR, "error running last action script "
-                        "for %s\n", log->pattern);
+                        "for %s: %s\n", log->pattern, errmsg);
                 hasErrors = 1;
             }
         }
@@ -3291,6 +3310,12 @@ int main(int argc, const char **argv)
         rc = 1;
 
     message(MESS_DEBUG, "\nHandling %d logs\n", numLogs);
+
+    /* Restore SIGCHLD handler in case our parent process had it ignored.
+     * Not doing this may cause our forked childs to exit prematurely before our
+     * waitpid() calls, making it impossible to known the child proper exit code */
+    if (signal(SIGCHLD, SIG_DFL) == SIG_ERR)
+        message(MESS_WARN, "failed to reset SIGCHLD handler: %s\n", strerror(errno));
 
     for (log = logs.tqh_first; log != NULL; log = log->list.tqe_next)
         rc |= rotateLogSet(log, force);
