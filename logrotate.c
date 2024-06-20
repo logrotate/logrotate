@@ -19,6 +19,7 @@
 #include <utime.h>
 #include <stdint.h>
 #include <libgen.h>
+#include <signal.h>
 
 #if !defined(PATH_MAX) && defined(__FreeBSD__)
 #include <sys/param.h>
@@ -545,8 +546,11 @@ static int runScript(const struct logInfo *log, const char *logfn, const char *l
         exit(1);
     }
 
-    wait(&rc);
-    return rc;
+    if (wait(&rc) > 0 && WIFEXITED(rc)) {
+        return WEXITSTATUS(rc);
+    } else {
+        return -1;
+    }
 }
 
 #ifdef WITH_ACL
@@ -753,9 +757,7 @@ static int shred_file(int fd, const char *filename, const struct logInfo *log)
         exit(1);
     }
 
-    wait(&status);
-
-    if (!WIFEXITED(status) || WEXITSTATUS(status)) {
+    if (wait(&status) < 0 || !WIFEXITED(status) || WEXITSTATUS(status)) {
         message(MESS_ERROR, "Failed to shred %s, trying unlink\n", filename);
         return unlink(filename);
     }
@@ -989,18 +991,18 @@ static int compressLogFile(const char *name, const struct logInfo *log, const st
     }
 
     close(compressPipe[0]);
-    wait(&status);
 
-    fsync(outFile);
-
-    if (!WIFEXITED(status) || WEXITSTATUS(status)) {
+    if (wait(&status) < 0 || !WIFEXITED(status) || WEXITSTATUS(status)) {
         message(MESS_ERROR, "failed to compress log %s\n", name);
+        fsync(outFile);
         close(inFile);
         close(outFile);
         unlink(compressedName);
         free(compressedName);
         return 1;
     }
+
+    fsync(outFile);
 
     setAtimeMtime(outFile, compressedName, sb);
 
@@ -1101,9 +1103,7 @@ static int mailLog(const struct logInfo *log, const char *logFile, const char *m
 
     close(mailInput);
 
-    waitpid(mailChild, &mailStatus, 0);
-
-    if (!WIFEXITED(mailStatus) || WEXITSTATUS(mailStatus)) {
+    if (waitpid(mailChild, &mailStatus, 0) < 0 || !WIFEXITED(mailStatus) || WEXITSTATUS(mailStatus)) {
         message(MESS_ERROR, "mail command failed for %s\n", logFile);
         rc = 1;
     }
@@ -3291,6 +3291,12 @@ int main(int argc, const char **argv)
         rc = 1;
 
     message(MESS_DEBUG, "\nHandling %d logs\n", numLogs);
+
+    /* Restore SIGCHLD handler in case our parent process had it ignored.
+     * Not doing this may cause our forked childs to exit prematurely before our
+     * wait() call, making it impossible to known the child proper exit code */
+    if (signal(SIGCHLD, SIG_DFL) == SIG_ERR)
+        message(MESS_WARN, "failed to reset SIGCHLD handler: %s\n", strerror(errno));
 
     for (log = logs.tqh_first; log != NULL; log = log->list.tqe_next)
         rc |= rotateLogSet(log, force);
