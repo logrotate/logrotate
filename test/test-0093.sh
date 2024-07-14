@@ -14,10 +14,11 @@ chmod 0640 state
 
 # run two instances of logrotate in parallel
 $RLR -f --wait-for-state-lock test-config.93 &
+process_id=$!
 sleep 1
 $RLR -f --wait-for-state-lock test-config.93
 EC2=$?
-wait || exit $?
+wait $process_id || exit $?
 [ $EC2 -eq 0 ] || exit $EC2
 
 checkoutput <<EOF
