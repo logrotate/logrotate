@@ -609,6 +609,7 @@ static int copyLogInfo(struct logInfo *to, const struct logInfo *from)
     to->criterium = from->criterium;
     to->weekday = from->weekday;
     to->threshold = from->threshold;
+    to->minutes = from->minutes;
     to->minsize = from->minsize;
     to->maxsize = from->maxsize;
     to->rotateCount = from->rotateCount;
@@ -723,6 +724,7 @@ static const char *crit_to_string(enum criterium crit)
         case ROT_MONTHLY:   return "monthly";
         case ROT_YEARLY:    return "yearly";
         case ROT_SIZE:      return "size";
+        case ROT_MINUTES:   return "minutes";
         default:            return "XXX";
     }
 }
@@ -877,6 +879,7 @@ int readAllConfigPaths(const char **paths)
         .oldDir = NULL,
         .criterium = ROT_SIZE,
         .threshold = 1024 * 1024,
+        .minutes = 0,
         .minsize = 0,
         .maxsize = 0,
         .rotateCount = 0,
@@ -1443,6 +1446,26 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                         }
                     } else if (!strcmp(key, "hourly")) {
                         set_criterium(&newlog->criterium, ROT_HOURLY, &criterium_set);
+                    } else if (!strcmp(key, "minutes")) {
+                        char *opt = key;
+
+                        key = isolateValue(configFile, lineNum, opt, &start, &buf, length);
+                        if (key && key[0]) {
+                            unsigned int minutes = (unsigned int)strtoul(key, &chptr, 0);
+                            if (*chptr != '\0' || minutes <= 0) {
+                                message(MESS_ERROR, "%s:%d bad minutes '%s'\n",
+                                        configFile, lineNum, key);
+                                free(opt);
+                                RAISE_ERROR();
+                            }
+                            set_criterium(&newlog->criterium, ROT_MINUTES, &criterium_set);
+                            newlog->minutes = minutes;
+                            free(opt);
+                        }
+                        else {
+                            free(opt);
+                            continue;
+                        }
                     } else if (!strcmp(key, "daily")) {
                         set_criterium(&newlog->criterium, ROT_DAYS, &criterium_set);
                         newlog->threshold = 1;

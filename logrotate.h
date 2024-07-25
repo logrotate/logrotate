@@ -48,7 +48,8 @@ enum criterium {
     ROT_WEEKLY,
     ROT_MONTHLY,
     ROT_YEARLY,
-    ROT_SIZE
+    ROT_SIZE,
+    ROT_MINUTES
 };
 
 struct logInfo {
@@ -58,6 +59,7 @@ struct logInfo {
     char *oldDir;
     enum criterium criterium;
     unsigned weekday; /* used by ROT_WEEKLY only */
+    unsigned int minutes; /* used by ROT_MINUTES only */
     off_t threshold;
     off_t maxsize;
     off_t minsize;
