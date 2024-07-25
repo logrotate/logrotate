@@ -293,6 +293,11 @@ Log files are rotated the first time \fBlogrotate\fR is run in a month
 Log files are rotated if the current year is not the same as the last rotation.
 
 .TP
+\fBminutes \fIminutes\fR
+Log files are rotated the first time \fBlogrotate\fR is run after \fIminutes\fR
+have expired.
+
+.TP
 \fBsize \fIsize\fR
 Log files are rotated only if they grow bigger than \fIsize\fR bytes.  If
 \fIsize\fR is followed by \fIk\fR, the size is assumed to be in kilobytes.
