@@ -555,7 +555,7 @@ static int runScript(const struct logInfo *log, const char *logfn,
 
     if (pid == -1) {
         message(MESS_ERROR, "cannot fork: %s\n", strerror(errno));
-        return 1;
+        return -1;
     }
 
     if (pid == 0) {
