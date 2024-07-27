@@ -762,6 +762,8 @@ log file.  The current working directory is unspecified.
 
 User and group identifiers are resolved first by trying the textual
 representation and, in case it fails, afterwards by the numeric value.
+The numeric value can be prepended by a colon to force the usage of a
+non-existent user or group.
 
 .SH FILES
 
