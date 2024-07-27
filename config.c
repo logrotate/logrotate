@@ -1408,7 +1408,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                             }
 
                             size = (off_t) (multiplier * strtoull(key, &chptr, 0));
-                            if (*chptr || size < 0) {
+                            if (*chptr != '\0' || size < 0) {
                                 message(MESS_ERROR, "%s:%d bad size '%s'\n",
                                         configFile, lineNum, key);
                                 free(opt);
@@ -1436,7 +1436,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                             RAISE_ERROR();
                         }
                         newlog->shred_cycles = (int)strtoul(key, &chptr, 0);
-                        if (*chptr || newlog->shred_cycles < 0) {
+                        if (*chptr != '\0' || newlog->shred_cycles < 0) {
                             message(MESS_ERROR, "%s:%d bad shred cycles '%s'\n",
                                     configFile, lineNum, key);
                             RAISE_ERROR();
@@ -1478,7 +1478,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                             RAISE_ERROR();
                         }
                         newlog->rotateCount = (int)strtol(key, &chptr, 0);
-                        if (*chptr || newlog->rotateCount < -1) {
+                        if (*chptr != '\0' || newlog->rotateCount < -1) {
                             message(MESS_ERROR,
                                     "%s:%d bad rotation count '%s'\n",
                                     configFile, lineNum, key);
@@ -1492,7 +1492,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                             RAISE_ERROR();
                         }
                         newlog->logStart = (int)strtoul(key, &chptr, 0);
-                        if (*chptr || newlog->logStart < 0) {
+                        if (*chptr != '\0' || newlog->logStart < 0) {
                             message(MESS_ERROR, "%s:%d bad start count '%s'\n",
                                     configFile, lineNum, key);
                             RAISE_ERROR();
@@ -1505,7 +1505,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                             RAISE_ERROR();
                         }
                         newlog->rotateMinAge = (int)strtoul(key, &chptr, 0);
-                        if (*chptr || newlog->rotateMinAge < 0) {
+                        if (*chptr != '\0' || newlog->rotateMinAge < 0) {
                             message(MESS_ERROR, "%s:%d bad minimum age '%s'\n",
                                     configFile, lineNum, start);
                             RAISE_ERROR();
@@ -1518,7 +1518,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                             RAISE_ERROR();
                         }
                         newlog->rotateAge = (int)strtoul(key, &chptr, 0);
-                        if (*chptr || newlog->rotateAge < 0) {
+                        if (*chptr != '\0' || newlog->rotateAge < 0) {
                             message(MESS_ERROR, "%s:%d bad maximum age '%s'\n",
                                     configFile, lineNum, start);
                             RAISE_ERROR();
