@@ -3312,7 +3312,7 @@ int main(int argc, const char **argv)
     message(MESS_DEBUG, "\nHandling %d logs\n", numLogs);
 
     /* Restore SIGCHLD handler in case our parent process had it ignored.
-     * Not doing this may cause our forked childs to exit prematurely before our
+     * Not doing this may cause our forked children to exit prematurely before our
      * waitpid() calls, making it impossible to known the child proper exit code */
     if (signal(SIGCHLD, SIG_DFL) == SIG_ERR)
         message(MESS_WARN, "failed to reset SIGCHLD handler: %s\n", strerror(errno));
