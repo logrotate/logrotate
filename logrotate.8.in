@@ -675,6 +675,21 @@ the second argument to the \fBpostrotate\fR script.  If the scripts exit with
 error, the remaining actions will not be executed for the affected log only.
 
 .tq
+\fBcheckaction\fR
+.tq
+\ \ \ \ \fIscript\fR
+.tq
+\fBendscript\fR
+The \fIscript\fR is executed once
+before all log files that match the wildcarded pattern are rotated, before
+the firstaction and prerotate script run and only if at least one log will actually be
+rotated.  These directives may only appear inside a log file definition.
+The whole pattern is passed to the script as its first argument. If the script
+exits with an error, logrotate will gracefully skip rotating all logs matched
+by the wildcarded pattern.
+See also \fBfirstaction\fR and the \fBSCRIPTS\fR section.
+
+.tq
 \fBfirstaction\fR
 .tq
 \ \ \ \ \fIscript\fR
@@ -685,8 +700,8 @@ before all log files that match the wildcarded pattern are rotated, before
 the prerotate script is run and only if at least one log will actually be
 rotated.  These directives may only appear inside a log file definition.
 The whole pattern is passed to the script as its first argument. If the script
-exits with an error, no further processing is done.  See also \fBlastaction\fR
-and the \fBSCRIPTS\fR section.
+exits with an error, no further processing is done and logrotate will report the failure.
+See also \fBlastaction\fR and the \fBSCRIPTS\fR section.
 
 .tq
 \fBlastaction\fR
