@@ -282,6 +282,7 @@ static int resolveUid(const char *userName, uid_t *pUid)
     const struct passwd *pw;
     char *endptr;
     unsigned long int parsed_uid;
+    int force = 0;
 
 #ifdef __CYGWIN__
     if (strcmp(userName, "root") == 0) {
@@ -296,11 +297,16 @@ static int resolveUid(const char *userName, uid_t *pUid)
         return 0;
     }
 
+    if (userName[0] == ':') {
+        force = 1;
+        userName++;
+    }
+
     parsed_uid = strtoul(userName, &endptr, 10);
     if (userName[0] != '\0' &&
         *endptr == '\0' &&
         parsed_uid < INT_MAX && /* parsed_uid != ULONG_MAX && */
-        getpwuid((uid_t)parsed_uid) != NULL) {
+        (force || getpwuid((uid_t)parsed_uid) != NULL)) {
 
         *pUid = (uid_t)parsed_uid;
         return 0;
@@ -315,6 +321,7 @@ static int resolveGid(const char *groupName, gid_t *pGid)
     const struct group *gr;
     char *endptr;
     unsigned long int parsed_gid;
+    int force = 0;
 
 #ifdef __CYGWIN__
     if (strcmp(groupName, "root") == 0) {
@@ -329,11 +336,16 @@ static int resolveGid(const char *groupName, gid_t *pGid)
         return 0;
     }
 
+    if (groupName[0] == ':') {
+        force = 1;
+        groupName++;
+    }
+
     parsed_gid = strtoul(groupName, &endptr, 10);
     if (groupName[0] != '\0' &&
         *endptr == '\0' &&
         parsed_gid < INT_MAX && /* parsed_gid != ULONG_MAX && */
-        getgrgid((gid_t)parsed_gid) != NULL) {
+        (force || getgrgid((gid_t)parsed_gid) != NULL)) {
 
         *pGid = (gid_t)parsed_gid;
         return 0;
