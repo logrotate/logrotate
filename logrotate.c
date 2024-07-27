@@ -2850,8 +2850,13 @@ static int writeState(const char *stateFilename)
 
     if (error == 0)
         error = fclose(f);
-    else
+    else {
+        int saved_errno;
+
+        saved_errno = errno;
         fclose(f);
+        errno = saved_errno;
+    }
 
     if (error == 0) {
         if (rename(tmpFilename, stateFilename)) {
