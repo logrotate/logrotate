@@ -1876,7 +1876,7 @@ static int prerotateSingleLog(const struct logInfo *log, unsigned logNum,
                         dformat[i] = *dext;
                         break;
                     case 's':
-                        /* End of year 2293 this pattern does not work. */
+                        /* End of year 2286 this pattern does not work. */
                         strncat(dext_pattern,
                                 "[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]",
                                 sizeof(dext_pattern) - strlen(dext_pattern) - 1);
