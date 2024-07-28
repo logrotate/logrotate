@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ## [UNRELEASED]
 
 [UNRELEASED]: https://github.com/logrotate/logrotate/compare/3.22.0...main
+ - Add support for %G, %y, %g, %U, %W, %u, %w, and %j to dateformat. [ryancdotorg]
 
 ## [3.22.0] - 2024-06-01
  - fix calculations for time differences (#516)
