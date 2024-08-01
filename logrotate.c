@@ -1818,16 +1818,21 @@ static int prerotateSingleLog(const struct logInfo *log, unsigned logNum,
             if (*dext == '%') {
                 switch (*(dext + 1)) {
                     case 'Y':
+                    case 'G':
                         strncat(dext_pattern, "[0-9][0-9]",
                                 sizeof(dext_pattern) - strlen(dext_pattern) - 1);
                         j += 10; /* strlen("[0-9][0-9]") */
                         /* FALLTHRU */
+                    case 'y':
+                    case 'g':
                     case 'm':
                     case 'd':
                     case 'H':
                     case 'M':
                     case 'S':
                     case 'V':
+                    case 'U':
+                    case 'W':
                         strncat(dext_pattern, "[0-9][0-9]",
                                 sizeof(dext_pattern) - strlen(dext_pattern) - 1);
                         j += 10;
@@ -1839,8 +1844,26 @@ static int prerotateSingleLog(const struct logInfo *log, unsigned logNum,
                         dformat[i++] = *(dext++);
                         dformat[i] = *dext;
                         break;
+                    case 'j':
+                        strncat(dext_pattern, "[0-9][0-9]",
+                                sizeof(dext_pattern) - strlen(dext_pattern) - 1);
+                        j += 10; /* strlen("[0-9][0-9]") */
+                        /* FALLTHRU */
+                    case 'u':
+                    case 'w':
+                        strncat(dext_pattern, "[0-9]",
+                                sizeof(dext_pattern) - strlen(dext_pattern) - 1);
+                        j += 5;
+                        if (j >= (sizeof(dext_pattern) - 1)) {
+                            message(MESS_ERROR, "Date format %s is too long\n",
+                                    log->dateformat);
+                            return 1;
+                        }
+                        dformat[i++] = *(dext++);
+                        dformat[i] = *dext;
+                        break;
                     case 's':
-                        /* End of year 2293 this pattern does not work. */
+                        /* End of year 2286 this pattern does not work. */
                         strncat(dext_pattern,
                                 "[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]",
                                 sizeof(dext_pattern) - strlen(dext_pattern) - 1);
