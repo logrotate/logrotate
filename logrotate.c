@@ -409,29 +409,51 @@ static int setSecCtx(int fdSrc, const char *src, char **pPrevCtx)
     return 0;
 }
 
-static int setSecCtxByName(const char *src, const struct logInfo *log, char **pPrevCtx)
+static int setSecCtxByName(const char *src, char **pPrevCtx)
 {
-    int hasErrors = 0;
 #ifdef WITH_SELINUX
-    int fd;
+    char *srcCtx;
+    *pPrevCtx = NULL;
 
     if (!selinux_enabled)
         /* pretend success */
         return 0;
 
-    fd = open_logfile(src, log, 0);
-    if (fd < 0) {
-        message(MESS_ERROR, "error opening %s: %s\n", src, strerror(errno));
-        return 1;
+    /* read security context of src */
+    if (lgetfilecon_raw(src, &srcCtx) < 0) {
+        if (errno == ENOTSUP)
+            /* pretend success */
+            return 0;
+
+        message(MESS_ERROR, "getting file context %s: %s\n", src,
+                strerror(errno));
+        return selinux_enforce;
     }
-    hasErrors = setSecCtx(fd, src, pPrevCtx);
-    close(fd);
+
+    /* save default security context for restoreSecCtx() */
+    if (getfscreatecon_raw(pPrevCtx) < 0) {
+        message(MESS_ERROR, "getting default context: %s\n", strerror(errno));
+        freecon(srcCtx);
+        return selinux_enforce;
+    }
+
+    /* set default security context to match src */
+    if (setfscreatecon_raw(srcCtx) < 0) {
+        message(MESS_ERROR, "setting default context to %s: %s\n", srcCtx,
+                strerror(errno));
+        freecon(*pPrevCtx);
+        *pPrevCtx = NULL;
+        freecon(srcCtx);
+        return selinux_enforce;
+    }
+
+    message(MESS_DEBUG, "set default create context to %s\n", srcCtx);
+    freecon(srcCtx);
 #else
     (void) src;
-    (void) log;
     (void) pPrevCtx;
 #endif
-    return hasErrors;
+    return 0;
 }
 
 static void restoreSecCtx(char **pPrevCtx)
@@ -1905,7 +1927,7 @@ static int prerotateSingleLog(const struct logInfo *log, unsigned logNum,
     message(MESS_DEBUG, "dateext suffix '%s'\n", dext_str);
     message(MESS_DEBUG, "glob pattern '%s'\n", dext_pattern);
 
-    if (setSecCtxByName(log->files[logNum], log, &prev_context) != 0) {
+    if (setSecCtxByName(log->files[logNum], &prev_context) != 0) {
         /* error msg already printed */
         return 1;
     }
@@ -2186,7 +2208,7 @@ static int rotateSingleLog(const struct logInfo *log, unsigned logNum,
     if (!hasErrors) {
 
         if (!(log->flags & (LOG_FLAG_COPYTRUNCATE | LOG_FLAG_COPY))) {
-            if (setSecCtxByName(log->files[logNum], log, &savedContext) != 0) {
+            if (setSecCtxByName(log->files[logNum], &savedContext) != 0) {
                 /* error msg already printed */
                 return 1;
             }
