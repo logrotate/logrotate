@@ -524,8 +524,8 @@ Specifies which command to use to uncompress log files.  The default is
 .TP
 \fBcompressext\fR
 Specifies which extension to use on compressed logfiles, if compression
-is enabled.  The default follows that of the configured compression
-command.
+is enabled.  The default extension is .gz and compressext should updated
+with an appropriate extension, when \fBcompresscmd\fR has been set.
 
 .TP
 \fBcompressoptions\fR
