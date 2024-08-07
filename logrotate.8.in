@@ -514,7 +514,8 @@ Old versions of log files are not compressed.  See also \fBcompress\fR.
 .TP
 \fBcompresscmd\fR
 Specifies which command to use to compress log files.  The default is
-\fBgzip\fR(1).  See also \fBcompress\fR.
+\fBgzip\fR(1).  See also \fBcompress\fR. See \fBcompressext\fR to
+update the extension appropriately.
 
 .TP
 \fBuncompresscmd\fR
