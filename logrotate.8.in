@@ -504,7 +504,7 @@ Do not rotate files with multiple hard links.  See also \fBallowhardlink\fR.
 
 .TP
 \fBcompress\fR
-Old versions of log files are compressed with \fBgzip\fR(1) by default.
+Old versions of log files are compressed with \fB@COMPRESS_COMMAND@\fR(1) by default.
 See also \fBnocompress\fR.
 
 .TP
@@ -514,18 +514,19 @@ Old versions of log files are not compressed.  See also \fBcompress\fR.
 .TP
 \fBcompresscmd\fR
 Specifies which command to use to compress log files.  The default is
-\fBgzip\fR(1).  See also \fBcompress\fR.
+\fB@COMPRESS_COMMAND@\fR(1).  See also \fBcompress\fR. See \fBcompressext\fR to
+update the extension appropriately.
 
 .TP
 \fBuncompresscmd\fR
 Specifies which command to use to uncompress log files.  The default is
-\fBgunzip\fR(1).
+\fB@UNCOMPRESS_COMMAND@\fR(1).
 
 .TP
 \fBcompressext\fR
 Specifies which extension to use on compressed logfiles, if compression
-is enabled.  The default follows that of the configured compression
-command.
+is enabled.  The default extension is @COMPRESS_EXT@ and compressext should be
+updated with an appropriate extension, if \fBcompresscmd\fR has been set.
 
 .TP
 \fBcompressoptions\fR
