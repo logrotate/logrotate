@@ -1,0 +1,12 @@
+create
+
+&DIR&/test.log {
+    monthly
+    rotate 1
+    checkaction
+        false
+    endscript
+    firstaction
+        false
+    endscript
+}

@@ -628,6 +628,7 @@ static int copyLogInfo(struct logInfo *to, const struct logInfo *from)
     to->rotateMinAge = from->rotateMinAge;
     to->rotateAge = from->rotateAge;
     to->logStart = from->logStart;
+    MEMBER_COPY(to->check, from->check);
     MEMBER_COPY(to->pre, from->pre);
     MEMBER_COPY(to->post, from->post);
     MEMBER_COPY(to->first, from->first);
@@ -671,6 +672,7 @@ static void freeLogInfo(struct logInfo *log)
     free(log->pattern);
     free_2d_array(log->files, log->numFiles);
     free(log->oldDir);
+    free(log->check);
     free(log->pre);
     free(log->post);
     free(log->first);
@@ -898,6 +900,7 @@ int readAllConfigPaths(const char **paths)
         .rotateMinAge = 0,
         .rotateAge = 0,
         .logStart = 1,
+        .check = NULL,
         .pre = NULL,
         .post = NULL,
         .first = NULL,
@@ -1580,6 +1583,11 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                         freeLogItem (pre);
                         scriptStart = start;
                         scriptDest = &newlog->pre;
+                        state = STATE_LOAD_SCRIPT;
+                    } else if (!strcmp(key, "checkaction")) {
+                        freeLogItem (check);
+                        scriptStart = start;
+                        scriptDest = &newlog->check;
                         state = STATE_LOAD_SCRIPT;
                     } else if (!strcmp(key, "firstaction")) {
                         freeLogItem (first);
@@ -2270,6 +2278,7 @@ duperror:
                     if (key == NULL)
                         continue;
                     if (
+                            (strcmp(key, "checkaction") == 0) ||
                             (strcmp(key, "postrotate") == 0) ||
                             (strcmp(key, "prerotate") == 0) ||
                             (strcmp(key, "firstaction") == 0) ||
