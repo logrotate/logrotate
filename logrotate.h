@@ -59,6 +59,7 @@ struct logInfo {
     char *oldDir;
     enum criterium criterium;
     unsigned weekday; /* used by ROT_WEEKLY only */
+    unsigned monthday; /* used by ROT_MONTHLY only */
     unsigned int minutes; /* used by ROT_MINUTES only */
     off_t threshold;
     off_t maxsize;

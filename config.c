@@ -620,6 +620,7 @@ static int copyLogInfo(struct logInfo *to, const struct logInfo *from)
     MEMBER_COPY(to->oldDir, from->oldDir);
     to->criterium = from->criterium;
     to->weekday = from->weekday;
+    to->monthday = from->monthday;
     to->threshold = from->threshold;
     to->minutes = from->minutes;
     to->minsize = from->minsize;
@@ -1486,7 +1487,25 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                         set_criterium(&newlog->criterium, ROT_DAYS, &criterium_set);
                         newlog->threshold = 1;
                     } else if (!strcmp(key, "monthly")) {
+                        unsigned monthday;
+                        char tmp;
                         set_criterium(&newlog->criterium, ROT_MONTHLY, &criterium_set);
+                        free(key);
+                        key = isolateLine(&start, &buf, length);
+                        if (key == NULL || key[0] == '\0') {
+                            /* default to first run in a month if no argument was given */
+                            newlog->monthday = 0;
+                            continue;
+                        }
+
+                        if (1 == sscanf(key, "%u%c", &monthday, &tmp) && monthday <= 31) {
+                            /* use the selected monthday, 0 means on first run in a month */
+                            newlog->monthday = monthday;
+                            continue;
+                        }
+                        message(MESS_ERROR, "%s:%d bad monthly directive '%s'\n",
+                                configFile, lineNum, key);
+                        goto error;
                     } else if (!strcmp(key, "weekly")) {
                         unsigned weekday;
                         char tmp;
