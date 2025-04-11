@@ -347,18 +347,16 @@ static int hashIndex(const char *fn)
 }
 
 /* safe implementation of dup2(oldfd, nefd) followed by close(oldfd) */
-static int movefd(int oldfd, int newfd)
+static void movefd(int oldfd, int newfd)
 {
     int rc;
     if (oldfd == newfd)
         /* avoid accidental close of newfd in case it is equal to oldfd */
-        return 0;
+        return;
 
     rc = dup2(oldfd, newfd);
-    if (rc == 0)
+    if (rc >= 0)
         close(oldfd);
-
-    return rc;
 }
 
 #ifdef WITH_SELINUX
