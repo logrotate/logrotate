@@ -2534,6 +2534,37 @@ static int rotateLogSet(const struct logInfo *log, int force)
             numRotated++;
     }
 
+    if (log->check) {
+        if (!numRotated) {
+            message(MESS_DEBUG, "not running check action script, "
+                    "since no logs will be rotated\n");
+        } else {
+            int ret;
+
+            message(MESS_DEBUG, "running check action script\n");
+            ret = runScript(log, log->pattern, NULL, log->check, &errmsg);
+            if (ret == -3) {
+                message(MESS_DEBUG, "check action script for %s returned non-zero, skipping: %s\n", log->pattern, errmsg);
+                free(logHasErrors);
+                return 0;
+            }
+            if (ret < 0) {
+                message(MESS_ERROR, "error running check action script "
+                        "for %s: %s\n", log->pattern, errmsg);
+                hasErrors = 1;
+                if (log->flags & LOG_FLAG_SU) {
+                    if (switch_user_back() != 0) {
+                        free(logHasErrors);
+                        return 1;
+                    }
+                }
+                /* finish early, checkaction failed, affects all logs in set */
+                free(logHasErrors);
+                return hasErrors;
+            }
+        }
+    }
+
     if (log->first) {
         if (!numRotated) {
             message(MESS_DEBUG, "not running first action script, "
