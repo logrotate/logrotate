@@ -2736,10 +2736,16 @@ static int writeState(const char *stateFilename)
     int fdcurr;
     int fdsave;
     struct stat sb;
+#ifdef PATH_MAX
+    char stateFileTargetname[PATH_MAX];
+#else
+    char stateFileTargetname[4096];
+#endif
     char *tmpFilename = NULL;
     time_t last_time;
     char *prevCtx;
     int force_mode = 0;
+    ssize_t ret;
 
     if (!strcmp(stateFilename, "/dev/null"))
         /* explicitly asked not to write the state file */
@@ -2764,6 +2770,28 @@ static int writeState(const char *stateFilename)
         message(MESS_ERROR, "not writing state to %s because it is not a regular file\n", stateFilename);
         close(fdcurr);
         return 1;
+    }
+
+    ret = readlink(stateFilename, stateFileTargetname, sizeof(stateFileTargetname));
+    if (ret == -1) {
+        if (errno != EINVAL) {
+            message(MESS_ERROR, "error reading symlink target of %s: %s\n", stateFilename, strerror(errno));
+            close(fdcurr);
+            return 1;
+        }
+
+        /* state file is not a symlink */
+    } else {
+        if ((size_t)ret >= sizeof(stateFileTargetname)) {
+            message(MESS_ERROR, "symlink target path of %s too long\n", stateFilename);
+            close(fdcurr);
+            return 1;
+        }
+        stateFileTargetname[ret] = '\0';
+
+        message(MESS_DEBUG, "using symlink target '%s' for statefile path '%s'\n", stateFileTargetname, stateFilename);
+
+        stateFilename = stateFileTargetname;
     }
 
     tmpFilename = malloc(strlen(stateFilename) + 5 );
