@@ -1964,6 +1964,10 @@ static int prerotateSingleLog(const struct logInfo *log, unsigned logNum,
         return 1;
     }
 
+    if ((log->flags & LOG_FLAG_DELAYCOMPRESS) && !(log->flags & LOG_FLAG_COMPRESS)) {
+        message(MESS_WARN, "delayed compression for log file %s ignored since compression is disabled\n", log->files[logNum]);
+    }
+
     /* First compress the previous log when necessary */
     if ((log->flags & LOG_FLAG_COMPRESS) &&
             (log->flags & LOG_FLAG_DELAYCOMPRESS)) {
