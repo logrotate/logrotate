@@ -284,9 +284,12 @@ irrespectively of weekday.
 Defaults to 0 if the \fIweekday\fR argument is omitted.
 
 .TP
-\fBmonthly\fR
+\fBmonthly\fR [\fImonthday\fR]
 Log files are rotated the first time \fBlogrotate\fR is run in a month
-(this is normally on the first day of the month).
+(this is normally on the first day of the month) by default.  If monthday is
+specified log files will be rotated either if not rotated for 31 days, on the
+day of the month specified (1 means 1st), or on the last day of the month
+(e.g. on the 30th if 31 was specified).
 
 .TP
 \fByearly\fR

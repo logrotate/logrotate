@@ -1399,6 +1399,19 @@ static long daysElapsed(const struct tm *now, const struct tm *last)
     return (long) ((intmax_t)diff / DAY_SECONDS);
 }
 
+/* return whether the given date is the last day of the month */
+static int last_day_of_month(const struct tm *now)
+{
+    struct tm tomorrow;
+
+    tomorrow = *now;
+    tomorrow.tm_mday++;
+
+    mktime(&tomorrow);
+
+    return now->tm_mon != tomorrow.tm_mon;
+}
+
 static int findNeedRotating(const struct logInfo *log, unsigned logNum, int force)
 {
     struct stat sb;
@@ -1565,10 +1578,19 @@ static int findNeedRotating(const struct logInfo *log, unsigned logNum, int forc
                 }
                 break;
             case ROT_MONTHLY:
-                /* rotate if the logs haven't been rotated this month or
-                   this year */
-                state->doRotate = ((now.tm_mon != state->lastRotated.tm_mon) ||
-                        (now.tm_year != state->lastRotated.tm_year));
+                if (log->monthday == 0) {
+                    /* rotate if the logs haven't been rotated this month or this year */
+                    state->doRotate = (now.tm_mon != state->lastRotated.tm_mon) ||
+                                      (now.tm_year != state->lastRotated.tm_year);
+                } else {
+                    days = daysElapsed(&now, &state->lastRotated);
+                    /* rotate if not rotated for a month, or
+                       if not yet rotated today and the selected monthday is today, or
+                       if not yet rotated this month and today is the last day of the month */
+                    state->doRotate = (days >= 31) ||
+                                      (days >= 1 && (unsigned)now.tm_mday == log->monthday) ||
+                                      (days >= 1 && last_day_of_month(&now));
+                }
                 if (!state->doRotate) {
                     message(MESS_DEBUG, "  log does not need rotating "
                             "(log has been rotated at %d-%02d-%02d %02d:%02d, "
