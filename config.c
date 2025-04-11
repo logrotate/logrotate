@@ -1281,6 +1281,10 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                         newlog->flags |= LOG_FLAG_ALLOWHARDLINK;
                     } else if (!strcmp(key, "noallowhardlink")) {
                         newlog->flags &= ~LOG_FLAG_ALLOWHARDLINK;
+                    } else if (!strcmp(key, "allownonsecuredir")) {
+                        newlog->flags |= LOG_FLAG_ALLOWNONSECUREDIR;
+                    } else if (!strcmp(key, "noallownonsecuredir")) {
+                        newlog->flags &= ~LOG_FLAG_ALLOWNONSECUREDIR;
                     } else if (!strcmp(key, "sharedscripts")) {
                         newlog->flags |= LOG_FLAG_SHAREDSCRIPTS;
                     } else if (!strcmp(key, "nosharedscripts")) {
@@ -2086,6 +2090,7 @@ duperror:
                             const char *dirName;
                             struct stat sb_logdir;
                             struct stat sb_olddir;
+                            int rc;
 
                             dirpath = strdup(newlog->files[j]);
                             if (dirpath == NULL) {
@@ -2168,7 +2173,28 @@ duperror:
                                 }
                             }
 
-                            free(ld);
+                            /* Check if olddir and its parents of this log have safe permissions */
+                            rc = checkIsSecureDir(dirName, newlog);
+                            if (rc < 0 && (rc != -ENOENT || (newlog->flags & LOG_FLAG_OLDDIRCREATE) == 0)) {
+                                message(MESS_ERROR, "%s:%d failed checking whether olddir %s is a secure dir: %s\n",
+                                        configFile, lineNum, dirName, strerror(-rc));
+                                free(ld);
+                                goto error;
+                            }
+                            if (rc == 0) {
+                                message(MESS_ERROR, "%s:%d olddir %s or one of its parent"
+                                        " directories for log file %s has insecure permissions"
+                                        " (It's world writable or writable by a user or group"
+                                        " which is not \"root\")"
+                                        " Set \"su\" directive in config file to tell"
+                                        " logrotate which user/group should be used for"
+                                        " rotation.\n",
+                                        configFile, lineNum, dirName, newlog->files[j]);
+                                free(ld);
+                                goto error;
+                            }
+
+                            free(ld);  /* free after last usage of dirName */
 
                             if (sb_logdir.st_dev != sb_olddir.st_dev
                                     && !(newlog->flags & (LOG_FLAG_COPYTRUNCATE | LOG_FLAG_COPY | LOG_FLAG_TMPFILENAME))) {

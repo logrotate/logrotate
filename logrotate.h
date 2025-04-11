@@ -11,24 +11,25 @@
 #   include <libgen.h>
 #endif
 
-#define LOG_FLAG_COMPRESS         (1U << 0)
-#define LOG_FLAG_CREATE           (1U << 1)
-#define LOG_FLAG_IFEMPTY          (1U << 2)
-#define LOG_FLAG_DELAYCOMPRESS    (1U << 3)
-#define LOG_FLAG_COPYTRUNCATE     (1U << 4)
-#define LOG_FLAG_MISSINGOK        (1U << 5)
-#define LOG_FLAG_MAILFIRST        (1U << 6)
-#define LOG_FLAG_SHAREDSCRIPTS    (1U << 7)
-#define LOG_FLAG_COPY             (1U << 8)
-#define LOG_FLAG_DATEEXT          (1U << 9)
-#define LOG_FLAG_SHRED            (1U << 10)
-#define LOG_FLAG_SU               (1U << 11)
-#define LOG_FLAG_DATEYESTERDAY    (1U << 12)
-#define LOG_FLAG_OLDDIRCREATE     (1U << 13)
-#define LOG_FLAG_TMPFILENAME      (1U << 14)
-#define LOG_FLAG_DATEHOURAGO      (1U << 15)
-#define LOG_FLAG_ALLOWHARDLINK    (1U << 16)
-#define LOG_FLAG_IGNOREDUPLICATES (1U << 17)
+#define LOG_FLAG_COMPRESS          (1U << 0)
+#define LOG_FLAG_CREATE            (1U << 1)
+#define LOG_FLAG_IFEMPTY           (1U << 2)
+#define LOG_FLAG_DELAYCOMPRESS     (1U << 3)
+#define LOG_FLAG_COPYTRUNCATE      (1U << 4)
+#define LOG_FLAG_MISSINGOK         (1U << 5)
+#define LOG_FLAG_MAILFIRST         (1U << 6)
+#define LOG_FLAG_SHAREDSCRIPTS     (1U << 7)
+#define LOG_FLAG_COPY              (1U << 8)
+#define LOG_FLAG_DATEEXT           (1U << 9)
+#define LOG_FLAG_SHRED             (1U << 10)
+#define LOG_FLAG_SU                (1U << 11)
+#define LOG_FLAG_DATEYESTERDAY     (1U << 12)
+#define LOG_FLAG_OLDDIRCREATE      (1U << 13)
+#define LOG_FLAG_TMPFILENAME       (1U << 14)
+#define LOG_FLAG_DATEHOURAGO       (1U << 15)
+#define LOG_FLAG_ALLOWHARDLINK     (1U << 16)
+#define LOG_FLAG_IGNOREDUPLICATES  (1U << 17)
+#define LOG_FLAG_ALLOWNONSECUREDIR (1U << 18)
 
 #define NO_MODE ((mode_t) -1)
 #define NO_UID  ((uid_t) -1)
@@ -99,6 +100,7 @@ extern int debug;
 
 int switch_user(uid_t user, gid_t group);
 int switch_user_back(void);
+int checkIsSecureDir(const char *pathname, const struct logInfo *log);
 int readAllConfigPaths(const char **paths);
 #if !defined(asprintf) && !defined(_FORTIFY_SOURCE)
 int asprintf(char **string_ptr, const char *format, ...);

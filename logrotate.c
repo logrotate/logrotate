@@ -54,6 +54,11 @@ static acl_type prev_acl = NULL;
 #define STATEFILE_BUFFER_SIZE 4096
 #endif
 
+/* XSI option: https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/sys_stat.h.html */
+#ifndef S_ISVTX
+#define S_ISVTX 01000
+#endif
+
 #ifdef __hpux
 extern int asprintf(char **str, const char *fmt, ...);
 #endif
@@ -1401,6 +1406,99 @@ static long daysElapsed(const struct tm *now, const struct tm *last)
     return (long) ((intmax_t)diff / DAY_SECONDS);
 }
 
+static int isSecureDir(const char *pathname, uid_t exempt_uid, gid_t exempt_gid, int depth);
+
+static int isSecureDirStep(const char *pathname, uid_t exempt_uid, gid_t exempt_gid, int depth)
+{
+    struct stat sb;
+
+    if (lstat(pathname, &sb) < 0)
+        return -errno;
+
+    if (S_ISLNK(sb.st_mode)) {
+        /* check whether symlink target is inside a secure directory */
+        char *canonpath;
+        int r;
+
+        canonpath = realpath(pathname, NULL);
+        if (!canonpath)
+            return -errno;
+
+        r = isSecureDir(canonpath, exempt_uid, exempt_gid, depth + 1);
+        free(canonpath);
+        return r;
+    }
+
+    if (!S_ISDIR(sb.st_mode))
+        return -ENOTDIR;
+
+    if ((sb.st_uid != ROOT_UID && sb.st_uid != exempt_uid) ||
+        ((sb.st_mode & S_IWGRP) && sb.st_gid != 0 && sb.st_gid != exempt_gid) ||
+        (sb.st_mode & S_IWOTH && !(sb.st_mode & S_ISVTX))) {
+        return 0;
+    }
+
+    return 1;
+}
+
+static int isSecureDir(const char *pathname, uid_t exempt_uid, gid_t exempt_gid, int depth)
+{
+    char *copy, *p;
+    int r;
+
+    if (depth >= 10)
+        return -ELOOP;
+
+    if (pathname[0] != '/')
+        return -EINVAL;
+
+    copy = strdup(pathname);
+    if (!copy)
+        return -errno;
+
+    for (p = copy + 1;; p = strchr(p + 1, '/')) {
+        char backup = '\0'; /* initialize to please GCC */
+
+        if (p != NULL) {
+            backup = *p;
+            *p = '\0';
+        }
+
+        r = isSecureDirStep(copy, exempt_uid, exempt_gid, depth);
+        if (r <= 0 || p == NULL)
+            break;
+
+        *p = backup;
+    }
+
+    free(copy);
+    return r;
+}
+
+/*
+ * Check whether the given path is a secure directory.
+ *
+ * Return 1 if the check passes,
+ *        0 if the check fails or
+ *        <0 negative errno style value on error.
+ */
+int checkIsSecureDir(const char *pathname, const struct logInfo *log)
+{
+    uid_t exempt_uid;
+    gid_t exempt_gid;
+
+    if (log->flags & LOG_FLAG_ALLOWNONSECUREDIR)
+        return 1;
+
+    if (getuid() != ROOT_UID && getgid() != 0)
+        return 1;
+
+    exempt_uid = (log->flags & LOG_FLAG_SU) ? log->suUid : ROOT_UID;
+    exempt_gid = (log->flags & LOG_FLAG_SU) ? log->suGid : 0;
+
+    return isSecureDir(pathname, exempt_uid, exempt_gid, 0);
+}
+
 static int findNeedRotating(const struct logInfo *log, unsigned logNum, int force)
 {
     struct stat sb;
@@ -1411,39 +1509,38 @@ static int findNeedRotating(const struct logInfo *log, unsigned logNum, int forc
 
     localtime_r(&nowSecs, &now);
 
-    /* Check if parent directory of this log has safe permissions */
-    if ((log->flags & LOG_FLAG_SU) == 0 && getuid() == ROOT_UID) {
-        char *ld;
-        char *logpath = strdup(log->files[logNum]);
-        if (logpath == NULL) {
+    /* Check if parent directories of this log has safe permissions */
+    {
+        char *logpath;
+        const char *logdir;
+        int r;
+
+        logpath = strdup(log->files[logNum]);
+        if (!logpath) {
             message_OOM();
             return 1;
         }
-        ld = dirname(logpath);
-        if (stat(ld, &sb)) {
+        logdir = dirname(logpath);
+        r = checkIsSecureDir(logdir, log);
+        free(logpath);
+        if (r < 0) {
             /* If parent directory doesn't exist, it's not real error
-               (unless nomissingok is specified)
-               and rotation is not needed */
-            if (errno != ENOENT || (log->flags & LOG_FLAG_MISSINGOK) == 0) {
-                message(MESS_ERROR, "stat of %s failed: %s\n", ld,
-                        strerror(errno));
-                free(logpath);
-                return 1;
-            }
-            free(logpath);
-            return 0;
+             * (unless nomissingok is specified) and rotation is not needed */
+            if (r == -ENOENT && (log->flags & LOG_FLAG_MISSINGOK))
+                return 0;
+
+            message(MESS_ERROR, "failed checking whether log file %s is located in a secure dir: %s\n",
+                    log->files[logNum], strerror(-r));
+            return 1;
         }
-        /* Don't rotate in directories writable by others or group which is not "root"  */
-        if ((sb.st_gid != 0 && (sb.st_mode & S_IWGRP)) || (sb.st_mode & S_IWOTH)) {
-            message(MESS_ERROR, "skipping \"%s\" because parent directory has insecure permissions"
-                    " (It's world writable or writable by group which is not \"root\")"
+        if (r == 0) {
+            message(MESS_ERROR, "skipping \"%s\" because a parent directory has insecure permissions"
+                    " (It's world writable or writable by a user or group which is not \"root\")"
                     " Set \"su\" directive in config file to tell logrotate which user/group"
                     " should be used for rotation.\n"
                     ,log->files[logNum]);
-            free(logpath);
             return 1;
         }
-        free(logpath);
     }
 
     if (lstat(log->files[logNum], &sb)) {
