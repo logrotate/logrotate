@@ -613,10 +613,20 @@ extension, so that the rotated log file has a date in its name that is
 the same as the timestamps within it.
 
 .TP
+\fBnodateyesterday\fR
+Do not use yesterday's instead of today's date to create the \fBdateext\fR
+extension.  See also \fBdateyesterday\fR.
+
+.TP
 \fBdatehourago\fR
 Use hour ago instead of current date to create the \fBdateext\fR extension,
 so that the rotated log file has a hour in its name that is the same as the
 timestamps within it.  Useful with rotate \fBhourly\fR.
+
+.TP
+\fBnodatehourago\fR
+Do not use hour ago instead of current date to create the \fBdateext\fR
+extension.  See also \fBdatehourago\fR.
 
 .SS Mail
 
