@@ -1,0 +1,4 @@
+&DIR&/test*.log {
+    rotate 2
+    create
+}
