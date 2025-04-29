@@ -1834,7 +1834,7 @@ static int prerotateSingleLog(const struct logInfo *log, unsigned logNum,
 
     /* Adjust "now" if we want yesterday's date */
     if (log->flags & LOG_FLAG_DATEYESTERDAY) {
-        now.tm_hour = 12; /* set hour to noon to work around DST issues */
+        now.tm_isdst = -1; /* determine whether DST is in effect at the specified time */
         now.tm_mday = now.tm_mday - 1;
         mktime(&now);
     }
