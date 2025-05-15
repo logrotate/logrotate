@@ -140,7 +140,7 @@ enum {
 };
 
 static const char *const defTabooExts[] = {
-    ",v",
+    ".v",
     ".bak",
     ".cfsaved",
     ".disabled",
