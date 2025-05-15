@@ -374,7 +374,7 @@ The current taboo extension list is changed (see the \fBinclude\fR directive
 for information on the taboo extensions).  If a + precedes the list of
 extensions, the current taboo extension list is augmented, otherwise it
 is replaced.  At startup, the taboo extension list
-.IR ,v ,
+.IR .v ,
 .IR .bak ,
 .IR .cfsaved ,
 .IR .disabled ,
