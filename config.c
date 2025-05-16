@@ -161,6 +161,9 @@ static const char *const defTabooExts[] = {
     ".ucf-dist",
     ".ucf-new",
     ".ucf-old",
+    ".pacnew",
+    ".pacsave",
+    ".pacorig",
     "~"
 };
 static const unsigned defTabooCount = sizeof(defTabooExts) / sizeof(char *);
