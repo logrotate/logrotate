@@ -36,7 +36,8 @@ large numbers of log files.  It allows automatic rotation, compression,
 removal, and mailing of log files.  Each log file may be handled daily,
 weekly, monthly, or when it grows too large.
 .P
-Normally, \fBlogrotate\fR is run as a daily cron job.  It will not modify
+Normally, \fBlogrotate\fR is run as a daily cron job (or by
+\fIlogrotate.timer\fR when using \fBsystemd\fR(1)).  It will not modify
 a log more than once in one day unless the criterion for that log is
 based on the log's size and \fBlogrotate\fR is being run more than once
 each day, or unless the \fB\-f\fR or \fB\-\-force\fR option is used.
