@@ -42,6 +42,12 @@ a log more than once in one day unless the criterion for that log is
 based on the log's size and \fBlogrotate\fR is being run more than once
 each day, or unless the \fB\-f\fR or \fB\-\-force\fR option is used.
 .P
+When a log file is encountered for the first time (that is, when it has
+no entry in the state file), \fBlogrotate\fR records the current time as
+the last rotation time.  As a result, time-based rotation criteria (such
+as \fBdaily\fR, \fBweekly\fR, or \fBmonthly\fR) may not be satisfied on
+that first run.
+.P
 Any number of config files may be given on the command line.  Later config
 files may override the options given in earlier files, so the order
 in which the \fBlogrotate\fR config files are listed is important.
