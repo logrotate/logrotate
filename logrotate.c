@@ -841,16 +841,16 @@ static void setAtimeMtime(int fd, const char *filename, const struct stat *sb)
 #if defined HAVE_FUTIMENS && defined HAVE_STRUCT_STAT_ST_ATIM && defined HAVE_STRUCT_STAT_ST_MTIM
     struct timespec ts[2];
 
-    ts[0] = sb->st_atim;
-    ts[1] = sb->st_mtim;
+    memcpy( &ts[0], &sb->st_atim, sizeof(struct timespec) );
+    memcpy( &ts[1], &sb->st_mtim, sizeof(struct timespec) );
     futimens(fd, ts);
 
     (void)filename;
 #elif defined HAVE_UTIMENSAT && defined HAVE_STRUCT_STAT_ST_ATIM && defined HAVE_STRUCT_STAT_ST_MTIM
     struct timespec ts[2];
 
-    ts[0] = sb->st_atim;
-    ts[1] = sb->st_mtim;
+    memcpy( &ts[0], &sb->st_atim, sizeof(struct timespec) );
+    memcpy( &ts[1], &sb->st_mtim, sizeof(struct timespec) );
     utimensat(AT_FDCWD, filename, ts, AT_SYMLINK_NOFOLLOW);
 
     (void)fd;
