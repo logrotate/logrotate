@@ -2798,8 +2798,10 @@ static int writeState(const char *stateFilename)
     }
     strcpy(tmpFilename, stateFilename);
     strcat(tmpFilename, ".tmp");
-    /* Remove possible tmp state file from previous run */
-    error = unlink(tmpFilename);
+    /* If present, remove possible tmp state file from previous run */
+    if (access(tmpFilename, F_OK) == 0)
+        error = unlink(tmpFilename);
+
     if (error == -1 && errno != ENOENT) {
         message(MESS_ERROR, "error removing old temporary state file %s: %s\n",
                 tmpFilename, strerror(errno));
