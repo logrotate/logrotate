@@ -1178,10 +1178,9 @@ static int mailLogWrapper(const char *mailFilename, const char *mailComm,
    the file is a hole.  In that case, return true.  */
 static int is_probably_sparse(struct stat const *sb)
 {
-#if defined(HAVE_STRUCT_STAT_ST_BLOCKS) && defined(HAVE_STRUCT_STAT_ST_BLKSIZE)
+#if defined(HAVE_STRUCT_STAT_ST_BLOCKS)
     return (S_ISREG (sb->st_mode)
-            && sb->st_blksize != 0
-            && sb->st_blocks < sb->st_size / sb->st_blksize);
+            && sb->st_blocks < (sb->st_size + 512 - 1) / 512);
 #else
     return 0;
 #endif
