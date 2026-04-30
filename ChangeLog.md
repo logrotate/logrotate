@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [UNRELEASED]
 
+ - fix incorrect sparse file detection due to mismatched st_blocks and st_blksize units (#682)
+
 [UNRELEASED]: https://github.com/logrotate/logrotate/compare/3.22.0...main
  - Add support for %G, %y, %g, %U, %W, %u, %w, and %j to dateformat. [ryancdotorg]
 
