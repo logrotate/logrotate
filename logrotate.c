@@ -1194,8 +1194,6 @@ static int is_probably_sparse(struct stat const *sb)
 #endif
 }
 
-#define MIN(a,b) ((a) < (b) ? (a) : (b))
-
 /* Return whether the buffer consists entirely of NULs.
    Note the word after the buffer must be non NUL. */
 
@@ -1251,7 +1249,8 @@ static int sparse_copy(int src_fd, int dest_fd, const struct stat *sb,
     while (max_n_read) {
         int make_hole = 0;
         size_t bytes_read;
-        const ssize_t n_read = read (src_fd, buf, MIN (max_n_read, BUFSIZ));
+        const size_t to_read = (max_n_read < BUFSIZ) ? max_n_read : BUFSIZ;
+        const ssize_t n_read = read (src_fd, buf, to_read);
         if (n_read < 0) {
             if (errno == EINTR) {
                 continue;
