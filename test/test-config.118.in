@@ -1,0 +1,17 @@
+create
+
+&DIR&/test.log {
+	size 1x}
+}
+
+&DIR&/anothertest.log {
+	rotate 1
+}
+
+&DIR&/differenttest.log {
+	rotate 1 # }
+    }
+
+&DIR&/differentgood.log {
+	rotate 1
+}

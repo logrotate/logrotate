@@ -1251,6 +1251,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
     message(MESS_DEBUG, "reading config file %s\n", configFile);
 
     for (start = buf; (size_t)(start - buf) < length; start++) {
+next_state:
         switch (state) {
             case STATE_DEFAULT:
                 if (isblank((unsigned char)*start))
@@ -1332,6 +1333,9 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                         newlog->dateformat = isolateValue(configFile, lineNum,
                                                           key, &start, &buf,
                                                           length);
+                        if (newlog->dateformat == NULL) {
+                            RAISE_ERROR();
+                        }
                     } else if (!strcmp(key, "noolddir")) {
                         freeLogItem(oldDir);
                     } else if (!strcmp(key, "mailfirst")) {
@@ -1516,7 +1520,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                         }
                         message(MESS_ERROR, "%s:%d bad monthly directive '%s'\n",
                                 configFile, lineNum, key);
-                        goto error;
+                        RAISE_ERROR();
                     } else if (!strcmp(key, "weekly")) {
                         unsigned weekday;
                         char tmp;
@@ -1536,7 +1540,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                         }
                         message(MESS_ERROR, "%s:%d bad weekly directive '%s'\n",
                                 configFile, lineNum, key);
-                        goto error;
+                        RAISE_ERROR();
                     } else if (!strcmp(key, "yearly")) {
                         set_criterium(&newlog->criterium, ROT_YEARLY, &criterium_set);
                     } else if (!strcmp(key, "rotate")) {
@@ -1643,8 +1647,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                                     "%s:%d tabooext may not appear inside "
                                     "of log file definition\n", configFile,
                                     lineNum);
-                            state = STATE_ERROR;
-                            continue;
+                            RAISE_ERROR();
                         }
                         free(key);
                         key = isolateValue(configFile, lineNum, "tabooext", &start,
@@ -1701,8 +1704,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                                     "%s:%d taboopat may not appear inside "
                                     "of log file definition\n", configFile,
                                     lineNum);
-                            state = STATE_ERROR;
-                            continue;
+                            RAISE_ERROR();
                         }
                         free(key);
                         key = isolateValue(configFile, lineNum, "taboopat", &start,
@@ -1934,8 +1936,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                     if (newlog != defConfig) {
                         message(MESS_ERROR, "%s:%d unexpected log filename\n",
                                 configFile, lineNum);
-                        state = STATE_ERROR;
-                        continue;
+                        RAISE_ERROR();
                     }
 
                     /* If no compression options were found in config file, set
@@ -2258,8 +2259,10 @@ duperror:
                         newlog->pattern ? newlog->pattern : "log config");
 
                 logerror = 1;
-                state = STATE_SKIP_CONFIG;
-                break;
+                /* Discard the rest of the failing line, including any braces
+                 * that belong to the invalid option value. */
+                state = STATE_SKIP_LINE | STATE_SKIP_CONFIG;
+                goto next_state;
             case STATE_LOAD_SCRIPT:
             case STATE_LOAD_SCRIPT | STATE_SKIP_CONFIG:
                 free(key);
@@ -2294,6 +2297,8 @@ duperror:
                 }
                 break;
             case STATE_SKIP_CONFIG:
+                if (isblank((unsigned char)*start))
+                    continue;
                 if (*start == '}') {
                     state = STATE_DEFAULT;
                     freeTailLogs(1);
@@ -2342,8 +2347,6 @@ duperror:
         if (start < buf + length && *start == '\n') {
             lineNum++;
         }
-
-next_state: ;
     }
 
     if (scriptStart) {
