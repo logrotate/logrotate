@@ -1,0 +1,22 @@
+create
+
+&DIR&/test.log {
+	weekly
+	dateext
+	rotate 1
+	dateformat
+}
+
+&DIR&/anothertest.log {
+	rotate 1
+}
+
+&DIR&/differenttest.log {
+	dateext
+	rotate 1
+	dateformat
+    }
+
+&DIR&/differentgood.log {
+	rotate 1
+}
