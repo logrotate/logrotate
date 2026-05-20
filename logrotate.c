@@ -841,16 +841,24 @@ static void setAtimeMtime(int fd, const char *filename, const struct stat *sb)
 #if defined HAVE_FUTIMENS && defined HAVE_STRUCT_STAT_ST_ATIM && defined HAVE_STRUCT_STAT_ST_MTIM
     struct timespec ts[2];
 
-    ts[0] = sb->st_atim;
-    ts[1] = sb->st_mtim;
+    /* Copy field-by-field: on some platforms (e.g. AIX) the stat
+       timestamp members are a distinct struct type from struct timespec. */
+    ts[0].tv_sec = sb->st_atim.tv_sec;
+    ts[0].tv_nsec = sb->st_atim.tv_nsec;
+    ts[1].tv_sec = sb->st_mtim.tv_sec;
+    ts[1].tv_nsec = sb->st_mtim.tv_nsec;
     futimens(fd, ts);
 
     (void)filename;
 #elif defined HAVE_UTIMENSAT && defined HAVE_STRUCT_STAT_ST_ATIM && defined HAVE_STRUCT_STAT_ST_MTIM
     struct timespec ts[2];
 
-    ts[0] = sb->st_atim;
-    ts[1] = sb->st_mtim;
+    /* Copy field-by-field: on some platforms (e.g. AIX) the stat
+       timestamp members are a distinct struct type from struct timespec. */
+    ts[0].tv_sec = sb->st_atim.tv_sec;
+    ts[0].tv_nsec = sb->st_atim.tv_nsec;
+    ts[1].tv_sec = sb->st_mtim.tv_sec;
+    ts[1].tv_nsec = sb->st_mtim.tv_nsec;
     utimensat(AT_FDCWD, filename, ts, AT_SYMLINK_NOFOLLOW);
 
     (void)fd;
