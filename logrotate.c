@@ -1205,7 +1205,7 @@ static int is_probably_sparse(struct stat const *sb)
 }
 
 /* Return whether the buffer consists entirely of NULs.
-   Note the word after the buffer must be non NUL. */
+   Note the byte after the buffer must be non NUL. */
 
 static int is_nul (void const *buf, size_t bufsize)
 {
@@ -1360,8 +1360,9 @@ static int copyTruncate(const char *currLog, const char *saveLog, const struct s
                 goto fail;
 
             if (sparse_copy(fdcurr, fdsave, sb, saveLog, currLog) != 1) {
-                message(MESS_ERROR, "error copying %s to %s: %s\n", currLog,
-                        saveLog, strerror(errno));
+                /* sparse_copy() already reported the specific error */
+                message(MESS_ERROR, "error copying %s to %s\n", currLog,
+                        saveLog);
                 unlink(saveLog);
                 goto fail;
             }
