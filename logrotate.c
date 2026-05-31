@@ -1569,6 +1569,9 @@ static int findNeedRotating(const struct logInfo *log, unsigned logNum, int forc
                 state->doRotate = ((now.tm_mday != state->lastRotated.tm_mday) ||
                         (now.tm_mon != state->lastRotated.tm_mon) ||
                         (now.tm_year != state->lastRotated.tm_year));
+                if (state->doRotate
+                        && difftime(nowSecs, mktime(&state->lastRotated)) < DAY_SECONDS - 2 * 3600)
+                    state->doRotate = 0;
                 if (!state->doRotate) {
                     message(MESS_DEBUG, "  log does not need rotating "
                             "(log has been rotated at %d-%02d-%02d %02d:%02d, "
