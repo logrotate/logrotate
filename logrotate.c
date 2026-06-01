@@ -2383,7 +2383,7 @@ static int rotateSingleLog(const struct logInfo *log, unsigned logNum,
                 && !(log->flags & LOG_FLAG_TMPFILENAME)) {
             hasErrors = copyTruncate(log->files[logNum], rotNames->finalName,
                                      &state->sb, log,
-                                     !log->rotateCount && !log->logAddress);
+                                     !log->rotateCount && !log->logAddress && !log->post);
         }
 
 #ifdef WITH_ACL
@@ -2428,7 +2428,8 @@ static int postrotateSingleLog(const struct logInfo *log, unsigned logNum,
         int skipped_copy = (log->flags & (LOG_FLAG_COPYTRUNCATE | LOG_FLAG_COPY)) &&
                            !(log->flags & LOG_FLAG_TMPFILENAME) &&
                            !log->rotateCount &&
-                           !log->logAddress;
+                           !log->logAddress &&
+                           !log->post;
 
         if (!skipped_copy)
             hasErrors = compressLogFile(rotNames->finalName, log, &state->sb);
