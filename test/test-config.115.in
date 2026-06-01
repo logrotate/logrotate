@@ -1,0 +1,8 @@
+create
+
+&DIR&/test.log {
+	weekly
+	dateext
+	dateformat
+	rotate 1
+}

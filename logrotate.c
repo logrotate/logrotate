@@ -96,6 +96,16 @@ static time_t nowSecs = 0;
 static uid_t save_euid;
 static gid_t save_egid;
 
+static void freeLogNames(struct logNames *rotNames)
+{
+    free(rotNames->firstRotated);
+    free(rotNames->disposeName);
+    free(rotNames->finalName);
+    free(rotNames->dirName);
+    free(rotNames->baseName);
+    free(rotNames);
+}
+
 static int globerr(const char *pathname, int theerr)
 {
     message(MESS_ERROR, "error accessing %s: %s\n", pathname,
@@ -2618,6 +2628,8 @@ static int rotateLogSet(const struct logInfo *log, int force)
                 if (log->flags & LOG_FLAG_SU) {
                     switch_user_back();
                 }
+                while (i-- > 0)
+                    freeLogNames(rotNames[i]);
                 free(rotNames);
                 free(state);
                 free(logHasErrors);
@@ -2720,14 +2732,8 @@ static int rotateLogSet(const struct logInfo *log, int force)
 
     }
 
-    for (i = 0; i < log->numFiles; i++) {
-        free(rotNames[i]->firstRotated);
-        free(rotNames[i]->disposeName);
-        free(rotNames[i]->finalName);
-        free(rotNames[i]->dirName);
-        free(rotNames[i]->baseName);
-        free(rotNames[i]);
-    }
+    for (i = 0; i < log->numFiles; i++)
+        freeLogNames(rotNames[i]);
     free(rotNames);
     free(state);
 
@@ -3355,7 +3361,7 @@ int main(int argc, const char **argv)
     if (arg < -1) {
         fprintf(stderr, "logrotate: bad argument %s: %s\n",
                 poptBadOption(optCon, POPT_BADOPTION_NOALIAS),
-                poptStrerror(rc));
+                poptStrerror(arg));
         poptFreeContext(optCon);
         return 2;
     }

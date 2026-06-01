@@ -1324,6 +1324,9 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                         newlog->dateformat = isolateValue(configFile, lineNum,
                                                           key, &start, &buf,
                                                           length);
+                        if (newlog->dateformat == NULL) {
+                            RAISE_ERROR();
+                        }
                     } else if (!strcmp(key, "noolddir")) {
                         freeLogItem(oldDir);
                     } else if (!strcmp(key, "mailfirst")) {
@@ -1508,7 +1511,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                         }
                         message(MESS_ERROR, "%s:%d bad monthly directive '%s'\n",
                                 configFile, lineNum, key);
-                        goto error;
+                        RAISE_ERROR();
                     } else if (!strcmp(key, "weekly")) {
                         unsigned weekday;
                         char tmp;
@@ -1528,7 +1531,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                         }
                         message(MESS_ERROR, "%s:%d bad weekly directive '%s'\n",
                                 configFile, lineNum, key);
-                        goto error;
+                        RAISE_ERROR();
                     } else if (!strcmp(key, "yearly")) {
                         set_criterium(&newlog->criterium, ROT_YEARLY, &criterium_set);
                     } else if (!strcmp(key, "rotate")) {
@@ -1722,19 +1725,22 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                             while (!isspace((unsigned char)*chptr) && *chptr != ',' && *chptr)
                                 chptr++;
 
-                            tmp = reallocarray(tabooPatterns, tabooCount + 1, sizeof(*tabooPatterns));
-                            if (tmp == NULL) {
-                                message_OOM();
-                                RAISE_ERROR();
-                            }
-                            tabooPatterns = tmp;
-                            if (asprintf(&pattern, "%.*s", (int)(chptr - endtag), endtag) < 0) {
-                                message_OOM();
-                                RAISE_ERROR();
-                            }
+                            /* skip empty patterns */
+                            if (endtag < chptr) {
+                                tmp = reallocarray(tabooPatterns, tabooCount + 1, sizeof(*tabooPatterns));
+                                if (tmp == NULL) {
+                                    message_OOM();
+                                    RAISE_ERROR();
+                                }
+                                tabooPatterns = tmp;
+                                if (asprintf(&pattern, "%.*s", (int)(chptr - endtag), endtag) < 0) {
+                                    message_OOM();
+                                    RAISE_ERROR();
+                                }
 
-                            tabooPatterns[tabooCount] = pattern;
-                            tabooCount++;
+                                tabooPatterns[tabooCount] = pattern;
+                                tabooCount++;
+                            }
 
                             endtag = chptr;
                             if (*endtag == ',')
@@ -1965,6 +1971,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                         message(MESS_ERROR,
                                 "%s:%d { expected after log file name(s)\n",
                                 configFile, lineNum);
+                        free(argv);
                         free(glob_string);
                         goto error;
                     }
@@ -2341,6 +2348,12 @@ next_state: ;
         message(MESS_ERROR,
                 "%s:prerotate, postrotate or preremove without endscript\n",
                 configFile);
+        goto error;
+    }
+
+    if (newlog != defConfig) {
+        message(MESS_ERROR, "%s:%d unexpected end of file, missing '}' after "
+                "log file definition\n", configFile, lineNum);
         goto error;
     }
 
