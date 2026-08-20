@@ -105,6 +105,32 @@ static int globerr(const char *pathname, int theerr)
     return 1;
 }
 
+/* Escape characters that glob(3)/fnmatch(3) treat as wildcard metacharacters
+ * ('*', '?', '[', ']') or as their own escape character ('\'). This is used
+ * when a literal, already-resolved path component (such as a log file's
+ * basename) is spliced into a pattern that is later passed to glob(), so
+ * that a literal metacharacter occurring in an actual filename is not
+ * reinterpreted as a wildcard and does not unintentionally match unrelated
+ * files. Returns a newly allocated string, or NULL on allocation failure. */
+static char *globEscape(const char *s)
+{
+    char *escaped = malloc(strlen(s) * 2 + 1);
+    char *o;
+
+    if (escaped == NULL)
+        return NULL;
+
+    o = escaped;
+    for (const char *i = s; *i != '\0'; i++) {
+        if (strchr("*?[]\\", *i) != NULL)
+            *o++ = '\\';
+        *o++ = *i;
+    }
+    *o = '\0';
+
+    return escaped;
+}
+
 /* We could switch to qsort_r to get rid of this global variable,
  * but qsort_r is not portable enough (Linux vs. *BSD vs ...)... */
 static struct compData _compData;
@@ -1659,16 +1685,31 @@ static int findLastRotated(const struct logNames *rotNames,
                            const char *fileext, const char *compext)
 {
     char *pattern;
+    char *escDir, *escBase;
     int glob_rc;
     glob_t globResult;
     size_t i;
     int last = 0;
     size_t prefixLen, suffixLen;
 
-    if (asprintf(&pattern, "%s/%s.*%s%s", rotNames->dirName,
-                 rotNames->baseName, fileext, compext) < 0)
+    escDir = globEscape(rotNames->dirName);
+    escBase = globEscape(rotNames->baseName);
+    if (escDir == NULL || escBase == NULL) {
+        free(escDir);
+        free(escBase);
         /* out of memory */
         return -1;
+    }
+
+    if (asprintf(&pattern, "%s/%s.*%s%s", escDir,
+                 escBase, fileext, compext) < 0) {
+        free(escDir);
+        free(escBase);
+        /* out of memory */
+        return -1;
+    }
+    free(escDir);
+    free(escBase);
 
     glob_rc = glob(pattern, 0, globerr, &globResult);
     free(pattern);
@@ -1999,8 +2040,19 @@ static int prerotateSingleLog(const struct logInfo *log, unsigned logNum,
             (log->flags & LOG_FLAG_DELAYCOMPRESS)) {
         if (log->flags & LOG_FLAG_DATEEXT) {
             /* glob for uncompressed files with our pattern */
-            if (asprintf(&glob_pattern, "%s/%s%s%s", rotNames->dirName,
-                         rotNames->baseName, dext_pattern, fileext) < 0) {
+            char *escDir = globEscape(rotNames->dirName);
+            char *escBase = globEscape(rotNames->baseName);
+            if (escDir == NULL || escBase == NULL) {
+                message_OOM();
+                free(escDir);
+                free(escBase);
+                return 1;
+            }
+            rc = asprintf(&glob_pattern, "%s/%s%s%s", escDir,
+                         escBase, dext_pattern, fileext);
+            free(escDir);
+            free(escBase);
+            if (rc < 0) {
                 message_OOM();
                 return 1;
             }
@@ -2050,8 +2102,19 @@ static int prerotateSingleLog(const struct logInfo *log, unsigned logNum,
     if (log->flags & LOG_FLAG_DATEEXT) {
         /* glob for compressed files with our pattern
          * and compress ext */
-        if (asprintf(&glob_pattern, "%s/%s%s%s%s", rotNames->dirName,
-                     rotNames->baseName, dext_pattern, fileext, compext) < 0) {
+        char *escDir = globEscape(rotNames->dirName);
+        char *escBase = globEscape(rotNames->baseName);
+        if (escDir == NULL || escBase == NULL) {
+            message_OOM();
+            free(escDir);
+            free(escBase);
+            return 1;
+        }
+        rc = asprintf(&glob_pattern, "%s/%s%s%s%s", escDir,
+                     escBase, dext_pattern, fileext, compext);
+        free(escDir);
+        free(escBase);
+        if (rc < 0) {
             message_OOM();
             return 1;
         }
