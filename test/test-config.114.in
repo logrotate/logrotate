@@ -1,0 +1,11 @@
+create
+
+"&DIR&/*.example.com.access.log" {
+    daily
+    dateext
+    dateformat -%Y%m%d
+    rotate 3
+    missingok
+    notifempty
+    nocompress
+}
