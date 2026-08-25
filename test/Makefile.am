@@ -107,6 +107,7 @@ TEST_CASES = \
 	test-0111.sh \
 	test-0112.sh \
 	test-0113.sh \
+	test-0114.sh \
 	test-0115.sh
 
 EXTRA_DIST = \

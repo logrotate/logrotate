@@ -1,0 +1,9 @@
+# addextension given in the global (default) section must be inherited
+# by the log file definitions that follow it
+create
+addextension .foo
+
+&DIR&/test.log {
+	daily
+	rotate 4
+}

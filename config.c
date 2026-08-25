@@ -639,6 +639,7 @@ static int copyLogInfo(struct logInfo *to, const struct logInfo *from)
     MEMBER_COPY(to->preremove, from->preremove);
     MEMBER_COPY(to->logAddress , from->logAddress);
     MEMBER_COPY(to->extension, from->extension);
+    MEMBER_COPY(to->addextension, from->addextension);
     MEMBER_COPY(to->compress_prog, from->compress_prog);
     MEMBER_COPY(to->uncompress_prog, from->uncompress_prog);
     MEMBER_COPY(to->compress_ext, from->compress_ext);
@@ -682,6 +683,7 @@ static void freeLogInfo(struct logInfo *log)
     free(log->preremove);
     free(log->logAddress);
     free(log->extension);
+    free(log->addextension);
     free(log->compress_prog);
     free(log->uncompress_prog);
     free(log->compress_ext);
