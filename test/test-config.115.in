@@ -1,0 +1,13 @@
+# a log file definition may span several lines; parseGlobString() consumes
+# them, so the line counter has to stay in sync with what it consumed
+&DIR&/test.log
+&DIR&/test2.log
+&DIR&/test3.log
+{
+	missingok
+	daily
+	rotate 1
+}
+
+# the unknown directive below sits on line 13
+bogusdirective 1

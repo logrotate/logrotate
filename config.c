@@ -960,7 +960,7 @@ int readAllConfigPaths(const char **paths)
     return result;
 }
 
-static char* parseGlobString(const char *configFile, int lineNum,
+static char* parseGlobString(const char *configFile, int *pLineNum,
                              const char *buf, size_t length, char **ppos)
 {
     /* output buffer */
@@ -990,13 +990,19 @@ static char* parseGlobString(const char *configFile, int lineNum,
                     state = PGS_INIT;
         }
 
+        if ('\n' == **ppos)
+            /* keep the caller's line counter in sync with the input we
+             * consume here, otherwise all subsequent diagnostics of this
+             * config file report a wrong line number */
+            ++(*pLineNum);
+
         if (PGS_COMMENT == state)
             /* skip comment */
             continue;
 
         switch (**ppos) {
             case '}':
-                message(MESS_ERROR, "%s:%d unexpected } (missing previous '{')\n", configFile, lineNum);
+                message(MESS_ERROR, "%s:%d unexpected } (missing previous '{')\n", configFile, *pLineNum);
                 free(globString);
                 return NULL;
 
@@ -1031,7 +1037,7 @@ static char* parseGlobString(const char *configFile, int lineNum,
     }
 
     /* premature end of input */
-    message(MESS_ERROR, "%s:%d missing '{' after log files definition\n", configFile, lineNum);
+    message(MESS_ERROR, "%s:%d missing '{' after log files definition\n", configFile, *pLineNum);
     free(globString);
     return NULL;
 }
@@ -1949,7 +1955,7 @@ static int readConfigFile(const char *configFile, struct logInfo *defConfig)
                     if ((newlog = newLogInfo(defConfig)) == NULL)
                         goto error;
 
-                    glob_string = parseGlobString(configFile, lineNum, buf, length, &start);
+                    glob_string = parseGlobString(configFile, &lineNum, buf, length, &start);
                     if (glob_string)
                         in_config = 1;
                     else
