@@ -3355,7 +3355,7 @@ int main(int argc, const char **argv)
     if (arg < -1) {
         fprintf(stderr, "logrotate: bad argument %s: %s\n",
                 poptBadOption(optCon, POPT_BADOPTION_NOALIAS),
-                poptStrerror(rc));
+                poptStrerror(arg));
         poptFreeContext(optCon);
         return 2;
     }
