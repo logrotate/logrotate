@@ -2232,7 +2232,7 @@ static int prerotateSingleLog(const struct logInfo *log, unsigned logNum,
         if (!stat(destFile, &fst_buf)) {
             message(MESS_ERROR,
                     "destination %s already exists, skipping rotation\n",
-                    rotNames->firstRotated);
+                    destFile);
             hasErrors = 1;
         }
         free(destFile);
