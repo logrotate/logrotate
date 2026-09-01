@@ -22,7 +22,7 @@ jobs:
       uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
     - name: Initialize CodeQL
-      uses: github/codeql-action/init@7211b7c8077ea37d8641b6271f6a365a22a5fbfa
+      uses: github/codeql-action/init@cdf488f595d80d6e07e03d4674febd5ab45fa938
       with:
         languages: cpp
 
