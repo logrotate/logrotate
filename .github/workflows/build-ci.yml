@@ -15,7 +15,7 @@ jobs:
     env:
       CC: ${{ matrix.cc }}
     steps:
-    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
     - name: Update apt metadata cache
       run: sudo apt-get update
@@ -52,7 +52,7 @@ jobs:
     name: Build with clang on macOS
     runs-on: macOS-latest
     steps:
-    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
     - name: Install dependencies
       run: brew install automake coreutils flock popt
@@ -90,7 +90,7 @@ jobs:
     env:
       CC: clang-22
     steps:
-    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
     - name: Install Clang repo
       run: |
@@ -121,7 +121,7 @@ jobs:
       UBSAN_OPTIONS: print_stacktrace=1:print_summary=1:halt_on_error=1
       LSAN_OPTIONS: suppressions=test/leak_san_suppress.txt
     steps:
-    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
     - name: Install Clang repo
       run: |
@@ -162,7 +162,7 @@ jobs:
       CFLAGS: -O3 -flto=auto -finline-limit=1000 -fanalyzer
       LDFLAGS: -O3 -flto=auto -finline-limit=1000 -fanalyzer
     steps:
-    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
     - name: Update apt metadata cache
       run: sudo apt-get update
@@ -186,7 +186,7 @@ jobs:
     env:
       CFLAGS: -O2 -g -std=c89
     steps:
-    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
     - name: Update apt metadata cache
       run: sudo apt-get update
@@ -209,7 +209,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
       - name: Spaces check
         run: git diff-tree --check $(git hash-object -t tree /dev/null) HEAD
