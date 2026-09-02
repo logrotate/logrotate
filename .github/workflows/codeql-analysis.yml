@@ -26,6 +26,9 @@ jobs:
       with:
         languages: cpp
 
+    - name: Update apt metadata cache
+      run: sudo apt-get update
+
     - name: Install Dependencies
       run: sudo apt-get install -y automake libacl1-dev libpopt-dev libselinux1-dev
 

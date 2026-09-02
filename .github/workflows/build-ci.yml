@@ -17,6 +17,9 @@ jobs:
     steps:
     - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
+    - name: Update apt metadata cache
+      run: sudo apt-get update
+
     - name: Install dependencies
       run: sudo apt-get install -y acl automake libacl1-dev libpopt-dev libselinux1-dev rpm
 
@@ -161,6 +164,9 @@ jobs:
     steps:
     - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
+    - name: Update apt metadata cache
+      run: sudo apt-get update
+
     - name: Install dependencies
       run: sudo apt-get install -y automake gcc-14 libacl1-dev libpopt-dev libselinux1-dev
 
@@ -181,6 +187,9 @@ jobs:
       CFLAGS: -O2 -g -std=c89
     steps:
     - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+    - name: Update apt metadata cache
+      run: sudo apt-get update
 
     - name: Install dependencies
       run: sudo apt-get install -y automake libacl1-dev libpopt-dev libselinux1-dev
