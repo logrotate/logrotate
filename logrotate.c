@@ -90,6 +90,15 @@ static struct logStateList {
 int numLogs = 0;
 int debug = 0;
 
+/* Monotonic clock in seconds, for logging how long each phase of a run takes
+   so a slow stage (config parsing, reading state, rotation) is visible under -v. */
+static double monotonicSeconds(void)
+{
+    struct timespec now;
+    clock_gettime(CLOCK_MONOTONIC, &now);
+    return (double)now.tv_sec + (double)now.tv_nsec / 1e9;
+}
+
 static unsigned int hashSize;
 static const char *mailCommand = DEFAULT_MAIL_COMMAND;
 static time_t nowSecs = 0;
@@ -3287,6 +3296,7 @@ int main(int argc, const char **argv)
     const char **files;
     poptContext optCon;
     const struct logInfo *log;
+    double configStartSecs, stateStartSecs, rotateStartSecs;
 
     const struct poptOption options[] = {
         {"debug", 'd', 0, NULL, 'd',
@@ -3398,8 +3408,11 @@ int main(int argc, const char **argv)
 
     TAILQ_INIT(&logs);
 
+    configStartSecs = monotonicSeconds();
     if (readAllConfigPaths(files))
         rc = 1;
+    message(MESS_DEBUG, "logrotate: config parsing took %.3f s\n",
+            monotonicSeconds() - configStartSecs);
 
     poptFreeContext(optCon);
     nowSecs = time(NULL);
@@ -3410,8 +3423,11 @@ int main(int argc, const char **argv)
         exit(3);
     }
 
+    stateStartSecs = monotonicSeconds();
     if (readState(stateFile))
         rc = 1;
+    message(MESS_DEBUG, "logrotate: reading state took %.3f s\n",
+            monotonicSeconds() - stateStartSecs);
 
     message(MESS_DEBUG, "\nHandling %d logs\n", numLogs);
 
@@ -3421,8 +3437,11 @@ int main(int argc, const char **argv)
     if (signal(SIGCHLD, SIG_DFL) == SIG_ERR)
         message(MESS_WARN, "failed to reset SIGCHLD handler: %s\n", strerror(errno));
 
+    rotateStartSecs = monotonicSeconds();
     for (log = logs.tqh_first; log != NULL; log = log->list.tqe_next)
         rc |= rotateLogSet(log, force);
+    message(MESS_DEBUG, "logrotate: rotating %d logs took %.3f s\n",
+            numLogs, monotonicSeconds() - rotateStartSecs);
 
     if (!debug)
         rc |= writeState(stateFile);
