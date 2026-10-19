@@ -291,7 +291,7 @@ static void unescape(char *arg)
 }
 
 #define HASH_SIZE_MIN 64
-#define HASH_SIZE_MAX 8192
+#define HASH_SIZE_MAX (1U << 20)   /* ~1M buckets; readState() sizes the hash from the log and state-file counts, and findState stays ~O(1) well past this */
 static int allocateHash(unsigned long hs)
 {
     unsigned int i;
@@ -3010,12 +3010,24 @@ static int readState(const char *stateFilename)
         }
     }
 
-    /* Try to estimate how many state entries we have in the state file.
-     * We expect single entry to have around 80 characters (Of course this is
-     * just an estimation). During the testing I've found out that 200 entries
-     * per single hash entry gives good mem/performance ratio. */
-    if (allocateHash((size_t)f_stat.st_size / 80 / 200))
-        rc = 1;
+    /* Size the state hash from whichever is larger: the number of logs we
+     * manage now, or the number of entries already in the state file (which can
+     * hold stale entries for logs no longer configured, kept for up to a year).
+     * This keeps findState ~O(1) both on a fresh run, where the state file is
+     * ~empty, and when the state file has grown far beyond the current config. */
+    {
+        unsigned long logFileCount = 0;
+        unsigned long stateEntryCount;
+        unsigned long stateHashSize;
+        const struct logInfo *li;
+        for (li = logs.tqh_first; li != NULL; li = li->list.tqe_next)
+            logFileCount += li->numFiles;
+        /* a state-file entry is around 80 bytes */
+        stateEntryCount = (unsigned long)(f_stat.st_size / 80);
+        stateHashSize = logFileCount > stateEntryCount ? logFileCount : stateEntryCount;
+        if (allocateHash(stateHashSize))
+            rc = 1;
+    }
 
     if (rc || (f_stat.st_size == 0)) {
         /* error already occurred, or we have no state file to read from */
