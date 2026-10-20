@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## [UNRELEASED]
 
+ - make readConfigFile's duplicate detection O(n) instead of O(n^2), so config parsing stays fast when a glob matches very many files
+ - size the state hash from the number of managed logs, so findState stays ~O(1) regardless of how many files a glob matches
+ - log per-stage timing (config parse, read state, rotation) at verbose level (-v)
  - fix incorrect sparse file detection due to mismatched st_blocks and st_blksize units (#682)
 
 [UNRELEASED]: https://github.com/logrotate/logrotate/compare/3.22.0...main
