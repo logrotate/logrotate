@@ -90,6 +90,15 @@ static struct logStateList {
 int numLogs = 0;
 int debug = 0;
 
+/* Monotonic clock in seconds, for logging how long each phase of a run takes
+   so a slow stage (config parsing, reading state, rotation) is visible under -v. */
+static double monotonicSeconds(void)
+{
+    struct timespec now;
+    clock_gettime(CLOCK_MONOTONIC, &now);
+    return (double)now.tv_sec + (double)now.tv_nsec / 1e9;
+}
+
 static unsigned int hashSize;
 static const char *mailCommand = DEFAULT_MAIL_COMMAND;
 static time_t nowSecs = 0;
@@ -291,7 +300,7 @@ static void unescape(char *arg)
 }
 
 #define HASH_SIZE_MIN 64
-#define HASH_SIZE_MAX 8192
+#define HASH_SIZE_MAX (1U << 20)   /* ~1M buckets; readState() sizes the hash from the log and state-file counts, and findState stays ~O(1) well past this */
 static int allocateHash(unsigned long hs)
 {
     unsigned int i;
@@ -3010,12 +3019,24 @@ static int readState(const char *stateFilename)
         }
     }
 
-    /* Try to estimate how many state entries we have in the state file.
-     * We expect single entry to have around 80 characters (Of course this is
-     * just an estimation). During the testing I've found out that 200 entries
-     * per single hash entry gives good mem/performance ratio. */
-    if (allocateHash((size_t)f_stat.st_size / 80 / 200))
-        rc = 1;
+    /* Size the state hash from whichever is larger: the number of logs we
+     * manage now, or the number of entries already in the state file (which can
+     * hold stale entries for logs no longer configured, kept for up to a year).
+     * This keeps findState ~O(1) both on a fresh run, where the state file is
+     * ~empty, and when the state file has grown far beyond the current config. */
+    {
+        unsigned long logFileCount = 0;
+        unsigned long stateEntryCount;
+        unsigned long stateHashSize;
+        const struct logInfo *li;
+        for (li = logs.tqh_first; li != NULL; li = li->list.tqe_next)
+            logFileCount += li->numFiles;
+        /* a state-file entry is around 80 bytes */
+        stateEntryCount = (unsigned long)(f_stat.st_size / 80);
+        stateHashSize = logFileCount > stateEntryCount ? logFileCount : stateEntryCount;
+        if (allocateHash(stateHashSize))
+            rc = 1;
+    }
 
     if (rc || (f_stat.st_size == 0)) {
         /* error already occurred, or we have no state file to read from */
@@ -3275,6 +3296,7 @@ int main(int argc, const char **argv)
     const char **files;
     poptContext optCon;
     const struct logInfo *log;
+    double configStartSecs, stateStartSecs, rotateStartSecs;
 
     const struct poptOption options[] = {
         {"debug", 'd', 0, NULL, 'd',
@@ -3386,8 +3408,11 @@ int main(int argc, const char **argv)
 
     TAILQ_INIT(&logs);
 
+    configStartSecs = monotonicSeconds();
     if (readAllConfigPaths(files))
         rc = 1;
+    message(MESS_DEBUG, "logrotate: config parsing took %.3f s\n",
+            monotonicSeconds() - configStartSecs);
 
     poptFreeContext(optCon);
     nowSecs = time(NULL);
@@ -3398,8 +3423,11 @@ int main(int argc, const char **argv)
         exit(3);
     }
 
+    stateStartSecs = monotonicSeconds();
     if (readState(stateFile))
         rc = 1;
+    message(MESS_DEBUG, "logrotate: reading state took %.3f s\n",
+            monotonicSeconds() - stateStartSecs);
 
     message(MESS_DEBUG, "\nHandling %d logs\n", numLogs);
 
@@ -3409,8 +3437,11 @@ int main(int argc, const char **argv)
     if (signal(SIGCHLD, SIG_DFL) == SIG_ERR)
         message(MESS_WARN, "failed to reset SIGCHLD handler: %s\n", strerror(errno));
 
+    rotateStartSecs = monotonicSeconds();
     for (log = logs.tqh_first; log != NULL; log = log->list.tqe_next)
         rc |= rotateLogSet(log, force);
+    message(MESS_DEBUG, "logrotate: rotating %d logs took %.3f s\n",
+            numLogs, monotonicSeconds() - rotateStartSecs);
 
     if (!debug)
         rc |= writeState(stateFile);
