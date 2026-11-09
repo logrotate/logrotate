@@ -1,0 +1,21 @@
+create
+
+maxsize 10
+
+&DIR&/test.log {
+	weekly
+	minsize 20
+	rotate 1
+}
+
+&DIR&/anothertest.log {
+	weekly
+	minsize 5
+	rotate 1
+}
+
+&DIR&/differenttest.log {
+	minsize 30
+	maxsize 30
+	rotate 1
+}

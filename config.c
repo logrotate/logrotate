@@ -2129,6 +2129,14 @@ duperror:
                             goto error;
                     }
 
+                    if (newlog->minsize && newlog->maxsize &&
+                            newlog->minsize > newlog->maxsize) {
+                        message(MESS_WARN, "%s:%d minsize (%jd) is greater than "
+                                "maxsize (%jd) for %s\n", configFile, lineNum,
+                                (intmax_t)newlog->minsize, (intmax_t)newlog->maxsize,
+                                newlog->pattern);
+                    }
+
                     if (newlog->oldDir) {
                         unsigned j;
                         for (j = 0; j < newlog->numFiles; j++) {
