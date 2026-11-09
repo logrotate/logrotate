@@ -1,0 +1,9 @@
+&DIR&/test.log {
+	dateext
+	dateformat&CR&
+	rotate 1
+}
+
+&DIR&/anothertest.log {
+	rotate 1
+}

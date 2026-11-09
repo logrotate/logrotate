@@ -211,6 +211,7 @@ static char *isolateValue(const char *fileName, int lineNum, const char *key,
 {
     char *chptr = *startPtr;
     const char *max = *buf + length;
+    char *value;
 
     while (chptr < max && isblank((unsigned char)*chptr))
         chptr++;
@@ -227,7 +228,18 @@ static char *isolateValue(const char *fileName, int lineNum, const char *key,
     }
 
     *startPtr = chptr;
-    return isolateLine(startPtr, buf, length);
+    value = isolateLine(startPtr, buf, length);
+
+    /* The value might be empty after stripping trailing whitespace, e.g. a
+     * carriage return, or at the end of the file. */
+    if (value != NULL && value[0] == '\0') {
+        message(MESS_ERROR, "%s:%d argument expected after %s\n",
+                fileName, lineNum, key);
+        free(value);
+        return NULL;
+    }
+
+    return value;
 }
 
 static char *isolateWord(char **strt, char **buf, size_t length) {

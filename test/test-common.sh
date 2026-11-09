@@ -95,7 +95,8 @@ genconfig() {
     user=$(id -u -n)
     group=$(id -g -n)
     rootgroup=$(id -g -n root)
-    sed "s,&DIR&,$PWD,g" < $input | sed "s,&USER&,\"$user\",g" | sed "s,&GROUP&,\"$group\",g" | sed "s,&ROOTGROUP&,\"$rootgroup\",g" > $output
+    cr=$(printf '\r')
+    sed "s,&DIR&,$PWD,g" < $input | sed "s,&USER&,\"$user\",g" | sed "s,&GROUP&,\"$group\",g" | sed "s,&ROOTGROUP&,\"$rootgroup\",g" | sed "s,&CR&,$cr,g" > $output
     chmod go-w $output
     config_crc=$(${MD5SUM} $output)
 }
