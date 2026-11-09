@@ -215,7 +215,7 @@ if test "x$v_from_git" != x; then
   esac
 fi
 
-# Logrotate travis tests include rpmbuild that fail if version number has
+# Logrotate CI tests include rpmbuild that fail if version number has
 # hyphen(s) in it.  To go-around convert hyphens to underscores, that does
 # nothing when building real release version, but needs to take effect when
 # a development time build is packaged.
