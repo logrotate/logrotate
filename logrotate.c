@@ -1687,23 +1687,38 @@ static int parseRotatedIndex(const char *str)
     return (int)num;
 }
 
-/* Find the rotated file with the highest index and return the number of
- * rotated files from log->logStart up to it, or -1 on failure. */
-static int findLastRotated(const struct logInfo *log,
-                           const struct logNames *rotNames,
-                           const char *fileext, const char *compext)
+static int compareIndexDesc(const void *a, const void *b)
+{
+    const int ia = *(const int *)a;
+    const int ib = *(const int *)b;
+
+    return (ia < ib) - (ia > ib);
+}
+
+/* Find the indices of all existing rotated files starting at log->logStart
+ * and store them in descending order in a newly allocated array.
+ * Returns 0 on success and -1 on failure. */
+static int findRotatedIndices(const struct logInfo *log,
+                              const struct logNames *rotNames,
+                              const char *fileext, const char *compext,
+                              int **indices, size_t *count)
 {
     char *pattern;
     int glob_rc;
     glob_t globResult;
     size_t i;
-    int last = -1;
     size_t prefixLen, suffixLen;
+    int *found;
+    size_t numFound = 0;
+
+    *indices = NULL;
+    *count = 0;
 
     if (asprintf(&pattern, "%s/%s.*%s%s", rotNames->dirName,
-                 rotNames->baseName, fileext, compext) < 0)
-        /* out of memory */
+                 rotNames->baseName, fileext, compext) < 0) {
+        message_OOM();
         return -1;
+    }
 
     glob_rc = glob(pattern, 0, globerr, &globResult);
     free(pattern);
@@ -1719,6 +1734,13 @@ static int findLastRotated(const struct logInfo *log,
         default:
             /* glob() failed */
             return -1;
+    }
+
+    found = calloc(globResult.gl_pathc, sizeof(*found));
+    if (found == NULL) {
+        message_OOM();
+        globfree(&globResult);
+        return -1;
     }
 
     prefixLen = strlen(rotNames->dirName) + /* '/' */1
@@ -1746,23 +1768,101 @@ static int findLastRotated(const struct logInfo *log,
             /* the file cannot be shifted to the next index */
             message(MESS_ERROR, "index of rotated log %s/%s.%d%s%s is too large\n",
                     rotNames->dirName, rotNames->baseName, num, fileext, compext);
+            free(found);
             globfree(&globResult);
             return -1;
         }
 
-        /* update last index */
-        if (last < num)
-            last = num;
+        /* distinct canonical file names yield distinct indices */
+        found[numFound++] = num;
     }
 
     globfree(&globResult);
 
-    if (last < 0)
+    if (numFound == 0) {
         /* no rotated file found -> assume first rotation */
+        free(found);
         return 0;
+    }
 
-    /* cannot overflow since log->logStart <= last < INT_MAX */
-    return last - log->logStart + 1;
+    qsort(found, numFound, sizeof(*found), compareIndexDesc);
+
+    *indices = found;
+    *count = numFound;
+    return 0;
+}
+
+/* Shift the rotated log with the given index to the next index, or remove
+ * it if it is hit by maxage.  Returns 1 on error, 0 otherwise. */
+static int shiftRotatedLog(const struct logInfo *log, unsigned logNum,
+                           const struct logNames *rotNames, int idx,
+                           const char *fileext, const char *compext)
+{
+    char *oldName, *newName;
+    int hasErrors = 0;
+
+    /* callers guarantee idx < INT_MAX */
+    if (asprintf(&oldName, "%s/%s.%d%s%s", rotNames->dirName,
+                 rotNames->baseName, idx, fileext, compext) < 0) {
+        message_OOM();
+        return 1;
+    }
+
+    /* remove files hit by maxage */
+    if (log->rotateAge) {
+        struct stat fst_buf;
+
+        if (stat(oldName, &fst_buf)) {
+            if (errno == ENOENT) {
+                message(MESS_DEBUG, "old log %s does not exist\n",
+                        oldName);
+            } else {
+                message(MESS_ERROR, "cannot stat %s: %s\n", oldName,
+                        strerror(errno));
+                hasErrors = 1;
+            }
+
+            free(oldName);
+            return hasErrors;
+        }
+
+        if (((intmax_t)difftime(nowSecs, fst_buf.st_mtime) / DAY_SECONDS) > log->rotateAge) {
+            if (log->logAddress)
+                hasErrors = mailLogWrapper(oldName, mailCommand,
+                                           logNum, log);
+            if (!hasErrors)
+                hasErrors = removeLogFile(oldName, log);
+
+            free(oldName);
+            return hasErrors;
+        }
+    }
+
+    if (asprintf(&newName, "%s/%s.%d%s%s", rotNames->dirName,
+                 rotNames->baseName, idx + 1, fileext, compext) < 0) {
+        message_OOM();
+        free(oldName);
+        return 1;
+    }
+
+    message(MESS_DEBUG,
+            "renaming %s to %s (logstart %d, i %d), \n",
+            oldName, newName, log->logStart, idx);
+
+    if (!debug && rename(oldName, newName)) {
+        if (errno == ENOENT) {
+            message(MESS_DEBUG, "old log %s does not exist\n",
+                    oldName);
+        } else {
+            message(MESS_ERROR, "error renaming %s to %s: %s\n",
+                    oldName, newName, strerror(errno));
+            hasErrors = 1;
+        }
+    }
+
+    free(newName);
+    free(oldName);
+    return hasErrors;
 }
 
 static int prerotateSingleLog(const struct logInfo *log, unsigned logNum,
@@ -2169,37 +2269,18 @@ static int prerotateSingleLog(const struct logInfo *log, unsigned logNum,
         globfree(&globResult);
         free(glob_pattern);
     } else {
-        int i;
-        char *newName = NULL;
-        char *oldName;
-
-        if (rotateCount == -1) {
-            rotateCount = findLastRotated(log, rotNames, fileext, compext);
-            if (rotateCount < 0) {
-                message(MESS_ERROR, "could not find last rotated file: %s/%s.*%s%s\n",
-                        rotNames->dirName, rotNames->baseName, fileext, compext);
+        if (log->rotateCount != -1) {
+            if (rotateCount > INT_MAX - log->logStart) {
+                message(MESS_ERROR, "log %s: sum of start value %d and rotation count %d is too large\n",
+                        log->files[logNum], log->logStart, rotateCount);
                 return 1;
             }
-        }
 
-        if (rotateCount > INT_MAX - log->logStart) {
-            message(MESS_ERROR, "log %s: sum of start value %d and rotation count %d is too large\n",
-                    log->files[logNum], log->logStart, rotateCount);
-            return 1;
-        }
-
-        if (asprintf(&oldName, "%s/%s.%d%s%s", rotNames->dirName,
-                     rotNames->baseName, log->logStart + rotateCount, fileext,
-                     compext) < 0) {
-            message_OOM();
-            return 1;
-        }
-
-        if (log->rotateCount != -1) {
-            rotNames->disposeName = strdup(oldName);
-            if (rotNames->disposeName == NULL) {
+            if (asprintf(&rotNames->disposeName, "%s/%s.%d%s%s", rotNames->dirName,
+                         rotNames->baseName, log->logStart + rotateCount, fileext,
+                         compext) < 0) {
                 message_OOM();
-                free(oldName);
+                rotNames->disposeName = NULL;
                 return 1;
             }
         }
@@ -2208,66 +2289,36 @@ static int prerotateSingleLog(const struct logInfo *log, unsigned logNum,
                 rotNames->baseName, log->logStart, fileext,
                 (log->flags & LOG_FLAG_DELAYCOMPRESS) ? "" : compext) < 0) {
             message_OOM();
-            free(oldName);
             rotNames->firstRotated = NULL;
             return 1;
         }
 
-        for (i = rotateCount + log->logStart - 1; (i >= log->logStart) && !hasErrors; i--) {
-            free(newName);
-            newName = oldName;
-            if (asprintf(&oldName, "%s/%s.%d%s%s", rotNames->dirName,
-                         rotNames->baseName, i, fileext, compext) < 0) {
-                message_OOM();
-                oldName = NULL;
-                break;
+        if (log->rotateCount == -1) {
+            /* Only shift existing rotated logs, so the effort does not depend
+             * on the value of the highest index, which might be controlled
+             * by the owner of the log directory. */
+            int *indices;
+            size_t count, j;
+
+            if (findRotatedIndices(log, rotNames, fileext, compext, &indices, &count)) {
+                message(MESS_ERROR, "could not find rotated files: %s/%s.*%s%s\n",
+                        rotNames->dirName, rotNames->baseName, fileext, compext);
+                return 1;
             }
 
-            /* remove files hit by maxage */
-            if (log->rotateAge) {
-                struct stat fst_buf;
+            /* highest index first, so no rotated log gets overwritten */
+            for (j = 0; j < count && !hasErrors; j++)
+                hasErrors = shiftRotatedLog(log, logNum, rotNames, indices[j],
+                                            fileext, compext);
 
-                if (stat(oldName, &fst_buf)) {
-                    if (errno == ENOENT) {
-                        message(MESS_DEBUG, "old log %s does not exist\n",
-                                oldName);
-                    } else {
-                        message(MESS_ERROR, "cannot stat %s: %s\n", oldName,
-                                strerror(errno));
-                        hasErrors = 1;
-                    }
+            free(indices);
+        } else {
+            int i;
 
-                    continue;
-                }
-
-                if (((intmax_t)difftime(nowSecs, fst_buf.st_mtime) / DAY_SECONDS) > log->rotateAge) {
-                    if (!hasErrors && log->logAddress)
-                        hasErrors = mailLogWrapper(oldName, mailCommand,
-                                                   logNum, log);
-                    if (!hasErrors)
-                        hasErrors = removeLogFile(oldName, log);
-
-                    continue;
-                }
-            }
-
-            message(MESS_DEBUG,
-                    "renaming %s to %s (rotatecount %d, logstart %d, i %d), \n",
-                    oldName, newName, rotateCount, log->logStart, i);
-
-            if (!debug && rename(oldName, newName)) {
-                if (errno == ENOENT) {
-                    message(MESS_DEBUG, "old log %s does not exist\n",
-                            oldName);
-                } else {
-                    message(MESS_ERROR, "error renaming %s to %s: %s\n",
-                            oldName, newName, strerror(errno));
-                    hasErrors = 1;
-                }
-            }
+            for (i = log->logStart + rotateCount - 1; (i >= log->logStart) && !hasErrors; i--)
+                hasErrors = shiftRotatedLog(log, logNum, rotNames, i,
+                                            fileext, compext);
         }
-        free(newName);
-        free(oldName);
     } /* !LOG_FLAG_DATEEXT */
 
     if (log->flags & LOG_FLAG_DATEEXT) {
