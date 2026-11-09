@@ -291,11 +291,109 @@ static char *readPath(const char *configFile, int lineNum, const char *key,
     return path;
 }
 
+#define OFF_T_MAX ((off_t)(((uintmax_t)1 << (sizeof(off_t) * CHAR_BIT - 1)) - 1))
+
+/* Parse a non-negative decimal number not greater than max.  Only digits
+ * are accepted, i.e. no leading whitespace, no sign and no base prefix.
+ * Returns 0 on success and -1 on failure. */
+static int parseDecimal(const char *str, unsigned long long max,
+                        unsigned long long *value)
+{
+    const char *p;
+    char *endptr;
+    unsigned long long v;
+
+    if (str[0] == '\0')
+        return -1;
+
+    for (p = str; *p != '\0'; p++) {
+        if (!isdigit((unsigned char)*p))
+            return -1;
+    }
+
+    errno = 0;
+    v = strtoull(str, &endptr, 10);
+    if (errno != 0 || *endptr != '\0' || v > max)
+        return -1;
+
+    *value = v;
+    return 0;
+}
+
+/* Wrappers of parseDecimal() for specific target types.  The upper bound
+ * max must not be negative. */
+static int parseDecimalInt(const char *str, int max, int *value)
+{
+    unsigned long long v;
+
+    if (parseDecimal(str, (unsigned long long)max, &v))
+        return -1;
+
+    *value = (int)v;
+    return 0;
+}
+
+static int parseDecimalUInt(const char *str, unsigned int max, unsigned int *value)
+{
+    unsigned long long v;
+
+    if (parseDecimal(str, max, &v))
+        return -1;
+
+    *value = (unsigned int)v;
+    return 0;
+}
+
+static int parseDecimalULong(const char *str, unsigned long max, unsigned long *value)
+{
+    unsigned long long v;
+
+    if (parseDecimal(str, max, &v))
+        return -1;
+
+    *value = (unsigned long)v;
+    return 0;
+}
+
+static int parseDecimalOffT(const char *str, off_t max, off_t *value)
+{
+    unsigned long long v;
+
+    if (parseDecimal(str, (unsigned long long)max, &v))
+        return -1;
+
+    *value = (off_t)v;
+    return 0;
+}
+
+/* Warn about a number with leading zeros for an option whose value was
+ * parsed with base auto-detection in previous versions. */
+static void warnLeadingZero(const char *configFile, int lineNum,
+                            const char *option, const char *str)
+{
+    if (str[0] == '0' && str[1] != '\0')
+        message(MESS_WARN, "%s:%d %s value '%s' is interpreted as decimal number"
+                " (previous versions interpreted it as octal number)\n",
+                configFile, lineNum, option, str);
+}
+
+/* Parse a non-negative decimal number not greater than INT_MAX for an option
+ * whose value was parsed with base auto-detection in previous versions.
+ * Returns 0 on success and -1 on failure. */
+static int parseIntOption(const char *configFile, int lineNum,
+                          const char *option, const char *str, int *value)
+{
+    if (parseDecimalInt(str, INT_MAX, value))
+        return -1;
+
+    warnLeadingZero(configFile, lineNum, option, str);
+    return 0;
+}
+
 /* set *pUid to UID of the given user, return non-zero on failure */
 static int resolveUid(const char *userName, uid_t *pUid)
 {
     const struct passwd *pw;
-    char *endptr;
     unsigned long int parsed_uid;
     int force = 0;
 
@@ -317,10 +415,7 @@ static int resolveUid(const char *userName, uid_t *pUid)
         userName++;
     }
 
-    parsed_uid = strtoul(userName, &endptr, 10);
-    if (userName[0] != '\0' &&
-        *endptr == '\0' &&
-        parsed_uid < INT_MAX && /* parsed_uid != ULONG_MAX && */
+    if (parseDecimalULong(userName, INT_MAX - 1, &parsed_uid) == 0 &&
         (force || getpwuid((uid_t)parsed_uid) != NULL)) {
 
         *pUid = (uid_t)parsed_uid;
@@ -334,7 +429,6 @@ static int resolveUid(const char *userName, uid_t *pUid)
 static int resolveGid(const char *groupName, gid_t *pGid)
 {
     const struct group *gr;
-    char *endptr;
     unsigned long int parsed_gid;
     int force = 0;
 
@@ -356,10 +450,7 @@ static int resolveGid(const char *groupName, gid_t *pGid)
         groupName++;
     }
 
-    parsed_gid = strtoul(groupName, &endptr, 10);
-    if (groupName[0] != '\0' &&
-        *endptr == '\0' &&
-        parsed_gid < INT_MAX && /* parsed_gid != ULONG_MAX && */
+    if (parseDecimalULong(groupName, INT_MAX - 1, &parsed_gid) == 0 &&
         (force || getgrgid((gid_t)parsed_gid) != NULL)) {
 
         *pGid = (gid_t)parsed_gid;
@@ -1454,13 +1545,14 @@ next_state:
                                 multiplier = 1;
                             }
 
-                            size = (off_t) (multiplier * strtoull(key, &chptr, 0));
-                            if (*chptr != '\0' || size < 0) {
+                            if (parseDecimalOffT(key, OFF_T_MAX / (off_t)multiplier, &size)) {
                                 message(MESS_ERROR, "%s:%d bad size '%s'\n",
                                         configFile, lineNum, key);
                                 free(opt);
                                 RAISE_ERROR();
                             }
+                            warnLeadingZero(configFile, lineNum, opt, key);
+                            size *= (off_t)multiplier;
                             if (!strncmp(opt, "size", 4)) {
                                 set_criterium(&newlog->criterium, ROT_SIZE, &criterium_set);
                                 newlog->threshold = size;
@@ -1482,8 +1574,8 @@ next_state:
                         if (key == NULL) {
                             RAISE_ERROR();
                         }
-                        newlog->shred_cycles = (int)strtoul(key, &chptr, 0);
-                        if (*chptr != '\0' || newlog->shred_cycles < 0) {
+                        if (parseIntOption(configFile, lineNum, "shredcycles", key,
+                                           &newlog->shred_cycles)) {
                             message(MESS_ERROR, "%s:%d bad shred cycles '%s'\n",
                                     configFile, lineNum, key);
                             RAISE_ERROR();
@@ -1495,13 +1587,15 @@ next_state:
 
                         key = isolateValue(configFile, lineNum, opt, &start, &buf, length);
                         if (key && key[0]) {
-                            unsigned int minutes = (unsigned int)strtoul(key, &chptr, 0);
-                            if (*chptr != '\0' || minutes <= 0) {
+                            unsigned int minutes;
+
+                            if (parseDecimalUInt(key, UINT_MAX, &minutes) || minutes == 0) {
                                 message(MESS_ERROR, "%s:%d bad minutes '%s'\n",
                                         configFile, lineNum, key);
                                 free(opt);
                                 RAISE_ERROR();
                             }
+                            warnLeadingZero(configFile, lineNum, opt, key);
                             set_criterium(&newlog->criterium, ROT_MINUTES, &criterium_set);
                             newlog->minutes = minutes;
                             free(opt);
@@ -1515,7 +1609,7 @@ next_state:
                         newlog->threshold = 1;
                     } else if (!strcmp(key, "monthly")) {
                         unsigned monthday;
-                        char tmp;
+                        const char *value;
                         set_criterium(&newlog->criterium, ROT_MONTHLY, &criterium_set);
                         free(key);
                         key = isolateLine(&start, &buf, length);
@@ -1525,7 +1619,10 @@ next_state:
                             continue;
                         }
 
-                        if (1 == sscanf(key, "%u%c", &monthday, &tmp) && monthday <= 31) {
+                        value = key;
+                        while (isblank((unsigned char)*value))
+                            value++;
+                        if (parseDecimalUInt(value, 31, &monthday) == 0) {
                             /* use the selected monthday, 0 means on first run in a month */
                             newlog->monthday = monthday;
                             continue;
@@ -1535,7 +1632,7 @@ next_state:
                         RAISE_ERROR();
                     } else if (!strcmp(key, "weekly")) {
                         unsigned weekday;
-                        char tmp;
+                        const char *value;
                         set_criterium(&newlog->criterium, ROT_WEEKLY, &criterium_set);
                         free(key);
                         key = isolateLine(&start, &buf, length);
@@ -1545,7 +1642,10 @@ next_state:
                             continue;
                         }
 
-                        if (1 == sscanf(key, "%u%c", &weekday, &tmp) && weekday <= 7) {
+                        value = key;
+                        while (isblank((unsigned char)*value))
+                            value++;
+                        if (parseDecimalUInt(value, 7, &weekday) == 0) {
                             /* use the selected weekday, 7 means "once per week" */
                             newlog->weekday = weekday;
                             continue;
@@ -1562,8 +1662,10 @@ next_state:
                         if (key == NULL) {
                             RAISE_ERROR();
                         }
-                        newlog->rotateCount = (int)strtol(key, &chptr, 0);
-                        if (*chptr != '\0' || newlog->rotateCount < -1) {
+                        if (!strcmp(key, "-1")) {
+                            newlog->rotateCount = -1;
+                        } else if (parseIntOption(configFile, lineNum, "rotate", key,
+                                                  &newlog->rotateCount)) {
                             message(MESS_ERROR,
                                     "%s:%d bad rotation count '%s'\n",
                                     configFile, lineNum, key);
@@ -1576,8 +1678,8 @@ next_state:
                         if (key == NULL) {
                             RAISE_ERROR();
                         }
-                        newlog->logStart = (int)strtoul(key, &chptr, 10);
-                        if (*chptr != '\0' || newlog->logStart < 0) {
+                        if (parseIntOption(configFile, lineNum, "start", key,
+                                           &newlog->logStart)) {
                             message(MESS_ERROR, "%s:%d bad start count '%s'\n",
                                     configFile, lineNum, key);
                             RAISE_ERROR();
@@ -1589,10 +1691,10 @@ next_state:
                         if (key == NULL) {
                             RAISE_ERROR();
                         }
-                        newlog->rotateMinAge = (int)strtoul(key, &chptr, 0);
-                        if (*chptr != '\0' || newlog->rotateMinAge < 0) {
+                        if (parseIntOption(configFile, lineNum, "minage", key,
+                                           &newlog->rotateMinAge)) {
                             message(MESS_ERROR, "%s:%d bad minimum age '%s'\n",
-                                    configFile, lineNum, start);
+                                    configFile, lineNum, key);
                             RAISE_ERROR();
                         }
                     } else if (!strcmp(key, "maxage")) {
@@ -1602,10 +1704,10 @@ next_state:
                         if (key == NULL) {
                             RAISE_ERROR();
                         }
-                        newlog->rotateAge = (int)strtoul(key, &chptr, 0);
-                        if (*chptr != '\0' || newlog->rotateAge < 0) {
+                        if (parseIntOption(configFile, lineNum, "maxage", key,
+                                           &newlog->rotateAge)) {
                             message(MESS_ERROR, "%s:%d bad maximum age '%s'\n",
-                                    configFile, lineNum, start);
+                                    configFile, lineNum, key);
                             RAISE_ERROR();
                         }
                     } else if (!strcmp(key, "errors")) {

@@ -7,6 +7,12 @@ All notable changes to this project will be documented in this file.
  - fix incorrect sparse file detection due to mismatched st_blocks and st_blksize units (#682)
  - the `start` value is always parsed as a decimal number, e.g. `start 010`
    no longer means 8
+ - all numeric option values, except file modes, are parsed as decimal
+   numbers and checked for their range, e.g. `rotate 010` no longer means 8,
+   and `size 0x10`, `maxage +5` and `rotate 4294967297` are rejected instead
+   of being reinterpreted or truncated; a leading zero, which previously
+   denoted an octal number for `size`, `minsize`, `maxsize`, `minutes`,
+   `shredcycles`, `minage`, `maxage`, `rotate` and `start`, triggers a warning
  - fix overwriting the oldest rotated log with `rotate -1` and `start 0`
  - with `rotate -1` only rotated logs with an index in canonical decimal form
    are considered, and a too large index aborts the rotation instead of

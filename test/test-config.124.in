@@ -1,0 +1,76 @@
+create
+
+&DIR&/test.log {
+	maxage 010
+	rotate 1
+}
+
+&DIR&/test2.log {
+	monthly 01
+	rotate 1
+}
+
+&DIR&/test3.log {
+	size 0x10
+	rotate 1
+}
+
+&DIR&/test4.log {
+	size k
+	rotate 1
+}
+
+&DIR&/test5.log {
+	size 99999999999999999999
+	rotate 1
+}
+
+&DIR&/test6.log {
+	size 9007199254740992G
+	rotate 1
+}
+
+&DIR&/test7.log {
+	shredcycles 2147483648
+	rotate 1
+}
+
+&DIR&/test8.log {
+	minutes 0
+	rotate 1
+}
+
+&DIR&/test9.log {
+	minutes 4294967296
+	rotate 1
+}
+
+&DIR&/test10.log {
+	minage -1
+	rotate 1
+}
+
+&DIR&/test11.log {
+	maxage +5
+	rotate 1
+}
+
+&DIR&/test12.log {
+	start 4294967296
+	rotate 1
+}
+
+&DIR&/test13.log {
+	weekly 8
+	rotate 1
+}
+
+&DIR&/test14.log {
+	weekly +1
+	rotate 1
+}
+
+&DIR&/test15.log {
+	monthly 32
+	rotate 1
+}
