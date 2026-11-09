@@ -27,6 +27,9 @@ jobs:
       if: matrix.os == 'ubuntu-26.04'
       run: sudo apt-get install -y elfutils
 
+    - name: Show compiler version
+      run: '"$CC" --version'
+
     - name: Bootstrap
       run: ./autogen.sh
 
@@ -60,6 +63,9 @@ jobs:
 
     - name: Install dependencies
       run: brew install automake coreutils flock popt
+
+    - name: Show compiler version
+      run: cc --version
 
     - name: Bootstrap
       run: ./autogen.sh
@@ -98,12 +104,15 @@ jobs:
 
     - name: Install Clang repo
       run: |
-        wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | gpg --yes --dearmor --output /usr/share/keyrings/llvm-snapshot.gpg
+        wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo gpg --yes --dearmor --output /usr/share/keyrings/llvm-snapshot.gpg
         echo 'deb [signed-by=/usr/share/keyrings/llvm-snapshot.gpg] http://apt.llvm.org/resolute/ llvm-toolchain-resolute-23 main' | sudo tee /etc/apt/sources.list.d/llvm-snapshot.list
         sudo apt-get update -q
 
     - name: Install dependencies
       run: sudo apt-get install -y automake clang-23 clang-tools-23 libacl1-dev libpopt-dev libselinux1-dev
+
+    - name: Show compiler version
+      run: '"$CC" --version'
 
     - name: Bootstrap
       run: ./autogen.sh
@@ -129,12 +138,15 @@ jobs:
 
     - name: Install Clang repo
       run: |
-        wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | gpg --yes --dearmor --output /usr/share/keyrings/llvm-snapshot.gpg
+        wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo gpg --yes --dearmor --output /usr/share/keyrings/llvm-snapshot.gpg
         echo 'deb [signed-by=/usr/share/keyrings/llvm-snapshot.gpg] http://apt.llvm.org/resolute/ llvm-toolchain-resolute-23 main' | sudo tee /etc/apt/sources.list.d/llvm-snapshot.list
         sudo apt-get update -q
 
     - name: Install dependencies
       run: sudo apt-get install -y acl automake clang-23 libacl1-dev libpopt-dev libselinux1-dev
+
+    - name: Show compiler version
+      run: '"$CC" --version'
 
     - name: Bootstrap
       run: ./autogen.sh
@@ -162,7 +174,7 @@ jobs:
     name: GCC Analyzer
     runs-on: ubuntu-26.04
     env:
-      CC: gcc-14
+      CC: gcc-16
       CFLAGS: -O3 -flto=auto -finline-limit=1000 -fanalyzer
       LDFLAGS: -O3 -flto=auto -finline-limit=1000 -fanalyzer
     steps:
@@ -173,6 +185,9 @@ jobs:
 
     - name: Install dependencies
       run: sudo apt-get install -y automake gcc-16 libacl1-dev libpopt-dev libselinux1-dev
+
+    - name: Show compiler version
+      run: '"$CC" --version'
 
     - name: Bootstrap
       run: ./autogen.sh
@@ -197,6 +212,9 @@ jobs:
 
     - name: Install dependencies
       run: sudo apt-get install -y automake libacl1-dev libpopt-dev libselinux1-dev
+
+    - name: Show compiler version
+      run: cc --version
 
     - name: Bootstrap
       run: ./autogen.sh
