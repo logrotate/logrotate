@@ -1665,15 +1665,39 @@ static int findNeedRotating(const struct logInfo *log, unsigned logNum, int forc
     return 0;
 }
 
-/* find the rotated file with the highest index */
-static int findLastRotated(const struct logNames *rotNames,
+/* Parse the index of a rotated log file.  Only accept the canonical
+ * decimal form, as generated via "%d" for the rename loop, i.e. no sign,
+ * no leading whitespace and no leading zeros.  Returns -1 on failure. */
+static int parseRotatedIndex(const char *str)
+{
+    char *endptr;
+    long num;
+
+    if (!isdigit((unsigned char)str[0]))
+        return -1;
+
+    if (str[0] == '0' && str[1] != '\0')
+        return -1;
+
+    errno = 0;
+    num = strtol(str, &endptr, 10);
+    if (errno != 0 || *endptr != '\0' || num > INT_MAX)
+        return -1;
+
+    return (int)num;
+}
+
+/* Find the rotated file with the highest index and return the number of
+ * rotated files from log->logStart up to it, or -1 on failure. */
+static int findLastRotated(const struct logInfo *log,
+                           const struct logNames *rotNames,
                            const char *fileext, const char *compext)
 {
     char *pattern;
     int glob_rc;
     glob_t globResult;
     size_t i;
-    int last = 0;
+    int last = -1;
     size_t prefixLen, suffixLen;
 
     if (asprintf(&pattern, "%s/%s.*%s%s", rotNames->dirName,
@@ -1705,7 +1729,6 @@ static int findLastRotated(const struct logNames *rotNames,
         char *fileName = globResult.gl_pathv[i];
         const size_t fileNameLen = strlen(fileName);
         int num;
-        char c;
         if (fileNameLen <= prefixLen + suffixLen)
             /* not enough room for index in this file name */
             continue;
@@ -1714,9 +1737,18 @@ static int findLastRotated(const struct logNames *rotNames,
         fileName[fileNameLen - suffixLen] = '\0';
         fileName += prefixLen;
 
-        if (sscanf(fileName, "%d%c", &num, &c) != 1)
-            /* index not matched in this file name */
+        num = parseRotatedIndex(fileName);
+        if (num < log->logStart)
+            /* index not matched in this file name or not subject to rotation */
             continue;
+
+        if (num == INT_MAX) {
+            /* the file cannot be shifted to the next index */
+            message(MESS_ERROR, "index of rotated log %s/%s.%d%s%s is too large\n",
+                    rotNames->dirName, rotNames->baseName, num, fileext, compext);
+            globfree(&globResult);
+            return -1;
+        }
 
         /* update last index */
         if (last < num)
@@ -1724,7 +1756,13 @@ static int findLastRotated(const struct logNames *rotNames,
     }
 
     globfree(&globResult);
-    return last;
+
+    if (last < 0)
+        /* no rotated file found -> assume first rotation */
+        return 0;
+
+    /* cannot overflow since log->logStart <= last < INT_MAX */
+    return last - log->logStart + 1;
 }
 
 static int prerotateSingleLog(const struct logInfo *log, unsigned logNum,
@@ -2136,12 +2174,18 @@ static int prerotateSingleLog(const struct logInfo *log, unsigned logNum,
         char *oldName;
 
         if (rotateCount == -1) {
-            rotateCount = findLastRotated(rotNames, fileext, compext);
+            rotateCount = findLastRotated(log, rotNames, fileext, compext);
             if (rotateCount < 0) {
                 message(MESS_ERROR, "could not find last rotated file: %s/%s.*%s%s\n",
                         rotNames->dirName, rotNames->baseName, fileext, compext);
                 return 1;
             }
+        }
+
+        if (rotateCount > INT_MAX - log->logStart) {
+            message(MESS_ERROR, "log %s: sum of start value %d and rotation count %d is too large\n",
+                    log->files[logNum], log->logStart, rotateCount);
+            return 1;
         }
 
         if (asprintf(&oldName, "%s/%s.%d%s%s", rotNames->dirName,
