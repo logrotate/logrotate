@@ -88,34 +88,34 @@ jobs:
     name: Clang Analyzer
     runs-on: ubuntu-latest
     env:
-      CC: clang-22
+      CC: clang-23
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
     - name: Install Clang repo
       run: |
         wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | gpg --yes --dearmor --output /usr/share/keyrings/llvm-snapshot.gpg
-        echo 'deb [signed-by=/usr/share/keyrings/llvm-snapshot.gpg] http://apt.llvm.org/noble/ llvm-toolchain-noble-22 main' | sudo tee /etc/apt/sources.list.d/llvm-snapshot.list
+        echo 'deb [signed-by=/usr/share/keyrings/llvm-snapshot.gpg] http://apt.llvm.org/noble/ llvm-toolchain-noble-23 main' | sudo tee /etc/apt/sources.list.d/llvm-snapshot.list
         sudo apt-get update -q
 
     - name: Install dependencies
-      run: sudo apt-get install -y automake clang-22 clang-tools-22 libacl1-dev libpopt-dev libselinux1-dev
+      run: sudo apt-get install -y automake clang-23 clang-tools-23 libacl1-dev libpopt-dev libselinux1-dev
 
     - name: Bootstrap
       run: ./autogen.sh
 
     - name: Configure
-      run: scan-build-22 -analyze-headers --status-bugs ./configure --enable-werror --disable-silent-rules
+      run: scan-build-23 -analyze-headers --status-bugs ./configure --enable-werror --disable-silent-rules
 
     - name: Analyze
-      run: scan-build-22 -analyze-headers --status-bugs make -j"$(nproc)"
+      run: scan-build-23 -analyze-headers --status-bugs make -j"$(nproc)"
 
 
   build-clang-sanitizer:
     name: Clang Sanitizer
     runs-on: ubuntu-latest
     env:
-      CC: clang-22
+      CC: clang-23
       CFLAGS: '-O1 -g -fsanitize=address -fsanitize-address-use-after-scope -fno-omit-frame-pointer -fsanitize=undefined -fsanitize=nullability -fsanitize=implicit-conversion -fsanitize=integer -fsanitize=float-divide-by-zero -fsanitize=local-bounds'
       ASAN_OPTIONS: strict_string_checks=1:detect_stack_use_after_return=1:check_initialization_order=1:strict_init_order=1
       UBSAN_OPTIONS: print_stacktrace=1:print_summary=1:halt_on_error=1
@@ -126,11 +126,11 @@ jobs:
     - name: Install Clang repo
       run: |
         wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | gpg --yes --dearmor --output /usr/share/keyrings/llvm-snapshot.gpg
-        echo 'deb [signed-by=/usr/share/keyrings/llvm-snapshot.gpg] http://apt.llvm.org/noble/ llvm-toolchain-noble-22 main' | sudo tee /etc/apt/sources.list.d/llvm-snapshot.list
+        echo 'deb [signed-by=/usr/share/keyrings/llvm-snapshot.gpg] http://apt.llvm.org/noble/ llvm-toolchain-noble-23 main' | sudo tee /etc/apt/sources.list.d/llvm-snapshot.list
         sudo apt-get update -q
 
     - name: Install dependencies
-      run: sudo apt-get install -y acl automake clang-22 libacl1-dev libpopt-dev libselinux1-dev
+      run: sudo apt-get install -y acl automake clang-23 libacl1-dev libpopt-dev libselinux1-dev
 
     - name: Bootstrap
       run: ./autogen.sh
