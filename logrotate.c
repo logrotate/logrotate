@@ -3066,6 +3066,40 @@ static int writeState(const char *stateFilename)
     return error;
 }
 
+/* Parse up to six decimal numbers separated by "-", "-", "-", ":" and ":",
+ * like sscanf(str, "%d-%d-%d-%d:%d:%d", ...) but without undefined
+ * behavior on overflow.  Returns the number of parsed fields, or -1 if a
+ * number is out of the range of int. */
+static int parseStateDate(const char *str, int fields[6])
+{
+    static const char separators[] = "---::";
+    const char *p = str;
+    int n;
+
+    for (n = 0; n < 6; n++) {
+        char *endptr;
+        long v;
+
+        if (n > 0) {
+            if (*p != separators[n - 1])
+                break;
+            p++;
+        }
+
+        errno = 0;
+        v = strtol(p, &endptr, 10);
+        if (endptr == p)
+            break;
+        if (errno == ERANGE || v < INT_MIN || v > INT_MAX)
+            return -1;
+
+        fields[n] = (int)v;
+        p = endptr;
+    }
+
+    return n;
+}
+
 static int readState(const char *stateFilename)
 {
     FILE *f;
@@ -3154,6 +3188,7 @@ static int readState(const char *stateFilename)
         int argc;
         const char **argv = NULL;
         int year, month, day, hour, minute, second;
+        int fields[6] = { 0 };
         struct logState *st;
         time_t lr_time;
 
@@ -3176,15 +3211,21 @@ static int readState(const char *stateFilename)
         if (i == 1)
             continue;
 
-        year = month = day = hour = minute = second = 0;
         if (poptParseArgvString(buf, &argc, &argv) || (argc != 2) ||
-                (sscanf(argv[1], "%d-%d-%d-%d:%d:%d", &year, &month, &day, &hour, &minute, &second) < 3)) {
+                (parseStateDate(argv[1], fields) < 3)) {
             message(MESS_ERROR, "bad line %d in state file %s\n",
                     line, stateFilename);
             free(argv);
             fclose(f);
             return 1;
         }
+
+        year = fields[0];
+        month = fields[1];
+        day = fields[2];
+        hour = fields[3];
+        minute = fields[4];
+        second = fields[5];
 
         /* Hack to hide earlier bug */
         if ((year != 1900) && (year < 1970 || year > 2100)) {
