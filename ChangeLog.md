@@ -5,6 +5,8 @@ All notable changes to this project will be documented in this file.
 ## [UNRELEASED]
 
  - fix incorrect sparse file detection due to mismatched st_blocks and st_blksize units (#682)
+ - the `start` value is always parsed as a decimal number, e.g. `start 010`
+   no longer means 8
 
 [UNRELEASED]: https://github.com/logrotate/logrotate/compare/3.22.0...main
  - Add support for %G, %y, %g, %U, %W, %u, %w, and %j to dateformat. [ryancdotorg]

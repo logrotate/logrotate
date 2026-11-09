@@ -591,7 +591,8 @@ This is the number to use as the base for rotation.  For example, if
 you specify 0, the logs will be created with a .0 extension as they are
 rotated from the original log files.  If you specify 9, log files will
 be created with a .9, skipping 0\(en8.  Files will still be rotated the
-number of times specified with the \fBrotate\fR directive.
+number of times specified with the \fBrotate\fR directive.  The \fIcount\fR
+is always interpreted as a decimal number.
 
 .TP
 \fBdateext\fR

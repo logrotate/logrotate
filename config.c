@@ -1576,7 +1576,7 @@ next_state:
                         if (key == NULL) {
                             RAISE_ERROR();
                         }
-                        newlog->logStart = (int)strtoul(key, &chptr, 0);
+                        newlog->logStart = (int)strtoul(key, &chptr, 10);
                         if (*chptr != '\0' || newlog->logStart < 0) {
                             message(MESS_ERROR, "%s:%d bad start count '%s'\n",
                                     configFile, lineNum, key);
