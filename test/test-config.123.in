@@ -1,0 +1,29 @@
+create
+
+&DIR&/test.log {
+	rotate 010
+}
+
+&DIR&/anothertest.log {
+	rotate 08
+}
+
+&DIR&/differenttest.log {
+	rotate 0x1
+}
+
+&DIR&/differenttest2.log {
+	rotate 4294967297
+}
+
+&DIR&/differenttest3.log {
+	rotate 2147483648
+}
+
+&DIR&/differenttest4.log {
+	rotate -2
+}
+
+&DIR&/differenttest5.log {
+	rotate -1
+}

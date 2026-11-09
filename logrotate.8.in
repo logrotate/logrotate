@@ -225,6 +225,11 @@ Please note, by default when using \fBsystemd\fR(1), the option
 This prevents \fBlogrotate\fR from modifying logs in \fI/etc\fR
 and \fI/usr\fR.
 
+Numeric values of directives are always interpreted as decimal numbers,
+e.g. \fBrotate 010\fR means 10 rotations, except for file modes, which are
+interpreted as octal numbers.  Signs (other than in \fBrotate \-1\fR),
+hexadecimal numbers and values out of range are rejected.
+
 Here is more information on the directives which may be included in
 a \fBlogrotate\fR configuration file:
 
