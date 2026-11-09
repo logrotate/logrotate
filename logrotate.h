@@ -34,6 +34,9 @@
 #define NO_UID  ((uid_t) -1)
 #define NO_GID  ((gid_t) -1)
 
+/* Number of seconds in a day */
+#define DAY_SECONDS 86400
+
 #ifdef HAVE_LIBSELINUX
 #define WITH_SELINUX 1
 #endif

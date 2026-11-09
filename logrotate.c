@@ -58,9 +58,6 @@ static acl_type prev_acl = NULL;
 extern int asprintf(char **str, const char *fmt, ...);
 #endif
 
-/* Number of seconds in a day */
-#define DAY_SECONDS 86400
-
 struct logState {
     char *fn;
     struct tm lastRotated;  /* only tm_hour, tm_mday, tm_mon, tm_year are good! */
