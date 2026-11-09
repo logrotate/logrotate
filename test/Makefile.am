@@ -117,7 +117,8 @@ TEST_CASES = \
 	test-0121.sh \
 	test-0122.sh \
 	test-0123.sh \
-	test-0124.sh
+	test-0124.sh \
+	test-0125.sh
 
 EXTRA_DIST = \
 	compress \

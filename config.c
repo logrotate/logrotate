@@ -1691,8 +1691,10 @@ next_state:
                         if (key == NULL) {
                             RAISE_ERROR();
                         }
+                        /* limit the value, so it can be converted into seconds as int */
                         if (parseIntOption(configFile, lineNum, "minage", key,
-                                           &newlog->rotateMinAge)) {
+                                           &newlog->rotateMinAge) ||
+                            newlog->rotateMinAge > INT_MAX / DAY_SECONDS) {
                             message(MESS_ERROR, "%s:%d bad minimum age '%s'\n",
                                     configFile, lineNum, key);
                             RAISE_ERROR();

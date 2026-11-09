@@ -1,0 +1,13 @@
+create
+
+&DIR&/test.log {
+    daily
+    minage 24855
+    rotate 1
+}
+
+&DIR&/test2.log {
+    daily
+    minage 24856
+    rotate 1
+}
