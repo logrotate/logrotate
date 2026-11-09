@@ -11,6 +11,8 @@ All notable changes to this project will be documented in this file.
  - with `rotate -1` only rotated logs with an index in canonical decimal form
    are considered, and a too large index aborts the rotation instead of
    overflowing
+ - with `rotate -1` only existing rotated logs are renamed, so a rotated log
+   with a huge index no longer stalls the rotation
 
 [UNRELEASED]: https://github.com/logrotate/logrotate/compare/3.22.0...main
  - Add support for %G, %y, %g, %U, %W, %u, %w, and %j to dateformat. [ryancdotorg]
