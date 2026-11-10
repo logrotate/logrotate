@@ -19,6 +19,10 @@ All notable changes to this project will be documented in this file.
    overflowing
  - with `rotate -1` only existing rotated logs are renamed, so a rotated log
    with a huge index no longer stalls the rotation
+ - glob metacharacters in the name or directory of a log, e.g. `*` or `[...]`,
+   are matched literally when searching for its rotated logs, so rotations
+   of other logs are no longer removed or compressed, and an out-of-bounds read
+   while sorting `dateext` rotations is fixed (#722)
 
 [UNRELEASED]: https://github.com/logrotate/logrotate/compare/3.22.0...main
  - Add support for %G, %y, %g, %U, %W, %u, %w, and %j to dateformat. [ryancdotorg]
