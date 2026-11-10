@@ -3028,13 +3028,22 @@ static int readState(const char *stateFilename)
         unsigned long logFileCount = 0;
         unsigned long stateEntryCount;
         unsigned long stateHashSize;
+        unsigned long pow2;
         const struct logInfo *li;
         for (li = logs.tqh_first; li != NULL; li = li->list.tqe_next)
             logFileCount += li->numFiles;
         /* a state-file entry is around 80 bytes */
         stateEntryCount = (unsigned long)(f_stat.st_size / 80);
         stateHashSize = logFileCount > stateEntryCount ? logFileCount : stateEntryCount;
-        if (allocateHash(stateHashSize))
+        /* Round up to a power of two (bounded by HASH_SIZE_MAX, which
+         * allocateHash enforces). hashIndex() is base 13, so a size that is a
+         * multiple of 13 drops the high-order characters and collapses paths
+         * sharing a suffix (e.g. ".log") into one bucket; a power of two is
+         * coprime to 13 and keeps every character significant. */
+        pow2 = HASH_SIZE_MIN;
+        while (pow2 < stateHashSize && pow2 < HASH_SIZE_MAX)
+            pow2 <<= 1;
+        if (allocateHash(pow2))
             rc = 1;
     }
 
