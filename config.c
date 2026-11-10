@@ -109,9 +109,12 @@ static int deduplicateInsert(const char *fn, const struct logInfo *owner) {
     return 0;
 }
 
-/* Remove fn from the registered-paths set. Called when a logInfo leaves the
- * global logs list (removeLogInfo) so the set stays in sync with logs, and a
- * discarded entry's paths do not falsely flag later entries as duplicates. */
+/* Remove the entry that borrows exactly this string from the registered-paths
+ * set, called from freeLogInfo() before the string is freed so the set never
+ * points at freed memory. Matching is by pointer, not by content: the entry
+ * borrows the owning logInfo's files[] pointer, so a throwaway copy of that
+ * logInfo (e.g. defConfigBackup) holds equal strings at different addresses and
+ * must not evict the live entry when it is freed. */
 static void deduplicateRemove(const char *fn) {
     size_t b;
     struct deduplicateEntry **pp;
@@ -119,7 +122,7 @@ static void deduplicateRemove(const char *fn) {
         return;
     b = deduplicateHash(fn) % deduplicateNumBuckets;
     for (pp = &deduplicateBuckets[b]; *pp != NULL; pp = &(*pp)->next) {
-        if (strcmp((*pp)->fn, fn) == 0) {
+        if ((*pp)->fn == fn) {
             struct deduplicateEntry *dead = *pp;
             *pp = dead->next;
             free(dead);
@@ -793,6 +796,15 @@ static int copyLogInfo(struct logInfo *to, const struct logInfo *from)
 
 static void freeLogInfo(struct logInfo *log)
 {
+    unsigned int i;
+
+    /* Drop this logInfo's paths from the duplicate-detection set before the
+     * strings it borrows are freed, so no set entry is left dangling. This
+     * covers every free path (removeLogInfo, a failed include that frees the
+     * stanza, newLogInfo's rollback), not just logs leaving the global list. */
+    for (i = 0; i < log->numFiles; i++)
+        deduplicateRemove(log->files[i]);
+
     free(log->pattern);
     free_2d_array(log->files, log->numFiles);
     free(log->oldDir);
@@ -835,15 +847,8 @@ static struct logInfo *newLogInfo(const struct logInfo *template)
 
 static void removeLogInfo(struct logInfo *log)
 {
-    unsigned int i;
-
     if (log == NULL)
         return;
-
-    /* Drop this logInfo's paths from the duplicate-detection set before its
-     * files are freed, so the set stays consistent with the logs list. */
-    for (i = 0; i < log->numFiles; i++)
-        deduplicateRemove(log->files[i]);
 
     freeLogInfo(log);
     TAILQ_REMOVE(&logs, log, list);
