@@ -39,11 +39,17 @@ static struct deduplicateEntry **deduplicateBuckets = NULL;
 static size_t deduplicateNumBuckets = 0;
 static size_t deduplicateCount = 0;
 
+#if defined(__clang__) && defined(__clang_major__) && (__clang_major__ >= 4)
+__attribute__((no_sanitize("unsigned-integer-overflow")))
+#endif
 static unsigned long deduplicateHash(const char *s) {
     unsigned long h = 5381;
     int c;
+    /* djb2; the wraparound is intentional, so exempt it from -fsanitize=integer
+     * as hashIndex() does, and multiply by 33 rather than shift to avoid the
+     * unsigned-shift overflow check too */
     while ((c = (unsigned char)*s++) != 0)
-        h = ((h << 5) + h) + (unsigned long)c;   /* djb2 */
+        h = h * 33 + (unsigned long)c;
     return h;
 }
 
