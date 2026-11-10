@@ -112,6 +112,60 @@ static int globerr(const char *pathname, int theerr)
     return 1;
 }
 
+/* Escape glob(3) metacharacters, so the string matches only itself.
+ * Returns a newly allocated string, or NULL on allocation failure. */
+static char *escapeGlob(const char *str)
+{
+    size_t len = 0;
+    const char *s;
+    char *ret, *r;
+
+    for (s = str; *s != '\0'; ++s) {
+        if (strchr("\\*?[", *s))
+            ++len;
+        ++len;
+    }
+
+    ret = malloc(len + 1);
+    if (ret == NULL)
+        return NULL;
+
+    for (s = str, r = ret; *s != '\0'; ++s) {
+        if (strchr("\\*?[", *s))
+            *r++ = '\\';
+        *r++ = *s;
+    }
+    *r = '\0';
+
+    return ret;
+}
+
+/* Build the glob pattern "<dirName>/<baseName><suffix...>" with the
+ * directory and base name escaped, so glob metacharacters in a log file
+ * name cannot match files belonging to other logs. */
+static char *buildGlobPattern(const struct logNames *rotNames, const char *suffix1,
+                              const char *suffix2, const char *suffix3)
+{
+    char *dir, *base, *pattern;
+    int rc;
+
+    dir = escapeGlob(rotNames->dirName);
+    base = escapeGlob(rotNames->baseName);
+    if (dir == NULL || base == NULL) {
+        free(dir);
+        free(base);
+        return NULL;
+    }
+
+    rc = asprintf(&pattern, "%s/%s%s%s%s", dir, base, suffix1, suffix2, suffix3);
+    free(dir);
+    free(base);
+    if (rc < 0)
+        return NULL;
+
+    return pattern;
+}
+
 /* We could switch to qsort_r to get rid of this global variable,
  * but qsort_r is not portable enough (Linux vs. *BSD vs ...)... */
 static struct compData _compData;
@@ -122,12 +176,16 @@ static int compGlobResult(const void *result1, const void *result2)  {
     const char *r1 = *(char * const*)(result1);
     const char *r2 = *(char * const*)(result2);
 
+    /* never parse beyond the end of a matched path */
+    r1 = strlen(r1) >= _compData.prefix_len ? r1 + _compData.prefix_len : "";
+    r2 = strlen(r2) >= _compData.prefix_len ? r2 + _compData.prefix_len : "";
+
     memset(&time_tmp, 0, sizeof(struct tm));
-    strptime(r1 + _compData.prefix_len, _compData.dformat, &time_tmp);
+    strptime(r1, _compData.dformat, &time_tmp);
     t1 = mktime(&time_tmp);
 
     memset(&time_tmp, 0, sizeof(struct tm));
-    strptime(r2 + _compData.prefix_len, _compData.dformat, &time_tmp);
+    strptime(r2, _compData.dformat, &time_tmp);
     t2 = mktime(&time_tmp);
 
     if (t1 < t2) return -1;
@@ -1711,8 +1769,8 @@ static int findRotatedIndices(const struct logInfo *log,
     *indices = NULL;
     *count = 0;
 
-    if (asprintf(&pattern, "%s/%s.*%s%s", rotNames->dirName,
-                 rotNames->baseName, fileext, compext) < 0) {
+    pattern = buildGlobPattern(rotNames, ".*", fileext, compext);
+    if (pattern == NULL) {
         message_OOM();
         return -1;
     }
@@ -2145,8 +2203,8 @@ static int prerotateSingleLog(const struct logInfo *log, unsigned logNum,
             (log->flags & LOG_FLAG_DELAYCOMPRESS)) {
         if (log->flags & LOG_FLAG_DATEEXT) {
             /* glob for uncompressed files with our pattern */
-            if (asprintf(&glob_pattern, "%s/%s%s%s", rotNames->dirName,
-                         rotNames->baseName, dext_pattern, fileext) < 0) {
+            glob_pattern = buildGlobPattern(rotNames, dext_pattern, fileext, "");
+            if (glob_pattern == NULL) {
                 message_OOM();
                 return 1;
             }
@@ -2196,8 +2254,8 @@ static int prerotateSingleLog(const struct logInfo *log, unsigned logNum,
     if (log->flags & LOG_FLAG_DATEEXT) {
         /* glob for compressed files with our pattern
          * and compress ext */
-        if (asprintf(&glob_pattern, "%s/%s%s%s%s", rotNames->dirName,
-                     rotNames->baseName, dext_pattern, fileext, compext) < 0) {
+        glob_pattern = buildGlobPattern(rotNames, dext_pattern, fileext, compext);
+        if (glob_pattern == NULL) {
             message_OOM();
             return 1;
         }

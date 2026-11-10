@@ -1,0 +1,24 @@
+create
+
+"&DIR&/d\[ab\]/test.log" {
+    daily
+    dateext
+    dateformat -%Y%m%d
+    rotate 1
+    nocompress
+}
+
+"&DIR&/test\[abc\].log" {
+    daily
+    dateext
+    dateformat -%Y%m%d
+    rotate 5
+    compress
+    delaycompress
+}
+
+"&DIR&/test\[xyz\].log" {
+    daily
+    rotate -1
+    nocompress
+}
