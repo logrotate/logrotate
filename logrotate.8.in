@@ -70,7 +70,9 @@ Tells \fBlogrotate\fR to force the rotation, even if it doesn't think
 this is necessary.  Sometimes this is useful after adding new entries to
 a \fBlogrotate\fR config file, or if old log files have been removed
 by hand, as the new files will be created, and logging will continue
-correctly.
+correctly.  The time interval options and the \fBsize\fR, \fBminsize\fR,
+and \fBminage\fR options do not prevent a forced rotation, but an empty
+log is not rotated if \fBnotifempty\fR is in effect.
 
 .TP
 \fB\-d\fR, \fB\-\-debug\fR
@@ -346,6 +348,7 @@ option (\fBifempty\fR is the default).
 .TP
 \fBnotifempty\fR
 Do not rotate the log if it is empty (this overrides the \fBifempty\fR option).
+This also applies to a rotation forced with \fB\-f\fR or \fB\-\-force\fR.
 
 .TP
 \fBminage\fR \fIcount\fR
