@@ -105,6 +105,11 @@ static void freeLogNames(struct logNames *rotNames)
 
 static int globerr(const char *pathname, int theerr)
 {
+    /* in debug mode a missing olddir is not created (createolddir),
+     * treat it as a directory without rotated logs */
+    if (debug && theerr == ENOENT)
+        return 0;
+
     message(MESS_ERROR, "error accessing %s: %s\n", pathname,
             strerror(theerr));
 

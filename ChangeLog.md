@@ -23,6 +23,8 @@ All notable changes to this project will be documented in this file.
    are matched literally when searching for its rotated logs, so rotations
    of other logs are no longer removed or compressed, and an out-of-bounds read
    while sorting `dateext` rotations is fixed (#722)
+ - debug mode (`-d`) no longer creates a missing `olddir` when `createolddir`
+   is set
 
 [UNRELEASED]: https://github.com/logrotate/logrotate/compare/3.22.0...main
  - Add support for %G, %y, %g, %U, %W, %u, %w, and %j to dateformat. [ryancdotorg]
