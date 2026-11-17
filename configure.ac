@@ -28,6 +28,9 @@ AC_CHECK_HEADERS([libgen.h])
 AC_CHECK_LIB([popt],[poptParseArgvString],,
   AC_MSG_ERROR([libpopt required but not found]))
 
+dnl clock_gettime() is in librt on glibc < 2.17 and older Solaris
+AC_SEARCH_LIBS([clock_gettime],[rt])
+
 dnl Needed for out-of-source builds
 mkdir -p test
 

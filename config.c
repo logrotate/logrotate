@@ -29,6 +29,129 @@
 
 struct logInfoHead logs;
 
+/* Duplicate-log detection uses a hash set mapping each registered file path to
+ * its owning logInfo. This replaces logrotate's original O(n^2) linear scan
+ * (every globbed file compared against every already-registered file), which is
+ * the dominant cost when a glob matches very many files. The duplicate
+ * (IGNOREDUPLICATES / error) behaviour on a hit is identical to the original. */
+struct deduplicateEntry { const char *fn; const struct logInfo *owner; struct deduplicateEntry *next; };
+static struct deduplicateEntry **deduplicateBuckets = NULL;
+static size_t deduplicateNumBuckets = 0;
+static size_t deduplicateCount = 0;
+
+#if defined(__clang__) && defined(__clang_major__) && (__clang_major__ >= 4)
+__attribute__((no_sanitize("unsigned-integer-overflow")))
+#endif
+static unsigned long deduplicateHash(const char *s) {
+    unsigned long h = 5381;
+    int c;
+    /* djb2; the wraparound is intentional, so exempt it from -fsanitize=integer
+     * as hashIndex() does, and multiply by 33 rather than shift to avoid the
+     * unsigned-shift overflow check too */
+    while ((c = (unsigned char)*s++) != 0)
+        h = h * 33 + (unsigned long)c;
+    return h;
+}
+
+/* returns -1 on allocation failure, leaving the old table in place */
+static int deduplicateGrow(void) {
+    size_t newn = deduplicateNumBuckets ? deduplicateNumBuckets * 2 : 4096;
+    struct deduplicateEntry **nb = calloc(newn, sizeof(*nb));
+    size_t i;
+    if (nb == NULL)
+        return -1;
+    for (i = 0; i < deduplicateNumBuckets; i++) {
+        struct deduplicateEntry *e = deduplicateBuckets[i];
+        while (e != NULL) {
+            struct deduplicateEntry *next = e->next;
+            size_t b = deduplicateHash(e->fn) % newn;
+            e->next = nb[b];
+            nb[b] = e;
+            e = next;
+        }
+    }
+    free(deduplicateBuckets);
+    deduplicateBuckets = nb;
+    deduplicateNumBuckets = newn;
+    return 0;
+}
+
+/* returns the owning logInfo if fn is already registered (duplicate), else NULL */
+static const struct logInfo *deduplicateLookup(const char *fn) {
+    size_t b;
+    struct deduplicateEntry *e;
+    if (deduplicateNumBuckets == 0)
+        return NULL;
+    b = deduplicateHash(fn) % deduplicateNumBuckets;
+    for (e = deduplicateBuckets[b]; e != NULL; e = e->next)
+        if (strcmp(e->fn, fn) == 0)
+            return e->owner;
+    return NULL;
+}
+
+/* returns -1 on allocation failure; the caller must treat it as fatal, so
+ * the set never silently misses a path and lets a later duplicate through */
+static int deduplicateInsert(const char *fn, const struct logInfo *owner) {
+    size_t b;
+    struct deduplicateEntry *e;
+    if (deduplicateCount * 4 >= deduplicateNumBuckets * 3)   /* keep load factor < 0.75 */
+        if (deduplicateGrow() != 0)
+            return -1;
+    b = deduplicateHash(fn) % deduplicateNumBuckets;
+    e = malloc(sizeof(*e));
+    if (e == NULL)
+        return -1;
+    e->fn = fn;            /* borrow the strdup'd string the caller stores in files[] */
+    e->owner = owner;
+    e->next = deduplicateBuckets[b];
+    deduplicateBuckets[b] = e;
+    deduplicateCount++;
+    return 0;
+}
+
+/* Remove the entry that borrows exactly this string from the registered-paths
+ * set, called from freeLogInfo() before the string is freed so the set never
+ * points at freed memory. Matching is by pointer, not by content: the entry
+ * borrows the owning logInfo's files[] pointer, so a throwaway copy of that
+ * logInfo (e.g. defConfigBackup) holds equal strings at different addresses and
+ * must not evict the live entry when it is freed. */
+static void deduplicateRemove(const char *fn) {
+    size_t b;
+    struct deduplicateEntry **pp;
+    if (deduplicateNumBuckets == 0)
+        return;
+    b = deduplicateHash(fn) % deduplicateNumBuckets;
+    for (pp = &deduplicateBuckets[b]; *pp != NULL; pp = &(*pp)->next) {
+        if ((*pp)->fn == fn) {
+            struct deduplicateEntry *dead = *pp;
+            *pp = dead->next;
+            free(dead);
+            deduplicateCount--;
+            return;
+        }
+    }
+}
+
+/* Release the whole duplicate-detection set. Called once config parsing is done,
+ * since the set is only needed while reading config, not during rotation. The
+ * entries borrow the file names owned by each logInfo's files[], so free only
+ * the nodes and the bucket array, never the names. */
+static void deduplicateFree(void) {
+    size_t i;
+    for (i = 0; i < deduplicateNumBuckets; i++) {
+        struct deduplicateEntry *e = deduplicateBuckets[i];
+        while (e != NULL) {
+            struct deduplicateEntry *next = e->next;
+            free(e);
+            e = next;
+        }
+    }
+    free(deduplicateBuckets);
+    deduplicateBuckets = NULL;
+    deduplicateNumBuckets = 0;
+    deduplicateCount = 0;
+}
+
 #if !defined(GLOB_ABORTED) && defined(GLOB_ABEND)
 #define GLOB_ABORTED GLOB_ABEND
 #endif
@@ -776,6 +899,15 @@ static int copyLogInfo(struct logInfo *to, const struct logInfo *from)
 
 static void freeLogInfo(struct logInfo *log)
 {
+    unsigned int i;
+
+    /* Drop this logInfo's paths from the duplicate-detection set before the
+     * strings it borrows are freed, so no set entry is left dangling. This
+     * covers every free path (removeLogInfo, a failed include that frees the
+     * stanza, newLogInfo's rollback), not just logs leaving the global list. */
+    for (i = 0; i < log->numFiles; i++)
+        deduplicateRemove(log->files[i]);
+
     free(log->pattern);
     free_2d_array(log->files, log->numFiles);
     free(log->oldDir);
@@ -1060,6 +1192,9 @@ int readAllConfigPaths(const char **paths)
         if (readConfigPath(*file, &defConfig))
             result = 1;
     }
+    /* config parsing is finished; the duplicate-detection set is not used during
+     * rotation, so release it rather than holding it until the process exits */
+    deduplicateFree();
     free_2d_array(tabooPatterns, tabooCount);
     freeLogInfo(&defConfig);
     return result;
@@ -2159,7 +2294,6 @@ next_state:
                         newlog->files = tmp;
 
                         for (glob_count = 0; glob_count < globResult.gl_pathc; glob_count++) {
-                            const struct logInfo *log;
                             struct stat sb_glob;
                             int add_file = 1;
 
@@ -2169,38 +2303,42 @@ next_state:
                                 continue;
                             }
 
-                            for (log = logs.tqh_first; log != NULL;
-                                    log = log->list.tqe_next) {
-                                unsigned k;
-                                for (k = 0; k < log->numFiles; k++) {
-                                    if (!strcmp(log->files[k],
-                                                globResult.gl_pathv[glob_count])) {
-                                        if (log->flags & LOG_FLAG_IGNOREDUPLICATES) {
-                                            add_file = 0;
-                                            message(MESS_DEBUG,
-                                                    "%s:%d ignore duplicate log entry for %s\n",
-                                                    configFile, lineNum,
-                                                    globResult.gl_pathv[glob_count]);
-                                        } else {
-                                            message(MESS_ERROR,
-                                                    "%s:%d duplicate log entry for %s\n",
-                                                    configFile, lineNum,
-                                                    globResult.gl_pathv[glob_count]);
-                                            logerror = 1;
-                                            goto duperror;
-                                        }
+                            {
+                                /* O(n) duplicate check via the registered-paths hash set */
+                                const struct logInfo *dup =
+                                    deduplicateLookup(globResult.gl_pathv[glob_count]);
+                                if (dup != NULL) {
+                                    if (dup->flags & LOG_FLAG_IGNOREDUPLICATES) {
+                                        add_file = 0;
+                                        message(MESS_DEBUG,
+                                                "%s:%d ignore duplicate log entry for %s\n",
+                                                configFile, lineNum,
+                                                globResult.gl_pathv[glob_count]);
+                                    } else {
+                                        message(MESS_ERROR,
+                                                "%s:%d duplicate log entry for %s\n",
+                                                configFile, lineNum,
+                                                globResult.gl_pathv[glob_count]);
+                                        logerror = 1;
+                                        goto duperror;
                                     }
                                 }
                             }
 
                             if (add_file) {
-                                newlog->files[newlog->numFiles] =
-                                    strdup(globResult.gl_pathv[glob_count]);
-                                if (newlog->files[newlog->numFiles] == NULL) {
+                                char *fn = strdup(globResult.gl_pathv[glob_count]);
+                                if (fn == NULL) {
                                     message_OOM();
                                     logerror = 1;
                                     goto duperror;
                                 }
+                                if (deduplicateInsert(fn, newlog) != 0) {
+                                    free(fn);
+                                    message_OOM();
+                                    logerror = 1;
+                                    goto duperror;
+                                }
+                                newlog->files[newlog->numFiles] = fn;
                                 newlog->numFiles++;
                             }
                         }
