@@ -172,6 +172,8 @@ static const unsigned defTabooCount = sizeof(defTabooExts) / sizeof(char *);
 static char **tabooPatterns = NULL;
 static unsigned tabooCount = 0;
 static int glob_errno = 0;
+/* set once debug mode did not create a missing olddir (createolddir) */
+static int olddirCreationSkipped = 0;
 
 static int readConfigFile(const char *configFile, struct logInfo *defConfig);
 static int globerr(const char *pathname, int theerr);
@@ -2293,8 +2295,19 @@ duperror:
                             free(dirpath);
 
                             if (stat(dirName, &sb_olddir)) {
-                                if (errno == ENOENT && (newlog->flags & LOG_FLAG_OLDDIRCREATE)) {
+                                if (errno == ENOENT && ((newlog->flags & LOG_FLAG_OLDDIRCREATE)
+                                            || olddirCreationSkipped)) {
                                     int ret;
+                                    if (debug) {
+                                        message(MESS_DEBUG, "%s:%d olddir %s does not exist, "
+                                                "olddirs are not created in debug mode\n",
+                                                configFile, lineNum, dirName);
+                                        /* a later section may use this olddir
+                                         * without createolddir */
+                                        olddirCreationSkipped = 1;
+                                        free(ld);
+                                        continue;
+                                    }
                                     if (newlog->flags & LOG_FLAG_SU) {
                                         if (switch_user(newlog->suUid, newlog->suGid) != 0) {
                                             free(ld);

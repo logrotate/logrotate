@@ -1,0 +1,24 @@
+create
+
+olddir &DIR&/testdir/sub
+createolddir 700 &USER& &GROUP&
+
+&DIR&/test.log {
+    monthly
+    rotate -1
+}
+
+&DIR&/anothertest.log {
+    monthly
+    rotate 1
+    dateext
+    compress
+    delaycompress
+}
+
+&DIR&/test-same.log {
+    monthly
+    rotate 1
+    olddir &DIR&/testdir/sub/
+    nocreateolddir
+}
