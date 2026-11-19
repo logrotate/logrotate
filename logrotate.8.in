@@ -36,6 +36,16 @@ large numbers of log files.  It allows automatic rotation, compression,
 removal, and mailing of log files.  Each log file may be handled daily,
 weekly, monthly, or when it grows too large.
 .P
+By default, rotation renames the current log file and shifts the
+previously rotated files, leaving the original name free for a new log
+file.  The \fBrotate\fR directive controls how many rotated files are
+kept, and \fBcreate\fR controls whether a new log file is created after
+rotation.  A process that keeps the old file descriptor open continues
+to write to the renamed file; use a \fBpostrotate\fR script to make it
+reopen its log file, or \fBcopytruncate\fR for programs that cannot
+reopen it.  See the descriptions of \fBcopy\fR, \fBcopytruncate\fR, and
+\fBrenamecopy\fR below.
+.P
 Normally, \fBlogrotate\fR is run as a daily cron job (or by
 \fIlogrotate.timer\fR when using \fBsystemd\fR(1)).  It will not modify
 a log more than once in one day unless the criterion for that log is
