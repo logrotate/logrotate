@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [UNRELEASED]
 
+ - document what log rotation means and how open file descriptors are
+   handled (#437)
  - fix incorrect sparse file detection due to mismatched st_blocks and st_blksize units (#682)
  - the `start` value is always parsed as a decimal number, e.g. `start 010`
    no longer means 8
